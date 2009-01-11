@@ -1,4 +1,4 @@
-pdflatex%1%
-bibtex %1%
-pdflatex%1%
-pdflatex%1%
+pdflatex 09-03
+bibtex 09-03
+pdflatex 09-03
+pdflatex 09-03
