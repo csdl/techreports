@@ -3,7 +3,7 @@
 %% Author          : Philip Johnson 
 %% Created On      : Tue Jan 06 10:41:51 2009
 %% Last Modified By: Philip Johnson
-%% Last Modified On: Wed Jan 14 11:58:50 2009
+%% Last Modified On: Wed Jan 14 16:37:18 2009
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   Copyright (C) 2009  Philip Johnson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -13,7 +13,8 @@
 \usepackage{graphicx}
 \usepackage{natbib}
 \usepackage{url}             
-\journalname{Automated Software Engineering}
+
+%\journalname{Automated Software Engineering}
 
 \begin{document}
 \title{Operational Definition and Automated Inference of Test-Driven Development with Zorro}
@@ -29,7 +30,7 @@
            \email{johnson@hawaii.edu} \\
 }
 
-\date{Received: date / Accepted: date}
+%\date{Received: date / Accepted: date}
 
 \maketitle
 
@@ -57,7 +58,14 @@ effectiveness of TDD in both laboratory and real world settings.
 
 This paper describes the Zorro system, its operational definition of TDD,
 the analyses made possible by Zorro, and three empirical evaluations of the
-system.
+system.  Our research shows that is possible to define an operational
+definition of TDD that is amenable to automated recognition, and
+illustrates the architectural and design issues that must be addressed in
+order to do so.  Zorro has implications not only for the practice of TDD,
+but also for software engineering ``micro-process'' definition and
+recognition through its parent framework, Software Development Stream
+Analysis.
+
 
 
 \keywords{Test Driven Design \and Hackystat }
@@ -566,42 +574,47 @@ a development session where there is no unit testing at all.)
 Once each episode instance has been assigned an episode type by the SDSA
 rule set, the final step in the Zorro classification process is to
 determine the TDD conformance of that instance.  Figure
-\ref{fig:Categories} shows that instances of some of the episode types are
-easy to characterize. For example, every instance of a Test First episode
-type is automatically TDD conformant, just every instance of a Test Last,
-Long and Unknown episode type is automatically not TDD conformant.
+\ref{fig:Categories} shows that exactly half of the 22 episode types can be
+unambiguously characterized as either TDD conformant or TDD non-conformant.
+For example, all four Test First episode types are automatically TDD
+conformant, just the seven Test Last, Long and Unknown episode
+types are automatically TDD non-conformant.
 
-Interestingly, several of the episode types, such as Refactoring, Test
+An interesting discovery from our research is that only half of the episode
+types we designed could be unambiguously characterized with respect to TDD
+compliance.  The remaining episode types, including Refactoring, Test
 Addition, Regression, and certain Code Productions are ambiguous: in
-certain contexts, they could be TDD conformant, while in others they could
-be TDD non-conformant.  This is because, for example, ``Refactoring'' can
-legitimately occur while a developer is either doing Test Driven Design or
-some different development approach, such as Test Last programming.  In
-order to classify instances of these episode types, Zorro applies the
+certain contexts, they could be TDD conformant, while in other contexts
+they could be TDD non-conformant.  Consider the ``Refactoring'' episode
+type.  Code refactoring can occur when a developer is doing Test Driven
+Design, but it can just as easily occur when a developer is doing some
+other style of development, such as Test Last programming.  In order to
+classify instances of these ambiguous episode types, Zorro applies the
 following heuristic: if a sequence of one or more ambiguous episodes are
-bounded on both sides by non-TDD conformant episodes, then these ambigous
-episodes types are classified as non-TDD conformant.
+bounded on both sides by non-TDD conformant episodes, then the ambigous
+episode(s) are classified as non-TDD conformant. Otherwise, they are
+classified as TDD conformant.
 
-To make this clear, let's consider some examples, such as the episode
-sequence [TF-1, RF-1, CP-1, TF-2].  In this sequence, Zorro classifies the
-ambiguous episodes (RF-1 and CP-1) as TDD conformant, since they are
-surrounded by TDD conformant episode types (TF-1 and TF-2).  Now consider
-the sequence: [TL-1, RF-1, CP-1, TL-2].  In this sequence, Zorro classifies
-the same two ambiguous episodes (RF-1 and CP-1) as TDD non-conformant,
-since they are surrounded by non-TDD episode types (TL-1 and TL-2).
+To make this clear, let's consider some examples.  For the episode sequence
+[TF-1, RF-1, CP-1, TF-2], Zorro classifies the ambiguous episodes (RF-1 and
+CP-1) as TDD conformant, since they are surrounded by TDD conformant
+episode types (TF-1 and TF-2).  Now consider the sequence [TL-1, RF-1,
+CP-1, TL-2].  In this sequence, Zorro classifies the same two ambiguous
+episodes (RF-1 and CP-1) as TDD non-conformant, since they are surrounded
+by non-TDD episode types (TL-1 and TL-2).
 
 Now consider a sequence like: [TF-1, RF-1, CP-1, TL-1].  Here, the two
 ambiguous episodes (RF-1 and CP-1) are surrounded on one side by an
-unambiguously TDD conformant episode (TF-1) and on the other side by an
-unambiguously TDD non-conformant episode (TL-1).  In this case, Zorro's
-rules could implement an ``optimistic'' classification, and assign the
-ambiguous episodes as TDD, or a ``pessimistic'' classification, and assign
-the ambiguous episodes as non-TDD.  The current Zorro definition of TDD
-implements an ``optimistic'' classification for this situation.
+unambiguous TDD conformant episode (TF-1) and on the other side by an
+ambiguous TDD non-conformant episode (TL-1).  In this case, Zorro's rules
+could implement an ``optimistic'' classification, and assign the ambiguous
+episodes as TDD conformant, or a ``pessimistic'' classification, and assign
+the ambiguous episodes as TDD non-conformant.  The current Zorro definition
+of TDD implements the ``optimistic'' classification for this situation.
 
 The Zorro classification system illustrates two important advances in our
-approach to TDD.  First, it replaces the simplistic three episode type
-(red, green, yellow) approach to TDD developer behavior with a more
+approach to TDD.  First, it replaces the simplistic ``red-green-yellow''
+three episode type approach to TDD developer behavior with a much more
 sophisticated classification scheme based upon 22 distinct episode
 types. Second, it reveals that the mapping from developer behaviors to TDD
 is not straightforward. One can reasonably question whether the
@@ -612,18 +625,15 @@ gathering evidence to determine whether the chosen definition matches
 reasonable expectations for what constitutes TDD and what doesn't. We will
 return to this issue in Section \ref{sec:validation}.
 
+\subsection{The User Interface}
 
-\subsection{Zorro Analyses}
-
-Having collected the raw data using Hackystat sensors, and having
-abstracted the raw data into episodes and classified it using SDSA, the
-final step in Zorro is to provide analyses that are useful to both TDD
-developers and TDD researchers.  This section overviews a few of the
+No matter how effective the classification mechanism, the usefulness of Zorro still depends upon a user interface that can help people understand how Zorro is performing its classification, and what the implications of TDD practice might be. 
+This section overviews a few of the
 analyses provided by Zorro to provide a flavor for what is possible with
-this approach.
+this approach. For more details, see \cite{csdl2-07-04}.
 
 The first analysis, illustrated in Figure \ref{fig:Analysis-Table}, is
-designed to provide visibility into the Zorro data collection and
+designed to provide transparency regarding the Zorro data collection and
 classification process.
 
 \begin{figure*}[th]
@@ -695,7 +705,7 @@ by the developer.
 \end{figure*} 
 
 
-\section{Validation}
+\section{Empirical validation and evaluation}
 \label{sec:validation}
 
 In order to feel confident in Zorro as an appropriate tool to investigate
@@ -711,28 +721,28 @@ The second validation issue addresses our operational definition of TDD
 based upon episode-based classification, and whether it provides a robust,
 useful, and acceptable definition of TDD.
 
-We began Zorro validation in the Spring of 2006 with a pilot study, and 
-are building on that initial work in 2007.
+We performed two case studies in a classroom setting to address these validation questions.  The following sections summarize the approach and results; full details are available in \cite{csdl2-07-04}.
 
-\subsection{The pilot validation study}
+\subsection{Classroom Case Study 1}
 
-To obtain some initial validation data on Zorro, we conducted a pilot study
-in Spring of 2006 in which we instrumented the development environment with
-Zorro sensors, asked a small set of students to do some simple TDD
-development, then compared the resulting Zorro TDD classifications to an
-independently collected source of data regarding their development
-behaviors.
+{\bf Goals.} 
+To obtain initial validation data on Zorro, we conducted a
+pilot study in Spring of 2006 in which we instrumented the development
+environment with Zorro sensors, asked a small set of students to do some
+simple TDD development, then compared the resulting Zorro TDD
+classifications to an independently collected source of data regarding
+their development behaviors.
 
 One approach to independent data collection would be to have an observer
-watching the developers as they programmed, taking notes as to whether they
-are performing TDD or not.  We considered this but discarded it as
+watching the developers as they programmed, and take notes as to whether they
+are performing TDD or not.  We considered this approach but discarded it as
 unworkable: given the rapidity with which TDD cycles can occur, it would be
-quite hard for an observer to notate all of the TDD-related events that can
+quite hard for an observer to note all of the TDD-related events that can
 occur literally within seconds of each other. We would end up having to
 validate our validation technique!
 
 Instead, we developed a plugin to Eclipse called the ``Eclipse
-Screen Recorder'' (ESR).  This system generates a Quicktime movie
+Screen Recorder'' (ESR) \cite{esr}.  This system generates a Quicktime movie
 containing time-stamped screen shots of the Eclipse window at regular
 intervals. One frame/second was found to be sufficient for validation,
 generating file sizes of approximately 7-8 MB per hour of video.  The
@@ -740,6 +750,7 @@ Quicktime movie created by ESR provides a visual record of developer
 behavior that can be manually compared to the Zorro analysis using the
 timestamps and used to answer the two validation questions.
 
+{\bf Procedure.}
 Our pilot validation study involved the following procedure. First, we
 obtained agreement from seven volunteer student subjects to participate in
 the pilot study. These subjects were experienced with both Java development
@@ -757,6 +768,7 @@ activities that occurred.  Then, we ran the Zorro analyses, added their
 results to the spreadsheet, and validated the Zorro classifications against
 our analysis of the video record.
 
+{\bf Results.} 
 The participants spent between 28 and 66 minutes to complete the task.
 Zorro partitioned the overall development effort into 92 distinct episodes,
 out of which 86 were classified as either Test-Driven, Refactoring, or
@@ -768,35 +780,8 @@ the current version.
 Out of the 92 episodes under study, 82 were validated as correctly
 classified, for an accuracy rate of 89\%.
 
-\subsection{Ongoing validation}
+\subsection{Classroom case study 2}
 
-The pilot study provided us with valuable feedback about the potential
-utility of Zorro, as well as deeper insight into the process of validation
-itself.  Our current research is focused on enhancing our understanding of
-the strengths and weaknesses of Zorro with several additional validation
-studies.
-
-Our next validation study will also involve students, and will expand on
-the pilot study by cross-validating the Zorro operational definition of TDD
-against two independent data sources: the ESR video stream and the feedback
-of the participants themselves following the TDD development session.  We
-will ask them to review the TDD episodes generated by Zorro and provide
-their personal feedback on the classifications.
-
-Following this second student-based validation study, we plan to gain
-insight into the strengths and weaknesses of Zorro in professional
-settings.  For this case study, we will invite developers who
-practice TDD and who use Eclipse, Java, and JUnit to help us validate
-Zorro.  The process involves installing the Hackystat Eclipse sensor for
-Zorro into their development environment, performing development for a few
-days with the sensors installed, then reviewing the classifications made by
-Zorro and providing us with feedback regarding its accuracy.
-
-We also plan to obtain feedback from the TDD research community.  We believe
-that Zorro can provide useful infrastructure for research on test driven
-development.  For this case study, we will invite researchers to 
-evaluate Zorro against their experimental requirements and provide us with 
-feedback as to the suitability of Zorro for their own work. 
 
 \section{Contributions and future directions}
 \label{sec:conclusions}
