@@ -1,34 +1,45 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% 09-07.tex -- IEEE Software paper
-%% Author          : Hongbing Kou
+%% 09-07.tex --      IEEE Service Cup Paper
+%% Author          : Philip Johnson
 %% Created On      : Mon Sep 23 11:52:28 2002
 %% Last Modified By: Philip Johnson
-%% Last Modified On: Thu Jan 22 07:47:45 2009
+%% Last Modified On: Thu Jan 22 13:44:22 2009
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%   Copyright (C) 2005 Hongbing Kou
+%%   Copyright (C) 2009 Philip Johnson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% SWSI-0197-1106
+%% 
+
+%% Home page: http://iscc.servicescomputing.org/2009/
+%% We are applying to the ``Service Computing Contest'' (for university professors/projects)
+
+%% Should show how Hackystat explores ``new frontiers'' in SOA development.
+%% 8 page limit for paper.
+%% At most five students plus one professor.
+%% Due date: February 20, 2009.  
+%% Conference: July 7-10, 2009, Los Angeles.
+
+%% Paper ID: 1122, http://confhub.com/MyPapers.php?cid=66
 
 \documentclass[conference,12pt]{IEEEtran}
 %\usepackage{IEEEconf}
 \usepackage[final]{graphicx}
 % uncomment the % away on next line to produce the final camera-ready version
 % and uncomment the \thispagestyle{empty} following \maketitle
-\pagestyle{empty}
+%\pagestyle{empty}
 
 \begin{document}
 
-\title{Experiences with Hackystat as a service-oriented architecture}
+\title{Experiences with Hackystat \\ as a service-oriented architecture}
 
 \author{Philip M. Johnson \\
         Shaoxuan Zhang \\
-        Randy Cox \\
         Pavel Senin \\
+        Randy Cox \\
 \em  Collaborative Software Development Laboratory \\
-\em  Department of Information and Computer Sciences \\
-\em  University of Hawai'i \\
-\em  Honolulu, HI 96822 \\
-\em  johnson@hawaii.edu \\
+      Department of Information and Computer Sciences \\
+      University of Hawai'i \\
+      Honolulu, HI 96822 \\
+      johnson@hawaii.edu \\
 }
 
 
@@ -36,21 +47,103 @@
 %\thispagestyle{empty}
 
 \begin{abstract}  % 200 words
-Hackystat is an open source framework for automated collection and analysis of software engineering process and product data.  Hackystat has been under development since 2001, and has gone through eight major architectural revisions during that time.  In 2007, we began the latest architectural revision, whose primary goal was to 
-reimplement Hackystat as a service-oriented architecture (SOA).  Hackystat Version 8 has now been in public release for over a year, and this paper reports on our 
-experiences:  the motivations that led us to reimplement the system as a SOA, the benefits we have experienced from that conversion, and the new challenges we now
-face as a result. 
+Hackystat is an open source framework for automated collection and analysis
+of software engineering process and product data.  Hackystat has been under
+development since 2001, and has gone through eight major architectural
+revisions during that time.  In 2007, we began the latest architectural
+revision, whose primary goal was to reimplement Hackystat as a
+service-oriented architecture (SOA).  Hackystat Version 8 has now been in
+public release for over a year, and this paper reports on our experiences:
+the motivations that led us to reimplement the system as a SOA, the
+benefits we have experienced from that conversion, and the new challenges
+we now face as a result.
 \end{abstract}
 
 \section{Introduction}
 \label{sec:intro}
 
+This section will introduce Hackystat \cite{csdl2-06-06}. It will briefly
+review the purpose of the system, its history, and some of its applications
+and usages to date.  Also how Hackystat/SOA explores ``new frontiers'' in SOA techniques. 
 
-Finally, we want to emphasize the open source nature of the Zorro system and 
-the research process.   We encourage you to download the system and try it out,
-or contact us if you wish to participate in the research process. 
 
-\bibliographystyle{IEEEconf}
+
+The remainder of this paper is organized as follows.  Section \ref{sec:motivation} 
+discusses the shortcomings of our prior Hackystat architecture which led us to reimplement
+the system in a service-oriented manner.  Section \ref{sec:soa} introduces our current
+service-oriented architecture and its features.  Section \ref{sec:discussion} presents 
+our experiences, both positive and negative, with the SOA implementation.  Section \ref{sec:conclusion}
+summarizes our conclusions and outlines some of our future architectural directions. 
+
+\section{Motivation for the Hackystat SOA architecture}
+\label{sec:motivation}
+
+Presents the issues we have encountered over the years that led us to consider SOA.
+
+\subsection{Subsystem configuration binding time}
+
+Hackystat consists of a number of subsystems that can be flexibly composed to support different application requirements.  As the number of application areas supported by Hackystat grew, providing a single ``kitchen sink'' version became unwieldy.  We thus began building different configurations of the system with differing combinations of components that would specialize Hackystat to different application areas (classroom use, high performance computing experimentation, TDD, etc.) 
+
+This configuration had to occur at system build time, which produced a number of problems.
+
+\subsection{Complexity of build}
+
+Once Hackystat outgrew a single subsystem configuration, the complexity of the build process increased dramatically. We needed to implement a custom build system on top of Ant with its own dependency resolution mechanism in order to support a context-sensitive build process that would produce a single binary.  
+
+This custom build process dramatically increased the barrier to entry for new Hackystat developers, as they now had to learn a custom build system in order to add their own extensions to the framework.
+
+\subsection{Lack of access to ``intermediate'' analyses}
+
+In the early stages of Hackystat development, sensor data was sent to a web server, which performed relatively simple analyses over that data before presenting that data to the user in a web page.   As the complexity of our analyses increased, we found it useful to brek them down into ``pipelines''.  For example, to obtain telemetry (trend) data, the raw sensor data would first be analyzed into intermediate objects called ``DailyProjectData'', which would then be composed in various ways by the telemetry mechanism to produce the trends of interest.  The Test-Driven Design analysis would first organize the raw sensor data into ``episodes'' which would then be classified as TDD conformant or not. 
+
+The resulting problem is that while analyses were decomposed into pipelines, access was still monolithic in terms of the web server interface. It was difficult to get access to these intermediate analyses, which were often useful and interesting in their own right. 
+
+\subsection{Server-side implementation language specificity}
+
+The Hackystat framework is designed to be generic within the domain of collection and analysis of software engineering process and product data.  It should run on all platforms, support sensors for arbitrary software development tools and languages, and support analyses for a wide variety of process and product measurement types. 
+
+The same language ``neutrality'' did not hold true when it came to the framework itself.  Client-side sensors could (and were) written in a variety of languages: Java, C\#, Emacs Lisp, etc. The server, however, was a Java web application, and all analyses and user interfaces were required to be written in Java and conform to the Hackystat web interface structure.  
+
+\subsection{UI rigidity}
+
+To simplify UI development, the system provided a high-level API for adding
+new commands to the Hackystat web application interface.  This reduced the
+amount of code required for the development of any individual command, but
+at two costs: developers now had to learn a Hackystat-specific UI API, and
+(most importantly) the UI to Hackystat was ``frozen'' in a single design
+and there was no practical way to experiment with alternative user
+interfaces.
+
+\subsection{Cache thrash}
+
+In the Telemetry application, it was not uncommon to periodically request an analysis that might display 30 or 40 trend lines over the last several months, which would potentially involve the processing of hundreds of thousands of raw sensor data instances. However, many of those trend lines might require access to the raw same sensor data, and many of the trend line components might involve computations that were performed previously the last time the analysis was requested.  
+
+We quickly discovered that the naive implementation of telemetry could easily take several hours to perform an analysis, but with the implementation of caching, we could reduce response time to seconds or minutes.  
+
+Unfortunately, caching created its own problems. The ``pipeline'' nature of analyses like Telemetry meant that we needed to introduce caches at multiple levels.  The sheer size of the Hackystat sensor data repository meant that we could not simply cache everything; we needed to limit the sizes of the various caches.  As the number of caches increased, we started to see evidence of ``cache thrash'': two caches would appear to be discarding objects just as another cache would be requesting them. We found this to be an extremely difficult performance issue to debug.
+
+
+\section{Hackystat as SOA}
+\label{sec:soa}
+
+This section will present the Hackystat SOA architecture.
+
+\section{Pros and cons of SOA}
+\label{sec:discussion}
+
+Here we discuss how the SOA architecture addressed all of the issues we encountered in Section \ref{sec:motivation}, and what new issues we are confronting. 
+
+Pro: Restart a single service without bringing down entire system.
+
+Con: Loss of compile-time structural consistency checking for sensor data types.
+
+\section{Conclusions}
+\label{sec:conclusion}
+
+Conclusions and future directions. 
+
+
+\bibliographystyle{IEEEtran}
 \bibliography{tdd,zorro,csdl-trs,hackystat,psp}
 \end{document}
 
