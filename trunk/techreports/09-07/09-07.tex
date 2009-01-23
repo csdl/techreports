@@ -3,7 +3,7 @@
 %% Author          : Philip Johnson
 %% Created On      : Mon Sep 23 11:52:28 2002
 %% Last Modified By: Philip Johnson
-%% Last Modified On: Thu Jan 22 13:44:22 2009
+%% Last Modified On: Fri Jan 23 10:54:38 2009
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   Copyright (C) 2009 Philip Johnson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -20,9 +20,15 @@
 
 %% Paper ID: 1122, http://confhub.com/MyPapers.php?cid=66
 
-\documentclass[conference,12pt]{IEEEtran}
-%\usepackage{IEEEconf}
+%% For ``peer review mode'', do:
+%%   \documentclass[conference,compsoc,peerreview]{IEEEtran}
+%% and
+%%   \IEEEpeerreviewmaketitle  (after the abstract).
+
+\documentclass[conference,compsoc,peerreview]{IEEEtran}
 \usepackage[final]{graphicx}
+\usepackage{cite}
+\usepackage{url}
 % uncomment the % away on next line to produce the final camera-ready version
 % and uncomment the \thispagestyle{empty} following \maketitle
 %\pagestyle{empty}
@@ -34,7 +40,6 @@
 \author{Philip M. Johnson \\
         Shaoxuan Zhang \\
         Pavel Senin \\
-        Randy Cox \\
 \em  Collaborative Software Development Laboratory \\
       Department of Information and Computer Sciences \\
       University of Hawai'i \\
@@ -44,13 +49,14 @@
 
 
 \maketitle
+\IEEEpeerreviewmaketitle
 %\thispagestyle{empty}
 
 \begin{abstract}  % 200 words
 Hackystat is an open source framework for automated collection and analysis
 of software engineering process and product data.  Hackystat has been under
 development since 2001, and has gone through eight major architectural
-revisions during that time.  In 2007, we began the latest architectural
+revisions during that time.  In 2007, we performed the latest architectural
 revision, whose primary goal was to reimplement Hackystat as a
 service-oriented architecture (SOA).  Hackystat Version 8 has now been in
 public release for over a year, and this paper reports on our experiences:
@@ -59,21 +65,63 @@ benefits we have experienced from that conversion, and the new challenges
 we now face as a result.
 \end{abstract}
 
+
 \section{Introduction}
 \label{sec:intro}
 
-This section will introduce Hackystat \cite{csdl2-06-06}. It will briefly
-review the purpose of the system, its history, and some of its applications
-and usages to date.  Also how Hackystat/SOA explores ``new frontiers'' in SOA techniques. 
+Software engineering measurement is a compelling practice in principle. By
+gathering data on the structure and quality of code, as well as the
+behaviors of the developers as they build it, one can imagine obtaining
+useful insight into the current state of development, better estimates of
+what lies in store for the future, and ideas on how to improve current
+practices and work artifacts.
 
+The reality is that software engineering measurements are difficult to
+obtain and difficult to interpret. To the extent that measurements are made
+manually, this incurs overhead on the development staff which might seem
+expendible when the schedule is tight.  Even when measurements are made,
+useful insight and action is often difficult to obtain.  Is test case coverage of 70\%
+good, bad, or someplace in between? Even if everyone agrees it is bad, what
+exactly should be done, if anything?
 
+Since 2001, we have been developing an open source framework for automated
+collection and analysis of software engineering process and product data
+called Hackystat (\url{http://www.hackystat.org/})
+\cite{csdl2-06-06,csdl2-02-07}.  The goal of Hackystat is to provide an
+extensible mechanism that can radically reduce the overhead associated with
+collection of a wide variety of software engineering data, along with a
+sophisticated toolkit of analyses that can facilitate useful
+interpretation.  Over the years, Hackystat has been used in a wide variety
+of application areas, including: classroom pedagogy \cite{csdl2-03-12},
+inference of test-driven design practice \cite{csdl2-06-13}, software
+engineering of high performance computing systems \cite{csdl2-06-08}, and a
+telemetry-based approach to software measurement trend definition and
+display \cite{csdl2-04-11}.
 
-The remainder of this paper is organized as follows.  Section \ref{sec:motivation} 
-discusses the shortcomings of our prior Hackystat architecture which led us to reimplement
-the system in a service-oriented manner.  Section \ref{sec:soa} introduces our current
-service-oriented architecture and its features.  Section \ref{sec:discussion} presents 
-our experiences, both positive and negative, with the SOA implementation.  Section \ref{sec:conclusion}
-summarizes our conclusions and outlines some of our future architectural directions. 
+The Hackystat Framework is intended to be generic: it strives to be neutral
+with respect to the platform, programming language and environment,
+development process, and application domain.  We have not found this to be
+a simple goal, and the architecture of Hackystat has undergone eight
+significant revisions since 2001 in response to new application demands
+upon the framework.
+
+One of the most significant architectural revisions of all is the most
+recent one, which occurred in 2007 when we migrated the Hackystat Framework
+from a traditional client-server web application architecture to a
+service-oriented architecture (SOA).  This required eight months of development
+and a rewrite of most of the system (which by that time had grown to
+approximately 350,000 lines of code).
+
+The SOA version of Hackystat has been in public release for approximately
+one year, and this has given us sufficient time to start to understand the
+changes, both positive and negative, that have resulted from this move.
+Section \ref{sec:motivation} discusses the shortcomings of our prior
+Hackystat architecture which led us to reimplement the system in a
+service-oriented manner.  Section \ref{sec:soa} introduces our current
+service-oriented architecture and its features.  Section
+\ref{sec:discussion} presents our experiences, both positive and negative,
+with the SOA implementation.  Section \ref{sec:conclusion} summarizes our
+conclusions and outlines some of our future architectural directions.
 
 \section{Motivation for the Hackystat SOA architecture}
 \label{sec:motivation}
