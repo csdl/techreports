@@ -3,7 +3,7 @@
 %% Author          : Philip Johnson
 %% Created On      : Mon Sep 23 11:52:28 2002
 %% Last Modified By: Philip Johnson
-%% Last Modified On: Tue Jan 27 07:24:11 2009
+%% Last Modified On: Tue Jan 27 13:23:50 2009
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   Copyright (C) 2009 Philip Johnson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -113,17 +113,16 @@ development and a rewrite of most of the system (which by that time had
 grown to approximately 350,000 lines of code).  
 
 There are several reasons why Hackystat is an interesting case study in
-service oriented architectures.  First, it is a mature, non-trivial, eight
-year old open source system whose entire source code is available and whose
-conversion to SOA was motivated by several concrete issues.  Second, it
-appears to be unique among software engineering data collection and
-analysis systems with repect to its architecture.  Other systems in this
-application domain (SixthSense Analytics, Programeter, Devcreek,
-SonarSource, ElectroCodeoGram, and EPM) have a client-server architecture.
-Finally, the Hackystat architecture implements a carefully designed
-combination of distributed computation, caching, and pre-fetching that
-provides flexibility and scalability without performance degradation for
-common analyses.
+service oriented architectures.  First, it is a mature and non-trivial
+system whose entire source code is available and whose conversion to SOA
+was motivated by concrete design issues.  Second, it appears to be unique
+among software engineering data collection and analysis systems with
+respect to its architecture.  Other systems similar to Hackystat (including
+SixthSense Analytics, Programeter, Devcreek, SonarSource, ElectroCodeoGram,
+and EPM) have a client-server architecture.  Finally, the Hackystat
+architecture implements a carefully designed combination of distributed
+computation, caching, and pre-fetching that provides flexibility and
+scalability without performance degradation for common analyses.
 
 The SOA version of Hackystat has been in public release for approximately
 one year, and this has given us sufficient time to start to understand the
@@ -140,7 +139,53 @@ conclusions and outlines some of our future architectural directions.
 \section{Motivation for the Hackystat SOA architecture}
 \label{sec:motivation}
 
-Presents the issues we have encountered over the years that led us to consider SOA.
+Hackystat architectural design decisions has always followed an ``agile''
+approach of implementing ``the simplest thing that could possibly work''.
+Since 2001, this has resulted in eight significant re-designs of the system
+as it outgrew the constraints imposed by the previous architecture.  Some
+might view this as a process-level bug, but we view it as a feature: we
+could never have predicted in advance which application areas Hackystat
+would be used in and the specific architectural pressures they would
+create.  As a result, Hackystat's current implementation as a SOA
+architecture is not based upon SOA being the current ``hot'' architecture,
+but rather as a response to specific issues we were facing with the
+previous version and the hope that SOA could address them.
+
+To understand the costs and benefits of Hackystat Version 8, it is
+important to know a little bit about Hackystat Version 7.  First, by
+Version 7, Hackystat had expanded to support software engineering data
+collection and analysis in a variety of very different domains, including
+Java-based classroom instruction, C-based high performance computing, Java
+and Visual Studio-based test driven design inference, build system analysis
+for NASA, a ``continuous'' approach to the Goal-Question-Metric paradigm,
+and others.  To support sharing of overlapping functionality between these
+domains, the 350 KLOC in the system were broken down into approximately 70
+different modules.  While it was possible to build a release of Hackystat
+containing all of these modules (and we did so for testing purposes), we
+found that any particular domain of application was much better served by
+supporting Hackystat ``configurations'', or builds of the system containing
+a subset of all possible modules.
+
+Figure \ref{fig:configurations} illustrates Hackystat modules, subsystems,
+and configurations in Version 7.  It shows samples of modules (such as
+``Standard'', ``HPC Experiment'', etc.) from two configurations: HPC and
+Classroom.  Although only 10 modules are shown in the figure due to space
+limitations, both configurations contained over 30 modules in reality.
+Modules are assigned to one of four ``subsystems'' depending upon their
+functionality: the ``Sensor'' subsystem contains modules providing software
+``plugins'' to various tools; the ``SDT'' subsystem contains
+implementations of structured sensor data called``sensor data types'', the
+``Core'' subsystem provides basic client and server-side infrastructure,
+and the ``App'' subsystem contains domain-specific analyses and user
+interface facilities.
+
+\begin{figure*}[ht]
+  \center
+  \includegraphics[width=0.7\textwidth]{configurations5.eps}
+  \caption{Two example Version 7 configurations}
+  \label{fig:configurations}
+\end{figure*} 
+
 
 \subsection{Subsystem configuration binding time}
 
