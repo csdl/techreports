@@ -3,7 +3,7 @@
 %% Author          : Philip Johnson
 %% Created On      : Mon Sep 23 11:52:28 2002
 %% Last Modified By: Philip Johnson
-%% Last Modified On: Tue Jan 27 13:23:50 2009
+%% Last Modified On: Wed Jan 28 15:49:47 2009
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   Copyright (C) 2009 Philip Johnson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -108,21 +108,24 @@ upon the framework.
 One of the most significant architectural revisions of all is the most
 recent one, which occurred in 2007 when we migrated the Hackystat Framework
 from a traditional client-server web application architecture to a
-service-oriented architecture (SOA).  This required eight months of
-development and a rewrite of most of the system (which by that time had
-grown to approximately 350,000 lines of code).  
+service-oriented architecture (SOA) using REST design principles.  This
+required eight months of development and a rewrite of most of the system
+(which by that time had grown to approximately 350,000 lines of code).
 
-There are several reasons why Hackystat is an interesting case study in
-service oriented architectures.  First, it is a mature and non-trivial
-system whose entire source code is available and whose conversion to SOA
-was motivated by concrete design issues.  Second, it appears to be unique
-among software engineering data collection and analysis systems with
-respect to its architecture.  Other systems similar to Hackystat (including
-SixthSense Analytics, Programeter, Devcreek, SonarSource, ElectroCodeoGram,
-and EPM) have a client-server architecture.  Finally, the Hackystat
-architecture implements a carefully designed combination of distributed
-computation, caching, and pre-fetching that provides flexibility and
-scalability without performance degradation for common analyses.
+There are several reasons why we believe Hackystat is an interesting
+example of a service oriented architecture.  First, it is a mature and
+non-trivial system whose entire source code history is available and whose
+conversion to SOA was motivated by concrete design issues.  Second, it
+appears to be the first and only SOA-based software engineering data
+collection and analysis system.  Other such systems (including SixthSense
+Analytics, Programeter, Devcreek, SonarSource, ElectroCodeoGram, and EPM)
+all have a client-server architecture.  Finally, Hackystat implements a
+carefully designed combination of distributed computation, caching, and
+pre-fetching that attempts to provide the flexibility and scalability of
+SOA without sacrificing the performance of a simpler client-server
+architecture.
+
+
 
 The SOA version of Hackystat has been in public release for approximately
 one year, and this has given us sufficient time to start to understand the
@@ -152,8 +155,8 @@ but rather as a response to specific issues we were facing with the
 previous version and the hope that SOA could address them.
 
 To understand the costs and benefits of Hackystat Version 8, it is
-important to know a little bit about Hackystat Version 7.  First, by
-Version 7, Hackystat had expanded to support software engineering data
+important to know a little bit about its predecessor, Version 7.  First, by
+the time of Version 7, Hackystat had grown to support software engineering data
 collection and analysis in a variety of very different domains, including
 Java-based classroom instruction, C-based high performance computing, Java
 and Visual Studio-based test driven design inference, build system analysis
@@ -170,14 +173,8 @@ Figure \ref{fig:configurations} illustrates Hackystat modules, subsystems,
 and configurations in Version 7.  It shows samples of modules (such as
 ``Standard'', ``HPC Experiment'', etc.) from two configurations: HPC and
 Classroom.  Although only 10 modules are shown in the figure due to space
-limitations, both configurations contained over 30 modules in reality.
-Modules are assigned to one of four ``subsystems'' depending upon their
-functionality: the ``Sensor'' subsystem contains modules providing software
-``plugins'' to various tools; the ``SDT'' subsystem contains
-implementations of structured sensor data called``sensor data types'', the
-``Core'' subsystem provides basic client and server-side infrastructure,
-and the ``App'' subsystem contains domain-specific analyses and user
-interface facilities.
+limitations, typical Hackystat 7 configurations contained from 30 to 60
+modules.
 
 \begin{figure*}[ht]
   \center
@@ -187,48 +184,150 @@ interface facilities.
 \end{figure*} 
 
 
-\subsection{Subsystem configuration binding time}
+Modules were assigned to one of four ``subsystems'' depending upon their
+functionality: the ``Sensor'' subsystem contains modules providing software
+``plugins'' to various tools; the ``SDT'' subsystem contains
+implementations of structured sensor data called``sensor data types'', the
+``Core'' subsystem provides basic client and server-side infrastructure,
+and the ``App'' subsystem contains domain-specific analyses and user
+interface facilities.
 
-Hackystat consists of a number of subsystems that can be flexibly composed to support different application requirements.  As the number of application areas supported by Hackystat grew, providing a single ``kitchen sink'' version became unwieldy.  We thus began building different configurations of the system with differing combinations of components that would specialize Hackystat to different application areas (classroom use, high performance computing experimentation, TDD, etc.) 
 
-This configuration had to occur at system build time, which produced a number of problems.
+Each module in Hackystat was managed as a separate Subversion project, but
+most could not be compiled individually. Instead, the build process would
+take in a description of a Hackystat configuration as a list of modules,
+and then compile those modules together into a functional client-server
+application and run the set of tests associated with the included modules.
+Each Hackystat module was required to indicate the other modules that it
+depended upon so that the build process could sequentialize and resolve
+dependencies.  If, during the build of a configuration, the system
+encountered a module with a dependency that was not included in the
+configuration list, an error was signalled.
+
+Let's now turn to some of the problems we encountered with this approach to
+modularity and flexibility within the confines of a client-server
+architecture.
+
+\subsection{System configuration binding time}
+
+In the Version 7 architecture, we defined a system configuration as a list
+of modules and then invoked the build system to produce a binary containing
+those sets of modules.  This approach was the most straightforward way to 
+build a single client-server system with a subset of all possible modules while 
+still enabling testing and dependency resolution.
+
+It did mean, however, that any user wanting to create a new configuration
+adapted to their specialized needs would have to learn how to build the
+system from sources. In Version 7, one could not take an existing binary
+release and augment its functionality.  
 
 \subsection{Complexity of build}
 
-Once Hackystat outgrew a single subsystem configuration, the complexity of the build process increased dramatically. We needed to implement a custom build system on top of Ant with its own dependency resolution mechanism in order to support a context-sensitive build process that would produce a single binary.  
+We discovered that our need for a configurable system building process
+exceeded the standard capabilities of Ant, the canonical Java build system
+tool.  To resolve this, we created a custom Hackystat build system
+``wrapper'' around Ant.  This wrapper would take as input an XML
+description of a Hackystat module and its dependencies, and generate a
+number of Ant scripts that would correctly order the sequence of targets
+for a particular configuration.
 
-This custom build process dramatically increased the barrier to entry for new Hackystat developers, as they now had to learn a custom build system in order to add their own extensions to the framework.
+While the build system wrapper worked quite well, and actually automated
+the generation of many thousands of lines of Ant build scripts, the problem
+was that new Hackystat developers now needed to learn a custom and
+unfamiliar build system approach in order to build Hackystat.  Furthermore,
+not only developers of new Hackystat modules needed to learn this build
+system, but even those who simply wanted to create a custom configuration
+from existing modules needed to learn this system.
+
+\begin{figure*}[ht]
+  \center
+  \includegraphics[width=0.7\textwidth]{v7commands.eps}
+  \caption{Two example Version 7 commands illustrating the common look and feel}
+  \label{fig:commands}
+\end{figure*} 
 
 \subsection{Lack of access to ``intermediate'' analyses}
 
-In the early stages of Hackystat development, sensor data was sent to a web server, which performed relatively simple analyses over that data before presenting that data to the user in a web page.   As the complexity of our analyses increased, we found it useful to brek them down into ``pipelines''.  For example, to obtain telemetry (trend) data, the raw sensor data would first be analyzed into intermediate objects called ``DailyProjectData'', which would then be composed in various ways by the telemetry mechanism to produce the trends of interest.  The Test-Driven Design analysis would first organize the raw sensor data into ``episodes'' which would then be classified as TDD conformant or not. 
+In the early stages of Hackystat development, sensor data was sent to a web
+server, which performed relatively simple analyses over that data before
+presenting that data to the user in a web page.  As the complexity of our
+analyses increased, we found it useful to decompose some of them into
+pipelines of smaller analyses.  For example, to obtain telemetry (trend)
+data, the raw sensor data would first be analyzed into intermediate objects
+called ``DailyProjectData'', which would then be input into the Telemetry
+mechanism and further refined to produce the trends of interest.  As a
+second example, the Test-Driven Design analysis would first organize the
+raw sensor data into ``episodes'' which would then be input into a
+rule-based system for classification with respect to TDD compliance.
 
-The resulting problem is that while analyses were decomposed into pipelines, access was still monolithic in terms of the web server interface. It was difficult to get access to these intermediate analyses, which were often useful and interesting in their own right. 
+The resulting problem was that though the intermediate results from these
+pipeline analyses were often interesting in their own right, they were not
+easily accessed outside of the server-side processing mechanisms.
 
-\subsection{Server-side implementation language specificity}
+\subsection{Server-side and build language specificity}
 
-The Hackystat framework is designed to be generic within the domain of collection and analysis of software engineering process and product data.  It should run on all platforms, support sensors for arbitrary software development tools and languages, and support analyses for a wide variety of process and product measurement types. 
+The Hackystat framework is designed to be generic within the domain of
+collection and analysis of software engineering process and product data.
+It should run on all platforms, support sensors for arbitrary software
+development tools and languages, and support analyses for a wide variety of
+process and product measurement types.
 
-The same language ``neutrality'' did not hold true when it came to the framework itself.  Client-side sensors could (and were) written in a variety of languages: Java, C\#, Emacs Lisp, etc. The server, however, was a Java web application, and all analyses and user interfaces were required to be written in Java and conform to the Hackystat web interface structure.  
+The same language ``neutrality'' did not hold true when it came to the
+framework itself.  Client-side sensors could (and were) written in a
+variety of languages: Java, C\#, Emacs Lisp, etc. The server, however, was
+a Java web application, and all analyses and user interfaces were required
+to be written in Java and conform to the Hackystat web interface structure.
+
+Similarly, the build system for Hackystat Version 7 was Ant, and the only
+supported container for the server web application was Tomcat.
+
+
 
 \subsection{UI rigidity}
 
-To simplify UI development, the system provided a high-level API for adding
-new commands to the Hackystat web application interface.  This reduced the
-amount of code required for the development of any individual command, but
-at two costs: developers now had to learn a Hackystat-specific UI API, and
-(most importantly) the UI to Hackystat was ``frozen'' in a single design
-and there was no practical way to experiment with alternative user
+To simplify UI development, Version 7 provided a high-level API for adding
+new commands to the Hackystat web application interface which provided a
+very standard look and feel.  Figure \ref{fig:v7commands} illustrates two
+commands from Version 7 and their standardized look-and-feel.
+
+When first implemented, the user interface API saved time.  Though there
+was a learning curve associated with it, the API enabled the set of modules
+in a given configuration could contribute its own set of commands to the
+user interface.  It also guaranteed that all commands would exhibit the
+same user interface. Finally, we implemented an API that made it simple to
+programmatically invoke commands in the user interface from test code.
+
+By the time of Version 8, we began to feel that the user interface standard
+was also a straightjacket: Hackystat's architecture was effectively
+``frozen'' with a single user interface style and both the build system and
+test system (as well as actual UI code) would need to be changed
+significantly in order to support experimentation with alternative user
 interfaces.
 
 \subsection{Cache thrash}
 
-In the Telemetry application, it was not uncommon to periodically request an analysis that might display 30 or 40 trend lines over the last several months, which would potentially involve the processing of hundreds of thousands of raw sensor data instances. However, many of those trend lines might require access to the raw same sensor data, and many of the trend line components might involve computations that were performed previously the last time the analysis was requested.  
+In the Telemetry application, it was not uncommon to periodically request
+an analysis that might display 30 or 40 trend lines over the last several
+months. Such a request could potentially involve the processing of hundreds of
+thousands of raw sensor data instances. However, many of those trend lines
+might require access to the raw same sensor data, and many of the trend
+line components might involve computations that were performed previously
+the last time this analysis was requested.
 
-We quickly discovered that the naive implementation of telemetry could easily take several hours to perform an analysis, but with the implementation of caching, we could reduce response time to seconds or minutes.  
+We quickly discovered that a naive implementation of telemetry could
+easily take several hours to perform an analysis, but with the
+implementation of caching, we could reduce its response time to seconds or
+minutes.
 
-Unfortunately, caching created its own problems. The ``pipeline'' nature of analyses like Telemetry meant that we needed to introduce caches at multiple levels.  The sheer size of the Hackystat sensor data repository meant that we could not simply cache everything; we needed to limit the sizes of the various caches.  As the number of caches increased, we started to see evidence of ``cache thrash'': two caches would appear to be discarding objects just as another cache would be requesting them. We found this to be an extremely difficult performance issue to debug.
-
+Unfortunately, caching created its own problems. The ``pipeline'' nature of
+analyses like Telemetry meant that we needed to introduce caches at
+multiple levels.  The millions of sensor data instances in a Hackystat
+sensor data repository meant that we could not simply cache everything; we
+needed to limit the sizes of the various caches.  As the number of caches
+for different types of intermediate objects increased, we started to see
+evidence of ``cache thrash'': one cache appeared to be discarding objects
+just as another cache would be requesting them. We found this to be an
+extremely difficult performance issue to debug.
 
 \section{Hackystat as SOA}
 \label{sec:soa}
