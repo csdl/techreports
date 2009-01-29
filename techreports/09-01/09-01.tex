@@ -58,7 +58,7 @@ effectiveness of TDD in both laboratory and real world settings.
 
 This paper describes the Zorro system, its operational definition of TDD,
 the analyses made possible by Zorro, and three empirical evaluations of the
-system.  Our research shows that is possible to define an operational
+system.  Our research shows that it is possible to define an operational
 definition of TDD that is amenable to automated recognition, and
 illustrates the architectural and design issues that must be addressed in
 order to do so.  Zorro has implications not only for the practice of TDD,
@@ -68,7 +68,7 @@ Analysis.
 
 
 
-\keywords{Test Driven Design \and Hackystat }
+\keywords{Test Driven Development \and Hackystat \and Process Measurement}
 \end{abstract}
 
 \section{Introduction}
@@ -84,8 +84,10 @@ introducing TDD at Microsoft decreased defect rates significantly in two
 projects, and \cite{Maximilien:03} transitioned an IBM development team to
 TDD with a 50\% improvement in quality. But other results are negative:
 \cite{Muller:02} found that TDD resulted in less reliable software than the
-control group and \cite{Erdogmus:05} found that TDD software was of no
-higher quality than the control group.
+control group. Yet other results vary regarding the quality and productivity benefits: 
+for exmaple, \cite{Erdogmus:05} found that TDD software on average was of no
+higher quality than the control group although some productivity advantage with TDD
+was observed.
 
 Why might the research results on TDD be so mixed?  We believe that part of
 the reason stems from two methodological issues that impede both progress
@@ -104,21 +106,38 @@ verify that subjects who are supposed to be using TDD practices are,
 indeed, using them.  The lack of control over process compliance in these
 experiments means that differences in outcomes may be due, at least in
 part, to variance in understanding what it means to do TDD, as opposed to
-differences between the control and experimental groups.
+differences between the control and experimental groups. If compliance can be measured,
+meaningful reference points that represent acceptable or idealized patterns
+can be defined, and deviations, or distance,  from these patterns can be correlated
+with productivity and quality outcomes. \cite{Erdogmus:05} stress the importance of gauging process
+compliance in empirical studies of TDD. 
+
+From a pedagogical point of view, emerging empirical evidence also supports the hypothesis that
+tool guidance is helpful while learning or mastering TDD \cite{Mishali:08}. 
+Thus process compliance information, abstracted at the right level and presented unobtrusively, 
+may provide useful feedback to developers to allow them better leverage the benefits of TDD. 
 
 To address these problems, we believe that the software research and
 development community needs to agree upon at least one (if not more)
-standard, operational definitions of TDD. Furthermore, these definition(s)
-must allow for a practical way to assess compliance in both laboratory and
-real-world settings.
+standard, operational definitions of TDD. Furthermore, these definitions
+ allow for a practical way to assess compliance in both laboratory and
+real-world settings. However the definitions must be robust enough to allow for a wide variety of behaviors, rather 
+than strive to enforce a narrowly defined strict process. 
 
 In this paper, we present Zorro, a system for automated recognition of TDD
 practices.  In essence, Zorro gathers a stream of low-level developer
 behaviors (such as invoking a unit test, editing production code, invoking
 a refactoring operation) while programming in an IDE, partitions this event
-stream into a sequence of development ``episodes'', then applies a
-rule-based system to determine whether or not each episode constitutes an
-instance of a TDD practice according to the operational definition encoded in the rules.
+stream into a sequence of development ``episodes''.  Then it applies a
+rule-based system to determine the type of an episode from a set representing a wide variety of behaviors, 
+whether or not the episode constitutes an
+instance of a TDD practice according to the operational definitions encoded in the rules, and finally the extent of compliance with
+these definitions through adherence metrics and summary charts. 
+The need for 
+robustness in accomodating variant behaviors is demonstrated empirically in a prior study by \citep{Mishali:08} 
+ evaluating a tool for guiding TDD activities. In that study, many participants express disagreement with the
+behaviors definitions that are too restrictive or narrow. Zorro overcomes this hurdle by providing a fine-grained categorization of possible 
+behaviors and providing adherence metrics that represent a continuum rather than a dichotomy.
 
 Zorro illustrates one approach to addressing the issues mentioned above
 that hinder the research and practice of TDD today.  Automatic collection
@@ -126,9 +145,10 @@ and analysis of data makes Zorro practical for use in both laboratory and
 real-world settings: once installed, there is no overhead on the developer
 with respect to data collection.  Second, Zorro can be used to develop a
 variety of operational definitions of TDD. A Zorro ``TDD definition''
-consists of the set of developer behaviors that must be collected, the
+consists of the set of developer behaviors that must be recorded, the
 manner in which this timestamped stream of events are partitioned into
-episodes, and the rules used to determine if an episode is TDD.  By
+episodes, and the rules used to classify an episode according to TDD terminology and 
+determine whether the episode is compliant with idealized TDD patterns.  By
 providing a way to define an operational definition of TDD, Zorro addresses
 the compliance problem by enabling researchers and practitioners to
 precisely characterize the extent to which the given definition of TDD was
@@ -139,8 +159,8 @@ to characterizing the use of TDD by developers: rather than a binary,
 based on percentages, such as ``Developer A used TDD 73\% of the time''.
 
 Zorro has undergone initial empirical evaluation through classroom and
-industry-based case studies.  These results indicate that Zorro is a viable
-approach to automated TDD recognition.
+industry-based case studies.  The results from classroom studies indicate that Zorro is a viable
+approach to automated TDD recognition. The industrial case study was inconclusive. 
 
 This paper is organized as follows.  Section \ref{sec:RelatedWork} presents
 work related to Zorro.  Section \ref{sec:zorro} presents the architecture and implementation of Zorro with examples. 
@@ -173,12 +193,13 @@ An equally simple but more process-oriented description is the the
 Important characteristics of TDD practice, according to \citep{Beck:01,Beck:03},  include the following.
 
 {\em Write the test first.}
-This is the key characteristic of TDD. If you are using 
-TDD, you should ``never write a line of functional 
-code without a broken test case''
+This is the key characteristic of TDD. Some developers using TDD advocate that if you are using 
+TDD, you should ``never write a line of production 
+code without a broken test case.'' 
+Although adherence to this extent is not always practiced, the principle captures the essence of TDD. 
 
 {\em Short iterations.}
-Quickly adding functional code to make test pass is important
+Quickly adding production code to make test pass is important
 to TDD. An iteration should last a few seconds to 
 several minutes only. If hours of work are needed to make a 
 test pass, then this is a sign that the developer should have divided the programming 
@@ -193,7 +214,7 @@ developers the ``courage'' to refactor the code
 {\em Rapid feedback.}
 Unit testing is usually supported by the XUnit
 framework that is now available for most languages.
-After new functional code is added, developers should invoke
+After new production code is added, developers should invoke
 the unit tests to test it right away. This feedback should be available
 within seconds or minutes. 
 
@@ -220,19 +241,26 @@ times a day.
 
 TDD advocates claim that adherence to this approach can simultaneously
 improve both quality and productivity \citep{Beck:01,Janzen:05}.  Because
-software quality is hard to measure, TDD practitioners and researchers
-often use code coverage as a proxy for software quality. The code developed
-in TDD should be 100\% covered since no functional code is created without
-a corresponding unit test.
+software quality is sometimes hard to quantify and not universal, TDD practitioners and researchers
+often use code coverage as a precursor for software quality. The code developed
+in TDD should have very high coverage since no production code is created without
+a corresponding unit test. Some advocates advocate 100% coverage, however this level may be hard 
+or impossible to achieve in practice depending on the coverage criterion (method coverage is easy 
+to achieve at 100%, but perfect branch and path coverage are much more elusive). 
 
 The claimed rationale for why TDD improves productivity is a bit more
-complicated. Functional code and test code are both products. Testing is
-part of the design process, and it does not take a long time to write a
-small test. If developers need to write same amount of test code, TDD
+complicated and controversial. Production code and test code are both software. Writing tests 
+in advance is
+part of the design process, and it often does not take a long time to write a
+small test once certain low-level design decisions are made. 
+If developers need to write same amount of test code, TDD
 should save development time because less time is spent on tests than in
-the traditional test last or ad-hoc development methods. In addition, TDD
+the traditional test last or ad-hoc development methods. Tests also provide visibility into progress 
+and small tests written incrementally encourage finer task decomposition and better task focus. Regressing 
+tests frequently allows production errors to be discovered early, thereby reducing costly snowball 
+effects. In addition, TDD
 users claim that the method reduces the overall amount of time spent on
-debugging, with a resulting increase in overall
+debugging and rework and bug fixes following operational failure, with a resulting increase in overall long-term
 productivity \citep{Williams:03}.
 
 \subsection{Empirical evaluation of TDD}
@@ -240,12 +268,12 @@ productivity \citep{Williams:03}.
 
 Much research work has been conducted on studying important outcomes of TDD
 such as software quality and developer productivity in recent years. In
-addition to anecdotal experience reports
-\citep{George:04,Maximilien:03,Williams:03,Kaufmann:03,Edwards:04,Bhat:06},
-researchers have run controlled experiments
-\citep{Muller:02,Matjaz:03,Erdogmus:05} to compare TDD against other
+addition to anecdotal experience reports and case studies
+\citep{George:04,Maximilien:03,Williams:03,Kaufmann:03,Edwards:04,Bhat:06,Damm:06,Sanchez:07,Janzen:08},
+researchers have run controlled and quasi-controlled experiments
+\citep{Muller:02,Matjaz:03,Erdogmus:05,Janzen:08,Madeyski:07,Siniaalto:07,Gupta:07} to compare TDD against other
 development methods such as test last and ad hoc. We categorize the
-research as ``academic'' or ``industrial'' depending upon whether the test
+research as ``academic'' or ``industrial'' depending upon whether the study
 subjects are students or professional developers.
 
 \subsubsection{Empirical Evaluation in Academic Settings}
@@ -269,21 +297,49 @@ on implications of TDD in an advanced project-oriented software engineering
 course. They also reported that TDD helped to improve software quality and
 programmers' confidence.
 
-\cite{Matjaz:03} designed a controlled experiment to compare TDD with
+\cite{Matjaz:03} designed a controlled experiment involving 38 students to compare TDD with
 Iterative Test-Last approach (ITL), which is a slightly modified TDD
 development process in the order of ``code-test-refactor''.  This study
-found that TDD is somewhat different from ITL but the difference is very
-small.
+found no notable difference between the two approaches.
 
-A more recent study on the effectiveness of TDD 
+
 \citep{Erdogmus:05} used the well-defined test-last
-and TDD approaches as in \cite{Matjaz:03}. This study
+and TDD approaches as in \cite{Matjaz:03} to study the effectiveness of TDD through a controlled experiment. 
+This study
 concluded that TDD programmers wrote more tests per unit of programming
-effort. More test code tends to increase software quality. Thus, TDD
-appears to improve the quality of software but TDD group in the study did
-not achieve better quality on average than test-last group.
+effort than test-last programmers. They found that test code tends to increase 
+minimum software quality, but there was no 
+difference between the average quality of the programs produced by the TDD 
+and test-last groups. According to this study the TDD group achieved overall better productivity, although 
+the difference was not statistically significant.
+
+\citep{Madeyski:07} conducted a single-subject experiment in which the subject used successive TDD and traditional 
+development in a Java/AspectJ project to develop a web-based conference management system.  The subject spent
+112 hours to develop the system. Subject's productivity initially improved 87 to 177\% with TDD, but when TDD was 
+withdrawn, productivity did not regress to its previous levels. 
+ 
+
+\citep{Siniaalto:07} conducted an experiment with 13 students. The students 
+had prior development experience in the industry. They were asked to develop a small mobicle stock market 
+browser application in Java. The researchers evaluated the effect of TDD based on test coverage and design
+quality. Test coverage was improved with TDD. As for design quality, cohesion appeared 
+to improve, but the result was weak and the effect on coupling was inconclusive.
+
+The experiment by \citep{Gupta:07} involved 22 students.
+The subjects developed toy registration and ATM applications using Java, spending 20-55 hours to complete
+the task. The researchers observed that overall productivity was improved with TDD, but quality results 
+were inconclusive.
+
+\citep{Janzen:08}'s two experiments with graduate and undergraduate students yielded consistent results on software quality.
+One experiment used two teams of three students with 0-5 years of prior development experience 
+and the other used a single team of three novices. The subjects developed programs of 800 to 1300
+lines of Java code. TDD improved test coverage and resulted in programs with smaller modules, methods, and methods per class. The 
+complexity of the programs as per two measures were also higher, but more dramatically so with undergraduate students. Coupling
+and cohesion results were inconclusive.
+
 
 \subsubsection{Empirical Evaluation in Industrial Settings}
+
 Several attempts have been made by researchers to study software quality
 and developer productivity improvements of TDD in industrial settings.  
 
@@ -326,7 +382,24 @@ average. Reportedly, developers in project A spent 35\% more development
 time, and developers in project B spent 15\% more development time, than
 the developers in non-TDD projects spent.
 
-\subsection{A comparative analysis of the studies}
+\citep{Damm:06} conducted a longitudinal case studies lasting up to 1.5 years with 100 professionals at Ericsson. The professionals
+developed components for mobile applications using C++ and Java. They observed that TDD reduced total project costs by 5-6\%, fault slip-through by 5-30\%, and 
+avoidable fault costs by 55\%.  
+
+\citep{Sanchez:07}'s longer, single case study at IBM lasted 5 years and involved 9-17 developers working on a medium-size device
+driver with legacy components. Over this period of time, the researchers noted a 19\% increase in development effort with TDD in return 
+for a 40\% increase in internal defect rates. 
+
+\citep{Janzen:08}'s suite of three industrial experiments and one case study involving overlapping teams and individuals of three
+subjects yielded moderately favorable results for TDD for test coverage and some size metrics, 
+but were not consistent for complexity, coupling and cohesion metrics. All of the studies involved development of real-world J2EE applications
+ranging from 800 to 50,000 lines of code. 
+Test coverage was improved with TDD in all studies but one. TDD also consistently resulted in smaller modules and methods per class (the latter except
+in one study), but not in 
+smaller methods.
+
+
+\subsection{A Comparative Analysis of the Studies}
 
 The research findings regarding the effect of TDD practices on software quality 
 and developer productivity are mixed,  as shown in 
@@ -338,10 +411,15 @@ times after adopting TDD. In comparison, the TDD group in \cite{Muller:02}
 yielded less reliable programs than the control group. 
 
 \begin{table}[ht]
-\caption{Controlled Empirical Experiments on TDD}
+\caption{Controlled and Quasi-Controlled Empirical Experiments on TDD}
 \begin{tabular}{|l|l|l|p{1.0in}|p{1.0in}|} \hline 
 Investigator      & A/I & Subjs.	& Software Quality	& Developer Productivity \\ \hline
-\cite{George:04}  & I & 24	& TDD passed 18\% more tests & 16\% more time \\ \hline
+\cite{Janzen:08}  & I & teams of 1-3 & & TDD had better test coverage (except in one team) and smaller modules   & N/A \\ \hline
+\cite{Janzen:08}  & A & 1-2 teams of 3 & & TDD had better test coverage, smaller methods and modules, and less complexity \% &  N/A \\ \hline
+\cite{Madeyski:07}  & A & 1	& N/A & TDD had 87-177\% better productivity initially  \\ \hline
+\cite{Siniaalto:07}  & A & 13	& TDD had 87-177\% better quality initially & N/A \\ \hline
+\cite{Gupta:07}  & A & 22	& Inconclusive & Improved overall productivity\\ \hline
+\cite{George:04}  & I & 24	& TDD improved test coverage, possibly reduced cohesion & N/A \\ \hline
 \cite{Geras:04}   & I & 14	& TDD had better quality & No impact \\ \hline 
 \cite{Kaufmann:03}& A &  8 & N/A	    & 50\% improvement \\ \hline
 \cite{Erdogmus:05}& A & 35	& No change	  & Improved productivity \\ \hline
@@ -355,6 +433,9 @@ Investigator      & A/I & Subjs.	& Software Quality	& Developer Productivity \\ 
 \caption{Empirical Case Studies on TDD}
 \begin{tabular}{|l|l|l|p{1.0in}|p{1.0in}|} \hline 
 Investigator        & A/I      & Subjs.	& Software Quality	& Developer Productivity \\ \hline
+\cite{Janzen:08}  & I & team of 3 & & TDD had better test coverage and smaller methods and modules; & N/A \\ \hline
+\cite{Sanchez:07}& I &  9-17	& 30\% reduction in defect density & Increased effort 19\% \\ \hline
+\cite{Damm:06}& I &  100	& 5-30\% reduction in fault slip-through, 55\% reduction in fault costs & Project cost increased by 5-6\% \\ \hline
 \cite{Maximilien:03}& I &  9	& 50\% reduction in defect density	& Minimal impact \\ \hline
 \cite{Williams:03}  & I & 9	& 40\% reduction in defect density	& No change \\ \hline
 \cite{Bhat:06}      & A & 11	& 2-4 times reduction in defect density	& 35\% and 15\% more time \\  \hline
@@ -419,6 +500,7 @@ prototype implementation of TestFirstGauge in VBA using an Excel
 spreadsheet, Zorro is integrated into the Hackystat system for automation,
 reuse, and flexibility using rule-based system \citep{Friedman-Hill:03}.
 
+
 Similarly, \cite{Wege:04} also focused on automated support of TDD process
 assessment, but his work has a limitation in that it uses the CVS history
 of code. Developers typically do not commit on-going project data at the
@@ -427,6 +509,30 @@ technique problematic for the purpose of TDD inference. At least for the
 operational definition of TDD developed in this research, collecting rapid
 low-level development activities is crucial to correctly identifying its
 occurrence.
+
+In their evaluation of TDD vs. test-last development, \cite{Madeyski:07} use a 
+plugin for Eclipse 
+\cite{ActivitySensor} in order to assess the subjects' compliance with the assigned development processes. 
+Their plug-in is similar to TestFirstGauge and Zorro in that it records low-level developer activity data from the IDE, 
+and caches the data in the local project directory. Then it makes automated commits to the project’s repository. 
+For each commit, AS offers basic reports to developers as well as to the organizations
+ for assessing activities involved in each commit. The plugin is said to
+ achieve Zorro's and TestFirstGauge's reporting capabilities locally, without connecting 
+to a HackyStat server. Further details about this tool is  unavailable.
+
+TDDGuide by \cite{Mishali:08} 
+is another process compliance tool that is integrated into the Eclipse IDE.
+The main motivation behind TDDGuide is not assessment, but guidance, particularly when learning TDD. 
+Unlike Zorro and TestFirstGauge, TDDGuide operates in real time to instantly detect and report compliant and non-compliant
+patterns to respectively encourage and discourage the developer. It also has logging capability for off-line analysis.
+Similar to Zorro, TDDGuide is rule-based, however it
+operates at a higher level of granularity than Zorro, hence its classification scheme for identifying patterns is coarser and less
+diverse than Zorro's. The tool reports any 
+deviations from pre-defined TDD patterns to the developer and proposes activities for conformance. Most users who used the tool
+to drive TDD activities in two experiments reported that TDDGuide helped them adhere to TDD behaviors, however about half of those
+of users found the tool to be intrusive. TDDGuide, unlike Zorro and TestFirstGauge, does not produce adherence metrics and 
+summary charts for visualizing developer activities.
+
 
 \section{Zorro}
 \label{sec:zorro}
@@ -558,7 +664,8 @@ complexities of real world software development behaviors.
 \subsection{Episode Classification}
 
 The heart of Zorro is its episode classification algorithm, implemented as
-a set of JESS rules.  Figure \ref{fig:Categories} summarizes the effect of these rules, which is to classify any episode as belonging to one of 22 episode types. 
+a set of JESS rules.  Figure \ref{fig:Categories} summarizes the effect of these rules, 
+which is to classify any episode as belonging to one of 22 episode types. 
 
 \begin{figure*}[th]
   \center
