@@ -3,7 +3,7 @@
 %% Author          : Philip Johnson
 %% Created On      : Mon Sep 23 11:52:28 2002
 %% Last Modified By: Philip Johnson
-%% Last Modified On: Wed Jan 28 15:49:47 2009
+%% Last Modified On: Thu Jan 29 17:16:33 2009
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   Copyright (C) 2009 Philip Johnson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -142,6 +142,14 @@ conclusions and outlines some of our future architectural directions.
 \section{Motivation for the Hackystat SOA architecture}
 \label{sec:motivation}
 
+
+\begin{figure*}[ht]
+  \center
+  \includegraphics[width=0.7\textwidth]{configurations5.eps}
+  \caption{Two example Version 7 configurations}
+  \label{fig:configurations}
+\end{figure*} 
+
 Hackystat architectural design decisions has always followed an ``agile''
 approach of implementing ``the simplest thing that could possibly work''.
 Since 2001, this has resulted in eight significant re-designs of the system
@@ -175,13 +183,6 @@ and configurations in Version 7.  It shows samples of modules (such as
 Classroom.  Although only 10 modules are shown in the figure due to space
 limitations, typical Hackystat 7 configurations contained from 30 to 60
 modules.
-
-\begin{figure*}[ht]
-  \center
-  \includegraphics[width=0.7\textwidth]{configurations5.eps}
-  \caption{Two example Version 7 configurations}
-  \label{fig:configurations}
-\end{figure*} 
 
 
 Modules were assigned to one of four ``subsystems'' depending upon their
@@ -239,12 +240,6 @@ not only developers of new Hackystat modules needed to learn this build
 system, but even those who simply wanted to create a custom configuration
 from existing modules needed to learn this system.
 
-\begin{figure*}[ht]
-  \center
-  \includegraphics[width=0.7\textwidth]{v7commands.eps}
-  \caption{Two example Version 7 commands illustrating the common look and feel}
-  \label{fig:commands}
-\end{figure*} 
 
 \subsection{Lack of access to ``intermediate'' analyses}
 
@@ -260,9 +255,22 @@ second example, the Test-Driven Design analysis would first organize the
 raw sensor data into ``episodes'' which would then be input into a
 rule-based system for classification with respect to TDD compliance.
 
-The resulting problem was that though the intermediate results from these
-pipeline analyses were often interesting in their own right, they were not
-easily accessed outside of the server-side processing mechanisms.
+Figure \ref{fig:subsystems} illustrates this aspect of the internal structure
+of the server.  Raw sensor data ``percolates up'' through a series of analyses
+to form increasingly higher level abstractions.  Some intermediate analyses 
+(such as the SensorData analysis) could be used by multiple higher level analyses.
+
+\begin{figure}[ht]
+  \center
+  \includegraphics{subsystems.eps}
+  \caption{Version 7 subsystems and pipelines}
+  \label{fig:subsystems}
+\end{figure} 
+
+One resulting problem with this pipeline is that though the intermediate
+results were often interesting in their own right, they were not easily
+accessed outside of the server-side processing mechanisms. Another problem 
+resulted from caching, as discussed below in Section \ref{sec:caching}.
 
 \subsection{Server-side and build language specificity}
 
@@ -281,14 +289,19 @@ to be written in Java and conform to the Hackystat web interface structure.
 Similarly, the build system for Hackystat Version 7 was Ant, and the only
 supported container for the server web application was Tomcat.
 
-
-
 \subsection{UI rigidity}
 
 To simplify UI development, Version 7 provided a high-level API for adding
 new commands to the Hackystat web application interface which provided a
-very standard look and feel.  Figure \ref{fig:v7commands} illustrates two
+very standard look and feel.  Figure \ref{fig:commands} illustrates two
 commands from Version 7 and their standardized look-and-feel.
+
+\begin{figure*}[ht]
+  \center
+  \includegraphics[width=0.7\textwidth]{v7commands.eps}
+  \caption{Two example Version 7 commands illustrating the common look and feel}
+  \label{fig:commands}
+\end{figure*} 
 
 When first implemented, the user interface API saved time.  Though there
 was a learning curve associated with it, the API enabled the set of modules
@@ -305,34 +318,97 @@ significantly in order to support experimentation with alternative user
 interfaces.
 
 \subsection{Cache thrash}
+\label{sec:caching}
 
-In the Telemetry application, it was not uncommon to periodically request
-an analysis that might display 30 or 40 trend lines over the last several
-months. Such a request could potentially involve the processing of hundreds of
-thousands of raw sensor data instances. However, many of those trend lines
-might require access to the raw same sensor data, and many of the trend
-line components might involve computations that were performed previously
-the last time this analysis was requested.
+In the Telemetry application, it was not uncommon to regularly request an
+analysis that might display 30 or 40 trend lines for a set of software
+projects over the last several months. Such a request could easily involve
+the processing of hundreds of thousands of raw sensor data
+instances. However, many of those trend lines might require access to the
+raw same sensor data, and many if not most of the trend line components
+might involve computations that were performed previously the last time the
+analysis was requested.
 
 We quickly discovered that a naive implementation of telemetry could
-easily take several hours to perform an analysis, but with the
-implementation of caching, we could reduce its response time to seconds or
-minutes.
+easily take several hours to perform common types of analysis, but that our 
+``pipeline'' form of analyses lent itself naturally to caching.
 
-Unfortunately, caching created its own problems. The ``pipeline'' nature of
-analyses like Telemetry meant that we needed to introduce caches at
-multiple levels.  The millions of sensor data instances in a Hackystat
-sensor data repository meant that we could not simply cache everything; we
-needed to limit the sizes of the various caches.  As the number of caches
-for different types of intermediate objects increased, we started to see
-evidence of ``cache thrash'': one cache appeared to be discarding objects
-just as another cache would be requesting them. We found this to be an
-extremely difficult performance issue to debug.
+The basic idea is simple: use caches to store the results of intermediate
+computations.  Referring again to Figure \ref{fig:subsystems}, we
+implemented a cache for Sensor Data (which avoided to cost of going to the
+database), a cache for Daily Project Data instances (which avoided the cost
+of re-processing Sensor Data), and a cache for Episodes (which again
+avoided the cost of re-processing Sensor Data).
+
+The introduction of multiple caches worked extremely well for a while.
+Computations which could have taken hours now took only seconds or minutes.
+Unfortunately as the system continued to grow in size and complexity,
+caching began to create problems of its own.  The millions of sensor data
+instances in a Hackystat sensor data repository meant that we could not
+simply cache everything; we needed to limit the size of the various caches.
+As the number of caches for different types of intermediate objects
+increased, we started to see evidence of ``cache thrash'': one cache
+appeared to be discarding objects just as another cache would be requesting
+them. Tuning the various caches to maintain the right size and work
+effectively with each other was a very difficult performance analysis.
 
 \section{Hackystat as SOA}
 \label{sec:soa}
 
-This section will present the Hackystat SOA architecture.
+To summarize, Hackystat's original client-server architecture worked well
+when Hackystat processed relatively few kinds of data in relatively few
+kinds of ways for a relatively small number of users.  We hypothesize that
+the prior architecture would have scaled well, at least for a while, if
+growth had been restricted to just one of these three dimensions.
+
+Unfortunately, the system grew in scale along all three of these dimensions
+simultaneously.  We attempted to manage its size and complexity while
+staying within the basic client-server architectural model in several ways:
+by a custom module system to support configurations; by pipelining analysis
+processing; by caching; and by high level APIs for the user interface,
+build system, and testing.
+
+By 2007, however, we realized that we had designed ourselves into a
+corner: the system structure was well suited to a certain performance
+load and set of application domains, but the features that achieved that
+also actively prevented us from other kinds of extensions and enhancements.
+
+After a month of discussion, we halted all development on the Version 7
+code base and started over with a new architectural paradigm: a RESTful
+service-oriented architecture.  Figure \ref{fig:soa} illustrates the
+ten services now available or in active development in Version 8.
+
+\begin{figure*}[ht]
+  \center
+  \includegraphics[width=0.7\textwidth]{soa.eps}
+  \caption{Services now available or in development for Hackystat Version 8}
+  \label{fig:soa}
+\end{figure*} 
+
+A comparison of Figure \ref{fig:soa} with Figure \ref{fig:subsystems}
+reveals the major similarities and differences between the old
+client-server architecture and the new service-oriented architecture.
+First, Hackystat Version 8 retains a similar kind of pipelined, incremental
+approach to analysis that was present in Version 7. This is illustrated by
+the presence of uniformly upward pointing arrows in both Figures.  In both
+versions, raw sensor data is stored in a database and ``percolates upward''
+through various kinds of analyses toward a user interface.
+
+However, in Version 8 there is no longer a ``box'' around the analyses,
+indicating that instead of a single server, Hackystat now consists of a
+number of cooperating services, some of which correspond relatively
+directly to analysis subsystems within the old system (such as SensorBase,
+DailyProjectData, and Telemetry), and others of which are brand new:
+ProjectBrwoser, Tickertape, and TrajectoryViewer.
+
+In Figure \ref{fig:subsystems}, the arrows essentially correspond to Java
+method invocations within a single process that illustrate data and control
+flow in the system.  In Figure \ref{fig:soa}, the arrows still illustrate
+data and control flow, but rather than Java method invocations, the arrows
+correspond to HTTP calls designed according to REST (Representational State
+Transfer) principles \cite{Fielding02}. 
+
+
 
 \section{Pros and cons of SOA}
 \label{sec:discussion}
@@ -342,6 +418,10 @@ Here we discuss how the SOA architecture addressed all of the issues we encounte
 Pro: Restart a single service without bringing down entire system.
 
 Con: Loss of compile-time structural consistency checking for sensor data types.
+
+Note: non-real time nature; don't need data to be synchronized down to the second. 
+
+No appreciable change in lines of code. 
 
 \section{Conclusions}
 \label{sec:conclusion}
