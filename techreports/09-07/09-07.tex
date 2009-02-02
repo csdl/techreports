@@ -3,7 +3,7 @@
 %% Author          : Philip Johnson
 %% Created On      : Mon Sep 23 11:52:28 2002
 %% Last Modified By: Philip Johnson
-%% Last Modified On: Thu Jan 29 17:20:21 2009
+%% Last Modified On: Mon Feb 02 09:44:00 2009
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   Copyright (C) 2009 Philip Johnson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -213,9 +213,9 @@ architecture.
 
 In the Version 7 architecture, we defined a system configuration as a list
 of modules and then invoked the build system to produce a binary containing
-those sets of modules.  This approach was the most straightforward way to 
-build a single client-server system with a subset of all possible modules while 
-still enabling testing and dependency resolution.
+those sets of modules.  This approach was the most straightforward way to
+build a single client-server system with a subset of all possible modules
+while still enabling testing and dependency resolution.
 
 It did mean, however, that any user wanting to create a new configuration
 adapted to their specialized needs would have to learn how to build the
@@ -386,7 +386,7 @@ ten services now available or in active development in Version 8.
 \end{figure*} 
 
 A comparison of Figure \ref{fig:soa} with Figure \ref{fig:subsystems}
-reveals the major similarities and differences between the old
+reveals some of the major similarities and differences between the old
 client-server architecture and the new service-oriented architecture.
 First, Hackystat Version 8 retains a similar kind of pipelined, incremental
 approach to analysis that was present in Version 7. This is illustrated by
@@ -399,39 +399,228 @@ indicating that instead of a single server, Hackystat now consists of a
 number of cooperating services, some of which correspond relatively
 directly to analysis subsystems within the old system (such as SensorBase,
 DailyProjectData, and Telemetry), and others of which are brand new:
-ProjectBrwoser, Tickertape, and TrajectoryViewer.
+ProjectBrowser, Tickertape, and TrajectoryViewer.
 
 In Figure \ref{fig:subsystems}, the arrows essentially correspond to Java
-method invocations within a single process that illustrate data and control
-flow in the system.  In Figure \ref{fig:soa}, the arrows still illustrate
-data and control flow, but rather than Java method invocations, the arrows
-correspond to HTTP calls designed according to REST (Representational State
-Transfer) principles \cite{Fielding02}. 
-
-
+method invocations all within a single process.  In Figure \ref{fig:soa},
+the arrows correspond to HTTP calls designed according to REST
+(Representational State Transfer) principles \cite{Fielding02}.
 
 \section{Pros and cons of SOA}
 \label{sec:discussion}
 
-Here we discuss how the SOA architecture addressed all of the issues we encountered in Section \ref{sec:motivation}, and what new issues we are confronting. 
+The re-implementation of Hackystat as a service-oriented architecture was
+not trivial: it required eight months of effort, and we have still not
+completed the porting of all the capabilities present in Version 7.  
+
+On the other hand, the move to a service-oriented architecture has broken
+the ``design knot'' that we found ourselves in with Version 7 and has
+enabled us to explore new interfaces and capabilities that were effectively
+precluded by the old architecture.  
+
+As part of the move to Version 8, we also moved to Google Project Hosting.
+Each service in Hackystat 8 is managed as an independent project.  There
+are currently over 40 separate projects related to Hackystat at Google
+Project Hosting. 
+
+Let's begin the analysis of the pros
+and cons of SOA for our domain by revisiting the issues we confronted in
+Version 7 as described above:
+
+\subsection{Server-side and build language specificity}
+
+One of the fundamental benefits of moving to a SOA architecture has been
+the elimination of Java and Ant as the required server-side implementation
+language and build tool.  In Version 8, each service is developed as an
+independent project (normally hosted at Google Project Hosting, although
+even this is not mandatory).  Because each service communicates with each
+other via HTTP, the only constraint on language choice is the ability to
+process the HTTP networking protocol; a feature available in all modern
+programming languages.  In addition to Java, services have been already
+been developed using Perl, Python, and Flex.  A service implementation is
+similarly free to choose the most appropriate build tool for its
+environment.
+
+\subsection{System configuration binding time}
+
+In Version 7, a Hackystat configuration was defined at compile time, which
+meant that users needed to understand the build system in order to create
+new configurations or augment an existing configuration with a new feature.
+In Version 8, system configurations are defined at run time based upon what
+set of services a site administrator chooses to invoke.  
 
 Pro: Restart a single service without bringing down entire system.
 
 Con: Loss of compile-time structural consistency checking for sensor data types.
 
-Note: non-real time nature; don't need data to be synchronized down to the second. 
 
-No appreciable change in lines of code. 
+\subsection{Complexity of build}
 
-Natural distribution of services across machines. 
+Version 7 required a custom build system which created a barrier to entry
+for new developers.  This problem no longer exists, as each service in
+Version 8 can choose its own language and build technology.
 
-Replication of services possible.
+\subsection{Lack of access to ``intermediate'' analyses}
+
+Another substantial benefit of the SOA architecture is the ``opening up''
+of the analysis pipelines that were formerly embedded within the Version 7
+client-server architecture.
+
+In Version 8, major analysis components, such as the raw sensor data, daily
+project data, and telemetry have been encapsulated within their own
+individual services.  This open architecture means that all stages of an
+analysis pipeline are now completely open and accessable for extension and reuse. 
+
+\subsection{UI rigidity}
+
+Any client-server architecture implicitly requires a choice of a single
+user interface technilogy: be it Java, Ruby on Rails, PHP, etc.  By moving
+to a service-oriented architecture, we freed ourselves from having to make
+this choice. Hackystat is now able to support many different user
+interfaces, including both web-based (via a browser) or client-side
+(native).  This has facilitated entirely new avenues for research and
+development, including advanced 3D visualization (requiring a native client
+user interface) and integration with social networking user interfaces such
+as Facebook and Twitter.  Figure \ref{fig:icu} illustrates one such 
+interface made possible by Version 8 called the ``Software ICU'' which uses 
+layout, color, sparklines, and sortable columns in a way not possible in Version 7:
+
+\begin{figure*}[ht]
+  \center
+  \includegraphics[width=1.0\textwidth]{icu.eps}
+  \caption{The Software ICU interface, made possible by Version 8}
+  \label{fig:icu}
+\end{figure*} 
+
+\subsection{Cache thrash}
+
+There is one spectacular downside in the move from client-server to SOA
+architecture: what was once an in-memory method invocation (i.e. the arrows
+in Figure \ref{fig:subsystems} is now an HTTP request (i.e. the arrows in
+Figure \ref{fig:soa}).  In-memory object retrievals that took less than a
+millisecond in Version 7 could now require at least one HTTP request
+requiring 20 to 100 milliseconds or more.  This constitutes a two to three
+order of magnitude performance hit!  Note that the more ``arrows'' that must be traversed 
+to perform an analysis, the worse the potential performance hit becomes. 
+
+As a simple yet realistic example of the problem, the Software ICU
+interface shown in Figure \ref{fig:icu} illustrates current values and
+trends for nine metrics on five projects, each with around 5 developers,
+over five weeks. Without caching, each trend requires one HTTP request from
+the telemetry service, for a total of 9 trends/project * 5 projects = 45
+HTTP requests.  To build each trend line, the Telemetry service must ask
+for at least one DailyProjectData instance per day, or 7 days/week * 5
+weeks = 35 HTTP DailyProjectData requests per trend line.  Since we have 45
+trends to compute, that's 35 HTTP requests / trend * 45 trends = 1575 HTTP
+requests.  Now it gets really bad, because the computation of a single
+DailyProjectData request could easily require the processing of 100
+SensorData instances on average.  This brings the total number of HTTP
+requests to 1575 * 100, or 157,500 HTTP requests in order to build the
+Software ICU visualization.  If we are optimistic and assume an average
+HTTP request/response cycle requires only 20 ms, that means the
+communication overhead alone for this request is almost an hour, without
+adding in the actual computation time!
+
+The ``communication'' requirements for a client-server system implementing
+the Software ICU would be similar, except that instead of 157,500 HTTP
+requests, a client-server system would require 157,500 method invocations.
+Assuming a method invocation takes 1 ms, the communication requirements
+drop to a little over 2 minutes.
+
+This is not a simple problem to resolve, and the Hackystat development
+community has so far initiated three different approaches to dealing with
+it.
+
+First, we have implemented URL caches in certain intermediate services such
+as Daily Project Data and Telemetry.  One of the benefits of a RESTful API
+design is the ability to exploit well understood HTTP caching and cache
+control mechanisms.  A characteristic of Hackystat's domain is that
+historical analysis data instances rarely change once they have been
+computed, making them extremely well suited to caching.  We built a generic
+cache facility based upon Apache JCS (Java Caching System) which supports
+very fast disk-backed mapping of URLs to the associated response
+object. These caches eliminate a significant amount of computation as well
+as HTTP requests.  For example, if a developer requests the Software ICU
+visualization once a week, then four out of the five weeks of trend data
+will be cached from previous invocations, resulting in an 80\% reduction in
+HTTP communication overhead.
+
+This is good, but we can do even better via a mechanism we designed called
+``prefetching''.  The idea of prefetching is that if you know you'll want
+an analysis once a week, then simply set up a timer-based process to
+request that analysis once a day, discarding the results.  Prefetching is
+quite powerful in several ways.  First, it pre-fills the caches for the
+analysis of interest. This means that in the case of our Software ICU
+example, the number of HTTP requests is reduced to 45, which typically introduces under a
+second of communication overhead.  Second, due to the nature of the
+service-oriented architecture, many other related analyses benefit as
+well. For example, filling the DailyProjectData cache will speed up all
+services requesting that data, not just the Software ICU.  Finally,
+repeatedly prefetching introduces much less overhead on the system than one
+might expect, because most of the prefetch involves previously cached data
+by design.
+
+\subsection{Other issues}
+
+There are several other interesting results from our move to SOA that are
+worth a brief mention.
+
+First, we have observed no appreciable change in the number of lines of
+code required to implement a given functionality.  SOA appears to require
+neither more code nor less code than a client-server equivalent.  However,
+SOA does require very different code than a client-server system, and
+Version 8 led us to new libraries (such as Apache JCS and the Restlet
+framework).
+
+Our SOA architecture makes it almost trivial to support certain kinds of
+scalability.  For example, we can run all services on a single physical
+host, or distribute each service to a different physical host by simply
+editing a configuration file.  More interestingly, it is now possible to
+transparently replicate certain services.  For example, if we find that the
+telemetry service is a bottle neck in processing, we can simply run two
+telemetry services and partition requests between them.
+
+Finally, it is a common axiom of software engineering that the software
+architecture tends to reflect the organizational architecture.  Our
+experience is that the reverse is also true: the move to SOA also has
+resulted in a significantly more decentralized, non-hierarchical
+development organization.  In Version 7, the requirement that new
+functionality had to be written in Java, introduced into our build system,
+and maintained in our internal code repository created a barrier that only
+committed Hackystat developers were willing to climb.  In the new
+architecture, each service is publically available as an individual Google
+Project, and developers and users can much more easily adapt, extend, and
+integrate without any interaction from the core Hackystat development team.
 
 \section{Conclusions}
 \label{sec:conclusion}
 
-Conclusions and future directions. 
+After one year of use, we are quite happy with our decision to move to a
+service-oriented architecture, though it has not been without challenges.
+The costs of this move have been several and substantial.  First, forward
+progress on functionality was arrested for approximately eight months while
+we performed an almost complete reimplementation of the system.  We do not
+believe that ``retrofitting'' a service-oriented architecture on our prior
+code base would have been effective, and ultimately might have taken longer
+than simply starting over.  Second, the move to SOA meant learning new
+architectural concepts (such as REST) as well as new libraries (such as
+Apache JCS).  This was part of the reason why the process took so long.
+Third, the SOA architecture is significantly more ``loosely coupled'' than
+our previous client-server architecture.  While loose coupling has many
+advantages, in the case of SOA it also means that certain kinds of
+``bindings'' occur at run-time rather than at build-time or compile-time.
+This introduces new complexities into quality assurance, as certain kinds
+of inconsistencies are now found only during run-time testing.  Such
+problems are made more difficult to catch due to the more decentralized and
+distributed nature of development.
 
+For the Hackystat Project, these costs are better viewed as investments in
+the long term health and utility of the framework.  Our ability to enhance
+the framework in entirely new ways as a result of our move to SOA is one
+compelling example of the return on investement from this decision.  We
+look forward to the next several years of Hackystat development with
+excitement as the SOA architecture enables new kinds of development by new
+kinds of developers.
 
 \bibliographystyle{IEEEtran}
 \bibliography{tdd,zorro,csdl-trs,hackystat,psp}
