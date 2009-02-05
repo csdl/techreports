@@ -3,7 +3,7 @@
 %% Author          : Philip Johnson
 %% Created On      : Mon Sep 23 11:52:28 2002
 %% Last Modified By: Philip Johnson
-%% Last Modified On: Mon Feb 02 09:44:00 2009
+%% Last Modified On: Thu Feb 05 12:21:34 2009
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   Copyright (C) 2009 Philip Johnson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -25,7 +25,8 @@
 %% and
 %%   \IEEEpeerreviewmaketitle  (after the abstract).
 
-\documentclass[conference,compsoc,peerreview]{IEEEtran}
+%\documentclass[conference,compsoc,peerreview]{IEEEtran}
+\documentclass[conference,compsoc]{IEEEtran}
 \usepackage[final]{graphicx}
 \usepackage{cite}
 \usepackage{url}
@@ -49,7 +50,7 @@
 
 
 \maketitle
-\IEEEpeerreviewmaketitle
+%\IEEEpeerreviewmaketitle
 %\thispagestyle{empty}
 
 \begin{abstract}  % 200 words
@@ -61,8 +62,7 @@ revision, whose primary goal was to reimplement Hackystat as a
 service-oriented architecture (SOA).  Hackystat Version 8 has now been in
 public release for over a year, and this paper reports on our experiences:
 the motivations that led us to reimplement the system as a SOA, the
-benefits we have experienced from that conversion, and the new challenges
-we now face as a result.
+costs and benefits from that conversion, and our lessons learned. 
 \end{abstract}
 
 
@@ -92,11 +92,11 @@ extensible mechanism that can radically reduce the overhead associated with
 collection of a wide variety of software engineering data, along with a
 sophisticated toolkit of analyses that can facilitate useful
 interpretation.  Over the years, Hackystat has been used in a wide variety
-of application areas, including: classroom pedagogy \cite{csdl2-03-12},
-inference of test-driven design practice \cite{csdl2-06-13}, software
-engineering of high performance computing systems \cite{csdl2-06-08}, and a
+of application areas, including: classroom pedagogy,
+inference of test-driven design practice, software
+engineering of high performance computing systems, and a
 telemetry-based approach to software measurement trend definition and
-display \cite{csdl2-04-11}.
+display.
 
 The Hackystat Framework is intended to be generic: it strives to be neutral
 with respect to the platform, programming language and environment,
@@ -136,7 +136,7 @@ service-oriented manner.  Section \ref{sec:soa} introduces our current
 service-oriented architecture and its features.  Section
 \ref{sec:discussion} presents our experiences, both positive and negative,
 with the SOA implementation.  Section \ref{sec:conclusion} summarizes our
-conclusions and outlines some of our future architectural directions.
+lessons learned.
 
 
 \section{Motivation for the Hackystat SOA architecture}
@@ -441,17 +441,17 @@ been developed using Perl, Python, and Flex.  A service implementation is
 similarly free to choose the most appropriate build tool for its
 environment.
 
-\subsection{System configuration binding time}
+%% \subsection{System configuration binding time}
 
-In Version 7, a Hackystat configuration was defined at compile time, which
-meant that users needed to understand the build system in order to create
-new configurations or augment an existing configuration with a new feature.
-In Version 8, system configurations are defined at run time based upon what
-set of services a site administrator chooses to invoke.  
+%% In Version 7, a Hackystat configuration was defined at compile time, which
+%% meant that users needed to understand the build system in order to create
+%% new configurations or augment an existing configuration with a new feature.
+%% In Version 8, system configurations are defined at run time based upon what
+%% set of services a site administrator chooses to invoke.  
 
-Pro: Restart a single service without bringing down entire system.
+%% Pro: Restart a single service without bringing down entire system.
 
-Con: Loss of compile-time structural consistency checking for sensor data types.
+%% Con: Loss of compile-time structural consistency checking for sensor data types.
 
 
 \subsection{Complexity of build}
@@ -493,6 +493,7 @@ layout, color, sparklines, and sortable columns in a way not possible in Version
 \end{figure*} 
 
 \subsection{Cache thrash}
+\label{sec:v8cache}
 
 There is one spectacular downside in the move from client-server to SOA
 architecture: what was once an in-memory method invocation (i.e. the arrows
@@ -560,67 +561,141 @@ repeatedly prefetching introduces much less overhead on the system than one
 might expect, because most of the prefetch involves previously cached data
 by design.
 
-\subsection{Other issues}
+%% \subsection{Other issues}
 
-There are several other interesting results from our move to SOA that are
-worth a brief mention.
+%% There are several other interesting results from our move to SOA that are
+%% worth a brief mention.
 
-First, we have observed no appreciable change in the number of lines of
-code required to implement a given functionality.  SOA appears to require
-neither more code nor less code than a client-server equivalent.  However,
-SOA does require very different code than a client-server system, and
-Version 8 led us to new libraries (such as Apache JCS and the Restlet
-framework).
+%% First, we have observed no appreciable change in the number of lines of
+%% code required to implement a given functionality.  SOA appears to require
+%% neither more code nor less code than a client-server equivalent.  However,
+%% SOA does require very different code than a client-server system, and
+%% Version 8 led us to new libraries (such as Apache JCS and the Restlet
+%% framework).
 
-Our SOA architecture makes it almost trivial to support certain kinds of
-scalability.  For example, we can run all services on a single physical
-host, or distribute each service to a different physical host by simply
-editing a configuration file.  More interestingly, it is now possible to
-transparently replicate certain services.  For example, if we find that the
-telemetry service is a bottle neck in processing, we can simply run two
-telemetry services and partition requests between them.
+%% Our SOA architecture makes it almost trivial to support certain kinds of
+%% scalability.  For example, we can run all services on a single physical
+%% host, or distribute each service to a different physical host by simply
+%% editing a configuration file.  More interestingly, it is now possible to
+%% transparently replicate certain services.  For example, if we find that the
+%% telemetry service is a bottle neck in processing, we can simply run two
+%% telemetry services and partition requests between them.
 
-Finally, it is a common axiom of software engineering that the software
-architecture tends to reflect the organizational architecture.  Our
-experience is that the reverse is also true: the move to SOA also has
-resulted in a significantly more decentralized, non-hierarchical
-development organization.  In Version 7, the requirement that new
-functionality had to be written in Java, introduced into our build system,
-and maintained in our internal code repository created a barrier that only
-committed Hackystat developers were willing to climb.  In the new
-architecture, each service is publically available as an individual Google
-Project, and developers and users can much more easily adapt, extend, and
-integrate without any interaction from the core Hackystat development team.
+%% Finally, it is a common axiom of software engineering that the software
+%% architecture tends to reflect the organizational architecture.  Our
+%% experience is that the reverse is also true: the move to SOA also has
+%% resulted in a significantly more decentralized, non-hierarchical
+%% development organization.  In Version 7, the requirement that new
+%% functionality had to be written in Java, introduced into our build system,
+%% and maintained in our internal code repository created a barrier that only
+%% committed Hackystat developers were willing to climb.  In the new
+%% architecture, each service is publically available as an individual Google
+%% Project, and developers and users can much more easily adapt, extend, and
+%% integrate without any interaction from the core Hackystat development team.
 
-\section{Conclusions}
+\section{Lessons Learned}
 \label{sec:conclusion}
 
 After one year of use, we are quite happy with our decision to move to a
-service-oriented architecture, though it has not been without challenges.
-The costs of this move have been several and substantial.  First, forward
-progress on functionality was arrested for approximately eight months while
-we performed an almost complete reimplementation of the system.  We do not
-believe that ``retrofitting'' a service-oriented architecture on our prior
-code base would have been effective, and ultimately might have taken longer
-than simply starting over.  Second, the move to SOA meant learning new
+service-oriented architecture, though it has not been without
+challenges. Here are some of the lessons we learned from our experience.
+
+\subsection{SOA introduces costs}
+
+Our move to SOA was not cheap.  First, forward progress on functionality was
+arrested for approximately eight months while we performed an almost
+complete reimplementation of the system.  We do not believe that
+``retrofitting'' a service-oriented architecture on our prior code base
+would have been effective, and ultimately might have taken longer than
+simply starting over.  
+
+Second, the move to SOA meant that our developers needed to learn new
 architectural concepts (such as REST) as well as new libraries (such as
 Apache JCS).  This was part of the reason why the process took so long.
-Third, the SOA architecture is significantly more ``loosely coupled'' than
-our previous client-server architecture.  While loose coupling has many
-advantages, in the case of SOA it also means that certain kinds of
+
+\subsection{SOA decouples on multiple levels}
+
+Our new SOA architecture has decoupled not only our system, but also our
+development process and even our organization.  As described above, our
+previous architecture enforced a common language (Java), build system (Ant
+plus custom extensions), and ultimately a way of doing development (via the
+quality assurance mechanisms and standards we implemented).
+
+With SOA, these technological constraints which could be exploited to
+enforce ``best practices'' have been removed.  As a simple example, it is
+hard for Java programmers to perform effective and useful code reviews on
+Python code; we do not have the experience to question, for example,
+whether a chosen library for XML processing is best suited to the
+purpose. Similarly, a Hackystat service choosing a decentralized
+configuration management system such as GIT will move toward a much
+different style of collaborative development than our traditional,
+Subversion-based procedures.  This has organizational implications.
+
+The kind of decoupling introduced by SOA also means that certain kinds of
 ``bindings'' occur at run-time rather than at build-time or compile-time.
 This introduces new complexities into quality assurance, as certain kinds
 of inconsistencies are now found only during run-time testing.  Such
 problems are made more difficult to catch due to the more decentralized and
 distributed nature of development.
 
-For the Hackystat Project, these costs are better viewed as investments in
-the long term health and utility of the framework.  Our ability to enhance
-the framework in entirely new ways as a result of our move to SOA is one
-compelling example of the return on investement from this decision.  We
-look forward to the next several years of Hackystat development with
-excitement as the SOA architecture enables new kinds of development by new
-kinds of developers.
+\subsection{SOA requires governance}
+
+The novel forms of decoupling introduced by SOA leads to the need for new
+kinds of ``governance'' we did not previously require.  For example, one
+group of developers embarked on a project to implement a new kind of
+low-level service that would effectively ``collapse'' functions spread
+across multiple services into a single layer.  This service would improve
+performance for certain kinds of queries in certain kinds of situations, at
+the cost of modularity, consistency, and conformance to the underlying
+architectural principles that led us to SOA in the first place.
+
+As an open source project, our response to this situation was to try to
+carefully explain the pros and cons of their proposed approach, and then
+let them decide how to proceed.  Governance, in our case, is an advisory
+process rather than a controlling process.  The important lesson we learned
+is that SOA creates new kinds of coordination issues that simply did not
+exist in our prior architecture and corresponding development process and
+organization.
+
+\subsection{SOA creates performance challenges}
+
+SOA creates opportunities for scalability by making it more simple to
+distribute and replicate services. For us, however, these scalability
+opportunities came with concrete performance costs, as discussed in Section
+\ref{sec:v8cache}.
+
+The performance implications of a move from client-server to SOA is quite
+analogous to the move from a native client application to a web-based
+application.  A native client application interacts with a user and
+accesses the local file system, which can normally be done quite quickly
+and reliably.  Moving such an application to a client-server, web-based
+system means that user interactions now involve HTTP requests and the
+responsiveness of the application can easily be compromised.  SOA takes it
+a step further: now a single user interaction can potentially trigger a
+large number of HTTP interactions between multiple services.
+
+In our case, we addressed the performance challenge via a combination of a
+RESTful architecture, a set of caches, and the ability to pre-fetch
+analyses in order to keep the caches up to date.
+
+\subsection{SOA provides competitive advantage}
+
+Our final lesson learned is that the move to SOA provides Hackystat with a
+significant competitive advantage over similar systems.  SOA now allows us
+to enhance Hackystat using any language, not just Java.  We can now build
+native client user interfaces that interface to web-based Hackystat
+services, allowing us to explore advanced 3D visualization.  We can easily
+integrate with social networking platforms like Facebook and communication
+channels like Twitter.  No other system in our domain seems as fun
+to work with or as flexible. 
+
+Hackystat is no longer like a castle: a monolithic environment separated
+from the rest of the world by high ramparts that require users to come to it
+and interact on Hackystat's terms. It is now resembles a fleet of sailing
+ships, able to explore new environments on their own terms and bring ideas
+from one culture to another.  There are certain risks to setting sail as
+opposed to staying home in the castle.  After a year, we have yet to look
+back. 
 
 \bibliographystyle{IEEEtran}
 \bibliography{tdd,zorro,csdl-trs,hackystat,psp}
