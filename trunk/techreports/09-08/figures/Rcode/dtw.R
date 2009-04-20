@@ -2,7 +2,7 @@
 ##
 ##
 library(dtw)
-par(mfrow=c(1,3), cex.main=1.5)
+par(mfrow=c(1,3), cex.main=1.8)
 ##
 idx       <- seq(-2,4,len=250);
 query     <- sin(idx*1.5)*atan(idx*1.3);
