@@ -1,7 +1,5 @@
 \chapter{Time-series similarity measurements.}
-Before starting a discussion concerning time-series similarity we should note that a time-series (a finite sequence of real numbers) alternatively called as ``sequence'' or ``signal'' in the literature and we might use these terms depending on the context.
-
-Previously not explored in the classical time-series analyses such as trend and seasonality identification, forecasting, etc. the time-series similarity problem become the cornerstone problem in recently emerged data-mining applications. The ability to determine time-series similarity allows to resolve many general time-series KDD problems:
+Previously not explored in the classical time-series analyses such as trend and seasonality identification, forecasting and others, the time-series similarity \footnote{Note that a time-series (a finite sequence of real numbers) alternatively called as ``sequence'' or ``signal'' in the literature and we might use these terms depending on the context of reviewed paper.}  problem become the cornerstone problem in recently emerged data-mining applications. The ability to determine time-series similarity allows to resolve many general time-series KDD problems:
 \begin{itemize}
 	\item identifying stocks with similar movement in price \cite{citeulike:4295242} \cite{citeulike:4031865} \cite{citeulike:4025073}
 	\item finding products with similar selling pattern \cite{citeulike:4326324}
@@ -9,12 +7,13 @@ Previously not explored in the classical time-series analyses such as trend and 
 	\item performing speech to text conversion \cite{citeulike:3728228}
 	\item verifying signatures and performing handwriting to text conversion \cite{citeulike:3733947} \cite{citeulike:3513035}
 	\item finding objects with similar movemet trajectories \cite{citeulike:964832} \cite{citeulike:3728229} \cite{citeulike:3815864}
+	\item detecting anomalities or events in the signals \cite{citeulike:4412621} \cite{citeulike:4412617}
 	\item finding developers with similar build patterns.
 \end{itemize}
 
-All of the solutions for named set of problems based on the implementation of the time-series database enhanced by ability to process ``time-series similarity queries'' and at this point we essentially regard this problem solved and will overlook most of the solutions in this review. Traditionally \cite{citeulike:3973409}, the time-series similarity queries divided by two categories: whole sequence matching and subsequence matching where both categories are divided by first-occurence and all-occurences subproblems \cite{citeulike:3815880}. The Range Query problem of finding all (sub)sequences similar to a given one within the distance $\epsilon$ is specific for this domain as well as the All-Pairs Query (``spatial joint'') of finding all pairs of (sub)sequences that are within $\epsilon$ from each other \cite{citeulike:3973409}.
+All of the solutions for this set of problems based on the implementation of the time-series database enhanced by ability to process ``time-series similarity queries'' or ``range queries'' and at this point we essentially regard this problem solved and will overlook most of the solutions in this review. 
 
-Goldin and Kanellakis \cite{citeulike:3815880} introduced the concept of the ``approximately similar time-series data'' which is based on the ``user-percieved similarity'' rather than direct mathematical comparison with straightforward metrics. In their approach the scales and shifts were introduced to simulate the human ability of relating time-series features. Naming scale as $a$ coefficient and shift as $b$ they introduced a form of the  ``similarity relation'' $T_{a,b}$ with next properties:
+First introduced by Goldin and Kanellakis \cite{citeulike:3815880} the concept of the ``approximately similar time-series data'' is based on the ``user-percieved similarity'' rather than direct mathematical comparison with straightforward metrics. In their approach the scales and shifts were introduced to simulate the human ability of relating time-series features. Naming scale as the $a$ coefficient and shift as $b$ they introduced a form of the ``similarity relation'' $T_{a,b}$ with next properties:
 \begin{align}
  & \text{1. } \forall \; X, \; X=T_{0,1}(X), \; \text{Reflexivity or identity transformation} \\
  & \text{2. } \text{if } X=T_{a,b}(Y) \; \text{then } Y=T_{\frac{1}{a},-\frac{b}{a}}(X) = T^{-1}_{a,b}(X), \; \text{Symmetry or inverse of $T_{a,b}$} \\
@@ -22,7 +21,7 @@ Goldin and Kanellakis \cite{citeulike:3815880} introduced the concept of the ``a
 \end{align}
 The scale and shift transofrmations discussed along with smothening and matching envelope discussed in greater details in the section \ref{scales_and_shifts}.
 
-While the whole matching requires time-series to be exactly of the same length, the subsequence matching consider the smaller query time-series for which it finds the best match in the larger template time-series using the sliding-window approach and reducing the task to the whole-sequence problem in each individual comparison. In both cases the similarity query mechanism relies on some metrics with well defined distance function which used to quantify time-series similarity. 
+Traditionally \cite{citeulike:3973409}, the time-series similarity queries divided by two categories: whole sequence matching and subsequence matching where both categories are divided by first-occurence and all-occurences subproblems \cite{citeulike:3815880}. The Range Query problem of finding all (sub)sequences similar to a given one within the distance $\epsilon$ is specific for this domain as well as the All-Pairs Query (``spatial joint'') of finding all pairs of (sub)sequences that are within $\epsilon$ from each other \cite{citeulike:3973409}. While the whole matching requires time-series to be exactly of the same length, the subsequence matching consider the smaller query time-series for which it finds the best match in the larger template time-series using the sliding-window approach and reducing the task to the whole-sequence problem in each individual comparison. In both cases the similarity query mechanism relies on some metrics with well defined distance function quantifying the time-series similarity. 
 
 The distance function on a set $X$ defined as:
 \begin{equation}
@@ -31,11 +30,9 @@ The distance function on a set $X$ defined as:
 
 And if $x$, $y$ and $z$ $\in X$ the distance function $d$ required to satisfy follwing conditions:
 \begin{align}
- & \text{1. } d(x, y) > 0, \; \text{non-negativity} \\
+ & \text{1. } d(x, y) > 0, \; \text{non-negativity} \label{eq:d1} \\
  & \text{2. } d(x, y) = 0, \; \text{if and only if} \; x = y  \;  \text{identity} \\
  & \text{3. } d(x, y) = d(y, x), \; \text{symmetry} \\
- & \text{4. } d(x, z) \leq d(x, y) + d(y, z), \; \text{the triangle inequality}
+ & \text{4. } d(x, z) \leq d(x, y) + d(y, z), \; \text{the triangle inequality} \label{eq:d4}
 \end{align}
-While a distance function is required to satisfy to all of these, we should note, that the Dynamic Time Warping (DTW) distance which is extremely popular among speech, writing and sign language recognition algorithms \cite{citeulike:3496861} \cite{citeulike:3744226} \cite{citeulike:3733947} \cite{citeulike:3789964} fails to satisfy the triangular inequality \cite{citeulike:4343286} \cite{citeulike:4343933}.
-
-The Euclidean distance discussed next, is a de-facto standard in the time-series similarity research and used in many similarity metrics on some stages while is not advertised. Transformation rules, Dynamic Time Warping and Longest Common Subsequence discussed right after the time-series normalization subsection.
+There is a number of distance functions used in the time-series domain, the de-facto standard metrics in almost any field, Euclidean distance, discussed next. The mentioned transformation rules, Dynamic Time Warping and Longest Common Subsequence discussed right after the time-series normalization subsection.
