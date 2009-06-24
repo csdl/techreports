@@ -1,0 +1,67 @@
+\section{Symbolic Aggregate approXimation (SAX)} \label{sax}
+\begin{figure}[tbp]
+   \centering
+   \includegraphics[height=45mm]{sax_intro.eps}
+   \caption{The illustration of the SAX approach taken from \cite{citeulike:2821475} depicts two pre-determined breakpoints for the three-symbols alphabet and the conversion of the time-series of length $n=128$ into PAA representation followed by mapping of the PAA coefficients into SAX symbols with $w=8$ and $a=3$ resulting in the string \textbf{baabccbc}.}
+   \label{fig:sax_intro}
+\end{figure}
+
+Symbolic Aggregate approXimation was proposed by Lin et al in \cite{citeulike:2821475}. This method extends PAA-based approach inheriting algorithm simplicity and low computational complexity while providing satisfiable sensitivity and selectivity in range-query processing. Moreover, the use of a symbolic representation opens the door to the existing wealth of data-structures and string-manipulation algorithms in computer science such as hashing, regular expression pattern matching, suffix trees etc.
+
+SAX transforms a time-series $X$ of length $n$ into the string of arbitrary length $\omega$, where $\omega << n$ typically, using an alphabet $A$ of size $ a \geq 2$. The SAX algorithm consist of two steps: during the first step it transforms the original time-series into a PAA representation and this intermediate representation gets converted into a string during the second step. Use of PAA at the first step brings the advantage of a simple and efficient dimensionality reduction while providing the important lower bounding property as shown in the previous section. The second step, actual conversion of PAA coefficients into letters, is also computationally efficient and the contractive property of symbolic distance was proven by Lin et al in \cite{citeulike:532335}.
+
+Discretization of the PAA representation of a time-series into SAX is implemented in a way which produces symbols corresponding to the time-series features with equal probability. The extensive and rigorous analysis of various time-series datasets available to the authors has shown that time-series that are normalized by the zero mean and unit of energy: 
+
+
+follow the Normal distribution law. By using Gaussian distribution properties, it's easy to pick $a$ equal-sized areas under the Normal curve using  lookup tables  \cite{citeulike:4434481} for the cut lines coordinates, slicing the under-the-Gaussian-curve area. 
+The $x$ coordinates of these lines called ``breakpoints'' in the SAX algorithm context. The list of breakpoints $B=\beta_{1}, \beta_{2}, ... , \beta_{a-1}$ such that $\beta_{i-1} < \beta_{i}$ and $\beta_{0} = -\infty$, $\beta_{a} = \infty$ divides the area under $N(0,1)$ into $a$ equal areas. By assigning a corresponding alphabet symbol $alpha_{j}$ to each interval $[\beta_{j-1},\beta_{j})$, the conversion of the vector of PAA coefficients $\bar{C}$ into the string $\hat{C}$ implemented as follows:
+\begin{equation}
+\hat{c}_{i} = alpha_{j}, \; \text{iif}, \; \bar{c}_{i} \in [\beta_{j-1},\beta_{j})
+\label{eq:alpha}
+\end{equation}
+
+\begin{figure}[tbp]
+   \centering
+   \includegraphics[height=47mm]{sax_distance.eps}
+   \caption{The visual representation of the two time-series $Q$ and $C$ and three distances between their representation: Euclidean distance between raw time-series (A), the distance defined for PAA coefficients (B) and the distance between two SAX representations (C). ( this figure taken from \cite{citeulike:2821475} as well.}
+   \label{fig:sax_distance}
+\end{figure}
+
+SAX introduces new metrics for measuring distance between strings by extending Euclidean and PAA (\ref{eq:paa_distance}) distances. The function returning the minimal distance between two string representations of original time series $\hat{Q}$ and $\hat{C}$ is defined as
+\begin{equation}
+MINDIST(\hat{Q},\hat{C}) \equiv \sqrt{ \frac{n}{w} } \sqrt{ \sum_{i=1}^{w} ( dist( \hat{q}_{i}, \hat{c}_{i} ) )^{2}}
+\label{eq:sax_mindist}
+\end{equation} 
+where the $dist$ function is implemented by using the lookup table for the particular set of the breakpoints (alphabet size) as shown in Table \ref{tbl:sax_lookup}, and where the singular value for each cell $(r,c)$ is computed as 
+\begin{equation}
+cell_{(r,c)} = 
+\begin{cases} 
+0, \text{ if }\left| r-c \right| \leq 1 \\
+\beta_{\max(r,c) - 1} - \beta_{\min(r,c) - 1}, \text{ otherwise}
+\end{cases}
+\label{eq:cell}
+\end{equation}
+
+\begin{table}
+\begin{tabularx}{400pt}{X X X X X}
+\hline
+   & a   & b    & c    & d    \\
+\hline
+a & 0    & 0    & 0.67 & 1.34 \\
+b & 0    & 0    & 0    & 0.67 \\
+c & 0.67 & 0    & 0    & 0    \\
+d & 1.34 & 0.67 & 0    & 0    \\
+\hline
+\end{tabularx}
+\caption{A lookup table used by the MINDIST function for the $a=4$}
+\label{tbl:sax_lookup}
+\end{table}
+
+As shown by Li et al, this SAX distance metrics lower-bounds the PAA distance, i.e.
+\begin{equation}
+\sum_{i=1}^{n} (q_{i} - c_{i})^{2} \geq n(\bar{Q} - \bar{C})^{2} \geq n(dist(\hat{Q},\hat{C}))^2
+\label{eq:sax_bounding}
+\end{equation}
+
+The SAX lower bound was examined by Ding et al \cite{citeulike:4501572} in great detail and found to be superior in precision to the spectral decomposition methods on bursty (non-periodic) data sets.
+
