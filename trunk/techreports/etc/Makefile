@@ -29,8 +29,8 @@
 #
 fileinfo	:= LaTeX Makefile
 author		:= Chris Monson
-version		:= 2.1.25
-svninfo		:= $$Id: Makefile 49 2009-03-27 13:24:47Z shiblon $$
+version		:= 2.1.26
+svninfo		:= $$Id: Makefile 51 2009-05-15 14:12:07Z shiblon $$
 #
 # If you specify sources here, all other files with the same suffix
 # will be treated as if they were _include_ files.
@@ -96,6 +96,11 @@ svninfo		:= $$Id: Makefile 49 2009-03-27 13:24:47Z shiblon $$
 #		graceful solution to this issue.
 #
 # CHANGES:
+# Chris Monson (2009-05-15):
+# 	* Bumped version to 2.1.26
+# 	* Included patch for issue 9 from favonia - detects .fig changes for
+# 		pstex files during regular compilation, so long as the pstex
+# 		has been built at least once with make all-pstex.
 # Chris Monson (2009-03-27):
 # 	* Bumped version to 2.1.25
 # 	* Cleaned up a bunch of variable setting stuff - more stuff is now
@@ -1029,6 +1034,7 @@ $(SED) \
 -e '/\.tex$$/p' \
 -e '/\.cls$$/p' \
 -e '/\.sty$$/p' \
+-e '/\.pstex_t$$/p' \
 -e 'd' \
 $1 | $(SORT) | $(UNIQ)
 endef
