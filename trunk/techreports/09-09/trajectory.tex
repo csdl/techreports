@@ -39,6 +39,13 @@ The temporal data indexing starts with the data abstraction process shown at the
 
 I have not experimented with symbolic abstraction and mining of the raw sensor data yet, but this approach has a solid foundation provided by Hongbing Kou, in his thesis \cite{citeulike:2703162}. In his work, he was able to infer TDD behaviors by using a technique called Software Development Stream Analysis (SDSA) which is very similar to mine. Within SDSA, low-level software process data was first converted into symbolic Episodes first. Next, sequences of Episodes (candidate patterns) were matched (aligned) to the set of the known TDD temporal rules (patterns), and if they were found to satisfy TDD rules (having sufficient support), the generative process was inferred as TDD.
 
+\begin{figure}[tbp]
+   \centering
+   \includegraphics[height=60mm]{indexer.eps}
+   \caption{Overview of the current implementation of Hackystat Trajectory framework.}
+   \label{fig:indexer}
+\end{figure}
+
 The indexing of Telemetry streams I have implemented with a sliding window, PAA, and SAX. I am using a sliding window approach following \cite{citeulike:2821475} for generating a set of subsequences from a real-valued stream. Each of the subsequences is then normalized and converted into a symbolic representation with PAA and SAX. This symbolic representation and the position information is then stored in the relational database. For index manipulation and data retrieval I am leveraging SQL. Figure \ref{fig:indexer} presents the current software system overview.
 
 \subsection{Index database design} \label{indexing_design}
@@ -46,9 +53,9 @@ Figure \ref{fig:trajectory_db} presents the TrajectoryDB database schema in deta
 
 \begin{figure}[tbp]
    \centering
-   \includegraphics[height=60mm]{indexer.eps}
-   \caption{Overview of the current implementation of Hackystat Trajectory framework.}
-   \label{fig:indexer}
+   \includegraphics[height=200mm]{trajectory_db.eps}
+   \caption{The database schema used for the Hackystat Telemetry data retrieval and indexing in the pilot project.}
+   \label{fig:trajectory_db}
 \end{figure}
 
 The current version of Hackystat is based on a Service-Oriented architecture, and in order to retrieve a Telemetry data one must query Telemetry service over network. My initial implementation of indexing required network queries for the each of the indexing passes and was significantly affected by the network lag to my remote location and the amount of data needed to be retrieved for each pass. To overcome this issue I have a software module which provides ``caching'' and which incrementally updates Telemetry streams data locally. The \textit{Project, User, Member, Chart, Chartvalue} and \textit{Download} tables (located at the upper part of the Figure \ref{fig:trajectory_db}) are designed to store the Telemetry data locally. The system performs incremental update of the streams over time by reading the \textit{Download} table, which keeps track of updates.
@@ -61,6 +68,13 @@ This database schema was found optimal for easy retrieval of any kind of informa
 
 \section{TrajectoryBrowser}
 As mentioned before, the current version of TrajectoryBrowser was created in order to visualize telemetry streams along with temporal features found through indexing. It provides easy navigation within indexes and is capable of displaying multiple telemetry streams with highlighted features. By viewing the same motif entry across multiple streams it is possible to guess information about coincidence of entries, as an example, see Section \ref{pilot.evaluation}, for sequential ``growth'' pattern finding experiment.
+
+\begin{figure}[tbp]
+   \centering
+   \includegraphics[height=185mm]{distribution.eps}
+   \caption{The distribution of the Hackystat Telemetry data. While individual telemetry streams (panel $b$, left three plots for each stream represent raw data, right three plots - Z-normalized data) show different data distributions, the combined and normalized data (panel $a$) close to the normal distribution. Combined data was used for creation of the \textit{Universal Telemetry SAX alphabet}.}
+   \label{fig:distribution}
+\end{figure}
 
 \section{Future development roadmap}
 As I pointed before, the current version of the TrajectoryBrowser and analyses do not support processing of low-level raw Hackystat data and analyses based upon them. I have already started the development of such module along with extending a database schema for storing raw data, its approximation, and taxonomy. Once these components are in place, I will start developing data mining algorithms for Events and Episodes using the discussed temporal data mining algorithms. Once all major software pieces are in place, I will focus on the experimental evaluation of the system and improving the usability of the GUI.
