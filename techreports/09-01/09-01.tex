@@ -164,8 +164,13 @@ represent a continuum.
 Zorro illustrates one approach to addressing the issues 
 that hinder the research and practice of TDD today.  Automatic collection
 and analysis of data make Zorro practical for use in both laboratory and
-real-world settings: once installed, there is no overhead on the developer
-with respect to data collection.  Second, Zorro can be used to develop a
+real-world settings: once installed, overhead on the developer
+with respect to data collection is minimal. Zorro is unobtrusive:  
+it works in the background listening on the events of interest in the environment 
+in which it is installed. It does not require input from the developer. 
+However it incurs a small performance penalty, which depends on the environment. 
+
+Second, Zorro can be used to develop a
 variety of operational definitions of TDD. A Zorro ``TDD definition''
 consists of the set of developer behaviors that must be recorded, the
 manner in which this timestamped stream of events are partitioned into
@@ -682,20 +687,20 @@ the last three steps in this process.
   \label{fig:SDSA-Example}
 \end{figure}
 
-From 15:51:21 to 16:01:10, a developer implemented two user stories of the
-bowling game in Test-Driven Development. We used Hackystat to instrument
+From 15:51:21 to 16:01:10, a developer implemented two user stories of an application for 
+calculating the players' scores in a bowling game applying Test-Driven Development. We used Hackystat to instrument
 the development process and collect sensor data regarding 
 refactoring, editing, compilation and test invocation activities.  The ``Stream
 Construction'' phase results in the consolidation of the raw Hackystat
-sensor data into a sequence of 21 developer actions. Each action includes a
+sensor data into a sequence of 21 elementary developer actions. Each action includes a
 timestamp (such as 15:51:21), a file (such as ``TestBowlingGame.java''),
-and an action type (such as ``EDIT 64s TEST'').
+and an action type (such as ``EDIT 64s TEST''). The actions are also augmented with static analysis metrics associated with the file on which the action was performed. The metrics contain information on production classes, test classes, production methods, test methods, assertions within test methods, statements within methods, and modified, added and deleted lines of code. The metrics help in determining the type of an elementary action. For example, if an action increases the number of test methods and the number of assertions in a file containing a test class and the size of the file simultaneously the action is labelled as a test creation action. This way, Zorro can identify superfluous actions and discount them: for example if a new test has been added, but the number of assertions has not increased, the new test would be superfluous.  // Philip to check these explanations //
 
 Among the 21 developer actions are two successful test invocation actions
 (``TEST OK'').  Zorro partitions the stream of developer actions into
 episodes based upon the occurrence of a successful test invocation action,
 so this sequence of 21 actions is partitioned into two episodes, both
-ending with a successful test invocation action.
+ending with a successful test invocation action. Therefore successful test invocations delimit episodes composed of elmentary actions. 
 
 The next step is to determine which, if any, of these two episodes
 corresponds to a valid TDD development practice.  To do this, Zorro applies
@@ -705,17 +710,25 @@ compilation error results; (c) a method stub is created in production code
 which results in a successful compile; (d) more production code is edited;
 and (e) all tests pass.  These actions correspond to the classic style of
 TDD development, and Zorro's rules will classify both of these episodes as
-instances of TDD.
+instances of TDD, or as valid TDD behavior. Certain combinations of actions are indicative of non-TDD behavior, and similarly these can be recognized as such. For example in the episode on the bottom right of Figure \ref{fig:SDSA-Example}, if test creation actions (1) follow production editing actions (4) rather than precede them, the episode would have been recognized as non-conformant to TDD.  
 
-Of course, in the case of simple toy examples where a developer follows the
-canonical TDD approach, it is not surprising that Zorro can identify the
-behavior as TDD.  The more important issue is how to deal with the
-complexities of real world software development behaviors. 
+In the case where a developer follows the
+canonical TDD approach involving a few episode types, identifying TDD behavior is relatively easy.  The more important issue is how to deal with the
+complexities of real world software development behaviors.  An example of variant TDD behavior that is difficult to recognize is test addition followed by successful test invocation, but with no production code editing. This behavior may happen both in the context of applying TDD and outside TDD. To be able to recognize it as TDD behavior, Zorro looks for neigboring episodes that are easily identified as typical TDD. If such an ambiguous episode occurs in the context of other episodes easily identified as TDD, they are considered to be part of TDD behavior. Otherwise, they are classified as non-TDD-conformant. Thus Zorro is capable of context-sensitive episode classification. 
+
+In the next section, we explain how Zorro
+handles more diverse and ambiguous episode types to recognize a wide range of behaviors. 
+
+This context-sensitive inference ability is explained next.   
 
 \subsection{Episode classification}
 
 The heart of Zorro is its episode classification algorithm, implemented as
-a set of JESS rules.  Figure \ref{fig:Categories} summarizes the effect of these rules, 
+a set of JESS rules. JESS rules are applied on a raw development stream recorded by the Hackystat sensor
+installed in the developer environment to infer elementary action types first. Once action types are
+assigned, higher level rules are used to infer episode types from streams of actions and classify episodes that can be identified as TDD-conformant or not in isolation. Finally, additional rules are applied to classify uncategorized episodes from the episode stream in which they occur using contextual information. // Philip to check this //
+
+Figure \ref{fig:Categories} summarizes the effect of these rules, 
 which is to classify any episode as belonging to one of 22 episode types. 
 
 \begin{figure*}[th]
@@ -723,7 +736,11 @@ which is to classify any episode as belonging to one of 22 episode types.
   \includegraphics[width=1.0\textwidth]{episode-classification.eps}
   \caption{Zorro episode types, definitions, and TDD conformance}
   \label{fig:Categories}
+// change the magic number 100 in the table to "Threshold".
+// change "code edit" to "production edit" //
 \end{figure*} 
+
+
 
 Zorro organizes the 22 episode types into eight categories: Test First
 (TF), Refactoring (RF), Test Last (TL), Test Addition (TA), Regression
@@ -735,11 +752,13 @@ a development session where there is no unit testing at all.)
 The definition column 
 only gives a typical instance for each episode category. The implementation 
 allows repetitions of certain sub-patterns inside each episode category as prescribed by that category. 
-For example, the ``Code editing -$>$ Test failure'' subpattern can be 
+For example, the ``Production editing -$>$ Test failure'' subpattern can be 
 repeated one or more times inside 
 an episode of category TF-1 although the instance  
 in Figure \ref{fig:Categories} under the definition column
 shows a single occurrence of this sub-pattern.
+
+Zorro uses several heuristics based on the file metrics assoicated with elementary actions. For example, in episode types CP-2 ad CP-3, the underlying heuristic checks whether the production code editing action increases the size of the source file by more or less than a preset, threshold (currently set to 100 bytes). The threshold determines whether the editing action involves significant amount of production code activity in a single chunk without running the tests. If so, the behavior is counter to TDD and classified as non-conformant. A small amount of production code editing would be indicative of minor tweaks or the addition of a small amount of functionality, such as the addition of getter and setter methods, that do not always warrant the addition of a corresponding test depending on the developer's personal style or the development team's standard practice. This latter behavior is permissible and expected in TDD. Similarly, the long-episode thresholds used in the episode types LN-1 and LN-2 are  indicative of behaviors that are too coarse grained, or not sufficiently incremental, for TDD. TDD, being an inherently fine-grained incremental process, discourages large amounts of source or test code editing without running and passing tests.   The significant activity threshold and the long-episode thresholds used in episode types LN-1 and LN-2 are arbitrary, but can be changed depending on the expected granularity of the applied process and the tolerance level for deviating from the expected granularity. 
 
 Once each episode instance has been assigned an episode type,
 the final step in the Zorro classification process is to
@@ -781,6 +800,9 @@ could implement an ``optimistic'' classification, and assign the interior ambigu
 episodes as TDD conformant, or a ``pessimistic'' classification, and assign
 the interior ambiguous episodes as non-TDD.  The current Zorro definition
 of TDD implements the ``optimistic'' classification for this situation.
+
+Note that all refactoring episode types are context sensitive. This is because refactoring may occur 
+both in TDD and non-TDD contexts. Refactoring may also involve refactoring test code, whether written in a TDD sytle or after the fact. RF-1 and RF-2 episode types represent test refactorings. 
 
 The Zorro classification system illustrates two important advances in our
 approach to TDD.  First, it replaces the simplistic ``red-green-yellow''
@@ -825,8 +847,9 @@ associated file (if applicable), and some additional information about the
 associated sensor data.  The final column provides information about {\em
 how} Zorro classified the episode (as either TDD conformant, or TDD
 non-conformant), as well as {\em why} Zorro classified the episode that way
-(via a textual summary of the episode structural characteristics used in
-the classification).  
+(via a textual summary of the episode's structural characteristics used in
+the classification).  For example, the second case in the figure represents a TF-1 type episode. The summary enclosed in 
+the dashed box lists a sequence of activities that match the TF-1 pattern in \ref{fig:Categories}.
 
 The analysis in Figure \ref{fig:Analysis-Table} is useful for those wishing
 to understand Zorro's operational definition of TDD in the context of
@@ -835,7 +858,8 @@ actual development, either for learning or validation purposes.  Figure
 showing only the sequence of episode types, with each TDD conformant
 episode shaded in green. Clicking on an episode type drills down to a more
 detailed description similar to that shown in Figure
-\ref{fig:Analysis-Table}.
+\ref{fig:Analysis-Table}. Under the column titled Zorro's Inference, the episode classifications are always 
+presented with uncertainty (with wording such as "this portion of developmetn appears to be..." and "this episode looks like...") because no absolute correct classification exists. Zorro's episode classification, like in other similar tools, is heuristic-based and captures our our understanding of the TDD process. 
 
 \begin{figure*}[th]
   \center
