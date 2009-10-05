@@ -223,30 +223,52 @@ Build is a count of ant build task invoked in a period of time. A build task acc
 
 \end{description}
 
-These nine vital signs are the default set in Software ICU, but not the only setting. Users can determine to use which vital signs in their setting, as well as creating new vital sign analysis with Telemetry charts. More detail about these configuration and customization are discuss in \cite{SICUconfiguration} and \cite{SystemCustomization}.
+These nine vital signs are the default set in Software ICU, but not the only setting. Users can determine to use which vital signs in their setting, as well as creating new vital sign analysis with Telemetry charts. More detail about these configuration and customization are discuss in \autoref{SICUconfiguration} and \autoref{SystemCustomization}.
 
 \section{Vital Sign Presentation}
 As reported in case study of PROM, data presentation is as important as data accuracy\cite{prom09}. One of our primary goal of Software ICU is to provide a proper presentation to help interpret large amount of software metrics data. In order to achieve this goal, Software ICU use mini charts to integrate historical data and use color to categorize the health state of a vital sign.
 
 A vital sign analysis consists of two part: a numerical latest value and a mini historical chart. 
 \begin{description}
-\item[Latest Value]
-The latest value represents the newest state of the vital sign in the analysis period. In our implementation, it shows the most recent associated DailyProjectData. If there is no DPD on the latest date of the analysis period, it will search back the time period for the first available data of that DPD. The latest value will be ``N/A'' only when there is no any data of that metric in the whole analysis period.
-\item[Mini chart]
-The mini historical chart represents the trend line of the associated metric data over the analysis period. This mini chart is implemented as bar charts. Each bar represents the DailyProjectData value of the metric on a unit of granularity (day, week or month). Bars heights are scaled so that the highest bar is almost reach the top of the chart.
+\item[Latest Value] represents the newest state of the vital sign in the analysis period. In our implementation, it shows the most recent associated DailyProjectData. If there is no DPD on the latest date of the analysis period, it will search back the time period for the first available data of that DPD. The latest value will be ``N/A'' only when there is no any data of that metric in the whole analysis period.
+\item[Mini chart] represents the trend line of the associated metric data over the analysis period. This mini chart is implemented as bar charts. Each bar represents the DailyProjectData value of the metric on a unit of granularity (day, week or month). Bars heights are scaled so that the highest bar is almost reach the top of the chart.
 \end{description}
 
-However, only use the last values and mini charts does not address the requirement of fast data interpretation. Thus we further enhance the representation to add colors to those numerical values and charts.
+However, only use the last values and mini charts does not address the requirement of fast data interpretation. Thus we further enhance the representation by adding colors to those numerical values and charts to provide intuitive idea of the ``health'' state of the vital signs.
 
-Intuitively, we use color green to represent ``healthy'' state, red to ``unhealthy'' state, and ``yellow'' to state between green and red or uncertain.
+Generally, we use color green to represent ``healthy'' state, red to ``unhealthy'' state, and ``yellow'' to state between green and red or uncertain. This is color pattern is good for indicating states because it match the convention people comprehend color and thus most people can understand it without reading instructions.
 
-\subsection{Stream Trend Evaluation}
-Stream trend evaluation determines the health of a stream by its trend. It takes one parameter called HigherBetter. If user define the higher value the better, then increasing trends will be considered as a healthy trend and decreasing trends will be considered as unhealthy. Stable trends are always considered as healthy because in that case it is as good as health that one don't need to pay too much attention to it, while the actual value will be shown in the latest value where the value will be judged to be good or not. And unstable trend is marked as average because it is not easy to tell if it indicates a good state or not. 
+Different vital sign may use different coloring method, and the latest value and the mini bar are colored separately. Choice of coloring method mainly depends on the nature of the vital sign. In general, vital signs that have clear preference of higher or lower, like most based on software development product metrics (Coverage, Complexity, Coupling) will use Stream Trend Coloring method, and vital signs based on software process metrics will likely to use Participation Coloring method. Sometimes, there may be no ideal coloring method for a vital sign, such as FileMetric, then user can select to leave that vital sign uncolored.
 
-\subsection{Participation Evaluation}
-Participation evaluation determines the health of a stream by the participations of all members in the project. When working as a group, it is not good that some of the member do most of the work and others do little, thus in this situation the stream will be classified as unhealthy stream, which mean to attract attention.
+\subsection{Stream Trend Coloring} 
+Stream Trend Coloring method determines the health of a metric by its value and trend. It colors the latest value as well as the mini chart. It takes three parameters: {\it HigherBetter}, {\it Higher Threshold} and {\it Lower Threshold}. User can decide the preferable trend, higher or lower, using the {\it HigherBetter} parameter. A raising mini chart is considered to be good/bad if the {\it HigherBetter} parameter is set to true/false. A trend is considered to be raising if there is no any value point is lower than the one before, and the last value is greater than the first value. Falling trend is considered the same opposite way. In order to be able to categorize trends that have some small disruption as raising or falling, the Stream Trend Coloring method consider small amount (proportionate to the average of the first and the last value) of change as equal. Stable trends are always considered as ``healthy'' because in that case it is as good as ``healthy'' that user doesn't need to pay much attention to it, while the actual value will be shown in the latest value where the value will be judged to be ``healthy'' or not. And unstable trend is marked as yellow because it is no fast way to tell if it indicates a good state or not. 
 
-\section{Mini Chart Drill Down}
+{\it Higher Threshold} and {\it Lower Threshold} parameters are only used when coloring the latest value. Values exceeds the higher threshold will be colored green if {\it HigherBetter} is true, or red if {\it HigherBetter} is false. Values lower than the lower threshold are colored in similar way. Values between these two thresholds are always colored yellow.
+
+\subsection{Participation Coloring}
+Participation Coloring method determines the health of a stream by the participations of all members in the project. It only colors the mini chart, leaving the latest value uncolored. This coloring method is designed to detect the health state of team cooperation, mainly via software process metrics. It takes three parameters: {\it Member Percentage}, {\it Threshold} and {\it Frequency}. Participation Coloring method colors a mini chart green if 
+\begin{enumerate}
+\item there are more percentage of members than the {\it Member Percentage} parameter that,
+\item have the metric value greater than or equal to the {\it Threshold} parameter per day,
+\item for more frequently than the {\it Frequency} parameter in the analysis period.
+\end{enumerate}
+
+A mini chart is colored yellow if it does not meet the green requirement, but the metric of the team as a whole meet the requirement of green, i.e., 
+\begin{enumerate}
+\item the combined metric value is greater than or equal to the {\it Threshold} parameter per day,
+\item for more frequently than the {\it Frequency} parameter in the analysis period.
+\end{enumerate}
+
+If the yellow requirement is not meet neither, the mini chart will be colored red.
+
+In other words, Participation Coloring method color a vital sign green if most members of a project are making noticeable contribution to the project regularly, and color it yellow if not but there is someone making contribution to the project in most of the time, and color it red otherwise, which means, in terms of this vital sign metric, the contribution of members to the project is rare and/or insignificant.
+
+\section{Mini Chart Drill-Down}
+In each non-empty mini chart, Software ICU provides a link of the drill-down Telemetry analysis. The drill-down Telemetry analysis is the analysis that used to generate the mini chart. For most of software product metrics, such as Coverage, Complexity and Coupling, the drill-down Telemetry analysis will show the same chart as the mini chart in Software ICU's vital sign block, just in different style with more detailed axes. However, for software process metrics, instead of the original chart, an associated member-level Telemetry analysis is shown when drill-down. 
+
+The member-level Telemetry shows multiple stream lines in the chart, each of which represents the analysis of a member of the project. From this member-level Telemetry, it is easy to see members' participation to the project in this metric. This is most useful when combined with the Participation Coloring in Software ICU, where you see the summary result of members' participation, and then understand the detail with member-level Telemetry analysis.
+
+The drill-down Telemetry analysis use the same parameters as used in Software ICU, thus the non-member-level chart should be identical with the one in Software ICU. Vital signs with drill-down to member-level Telemetry, use as well the member-level Telemetry to generate the mini chart in vital sign block by summing all stream lines into one. Software ICU provides different integrating method to handle vital signs that use member-level Telemetry, more detail is discussed in \autoref{SystemCustomization}.
 
 \section{Vital Sign Configuration}
 \label{SICUconfiguration}
@@ -258,12 +280,5 @@ Participation evaluation determines the health of a stream by the participations
 
 \chapter{Contribution and Future Directions}
 
-\section{Current Defects}
-
-\subsection{Data Completeness}
-
-DevTime does not show completely the time developers spent on the project. 
-
-Defects: Fail of unit testing and coverage does not necessary indicate the number of defects in the code. Code review data is needed. 
 
 
