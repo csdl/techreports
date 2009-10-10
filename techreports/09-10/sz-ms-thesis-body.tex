@@ -226,6 +226,7 @@ Build is a count of ant build task invoked in a period of time. A build task acc
 These nine vital signs are the default set in Software ICU, but not the only setting. Users can determine to use which vital signs in their setting, as well as creating new vital sign analysis with Telemetry charts. More detail about these configuration and customization are discuss in \autoref{SICUconfiguration} and \autoref{SystemCustomization}.
 
 \section{Vital Sign Presentation}
+\label{presentation}
 As reported in case study of PROM, data presentation is as important as data accuracy\cite{prom09}. One of our primary goal of Software ICU is to provide a proper presentation to help interpret large amount of software metrics data. In order to achieve this goal, Software ICU use mini charts to integrate historical data and use color to categorize the health state of a vital sign.
 
 A vital sign analysis consists of two part: a numerical latest value and a mini historical chart. 
@@ -272,13 +273,80 @@ The drill-down Telemetry analysis use the same parameters as used in Software IC
 
 \section{Vital Sign Configuration}
 \label{SICUconfiguration}
+Software ICU provides user full access to the configuration of each vital sign. User can enable/disable a vital sign, choose its coloring method, and configure the parameters of the associated Telemetry analysis. 
+
+\begin{figure}[htbp]
+   \centering
+   \includegraphics[width=\textwidth]{SICU-configuration} 
+   \caption{The Vital Sign Configuration panel in Software ICU}
+   \label{fig:SICU-configuration}
+\end{figure}
+
+By clicking the ``Show Configuration'' button in the input panel on the left, user can open the configuration panel to its right. Then the ``Show Configuration'' will be disabled when the configuration panel is shown. \autoref{fig:SICU-configuration} shows an example of the vital sign configurations. The first column is the name of the vital sign with the checkbox to enable or disable a vital sign. When a vital sign is disabled, the configuration of color method and Telemetry parameters will be disappear, however, the settings are not discarded, thus when enabled again, it be the same before disabled. The second column is the color method. Current version of Software ICU provide three choices: StreamTrend, Participation and None. By choosing the first two, its associated parameters, which discussed in \autoref{presentation}, are shown next to the drop-down selection field. When ``None'' is selected, nothing will be shown in that space. The last column is the Telemetry parameters, which is defined in the definition of Telemetry charts, and will be directly transferred to Telemetry service when retrieving Telemetry analysis for vital sign presentation. Because of the implementation reason, results of enabling/disabling a vital sign and selecting different color method will be saved immediately, but other fields will only be saved when the ``OK'' button in the bottom is pushed. When the ``OK'' button is pushed, the configuration panel will disappear after setting is saved, and the ``Show Configuration'' button will become available again.
+
+In order to persist user's configuration setting between each visit, the configuration settings are saved in server side using UriCache. UriCache is a wrapper around the Apache JCS system\footnote{``JCS is a distributed caching system written in java. It is intended to speed up applications by providing a means to manage cached data of various dynamic natures.'' --\url{http://jakarta.apache.org/jcs/}}. It is designed to provide an API well suited to the needs of Hackystat services. The vital sign configuration objects are directly cached, under the name of the user. The cache expiration timer is set to 300 days so that it will not easily be expired. But if the cache is expired, the system will use the default setting of the vital signs.
+
+Next to the ``OK'' button is the ``Rest to Default'' button. It will restore all vital sign configuration settings to default, and the result of restoring will be shown and saved immediately. 
+
+In the bottom-right of the configuration panel is a link called ``Configuration Instructions''. When clicked, it will show a simple instruction of the configuration panel in a pop-up window.
+
 
 \section{System Customization}
 \label{SystemCustomization}
 
+Beside the ability to configure vital signs on the fly, Software ICU provide also offline customization of default vital signs. All vital signs, including the default set discussed above, are defined in PortfolioDefinition XML files. There are two place the system will look for these XML files. The first place is inside the package of detail panel of Software ICU, where the default set of vital signs are defined. The other place is ~/.hackystat/projectbrowser/, where ``~'' stands for user's home directory. Here is an example of the definition XML file:
+
+\begin{verbatim}
+<?xml version="1.0" encoding="utf-8"?>
+<PortfolioDefinitions>
+  <Measures>
+    <Measure name="Coverage" 
+             classifierMethod="StreamTrend" 
+             enabled="true"
+             telemetryParameters="Percentage,method">
+         <StreamTrendParameters higherBetter="true" 
+                                lowerThresold="40" 
+                                higherThresold="90"/>
+    </Measure>
+    <Measure name="MemberDevTime" 
+             alias="DevTime" 
+             merge="sum" 
+             classifierMethod="Participation" 
+             enabled="true">
+          <ParticipationParameters memberPercentage="50" 
+                                   thresoldValue="0.5" 
+                                   frequencyPercentage="50"/>
+    </Measure>
+    <Measure name="FileMetric" 
+             alias="Size(LOC)" 
+             enabled="true">
+    </Measure>
+  </Measures>
+</PortfolioDefinitions>
+\end{verbatim}
+
+There is a root element called {\it PortoflioDefinitions}, enclosing a single element {\it Measures}. Within the {\it Measures} element, there are a set of {\it Measure} element, each of which stands for a vital sign. Each {\it Measure} element can take up to six attributes:
+\begin{enumerate}
+\item The {\it name} attribute is required. It is the name of the Telemetry analysis used in this vital sign.
+\item The {\it alias} attribute is optional. When it is set, it will be used as the name of this vital sign. Otherwise, the {\it name} attribute will be used as this vital sign's name.
+\item The {\it classifierMethod} attribute defines the default coloring method, either StreamTrend or Participation. This attribute is optional. When it is unset, the default coloring method will be none.
+\item The {\it enabled} attribute defines if the vital sign is enabled by default. If set to false, the vital sign will be disable by default. But user is still able to enable it in configuration panel.
+\item The {\it merge} attribute defines the method to integrate multi-stream telemetry. It is necessary for member-level telemetries to work. ``sum'', ``min'' and ``max'' are available choices. If it is unset, the first stream of the telemetry will be used. Because of the order of streams in a multi-stream telemetry is not guaranteed, use member-level telemetry without setting this attribute might cause unexpected result.
+\item The {\it telemetryParameters} attribute is the Telemetry parameters of the telemetry analysis defined in {\it name} attribute. It can be unset, then the default parameters will be used. This attribute accept value formatted the same way as Telemetry Rest API, i.e. common separated values ordered the same as parameter definition in the Telemetry analysis.
+\end{enumerate}
+
+The {\it Measure} element also have up to two optional sub-elements. They are {\it StreamTrendParameters} and {\it ParticipationParameters}, each of which defines default parameters of the corresponded coloring method, and can exist together regardless what is set in the {\it classifierMethod} attribute. They take attributes same as their parameters discussed in \autoref{presentation}.
+
+%\section{Permalink supported in Software ICU}
+%Permalink support is another important feature that Software ICU provided. A permalink, or permanent link, is a URL that points to a specific page in Internet, i.e. every time users open the same link, they will get the same page. This is especially useful to bookmark a certain analysis or to share an analysis with someone else. Another usage of this feature is that user can directly assemble the URL to achieve an analysis without going over the control panels to get it. 
+
+%An example of a Software ICU's permalink is http://dasha.ics.hawaii.edu:9879/ projectbrowser/ projectportfolio/ 2009-10-02T00:00:00.000-10:00/ 2009-10-06T00:00:00.000-10:00/ Day/ Default::sz@hawaii.edu, hackystat-ui-wicket::randycox@hawaii.edu/.
+
 \chapter{Classroom Evaluation}
 
+
 \chapter{Contribution and Future Directions}
+
 
 
 
