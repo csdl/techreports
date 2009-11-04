@@ -16,6 +16,6 @@ svn_ignore.txt:	a collection of file extensions for temporary LaTeX files
 	created when preparing a document. All of these types of files should
 	be kept out of the svn repository. To set up a directory with these
 	ignore values, cd into the directory and do [not yet tested]:
-	svn propset --file svn:ignore.txt
+	svn propset --file svn_ignore.txt
 	Note that the filename has "_" instead of ":" because Windows SVN
 	appears to choke when it sees a filename with ":".
