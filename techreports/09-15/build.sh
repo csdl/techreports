@@ -13,7 +13,7 @@ cp nsf.project.tex nsf.tex
 make clean
 make
 pdftk nsf.pdf cat 1-15 output upload/project.pdf
-pdftk nsf.pdf cat 16-18 output upload/biblio.pdf
+pdftk nsf.pdf cat 16-19 output upload/biblio.pdf
 
 # Build bio.pdf
 cp nsf.bio.tex nsf.tex
