@@ -29,7 +29,7 @@
 #
 fileinfo	:= LaTeX Makefile
 author		:= Chris Monson
-version		:= 2.1.40
+version		:= 2.1.41
 #
 # If you specify sources here, all other files with the same suffix
 # will be treated as if they were _include_ files.
@@ -97,6 +97,9 @@ version		:= 2.1.40
 #		graceful solution to this issue.
 #
 # CHANGES:
+# Chris Monson (2010-01-07):
+# 	* Bumped version to 2.1.41
+# 	* issue 60: bad makeindex runs now error out on subsequent tries
 # Chris Monson (2009-12-01):
 # 	* Bumped version to 2.1.40
 # 	* issue 36: build all indices (for e.g., splitidx usage)
@@ -1541,6 +1544,7 @@ define run-makeindex
 success=1; \
 if ! $(MAKEINDEX) -q $1 -t $3 -o $2 $4 > /dev/null || $(EGREP) -q '^!!' $3; then \
 	$(call colorize-makeindex-errors,$3); \
+	$(RM) -f '$2'; \
 	success=0; \
 fi; \
 [ "$$success" = "1" ] && $(sh_true) || $(sh_false);
@@ -2554,7 +2558,7 @@ define help_text
 #   in your .bashrc file.  I don't know why, but you may want to.
 #
 # STANDARD TARGETS:
-# 
+#
 #    all:
 #        Make all possible documents in this directory.  The documents are
 #        determined by scanning for .tex and .tex.sh (described in more detail
@@ -2612,7 +2616,7 @@ define help_text
 #        Remove ALL generated files, leaving only source intact.
 #        This will *always* skip files mentioned in the "neverclean" variable,
 #        either in this file or specified in Makefile.ini:
-#        
+#
 #        	neverclean := *.pdf *.ps
 #
 #       The neverclean variable works on all "clean" targets below, as well.
@@ -2984,7 +2988,7 @@ define help_text
 #            This is not generally advisable, since you can always create a
 #            grayscale document using the forms mentioned above.  But, if your
 #            plot simply must be grayscale even in a document that allows
-#            colors, this is how you do it.    
+#            colors, this is how you do it.
 #
 #    XFig Graphics:
 #            No special handling is done with XFig, except when a global
@@ -3019,7 +3023,7 @@ define help_text
 #                make all-dot2tex
 #
 #    GZipped EPS Graphics:
-#        
+#
 #        A .eps.gz file is sometimes a nice thing to have.  EPS files can get
 #        very large, especially when created from bitmaps (don't do this if you
 #        don't have to).  This makefile will unzip them (not in place) to
