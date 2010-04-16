@@ -3,7 +3,7 @@
 %% Author          : Philip Johnson
 %% Created On      : Mon Sep 23 11:52:28 2002
 %% Last Modified By: Philip Johnson
-%% Last Modified On: Fri Apr 16 07:56:21 2010
+%% Last Modified On: Fri Apr 16 12:00:21 2010
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   Copyright (C) 2009 Philip Johnson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -205,10 +205,10 @@ protocol, as discussed next.
 A WattDepot server accepts raw energy data from devices (via sensors) and
 makes this data (or analyses based upon it) available to clients.  The
 WattDepot server implements a variety of design decisions intended to
-improve its generality, reusability, and extensibility, including: (1) a RESTful
-API, (2) a pluggable back-end database, (3) aggregation via ``virtual'' sources,
-(4) data interpolation, and (5) multiple representations (including XML and JSON
-(Google visualization) representations).
+improve its generality, reusability, and extensibility, including: (1) a
+RESTful API, (2) a pluggable back-end database, (3) aggregation via
+``virtual'' sources, (4) data interpolation, and (5) multiple
+representations.
 
 {\em RESTful API.} WattDepot conforms to modern web service design best
 practices by providing a RESTful API.  REST (Representational State
@@ -221,13 +221,71 @@ such as PUT, POST, GET, and DELETE are used to add, amend, retrieve, and
 delete energy data. The WattDepot API \cite{WattDepotAPI} provides more
 details and a full specification of the supported operations.
 
+{\em Pluggable back-end database.} The WattDepot server implements an
+abstraction layer that enables the server to be built with a variety of
+different persistence mechanisms.  By default, WattDepot uses the Apache
+Derby relational database, which is a high performance, embedded database
+written in Java.  However, WattDepot can be ported to other relational or
+non-relational database systems by implementing an interface and setting some 
+run-time configuration parameters. 
 
+{\em Aggregation via virtual sources.} The data from a single physical
+meter is generally represented in WattDepot as a ``Source''.  Each
+WattDepot Source can indicate the power generated or consumed by that
+device at any moment in time, the energy generated or consumed by that
+device over a period of time, the carbon intensity associated with that
+device, and other features.  In addition to this one-to-one correspondance,
+WattDepot also supports the definition of ``virtual'' Sources, which are
+Sources defined as the aggregation of other Sources.  For example, a floor
+on a building might have two meters collecting data about energy
+consumption for the two sections of the floor.  WattDepot allows users to
+define a virtual Source representing the aggregation of the data stream
+from the two meters.  This virtual Source thus represents the total energy
+consumption for the floor. Virtual Sources can be arranged in a hierarchy,
+such that the virtual Sources for each floor in the building can themselves
+be contained in a virtual Source representing the entire building's energy
+consumption.
 
+{\em Data interpolation.} One common initial roadblock to analyzing energy
+data collected from multiple sources is the ``timestamp problem''. For
+example, assume that energy consumption on a building floor is collected by
+two meters, and that energy data is collected from those meters becomes
+available approximately every 15 minutes, but the timestamps associated
+with the data for a given time period differ by a minute or two.
+Determining the aggregate energy consumption is no longer a simple matter
+of importing the two data sets into a spreadsheet and using a summation
+macro, because the timestamps from the two meters do not ``match up''.
+WattDepot addresses this problem by providing automatic interpolation. For
+example, assume a meter sent energy data at roughly 30 minute intervals:
+11:23am, 11:56am, 12:25pm, and 1:01pm.  You can request the energy consumed
+by this Source between 12:00pm and 1:00pm, for example, and WattDepot will
+automatically interpolate the raw data values to provide an estimate for
+the interval of interest.  Automatic interpolation enables virtual Sources
+to return reasonable values even when its constituent Sources send data at
+different times and with different frequencies.  Figure \ref{fig:visualizer}
+illustrates both virtual sources and data interpolation. 
 
+\begin{figure*}[!th]
+  \center
+  \includegraphics[width=0.6\textwidth]{visualizer.eps}
+  \caption{\em \small The WattDepot Visualizer client displaying a virtual Source
+    and its two constituent physical sources. Data values are interpolated.}
+  \label{fig:visualizer}
+\end{figure*} 
 
-
+{\em Multiple representations.} One benefit of a RESTful architecture is
+the separation of a ``resource'' from its ``representation''.  In
+WattDepot, this means that data and analyses for a given Source can be
+provided in different ways, depending upon the needs of the client.  So
+far, WattDepot can provide data to clients using XML, JSON (the format
+supported by Google Visualizations), and CSV (comma-separated values),
+which is useful for importing WattDepot data into other tools for
+additional analysis.
 
 \subsection{Clients}
+\label{sec:clients}
+
+
 
 {\em This section will talk about the various clients, including the CLI,
   the Wicket app, and the various google gadgets.}
@@ -242,7 +300,7 @@ details and a full specification of the supported operations.
 
 \section{Future Directions}
 
-{\em Micro-grids? Smart homes? Bayesian networks?}
+{\em Micro-grids? Smart homes? Bayesian networks? Cloud-based persistence?}
 
 \bibliographystyle{IEEEtran}
 \bibliography{smartconsumer}
