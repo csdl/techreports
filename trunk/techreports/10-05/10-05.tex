@@ -3,7 +3,7 @@
 %% Author          : Philip Johnson
 %% Created On      : Mon Sep 23 11:52:28 2002
 %% Last Modified By: Philip Johnson
-%% Last Modified On: Fri Apr 16 12:00:21 2010
+%% Last Modified On: Fri Apr 16 15:19:50 2010
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%   Copyright (C) 2009 Philip Johnson
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,6 +97,16 @@ support near-real time feedback (such as Google PowerMeter and Microsoft
 Hohm), or it focuses on utility issues (OpenPDC), or it focusses on
 wire-level or hardware concerns (OSHAN, GridRouter Ecosystem).
 
+
+\begin{figure*}[!th]
+  \center
+  \includegraphics[width=0.8\textwidth]{architecture.eps}
+  \caption{\em \small Architecture of WattDepot: sensors obtain data from
+    meters on consumption or generation, transmit their findings to a
+    server, which is queried by clients to present visualizations or analyses.}
+  \label{fig:architecture}
+\end{figure*} 
+
 Rather than implement a special purpose solution for our research, we
 decided to leverage our prior experience in open source software
 engineering measurement systems to design and implement an open source,
@@ -119,15 +129,6 @@ provide the data to higher level energy services.
 \end{itemize}
 
 Figure \ref{fig:architecture} illustrates the architecture of the system.
-
-\begin{figure*}[!th]
-  \center
-  \includegraphics[width=0.8\textwidth]{architecture.eps}
-  \caption{\em \small Architecture of WattDepot: sensors obtain data from
-    meters on consumption or generation, transmit their findings to a
-    server, which is queried by clients to present visualizations or analyses.}
-  \label{fig:architecture}
-\end{figure*} 
 
 
 For example, consider a University that wants to implement a dorm energy
@@ -206,7 +207,7 @@ A WattDepot server accepts raw energy data from devices (via sensors) and
 makes this data (or analyses based upon it) available to clients.  The
 WattDepot server implements a variety of design decisions intended to
 improve its generality, reusability, and extensibility, including: (1) a
-RESTful API, (2) a pluggable back-end database, (3) aggregation via
+RESTful API, (2) a plugable back-end database, (3) aggregation via
 ``virtual'' sources, (4) data interpolation, and (5) multiple
 representations.
 
@@ -221,7 +222,7 @@ such as PUT, POST, GET, and DELETE are used to add, amend, retrieve, and
 delete energy data. The WattDepot API \cite{WattDepotAPI} provides more
 details and a full specification of the supported operations.
 
-{\em Pluggable back-end database.} The WattDepot server implements an
+{\em Plugable back-end database.} The WattDepot server implements an
 abstraction layer that enables the server to be built with a variety of
 different persistence mechanisms.  By default, WattDepot uses the Apache
 Derby relational database, which is a high performance, embedded database
@@ -269,7 +270,7 @@ illustrates both virtual sources and data interpolation.
   \center
   \includegraphics[width=0.6\textwidth]{visualizer.eps}
   \caption{\em \small The WattDepot Visualizer client displaying a virtual Source
-    and its two constituent physical sources. Data values are interpolated.}
+    (in blue) for a building floor and its two constituent physical Sources (in red and orange) corresponding to energy meters. All data values are interpolated.}
   \label{fig:visualizer}
 \end{figure*} 
 
@@ -283,24 +284,111 @@ which is useful for importing WattDepot data into other tools for
 additional analysis.
 
 \subsection{Clients}
-\label{sec:clients}
 
+While sensors collect energy data, and the server stores, aggregates, and
+interpolates it, WattDepot clients extract the data for presentation to the
+user or input into tools for additional analysis.  The WattDepot RESTful
+API is designed to enable a wide variety of clients to easily interact with
+WattDepot energy data.  
 
+Referring once again to Figure \ref{fig:architecture}, it illustrates two
+WattDepot clients, both based upon the Google Gadget technology which
+enables users to easily create personalized ``dashboards'' containing a
+wide variety of information resources.  The top client provides a real-time
+monitor.  After installing the gadget, users configure it with the URL of a
+WattDepot server, the Source that they wish to monitor, the type of data to
+display, and an update interval (between 5 and 30 seconds).  The gadget
+queries the WattDepot server according to the update interval and refreshes
+the gadget window with the most recent data.
 
-{\em This section will talk about the various clients, including the CLI,
-  the Wicket app, and the various google gadgets.}
+The bottom client is a map-based perspective on Sources.  Users can define
+a Source with its latitude and longitude coordinates, and this information
+can be used to display the set of Sources associated with a WattDepot
+server according to their location.  After installing the gadget, users
+configure it with the URL to a WattDepot server.  The gadget then displays
+icons on the map for each Source in the server.  Clicking an icon triggers
+the gadget to retrieve the most recently received data by that Source and
+display it in a pop-up window.
+
+Figure \ref{fig:visualizer} shows a ``Visualizer'' web application we built
+as part of a developer toolset.  Users select one or more sources, one or
+more kinds of data to display, a time interval, a sampling interval, and a
+presentation mode (chart or table).  The system retrieves the requested
+energy data from the WattDepot server.  This application illustrates the
+utility of both virtual sources and automatic data interpolation. First,
+the top blue trend line represents the power consumption of a virtual
+source aggregating together the power from the orange and yellow lines
+representing physical sources. Second, the sampling period of one hour does
+not correspond to the times at which energy data from the meters was
+provided.  In fact, this visualization does not even require the user to
+know whether sources are virtual or physical, or when data is sent.
+
+These three examples provide only a sampling of the kinds of WattDepot
+clients that are possible or currently under development. For example, we
+are developing an Android smart phone application that can display
+WattDepot data sources on any Android phone, and use it's geolocation
+facilities to let you know which energy Sources you are currently near.
 
 \section{Applications}
 
-\subsection{Simulations}
+Although WattDepot has been publicly available for only a short period of
+time, it is already finding use in a variety of application domains. 
 
-\subsection{Dorm Energy Competition}
+First, we are using WattDepot as infrastructure for an ambitious, next
+generation dorm energy competition web application.  This application,
+called the Kukui Cup, combines traditional energy competition standings
+(based upon overall energy reduction) with both fine-grained, near-real
+time energy feedback and a parallel competition in which students carry out
+``energy literacy'' activities to gain ``Kukui Nut'' points and compete for
+prizes based upon their point total.  WattDepot will provide the underlying
+energy data collection, analysis, and visualization services for Kukui Cup.
 
-\subsection{Data storage and normalization}
+Second, we have found WattDepot to be very useful as a
+simulation/prototyping mechanism.  For example, we have been partnering
+with our local utility provider (Hawaiian Electric Company) to explore
+future customer-facing services.  As part of this effort, we built a simple
+simulation of the Oahu grid in which we simulated meters collecting energy
+generation information from each of the 18 power plants on the island.  By
+combining this information with data about the carbon intensity of each
+plant (provided by the Carma site \cite{Carma}), we were able to develop a
+``stoplight'' visualization similar that provided by the U.K. Ecotricity
+site \cite{Ecotricity}.  Essentially, this visualization determines the
+carbon intensity associated with the current set of active power plants and
+their current energy generation level on Oahu, and can inform consumers of
+whether this intensity is relatively low, average, or high.
+
+Third, we are working with the Hawaii Natural Energy Institute (HNEI) on
+ways to use WattDepot as a data storage and normalization mechanism.  HNEI
+is currently receiving regular data sets from affiliates with energy
+consumption data, and storage and manipulation of this data is already
+becoming unweildy. Rather than build yet another one-off database solution,
+HNEI is evaluating WattDepot as a means to provide a master data repository
+and also to solve the ``timestamp problem'' by providing exported datasets
+with common timestamps across sources for input into their analysis tools.
 
 \section{Future Directions}
 
-{\em Micro-grids? Smart homes? Bayesian networks? Cloud-based persistence?}
+In the near future, we plan to work on a number of promising research and
+development directions with WattDepot.
+
+First, we want to explore the issues associated with privacy of energy
+data.  Currently, WattDepot has a relatively simple privacy model.  All
+sensors sending data for a particular Source must have the username and
+password corresponding to that Source's owner and their data requests are
+authenticated before being stored on the WattDepot server. This prevents
+unauthorized users from faking energy data. Each WattDepot Source must be
+declared as public or private.  If public, then anyone can retrieve that
+data; if private, then only the Source's owner can retrieve the data.  
+
+We recognize that this privacy model is quite limited, and in fact our
+applications to date all use Public sources.  We want to investigate more
+sophisticated and useful privacy models in future.
+
+Second, we are interested in exploring alternative database back-ends, such
+as NoSQL systems like CouchDB, or cloud-based storage services like Amazon
+S3, Windows Azure, and so forth. The plugable WattDepot architecture will
+enable us to experiment with different implementations and carry out
+performance analysis to assess their costs and benefits.
 
 \bibliographystyle{IEEEtran}
 \bibliography{smartconsumer}
