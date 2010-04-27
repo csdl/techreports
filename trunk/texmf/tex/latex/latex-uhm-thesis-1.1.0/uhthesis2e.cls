@@ -682,34 +682,35 @@ by\par
 %% Redefine @sect so that the abbreviated name is used only for %%
 %% the page heading, and the full name goes into the table of   %%
 %% uhthesis2e.cls -- JTW                                        %%
+%% Commented out, as this is a nice feature for long section names! -rbrewer
 
-\def\@sect#1#2#3#4#5#6[#7]#8{\ifnum #2>\c@secnumdepth
-     \let\@svsec\@empty\else
-     \refstepcounter{#1}%
-     \let\@@protect\protect
-     \def\protect{\noexpand\protect\noexpand}%
-     \edef\@svsec{\@seccntformat{#1}}%
-     \let\protect\@@protect\fi
-     \@tempskipa #5\relax
-      \ifdim \@tempskipa>\z@
-        \begingroup #6\relax
-          \@hangfrom{\hskip #3\relax\@svsec}%
-                    {\interlinepenalty \@M #8\par}%
-        \endgroup
-       \csname #1mark\endcsname{#7}\addcontentsline
-         {toc}{#1}{\ifnum #2>\c@secnumdepth \else
-                      \protect\numberline{\csname the#1\endcsname}\fi
-%%                     #7}\else
-                    #8}\else
-        \def\@svsechd{#6\hskip #3\relax  %% \relax added 2 May 90
-                   \@svsec #8\csname #1mark\endcsname
-                      {#7}\addcontentsline
-                           {toc}{#1}{\ifnum #2>\c@secnumdepth \else
-                           \protect\numberline{\csname the#1\endcsname}%
-                                     \fi
-%%                        #7}}\fi
-                       #8}}\fi
-     \@xsect{#5}}
+% \def\@sect#1#2#3#4#5#6[#7]#8{\ifnum #2>\c@secnumdepth
+%      \let\@svsec\@empty\else
+%      \refstepcounter{#1}%
+%      \let\@@protect\protect
+%      \def\protect{\noexpand\protect\noexpand}%
+%      \edef\@svsec{\@seccntformat{#1}}%
+%      \let\protect\@@protect\fi
+%      \@tempskipa #5\relax
+%       \ifdim \@tempskipa>\z@
+%         \begingroup #6\relax
+%           \@hangfrom{\hskip #3\relax\@svsec}%
+%                     {\interlinepenalty \@M #8\par}%
+%         \endgroup
+%        \csname #1mark\endcsname{#7}\addcontentsline
+%          {toc}{#1}{\ifnum #2>\c@secnumdepth \else
+%                       \protect\numberline{\csname the#1\endcsname}\fi
+% %%                     #7}\else
+%                     #8}\else
+%         \def\@svsechd{#6\hskip #3\relax  %% \relax added 2 May 90
+%                    \@svsec #8\csname #1mark\endcsname
+%                       {#7}\addcontentsline
+%                            {toc}{#1}{\ifnum #2>\c@secnumdepth \else
+%                            \protect\numberline{\csname the#1\endcsname}%
+%                                      \fi
+% %%                        #7}}\fi
+%                        #8}}\fi
+%      \@xsect{#5}}
 
 
 \newcounter {part}
