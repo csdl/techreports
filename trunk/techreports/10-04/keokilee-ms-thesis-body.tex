@@ -32,7 +32,7 @@ While WattDepot is able to collect all of the electricity data, the data still n
 
 Students nowadays have university computer accounts that they use to access their email and other electronic resources.  Universities typically implement this using a CAS login, which requires the student to log in through a central university server before accessing protected resources.  By leveraging this student authentication, we are able to present energy data in the context of their dorm or floor.  We can also present an interface for students to create their own profile and participate in activities.
 
-Because competitions involve more than just reducing energy usage, Makahiki will also have support for creating activities, commitments, and goals.  Activities can range from replacing light bulbs in a desk lamp to attending meetings by sustainability organizations.  Commitments are typically small "pledges" that dorm residents can accept, like committing to turning off the lights in the lounge.  Goals are actions that entire dorm floors participate in.  Goals can include reducing energy usage by ten percent or having all the members of a floor attend an event.  Dorm residents can participate in these items in order to gain points in the competition.
+Because competitions involve more than just reducing energy usage, Makahiki will also have support for creating activities, commitments, and goals.  Activities can range from replacing light bulbs in a desk lamp to attending meetings by sustainability organizations.  Commitments are typically small "pledges" that dorm residents can accept, like committing to turning off the lights in the lounge.  Goals are actions that entire dorm floors participate in.  Goals can include reducing energy usage by ten percent or having all the members of a floor attend an event.  Competition participants can participate in these items in order to gain points.
 
 Furthermore, Makahiki will be configurable depending on the competition organizer's needs.  For instance, some organizations may wish to enter energy data manually since they cannot afford compatible smart meters.  Some organizations may wish to have a simple website for their competition without the added activities module.  These configurations are:
 
@@ -92,7 +92,7 @@ While Oberlin held yearly dorm energy competitions for some time, they had their
 	\caption{Oberlin College Campus Resource Management System}
 \end{figure}
 
-A few universities around the nation use Lucid Design Group's building dashboard for their dorm energy competition.  In addition to Oberlin College, Bowdoin College, St. John's University, Hamilton College, Boston College, and Elon University have all run dorm energy competitions through the use of Lucid Design Group's dashboard\cite{lucid-competitions} with great success.  Universities that do not use Lucid Design Group's dashboard typically go with a manual entry approach.
+A few universities around the nation use Lucid Design Group's building dashboard for their dorm energy competition.  In addition to Oberlin College, Bowdoin College, St. John's University, Hamilton College, Boston College, and Elon University have all run dorm energy competitions through the use of Lucid Design Group's dashboard\cite{lucid-competitions} with great success.  Universities that do not use Lucid Design Group's dashboard typically go with a manual entry approach.  Because this requires direct access to the meters, the update interval can be as long as a week, providing dorm residents with very little feedback, if any at all.
 
 \begin{table}[h]
 	\begin{tabular}{|l||l|l|l|l|}
@@ -114,32 +114,65 @@ A few universities around the nation use Lucid Design Group's building dashboard
 \chapter{Makahiki}
 \label{makahiki}
 
-The proposed Kukui Cup System consists of two main components.  \autoref{webapp} describes the implementation of the web application.  \autoref{socialint} describes integration with popular social networks such as Facebook and Twitter.
+\autoref{implementation} describes the implementation of the web application.  \autoref{wattdepot} goes into Makahiki's integration with WattDepot and the advantages of using WattDepot as a source of data.  \autoref{user} talks about what happens after a user logs in and the use of personalized information.  \autoref{activity} describes the activity framework and using it as a component of the dorm energy competition.  \autoref{mobile} describes how users with mobile devices such as Android phones or iPhones can interact with Makahiki. Finally, \autoref{socialint} describes Makahiki's integration with the Facebook social network.
 
-\section{Web Application}
-\label{webapp}
+\section{Implementation}
+\label{implementation}
 
 The current implementation of Makahiki is built using Django and Pinax.  Django\cite{django} is an open source web development framework implemented in Python.  Pinax\cite{pinax} is an open source platform built on Django that provides a set of reusable modules.  By using Pinax, we were able to start with a Django content management system and start building our unique modules right away.  Things like user accounts and profiles are created for us with little effort.
 
-There are a few reasons why we chose Django and Pinax to implement Makahiki.  First, both are open source and thus other users who need to implement functionality can do so.  More importantly though, Django and Pinax provided us a lot of flexibility.  While we could have gone with a more popular content management system, these larger systems may not be flexible enough to support all of our needs.  Also, the process of extending such a large codebase would take additional time.  By going with Django, a general framework for creating web applications, we have the flexibility we desire.  And for the most part, we do not need to extend Django.  Instead, we just use the tools it provides to create the necessary modules for Makahiki.
+There are a few reasons why we chose Django and Pinax to implement Makahiki.  First, both are open source and thus other users who need to implement functionality can do so.  More importantly though, Django and Pinax provided us a lot of flexibility.  While we could have gone with a more popular content management system, these larger systems may not be flexible enough to support all of our needs.  Also, the process of extending such a large codebase would take additional time.  By going with Django, a general framework for creating web applications, we have the flexibility we desire.  And for the most part, we do not need to extend Django.  Instead, we just use the tools it provides to create the necessary modules for Makahiki.  Finally, Pinax provides starter implementations for different types of web applications.  For Makahiki, we started with a content management system project and gradually added some of the features in the social project.
 
-\subsection{WattDepot Integration}
+With Pinax, we created a content management system for presenting sustainability-related information.  The content management system includes a news module where admins can create news stories to post on the front page.  Also, if Makahiki is receiving data from WattDepot, energy data from installed meters can also be presented in various ways. The content management system also includes space for information about the dorm energy competition and links to additional sustainability resources provided by administrators.
+
+\section{WattDepot Integration}
+\label{wattdepot}
 
 WattDepot is an open source web service that collects and stores energy usage data from meters.  The system is currently under development in the Collaborative Software Development Laboratory at the University of Hawaii at Manoa.  While instances of the service are hosted in the laboratory, organizations can choose to host their own instances.
 
-There are several reasons why we want to support integration with WattDepot.  First, the data in WattDepot is accessible via a REST API\cite{wattdepot-rest}, meaning that external services can easily request and retrieve data from the system.  Also, WattDepot supports near-real time (sub-minute) update intervals, which is one of the reasons why competitions that use Lucid Design Group's Building Dashboard are so successful.  Other freely available solutions like Google PowerMeter\cite{google-powermeter} do not have this level of feedback.  
+There are several reasons why we want to support integration with WattDepot.  First, the data in WattDepot is accessible via a REST API\cite{wattdepot-rest}, meaning that external services can easily request and retrieve data from the system.  Also, WattDepot supports near-real time (sub-minute) update intervals, which is one of the reasons why competitions that use Lucid Design Group's Building Dashboard are so successful.  With these updates, we can immediately present users with their current energy usage.  Users can then run "experiments", like seeing what happens when someone turns off their lights.  Other freely available solutions like Google PowerMeter\cite{google-powermeter} do not have this level of feedback.
 
-\subsection{Mobile Web Application}
+Because WattDepot stores all of this data, Makahiki can retrieve current and historical data in order to provide visualizations.  Thus, competition participants can see how their usage has changed over time.  Administrators can also use this data to see if residents are completing energy reduction goals like reducing a floor's usage by 10 percent over a week.
 
-Formatting the website for iPhone/Android users.
+\section{User Features}
+\label{user}
+
+Using Django's authentication framework, we also provide the ability for competition administrators and participants to log in to the website.  Instead of storing account information within Django, we chose to use a Django CAS plugin\cite{django-cas}.  With this plugin, users will be able to log in with the account provided to them by their organization (assuming that the organization hosts their own Central Authentication Service).  After users log in for the first time, they will also have the option to connect their account with Facebook using Facebook Connect.  Users will then be able to use their Facebook login to login to Makahiki.  Thus, Makahiki does not have to store any user passwords.
+
+Once a user logs in, they will be taken to their profile.  Users will be able to add their own picture, insert their actual name, and some additional information about themselves.  Here, the user will also be able to view the latest activity for their floor.  A box that shows the user's current floor energy consumption will also be displayed as well as their current standings relative to other floors and/or dorms.
+
+\section{Activity Framework}
+\label{activity}
+
+In addition to the energy conservation competition, we developed a framework for a separate competition based on points.  This competition requires users to participate in predefined tasks in order to earn points for their dorms and the dorm with the highest score wins.  This competition will typically be run at the same time as the dorm energy competition, as these tasks can provide competition participants with tips on how to reduce their energy usage.  The activity framework is split into three types of tasks: activities, commitments, and goals.
+
+\subsection{Activities}
+
+Activities are tasks that require a competition participant to perform a specific action in order to earn points.  Examples of activities include attending presentations, watching energy conservation related videos, or joining campus sustainability groups.  These activities are designed to make participants more knowledgeable and get them involved with the sustainability community.
+
+Users who participate in activities usually require administrator approval before they can earn the points in the activity.  Administrators can either approve or reject these requests for points.  Makahiki supports three different confirmation types: question and answer, confirmation code, and image upload.
+
+In the question and answer, the activity creator needs to come up with at least one question to ask participants.  The admin also specifies an answer to each question, which is merely used to help other administrators validate answers to questions.  When a participant requests to receive points for a question and answer activity, a random question is picked from the list of questions for that activity.  Once a participant submits their answer, it is then available for admins to review.  Activities that require participants to watch a video might require them to answer a question.  Questions can be as simple as "What is the unit of measurement for household energy?"
+
+A confirmation code is typically used for activities that require attendance of an event.  The admin needs to specify the number of confirmation codes to generate.  Once the admin creates the activity, they can view the list of codes generated for this activity in a printable format.  When the event occurs, competition organizers can then hand out the confirmation codes to attendees of the event who are also participating in the competition.  When a participant requests points for this activity, they are required to enter a confirmation code.  If the code is valid, it is immediately approved.  Codes cannot be used more than once.  An example where a confirmation code might be used would be "Attend a free movie presentation of Planet Earth".
+
+The image upload confirmation type requires participants to upload a picture in order to verify that they have performed the activity.  When the admin creates the activity, they also specify what the content of the image should be.  After the participant performs the activity, they are asked to upload the image.  Admins can then review the image.  An activity that might require an image upload would be "Replace an incandescent bulb with a CFL".  The participant could then be required to take a picture of themselves holding both the CFL and the incandescent bulb.
+
+\subsection{Commitments}
+
+\subsection{Goals}
+
+\section{Mobile Device Support}
+\label{mobile}
+
+Portable internet-connected devices like iPhones, iPod Touches, and Android phones are extremely popular nowadays.  Makahiki has support for custom view templates, including templates for mobile devices.  A default mobile template will provide competition participants with the ability to log in and view energy data.  Users will also be able to manage their participation in activities, commitments, and goals.
+
+There are a few reason why we chose to go with a mobile formatted web site instead of a mobile application.  First, the support of multiple devices means that we need to develop multiple versions of the application.  A mobile application for the Android needs to be ported over to the iPhone. Second, mobile applications for iPhones, iPads, and iPod Touches need to be approved by Apple in order to be available for users.  An application can take a while to approve and even then we may need to resubmit the application multiple times.  Finally, a Makahiki application is just a way for a user to log in and see what is going on.  It does not require special device features such as GPS.
 
 \section{Social Network Integration}
 \label{socialint}
 
-Integrating with Facebook and/or Twitter.
-
-% \section{Other Notifications}
-% \label{notifications}
+During our investigation of other dorm energy competitions, few organizations took advantage of popular social networks such as Facebook.  By integrating with Facebook, we allow users to share their activity within Makahiki with their friends.  As a result, Makahiki's potential influence expands from the dorm into each user's social graph.  For example, a user's Facebook friends may be encouraged to follow energy conservation tips that are posted by the user.  Also, students at other universities may be interested in hosting dorm energy competitions of their own based on the comments and activity of a current participant.
 
 \chapter{Evaluation}
 \label{evaluation}
