@@ -1,0 +1,268 @@
+\chapter{System Description}
+\label{cha:system-description}
+
+The system to be evaluated is a combination of an energy competition between residents of two freshman residence halls, and an associated competition website to be used by the residents participating in the event. The system has three goals:
+
+\begin{itemize}
+	\item Enable research into fostering sustainable environmental behavior change
+	\item Improve the energy literacy of the participants
+	\item Reduce the energy consumption of the residence halls
+\end{itemize}
+
+The participants compete both to reduce energy consumption in the participating residence halls, and to accumulate points by performing tasks related to energy literacy and conservation through the competition website.
+
+This chapter describes the components of the system, and ends with a discussion of the factors that pose a risk to the successful implementation and evaluation of the system.
+
+\section{Competition design}
+
+We will examine the behavior of freshmen residents in student housing at the University of \Hawaii at \Manoa in the context of a energy competition. An student housing energy competition typically involves residence halls attempting to reduce their energy consumption during the competition period by the greatest amount. The competition planned here is more complicated than standard competitions so that we can obtain data on a wider variety of behavior. The working name for the competition is the Kukui Cup. The kukui nut was burned by Native Hawaiians to provide light, making it an early form of energy in \Hawaii.
+
+\subsection{Location}
+
+The two residence halls being targeted for the competition are Lehua and Mokihana from the Hale Aloha towers \cite{hale-aloha-website}. Each tower contains 13 floors with the following composition:
+
+\begin{itemize}
+	\item Floor 1: Lobby
+	\item Floor 2: Non-student resident(s)?
+	\item Floor 3--12: Student residents
+	\item Floor 13: Laundry, kitchen
+\end{itemize}
+
+\subsection{Participants}
+
+The participants of the competition will be freshmen residents of two on-campus residence halls. The freshman residence halls are specifically targeted for two reasons. First, based on conversations with UHM undergraduates, residents in the freshman buildings are more likely to attend floor meetings and events, while upper class residence halls are more like apartments where residents might not know their neighbors well or be motivated to attend floor meetings. Second, as the goal is to improve energy literacy and foster behavior changes in the participants, we wish to make an impact as early as possible for maximum benefit to themselves and the University.
+
+Each floor of the targeted residence halls has a resident advisor (RA) and 13 double occupancy rooms, and there are 10 floors of student residents. Therefore, assuming full occupancy, there are 260 potential participants per hall and 520 potential participants in total. While all residents are indirectly participating since all electricity usage in the building will be monitored, we define participants as those residents that actually log into the competition website at least once.
+
+\subsection{Timing}
+
+The competition is organized into 4 rounds, each lasting a week, starting in early October 2010. While some student housing energy competitions have taken place over shorter periods, such as 2 weeks \cite{petersen-dorm-energy-reduction}, 4 weeks provides participants a longer period to change their behavior. Structuring the competition into rounds ensures that residents that did not participate initially can start participating in a later round without undue disadvantage.
+
+The precise starting date will be determined based on factors such as equipment installation and coordination with Student Housing Services (see \autoref{sec:external-cooperation} and \autoref{sec:participant-engagement}).
+
+\subsection{Infrastructure}
+
+The core infrastructure required to enable an energy competition is electricity metering. In \Hawaii, the vast majority of energy used in buildings is electricity, so measuring direct energy use reduces to measuring electricity use. While building-level metering is common for energy competitions, for this competition we plan to have floor-level metering of electricity. Metering at the floor level has several advantages:
+
+\begin{itemize}
+	\item Finer-grained data about electricity usage
+	\item Individual behavior changes more likely to be visible in data
+	\item Makes the residents of a floor a natural `unit' of competition
+\end{itemize}
+
+We also require that the meters provide sub-minute sampling times, preferably 10 to 15 seconds. This is an unusual requirement for meters used outside the home. We term this requirement \emph{near-realtime} monitoring. As discussed in \autoref{sec:energy-feedback}, providing near-realtime feedback on energy use is associated with greater reductions in energy consumption. Near-realtime feedback also enables participants to empirically determine how much electricity different devices consume, and become more aware of their energy use.
+
+The other meter requirements are provision of an open API to allow retrieval of the data, and affordable pricing.
+
+We have evaluated several building energy meters based on these criteria, and found 4 meters that meet all the criteria. All 4 meters support the Modbus/TCP protocol \cite{modbus-website}, which allows the meters to be queried over the Internet using a standardized protocol. Final selection of the meter will be done based on feedback from UHM facilities and the results of development of software to read data from the meters.
+
+Installation of the meters involves placing current transformers over the incoming power lines in the electrical room on each floor. The current transformers convert current flowing over lines providing each phase into a small voltage which is then measured by the electrical meter. The electrical meters under consideration all have Ethernet ports, allowing them to be connected directly into the residence hall LAN. Once connected to the UHM network, they can be queried from any location.
+
+The other infrastructure required is to place large TV display connected to an Internet-connected computer in the lobby of each building. This display will be used as a `billboard' that cycles through information about the competition, such as the floor standings and upcoming events (see \autoref{sec:billboard-design}). The Hale Aloha towers already have flat panel displays present in the lobby, which might be suitable for billboard display. Otherwise, two displays will need to be purchased. Some manufacturers make large format displays that embed a Windows PC in the display and are designed for this type of usage (such as the Samsung 460UXN-2, which costs approximately \$2,000).
+
+\subsection{Metrics}
+
+There are two metrics for the competition: energy consumption (EC) score and Kukui Nut (KN) score. Energy consumption is the total amount of electrical energy consumed by a floor in kWh during a round as measured by the power meters. The energy consumption is normalized by subtracting the minimum floor power multiplied by the time interval in question (see \autoref{sec:min-floor-power}). Therefore, floors are ranked in increasing order of energy consumption, with the floor with the lowest energy consumption being the winner. The floor-level energy consumption score can be aggregated spatially to obtain a score for an entire building, and also temporally to obtain a score for the entire competition across all rounds.
+
+The parallel metric for the competition is Kukui Nut points. Kukui Nut points are assigned to individual participants for performing certain tasks via the competition website. The verification of task completion and recording of the Kukui Nut points are done entirely through the website, see \autoref{sec:website-design} for more details. Kukui Nut points can be aggregated spatially to obtain a point total for an entire floor or for an entire building, and also temporally to obtain a score for the entire competition across all rounds.
+
+\subsection{Awards and prizes}
+
+Using the competition metrics, we can define various awards that can be won in the competition. In the event of ties, the winner will be resolved by random selection. Since the competition consists of 4 rounds, a common pattern is to have an award for each of rounds 1 through 3, and then an award for the entire competition (all 4 rounds). To incentivize participation, each award has an associated prize. We define the following awards for individuals. Note that all individual awards relate to KN since energy data only goes down to the floor level, not individual:
+
+\begin{itemize}
+	\item Highest KN score on each floor for rounds 1--3 (60 winners per competition, prize value \$5 [e.g. Jamba Juice coupon])
+	\item Highest KN score for each round 1--3 (3 winners per competition, prize value \$25 [e.g. iTunes gift card])
+	\item Highest total KN score for competition (1 winner per competition, prize value \$200 [e.g. iPod Touch])
+\end{itemize}
+
+Awards for floors:
+
+\begin{itemize}
+	\item Highest total KN score for competition (1 winner per competition, prize value \$300 [e.g. energy efficient HDTV for lounge])
+	\item Lowest EC score for each round 1--3 (3 winners per competition, prize value \$50 [e.g. ice cream party for floor])
+	\item Lowest total EC score for competition (1 winner per competition, prize value \$300 [e.g. movie ticket voucher for everyone on floor])
+\end{itemize}
+
+Awards for residence halls:
+
+\begin{itemize}
+	\item Lowest total EC score for competition (1 winner per competition, prize value \$500 [pizza party for hall])
+\end{itemize}
+
+Approximate prize budget: \$1,825.00
+
+\section{Website Design}
+\label{sec:website-design}
+
+The competition website serves as the focal point for information about the competition, including information on individual and floor competition standings. The website also provides the only way for participants to accumulate Kukui Nut points, the competition that parallels the energy consumption aspect.
+
+The design of the website itself has been conducted in collaboration with the students taking ICS 414 in the Spring 2010 semester, as well as with Professor Philip Johnson. Fellow ICS graduate student George Lee is the primary implementor of the website, which he is performing as a part of his Masters thesis research.
+
+\subsection{Public portal}
+
+\begin{figure}[htb]
+	\centering
+		\includegraphics[width=1.0\textwidth]{website-home}
+		\caption{Mockup of website home page (created by Philip Johnson)}
+		\label{fig:website-home}
+\end{figure}
+
+While the impetus for the website is to support the competition, it is also intended to be provide information about the competition and residence hall energy consumption to the public (non-participants). Therefore, the website is conceived as a general portal into residence hall energy usage that will be available before and after the competition. During the competition period, the competition-specific portions of the website will be made available to participants. \autoref{fig:website-home} shows a mockup of the front page of the website, where we can see overall residence hall energy consumption.
+
+\subsection{Personalized participant page}
+
+Competition participants will be able to log into the website using their UH username and password, which will lead them to a personalized home page. The website will provide the following information to participants:
+
+\begin{itemize}
+	\item Competition rules
+	\item Competition news (awards, reminders, etc.)
+	\item Floor-level power and energy consumption data
+	\item Individual Kukui Nut scores
+	\item Rankings of individuals, floors, and residence halls based on EC and KN score totals
+	\item Lists of upcoming competition events
+	\item Tasks that can be performed for Kukui Nut points
+	\item Resources on energy literacy and conservation
+\end{itemize}
+
+\autoref{fig:website-maile} shows a mockup of the personalized home page for a participant named Maile. On the left hand side we see Maile's profile, showing her name, room number, and how many Kukui Nut points she has accumulated during the competition. The center column of the page relates to the tasks that Maile can perform to gain Kukui Nut points (\autoref{sec:competition-tasks} describes the task system in detail). The right hand side displays both power data and competition standings. The upper number is the near-realtime power usage for Maile's floor, which is colored in red as an indicator that this value is above the pre-competition baseline. The lower number is the total electrical consumption for Maile's floor in this round, which is colored in green since it is below the baseline and on target to meet the floor's goal of a 10\% reduction in energy usage for this round. The box in the lower right hand corner displays the competition standings that are most relevant to Maile.
+
+\begin{figure}[htb]
+	\centering
+		\includegraphics[width=1.0\textwidth]{website-maile}
+		\caption{Mockup of personalized participant home page (created by Philip Johnson)}
+		\label{fig:website-maile}
+\end{figure}
+
+\subsection{Billboard}
+\label{sec:billboard-design}
+
+The billboard is a non-interactive mode for the website designed to convey competition information to participants in the lobby of the residence halls in an ambient fashion. It is also expected that the billboards will remind the residents about the competition, making them more likely to participate. The billboard consists of a series of pages, which are cycled through after an appropriate delay (approximately 20 seconds). Billboard pages will display competition standings (individual, floor, and building), upcoming events, tasks recently performed by participants (in the style of the Facebook newsfeed), prize descriptions, and energy conservation tips. \autoref{fig:website-billboard} shows a mockup of the billboard display.
+
+\begin{figure}[htb]
+	\centering
+		\includegraphics[width=1.0\textwidth]{website-billboard}
+		\caption{Mockup of competition billboard (created by Philip Johnson)}
+		\label{fig:website-billboard}
+\end{figure}
+
+\subsection{Administration}
+
+As the website is intended to be the hub for competition activity, it provides an contest administration interface where participants can be added, tasks created (see \autoref{sec:competition-tasks}, and tasks verified (see \autoref{sec:task-verification}). The contest administration interface is separate from lower-level administrative tasks such as the layout of the website, database table maintenance, etc. The contest administration will be performed by the researchers, and potentially trained volunteers `deputized' to verify task completion, depending on the actual workload.
+
+
+\section{Competition Tasks}
+\label{sec:competition-tasks}
+
+One of the goals of the competition is to improve the energy literacy of the participants. As discussed in \autoref{sec:energy-literacy}, we have defined energy literacy as consisting of knowledge, skills, attitudes, and behaviors. While the knowledge component can be conveyed through a website, the other parts require the participants to engage in activities outside the website. Further, research in environmental psychology described in \autoref{sec:fostering-behavior} indicates that the incorporation of techniques like public commitments and goal setting can increase the likelihood of sustainable behavior change.
+
+To increase the energy literacy of the participants and to motivate their participation, the website provides a variety of tasks that can be performed to earn Kukui Nut points (KN). These tasks are divided into three categories:
+
+\begin{itemize}
+	\item \emph{Activities:} one-time, verifiable tasks that are performed by an individual
+	\item \emph{Commitments:} ongoing, non-verifiable behaviors that are performed by an individual
+	\item \emph{Goals:} one-time, verifiable tasks that are performed by a group of participants from a floor
+\end{itemize}
+
+The complete list of tasks defined for the competition can be found in \autoref{app:tasks}. Participants can view the list of available tasks on their personalized home page (\autoref{fig:website-maile}). Tasks can be specified as only being visible during a range of dates (such as a few days before and after an event takes place).
+
+\subsection{Verification}
+\label{sec:task-verification}
+
+After a participant completes a task, they select the task on the website and submit the required verification information that proves that they completed the task. The completed task is then added to the administration queue, where a competition administrator reviews the verification information and either awards the specified Kukui Nut points to the participant, or bounces the task back to the participant for further verification (if the information is missing or suspect).
+
+Verification information can take one of three forms:
+
+\begin{itemize}
+	\item A free-form text field (such an answer to a question)
+	\item An uploaded image (such as a photo from a digital camera)
+	\item A non-forgeable, single-use attendance codes
+\end{itemize}
+
+Some tasks are verified by asking the participant a question, which they then answer in a free-form text field. To make it more difficult for participants to cheat by sharing answers, each question-verified task has multiple associated questions and the question posed to each participant is selected randomly.
+
+Other tasks are difficult to verify with text only (such as changing out a incandescent bulb with a CFL). For these tasks, participants can take a picture that provides some proof that they have completed the task (such as holding both the incandescent bulb and the CFL).
+
+Another type of task involves attendance of an event. To verify attendance, at competition events a responsible party (contest administrator or resident advisor) will hand out small slips of paper that contain an \emph{attendance code}. An attendance code for an orientation event could be ``orientation-158-B7QRX13''. Each attendance code is unique to the event, and contains a random string of characters generated by the website in advance. After the event, participants that attended can log onto the website and enter the attendance code they received. Since each attendance code was pre-generated, the website can verify that the code is valid, has not already been used, and corresponds to the event in question.
+
+\subsection{Activities}
+
+Activities are one-time tasks that can be verified using the website. Example activities are:
+
+\begin{itemize}
+	\item Attend the Energy Pong tournament
+	\item Perform an energy audit of your room
+	\item Watch a short YouTube video about energy
+\end{itemize}
+
+After performing the activity, the participant can request KN via the website. Since activities can be verified, they are the baseline for KN points and are worth around 5 KN. Activities cannot be repeated once they have been successfully completed.
+
+\subsection{Commitments}
+
+Commitments are ongoing behavior changes that are believed to either improve participants energy literacy or reduce energy consumption, but for practical reasons cannot be externally verified. Example commitments are:
+
+\begin{itemize}
+	\item Turning off the lights when leaving a room
+	\item Turning off/shutting down all appliances before going to sleep
+	\item Washing laundry in cold water
+\end{itemize}
+
+Each commitment lasts 5 days and then expires, and each participant can have no more than 5 commitments at one time. All commitments made by participants are made public to the other participants. After the commitment has expired, the participant can self-verify their completion of the commitment by clicking on a button to affirm that they did live up to the commitment. While this self-verification still allows a participant to receive points without actually performing the commitment, it requires the participant to make a conscious decision to do so. The public nature of commitments also allows for participants to police their peers, and call them out if they are violating their commitments. Since there is the potential for cheating, commitments are mostly worth 2 KN, less than activities and goals. Participants can repeat commitments after they expire, if they wish.
+	
+\subsection{Goals}
+\label{sec:goals}
+
+Goals are one-time, verifiable tasks that involve a group of participants from a floor. Example goals are:
+
+\begin{itemize}
+	\item Reduce floor energy consumption by 10\%
+	\item Determine minimum floor power
+	\item All floor residents attend Energy Pong tournament
+\end{itemize}
+
+Goals are selected by participants on a floor using the website. Each floor can have up to 6 goals active at one time, and each participant can select no more than 2 goals for their floor on a first-come-first-served basis. Each goal is active for 5 days. If the floor achieves the one of the active goals, then the participant that selected the goal must log onto the website and verify the completion of the goal. Once verified by a contest administrator, KN points are awarded to all participants on the floor (whether they actively participated or not). Participation goals (such as attending an event) require at least half of the floor to participate to receive any KN. If a floor achieves 100\% participation, they receive double the KN. Goals that are achieved cannot be repeated, but goals that are not achieved before they expire can be repeated.
+
+
+\section{Energy Data Infrastructure}
+
+To provide a way to collect, display, and analyze energy data, we have developed an Open Source system called WattDepot \cite{WattDepot}. WattDepot provides an ecosystem for energy data, from the collection of data from meters, to storing it in a repository, to displaying it in a variety of formats. The WattDepot system has been in use in a classroom setting since October 2009, and has been the focus of several ICS 414 student projects in Spring 2010. Since WattDepot handles all the energy data collection and storage, the competition website need only use high-level graphical widgets to display graphs and realtime meter data to participants.
+
+
+\section{Risk Factors}
+\label{sec:risks}
+
+The system described in this chapter has many ``moving parts'' including hardware installations, cooperation with other organizations, and several hundred residents whose participation is not a foregone conclusion.
+
+\subsection{Meter installation cost}
+
+In order to provide floor-level near-realtime electricity usage data in two residence halls, a physical meter needs to be installed on each floor to be monitored. The meters under consideration cost between \$1,000 and \$1,500 and must be installed by a qualified electrician. The Hale Aloha residence hall towers where the competition is planned to take place have 10 floors each of freshman residents, so the cost for the meters alone will be more than \$20,000, not including installation costs. While we are exploring several options for funding the hard costs related to the competition (rolling the costs into planned renovations of the residence halls, funding from the Renewable Energy and Island Sustainability group, or possibly external funding) there is some risk that sufficient funds will not be available to purchase and install all the meters required.
+
+If we are unable to secure funding for the installation of meters on all 20 floors, the easiest fallback position would be to switch to a competition in a single residence hall, which would roughly halve the meter expense. The impact to the research would roughly halve the number of potential participants, and eliminate building to building competition, which is a relatively minor aspect of the competition and evaluation.
+
+If we are unable to install meters for all floors in one entire building (due to funding, or some other logistical reason) then the next fallback position would be to only install meters on some of the floors, with a minimum of two floors. This reduction would be much worse than using a single building, as it would further reduce the set of potential participants. It would also create difficulties in communication, since any competition information would only be relevant to the floors participating. There could also be tensions between participating floors, which would be eligible to win prizes, and the non-participating floors. Overall, running the competition on a size smaller than an entire building would be a last resort.
+
+\subsection{Meter install timing}
+
+The other major consideration regarding the meters is the timing of their installation. Our goal is to install the meters during the summer, so that we can work through any technical issues before students move into the residence halls. The other reason to have the meters installed before students arrive is to be able to measure the minimum floor power (see \autoref{sec:min-floor-power}).
+
+If the meters cannot be installed before students move in, they must at least be installed and working two weeks (at a minimum) before the competition begins in October 2010 so that pre-competition energy consumption can be measured.
+
+Should we be unable to install the meters in time for an October 2010 competition, then the competition start date could be moved forward to February 2011. October 2010 is preferable to February 2011 for several reasons: increased possibility of funding complications (budget situation worsening), freshmen will be less ``fresh'' (perhaps less open to behavior changes and less likely to be spending their time inside the residence hall), and this author's graduation schedule may be impacted.
+
+\subsection{External cooperation}
+\label{sec:external-cooperation}
+
+Unlike some ICS research, this project requires extensive cooperation with entities outside of the ICS department. Running the competition in student housing requires the enthusiastic cooperation of Student Housing Services, since the participants live in student housing and the meters need to be installed in the residence halls. We have met with Michael Kaptik, the director of Student Housing Services, and he appears eager to facilitate the competition (and of course Student Housing Services would benefit from any reductions in electricity use by residents). Installation of the meters themselves needs to be coordinated with Facilities, which handles electrical work on campus. We have met with David Hafner, Assistant Vice Chancellor for Campus Services who heads Facilities, and he is also very supportive of the competition plan and has indicated his willingness to facilitate the installation of the floor meters.
+
+While the initial discussions with Student Housing and Facilities have all been positive, situations and personnel can change over time. There remains the risk that one of these entities might be unable or unwilling to cooperate, preventing the competition from taking place as planned.
+
+If Student Housing were not supportive of holding the competition in the residence halls, it might be possible to switch to a competition between floors of some multi-story building on campus. However, this would significantly change the character of the research, and would require extensive redesign of both the competition and the website.
+
+If Facilities was unwilling or unable to allow the installation of the floor meters in the residence halls, the research as planned could not take place. It might be possible to design an experiment that revolved solely around evaluating the effectiveness of increasing energy literacy using a redesigned website, but it would lack the critical component of evaluating the relationship between energy literacy and energy usage.
+
+\subsection{Participant engagement}
+\label{sec:participant-engagement}
+
+The installation of the meters to record floor-level electricity usage is the enabling component for the energy competition between floors and residence halls. However, energy literacy and near-realtime energy feedback rely on the competition website, and particularly on participant use of the website. The vast majority of entering freshmen own computers (Michael Kaptik stated that based on past surveys student housing resident computer ownership was something like 98\%) and have used the Internet extensively. Thus there is little risk that the potential participants will not be able to use the website, but there is considerable risk that they will not bother to use the website due to lack of interest or conflicting demands on their time and attention.
+
+We will attempt to limit this risk in several ways. First, participants can only compete in the Kukui Nut portion of the competition through the website. There will be prizes for both individuals and floors with the most Kukui Nut points, which we expect to be a substantial motivator for participation. Second, we plan to have large computer displays in the lobby of each residence hall that loop through interesting competition information, including current competition standings, upcoming events, and recent tasks performed by participants. We expect the billboard displays to provide a continuous reminder to residents about the competition and how they might participate. Third, we plan to have posters on each floor of the residence hall to remind residents about the competition and the website. Fourth, participants will be notified about competition events via email and Facebook, with embedded links back to the website. Finally, the website makes it as easy as possible for participants to use the website by utilizing the University of \Hawaii single-sign-on system, allowing participants to log on with their UH username and password, rather than a username and password specific to the website.
