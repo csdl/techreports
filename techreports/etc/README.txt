@@ -19,3 +19,6 @@ svn_ignore.txt:	a collection of file extensions for temporary LaTeX files
 	svn propset svn:ignore --file ../etc/svn_ignore.txt .
 	Note that the filename has "_" instead of ":" because Windows SVN
 	appears to choke when it sees a filename with ":".
+
+upload-pdf: a simple shell script to upload a PDF to dasha for distribution.
+	Can be copied to the tech report directory for use.
