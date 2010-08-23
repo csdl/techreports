@@ -31,6 +31,27 @@
 
 \graphicspath{{figures/}}
 
+% Alter some LaTeX defaults for better treatment of figures:
+    % See p.105 of "TeX Unbound" for suggested values.
+    % See pp. 199-200 of Lamport's "LaTeX" book for details.
+    %   General parameters, for ALL pages:
+    \renewcommand{\topfraction}{0.9}	% max fraction of floats at top
+    \renewcommand{\bottomfraction}{0.8}	% max fraction of floats at bottom
+    %   Parameters for TEXT pages (not float pages):
+    \setcounter{topnumber}{2}
+    \setcounter{bottomnumber}{2}
+    \setcounter{totalnumber}{4}     % 2 may work better
+    \setcounter{dbltopnumber}{2}    % for 2-column pages
+    \renewcommand{\dbltopfraction}{0.9}	% fit big float above 2-col. text
+    \renewcommand{\textfraction}{0.07}	% allow minimal text w. figs
+    %   Parameters for FLOAT pages (not text pages):
+    \renewcommand{\floatpagefraction}{0.7}	% require fuller float pages
+	% N.B.: floatpagefraction MUST be less than topfraction !!
+    \renewcommand{\dblfloatpagefraction}{0.7}	% require fuller float pages
+
+	% remember to use [htp] or [htpb] for placement
+
+
 \begin{document}
 
 \title{Software Trajectory Analysis:\\An empirically based method for automated software process discovery}
@@ -99,13 +120,16 @@ As an alternative to that, in my research, I am applying knowledge discovery and
 
 \section{Relevant prior work}
 Although process mining in the business domain is a well-established field with much software developed up to date (ERP, WFM, SCM, CRM and other systems), ``Business Process Intelligence'' tools usually do not perform process discovery and typically offer relatively simple analyzes that depend upon a correct a-priori process model \cite{citeulike:5044991} \cite{citeulike:3718014} \cite{citeulike:2678511}. This fact restricts direct application of business domain process mining techniques to software engineering, where processes are usually performed concurrently by many agents, are much more complex, and typically have a higher level of noise. Taking this fact into account, I will review only the approaches to the process (or workflow) mining for which applicability to software process was expressed. 
-\begin{figure}[tbp]
+
+Perhaps, the research most relevant to my own was done by Cook \& Wolf in \cite{citeulike:328044}. The authors developed a \textit{``process discovery''} techniques intended to discover process models from event streams. The authors did not attempt to generate a complete model, but rather to generate sub-models that express the most frequent patterns in the event stream. They designed a framework that collects process data from history logs, and generates a set of recurring patterns of behavior characterizing observed process. In this work they extended two methods of \textit{grammar inference} from previous work: purely statistical (neural network based \textit{RNet}) and purely algorithmic (\textit{KTail}) as well as developed their own Markovian method (\textit{Markov}). 
+
+\begin{figure}[htp]
    \centering
    \includegraphics[height=132mm]{inference.eps}
-   \caption{Process discovery through the grammar inference: panel a) a sample event stream (simple process involving three types of events: Edit, Review, and Checkin); and FNA results obtained by applying three methods of process discovery from Cook \& Wolf \cite{citeulike:328044}.}
+   \caption{Process discovery through the grammar inference: panel a) a sample event stream (simple process involving three types of events: Edit, Review, and CheckIn); and FNA results obtained by applying three methods of process discovery from Cook \& Wolf \cite{citeulike:328044}.}
    \label{fig:inference}
 \end{figure}
-Perhaps, the research most relevant to my own was done by Cook \& Wolf in \cite{citeulike:328044}. The authors developed a \textit{``process discovery''} techniques intended to discover process models from event streams. The authors did not attempt to generate a complete model, but rather to generate sub-models that express the most frequent patterns in the event stream. They designed a framework that collects process data from history logs, and generates a set of recurring patterns of behavior characterizing observed process. In this work they extended two methods of \textit{grammar inference} from previous work: purely statistical (neural network based \textit{RNet}) and purely algorithmic (\textit{KTail}) as well as developed their own Markovian method (\textit{Markov}). 
+
 
 The first method extended by the authors, the neural-network based grammar inference, RNet algorithm, defines a recurrent neural network architecture which is trained by the sequences of events. After training, this neural net is able to characterize a current system state by looking on past behavior. The authors extract the FSM from the trained neural network by presenting different strings to it and extracting the hidden neurons activity through observations. Due to the nature of Neural Net, closely related activation patterns are clustered into the same state; therefore, by noting the current pattern, the input token, and the next activation pattern, transitions are recorded and compiled into the inferred FSM.
 
@@ -114,13 +138,6 @@ The second method investigated, is a purely algorithmic KTail method, which was 
 The Markov based method developed by the authors is based on both algorithmic and statistical approaches. It takes to account past and future system behavior in order to guess the current system state. Assuming that a finite number of states can define the process, and that the probability of the next state is based only on the current state (Markov property), the authors built a $n^{th}$-order Markov model using the first and second order probabilities. Once built, the transition probability table corresponding to the Markov model is converted into FSM which is in turn reduced based on the user-specified cut-off threshold for probabilities.
 
 The authors implemented all three of these algorithms in a software tool called \textsc{DaGama} as a plugin for larger software system called Balboa \cite{citeulike:5120757}. By performing benchmarking, Cook \& Wolf found that the Markov algorithm was superior to the two others. RNet was found to be the worst of the three algorithms. The software tool was applied to a real-world process data and demonstrated an abstraction of the actual process executions and ability to capture important properties of the process behavior. The major backdraw of the approach, as stated by the authors, lies in the inability of the FSMs to model concurrency of processes which limits its applicability to the software development process. Later, Cook et al. in \cite{citeulike:5128143} addressed this limitation by using Petri-nets and Moore-type FSM.
-
-\begin{figure}[tbp]
-   \centering
-   \includegraphics[height=40mm]{petri.eps}
-   \caption{Illustration of the ``Generation and Synthesis Approach'' from \cite{citeulike:5043673}: a) Transition System with regions shown; b),c) Petri Nets synthesized from the Transition System.}
-   \label{fig:petri}
-\end{figure}
 
 Another set of findings relevant to my research approach was developed by Rubin et al. \cite{citeulike:1885717} and van der Aalst et al. \cite{citeulike:3718014} and is called \textit{incremental workflow mining}. The authors not only designed sophisticated algorithms but built a software system using a business process mining framework called ProM by van Dongen et al. \cite{citeulike:5043673} which synthesizes a Petri Net corresponding to the observed process. The system was tested on SCM logs and while the process artifacts retrieved from the SCM system are rather high-level, the approach discussed is very promising for the modeling of software processes from the low-level product and process data.
 
@@ -134,17 +151,23 @@ It is worth noting here that while reviewed work demonstrate general approaches 
 
 In my approach I am planning to address both issues by leveraging the ability of the Hackystat system \cite{citeulike:4041809} to collect such a fine grained data and by the application of advanced symbolic and temporal data mining techniques resistant to noise.
 
+\begin{figure}[htpb]
+   \centering
+   \includegraphics[height=40mm]{petri.eps}
+   \caption{Illustration of the ``Generation and Synthesis Approach'' from \cite{citeulike:5043673}: a) Transition System with regions shown; b),c) Petri Nets synthesized from the Transition System.}
+   \label{fig:petri}
+\end{figure}
 
 \section{Research objectives}
 As shown by previous research, it is possible to infer and successively formalize sequential software process by observing its artifacts, and in particular, recurrent behavioral patterns. The problem of finding such patterns is the cornerstone of my research. Solving this will extend previous research with a new knowledge that will support improvements in our understanding of a software process.
 
 The main research objectives of my work is a design, development and evaluation of a previously unexplored approach to discovering of recurrent behaviors in software process through the data mining of low-level process and product artifacts. To reach this goal I am planning to perform a number of steps. 
 
-At first I am exploring the applicability of proposed pattern-mining techniques to various levels of software process artifacts complexity. This exploratory study will result in a set of well-defined data mining workflows designed for particular kinds of software process data and research goals. 
+At first I am exploring the applicability of proposed pattern-mining techniques to various levels of software process artifacts complexity. This exploratory study will result in a set of well-defined data mining workflows designed for particular kinds and coarseness of software process data and research goals. 
 
-Secondly, implementations of these workflows will constitute the core of a software package aiding recurrent behavior discovery. This software is thought to be a stand-alone database-backed framework which provides users with ability to design arbitrary filters in order to shrink the amount of reported patterns by specifying events of interest, their order or origin.  
+Secondly, implementations of these workflows will constitute the core of the Software Trajectory package aiding recurrent behavior discovery. This software is thought to be a stand-alone database-backed framework which provides users with ability to design and use arbitrary filters in order to shrink the amount of reported patterns by specifying events of interest, their order or their origin.  
 
-Finally, the approach implemented in this software system will be empirically evaluated. I plan to perform the evaluation on three types of data sets which differ by their origin and complexity: first data set will consist of the events collected by Hackystat from a directed development process in a controlled environment - a classroom development project. The second data set will consist of a data collected from an open-source project while the third data set is thought to be originating from a large-scale industrial software development project. 
+Finally, the approach implemented in this software system will be empirically evaluated. I plan to perform the evaluation on three types of data sets which differ by their origin and complexity: first data set will consist of the events collected by Hackystat from a directed development process in a controlled environment - a classroom development project. The second data set will consist of a data collected from an open-source project; while the third data set is thought to be originating from a large-scale industrial software development project. 
 
 \section{Research approach}
 My approach to this problem rests on the application of data-mining techniques to symbolic time-point and time-interval series constructed directly from the software process artifacts such as SCM logs, software audit trails or telemetry streams provided by Hackystat or by a similar in-process software development monitoring system.
@@ -153,17 +176,17 @@ To investigate the requirements for a software tool that aids in the discovery o
 
 While I plan to use Hackystat as a primary data collection system in my future experimental setup, for the current exploratory study I am working with various ways of data collection, extraction and abstraction. The ability to abstract into symbolic representation various software artifact streams such as SCM logs and audit trails is crucial for the exploratory study phase enabling me to experiment with much broader spectrum of existing software process data collections.
 
-\begin{figure}[tbp]
+\section{Data and analysis methods}
+Various types and complexity of data are available for software process analysis. For example, simplest data extracted from SCM logs allow us to track software change and to perform a basic software process reconstruction and modeling - however a very little information can be recalled about individual development activities and behaviors from such models. When development audit trails added to analyzes, the enriched data allow us to shed more light on the performed process. By using a contemporary automated build system and code analysis tools it is possible to collect a much broader spectrum of process artifacts and software metrics. Moreover a centralized build system creates a set of singular time points which are persisting through and tying together processes performed concurrently by developers allowing concurrent process reconstruction. Finally, collecting temporal data about atomic development events by the means of Hackystat and similar systems - such as results of background compilation and unit tests, IDE buffer transfers etc. along with quantification of the development effort enables characterization of the dynamic behavior of software process in great detail. However, rich data brings much more noise which makes process analysis a non-trivial task. \footnote{The term \textit{noise} here is used to refer to many types of discrepancy between logged data and performed process: incomplete logs, incorrectly logged events, human or technical errors etc. If not handled properly, the noise distorts process reconstruction making models useless, as shown in \cite{citeulike:2678511}}. 
+
+Having this information in mind, approach I am taking in my research differs from previous attempts by its computational simplicity and efficiency and inspired by recent advances in two research fields: the temporal patterns mining from symbolic approximation of time-series and the motif finding in biological sequence analysis. Within my approach I am performing two steps: at first software process artifacts trails reduced to the symbolic form and this symbolic data analyzed at the second step. For symbolic reduction step I am using symbols from a standard alphabet coding 
+
+\begin{figure}[htpb]
    \centering
    \includegraphics[height=50mm]{system_overview.eps}
    \caption{The high-level system overview. Software engineering process and product data are collected and aggregated by Hackystat and then used to generate temporal symbolic indexes. Data mining tools constrained by software engineering domain knowledge are then used for unsupervised patterns discovery. The GUI provides an interface to the discovered patterns and aids in investigation of a discovered phenomena.}
    \label{fig:system_overview}
 \end{figure}
- 
-\section{Data and analysis methods}
-Various types and complexity of data are available for software process analysis. For example, simplest data extracted from SCM logs allow us to track software change and to perform a basic software process reconstruction and modeling - however a very little information can be recalled about individual development activities and behaviors from such models. When development audit trails added to analyzes, the enriched data allow us to shed more light on the performed process. By using a contemporary automated build system and code analysis tools it is possible to collect a much broader spectrum of process artifacts and software metrics. Moreover a centralized build system creates a set of singular time points which are persisting through and tying together processes performed concurrently by developers allowing concurrent process reconstruction. Finally, collecting temporal data about atomic development events by the means of Hackystat and similar systems - such as results of background compilation and unit tests, IDE buffer transfers etc. along with quantification of the development effort enables characterization of the dynamic behavior of software process in great detail. However, rich data brings much more noise which makes process analysis a non-trivial task. The term \textit{noise} is used to refer to many types of discrepancy between logged data and performed process: incomplete logs, incorrectly logged events, human or technical errors etc. If not handled properly, the noise distorts process reconstruction making models useless, as shown in \cite{citeulike:2678511}. 
-
-Having this information in mind, approach I am taking in my research differs from previous attempts by its computational simplicity and efficiency and inspired by recent advances in two research fields: the temporal patterns mining from symbolic approximation of time-series and the motif finding in biological sequence analysis. Within my approach I am performing two steps: at first software process artifacts trails reduced to the symbolic form and this symbolic data analyzed at the second step. For symbolic reduction step I am using symbols from a standard alphabet coding 
 
 Current state of the art approach in temporal data mining called Symbolic Aggregate approXimation and was proposed by Lin et al. in \cite{citeulike:2821475}. This method extends the PAA-based approach, inheriting algorithmic simplicity and low computational complexity, while providing satisfactory sensitivity and selectivity in range-query processing. Moreover, as mentioned by the authors, the use of a symbolic representation opens the door to the existing wealth of data-structures and string-manipulation algorithms in computer science such as hashing, regular expression pattern matching, suffix trees etc. As showed by the authors, SAX outperforms all previously known methods - DFT, DWT, DTW and similar - by using SAX it is possible to index and find discords - recurrent and ``surprise'' patterns in vast amounts of data in almost linear time and space \cite{citeulike:1630245} \cite{citeulike:3025877} \cite{citeulike:3000416}. Looking at the SAX-performed data reduction it is easy to see that due to the PAA step of the algorithm a high level of noise in the raw data can be reduced dramatically - leaving only major time-series trends for ``symbolization''. In my opinion, this protocol can be adopted for the complexity reduction of the software process artifacts streams. For example, if symbolic approximation of performed process would be $d \rightarrow d \rightarrow d \rightarrow u \rightarrow d \rightarrow d \rightarrow d \rightarrow u \rightarrow c \rightarrow s $ indicating a long cycle of development with intermediate unit test at some point (position 4) followed by a unit test, commit and build success, it is possible to dismiss this intermediate unit test event and collapse in time all development events into the single one, making a sequence look like  $d \rightarrow u \rightarrow c \rightarrow s $ thus reducing the pattern complexity. 
 
@@ -174,25 +197,32 @@ Another idea borrowed from the SAX and Bioinformatics sequence alignment is the 
 \section{Preliminary results}
 During my work on the pilot version of Software Trajectory framework, I began a set of small exploratory experiments in order to aid in the architectural design, data-mining algorithms selection and implementation. In addition, these experiments helped me to outline the boundaries of applicability of my approach to certain problems in software engineering. I call these experiments \textit{Pilot study}.
 
-\begin{figure}[tbp]
+One of the Pilot study experiments was performed in order to evaluate the ability of SAX approximations and indexing to capture a temporal specificity of telemetry streams through the discovery of temporal motifs - recurrent temporal patterns. The goal of the experiment was to cluster developers by their development behaviors and to find correlations between software metrics streams. Knowing about the frequently misleading results of a time-series clustering \cite{citeulike:227029}, I did not expect to capture many interesting facts, nevertheless the results were encouraging. The data used in this study were collected from eight students and represent Hackystat metrics collected during sixty days of a classroom project. The streams under analysis were composed by quantifying development events within a day: for example for the BuildSuccess stream a single value 5 means that five builds succeeded within that day. The two clustering experiments were conducted using the distance between motif frequencies vectors (note that temporal ordering of motifs was not accounted in these analysis) extracted by indexing of telemetry streams.
+
+\begin{figure}[htpb]
    \centering
-   \includegraphics[height=48mm]{dev_clustering.eps}
+   \includegraphics[height=140mm]{dev_clustering_vertical.eps}
    \caption{Clustering of developers behavior using symbolic approximation and motif frequencies vectors. This analysis captured similar development behavior among developers. Developers \#2 and \#7 were consistent (no bursts observed) in both, coding and measuring effort during whole time interval, while all others can be characterized with bursty, inconsistent effort.}
    \label{fig:cluster_developers}
 \end{figure}
 
-One of the Pilot study experiments was performed in order to evaluate the ability of SAX approximations and indexing to capture a temporal specificity of telemetry streams through the discovery of temporal motifs - recurrent temporal patterns. The goal of the experiment was to cluster developers by their development behaviors and to find correlations between software metrics streams. Knowing about the frequently misleading results of a time-series clustering \cite{citeulike:227029}, I did not expect to capture many interesting facts, nevertheless the results were encouraging. The data used in this study were collected from eight students and represent Hackystat metrics collected during sixty days of a classroom project. The streams under analysis were composed by quantifying development events within a day: for example for the BuildSuccess stream a single value 5 means that five builds succeeded within that day. The two clustering experiments were conducted using the distance between motif frequencies vectors (note that temporal ordering of motifs was not accounted in these analysis) extracted by indexing of telemetry streams.
-
 At first, by clustering of development time telemetry streams collected from individual developers I was able to group developers with similar behavioral patterns within clusters, which indicates the feasibility of the classification by effort approach. Figure \ref{fig:cluster_developers} depicts results of this analysis.
 
-\begin{figure}[tbp]
+However clustering of product-related telemetry streams was not successful. I was able to group telemetry streams, but while these groups look intuitively meaningful - for example clustering together filemetrics and development time - the close examination of the stream features suggests that this grouping happened due to the similar temporal behavior on the short stretches rather then positive correlation. This result, while proving the correctness of approach, indicates it's limitation, pointing that instead of using just motif frequencies, some temporal ordering should be taken into account. Figure \ref{fig:cluster_streams} displays results of this analysis.
+
+\begin{figure}[tp]
    \centering
-   \includegraphics[height=102mm]{cluster_streams.eps}
-   \caption{Clustering of telemetry streams for classroom pilot dataset using symbolic approximation and vectors of motif frequencies. While it seems to be meaningful to find correlation between \textit{UnitTest\_Failure} and \textit{CodeIssue} streams unit test, this grouping happened due to the similarity of behavior pattern - short, high amplitude bursts; but note, there is no correlation of features in time .}
-   \label{fig:cluster_streams}
+   \includegraphics[height=180mm]{telemetry_streams.eps}
+   \caption{Aggregated Telemetry streams for classroom pilot dataset presenting non-cumulative values for each metrics for 60 days. \\ \\ \\ \\ \\ \\ \\ }
+   \label{fig:streams}
 \end{figure}
 
-However clustering of product-related telemetry streams was not successful. I was able to group telemetry streams, but while these groups look intuitively meaningful - for example clustering together filemetrics and development time - the close examination of the stream features suggests that this grouping happened due to the similar temporal behavior on the short stretches rather then positive correlation. This result, while proving the correctness of approach, indicates it's limitation, pointing that instead of using just motif frequencies, some temporal ordering should be taken into account. Figure \ref{fig:cluster_streams} displays results of this analysis.
+\begin{figure}[tp]
+   \centering
+   \includegraphics[height=180mm]{streams_clustering.eps}
+   \caption{Clustering of telemetry streams for classroom pilot dataset using symbolic approximation and vectors of motif frequencies. While it seems to be meaningful to find correlation between \textit{UnitTest\_Failure} and \textit{CodeIssue} streams unit test, this grouping happened due to the similarity of behavior pattern - short, high amplitude bursts; but note, there is no correlation of features in time. There are two trees for different SAX parameters shown to display inconsistency of clustering.}
+   \label{fig:cluster_streams}
+\end{figure}
 
 Another result within a Pilot Study was also achieved by the direct application of SAX indexing. For this experiment I was using data collected from my own concurrent development of Trajectory software package and JMotif library. Within a symbolic approximation paradigm the change of symbols can be interpreted as growth or drop in the value of underlying data stream: for example consecutive $ab$ symbols indicate that growth happened and $ba$ correspond to a drop. The idea was to find if there was any recurrent drop or growth events coincidence within two streams. For this purpose I defined a sliding window consisting of three days and searched for such coinciding within the window events. Events were found in the development time stream, churn, commit and others. Detailed analysis of coinciding growth events revealed that changes within JMotif data manipulation routines almost always followed by changes within Trajectory data analyzes routines which are heavily relying on the JMotif API. While within my two-projects software portfolio such a discovery is a quite obvious fact, one can see an immediate application of this method to a large software projects portfolio or a large software system where it will be possible to build a repertoire of frequent consecutive changes aiding in estimate of an effort required for performing certain changes.
 
