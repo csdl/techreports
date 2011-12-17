@@ -153,26 +153,118 @@ Blending of real and virtual worlds has been explored in a broader context. Mcgo
 Gamification has become 
 ARG
 
-\section{System Design (George)}
+\section{System Design}
+\begin{figure*}[t!]
+  \center
+  \includegraphics[width=0.5\textwidth, angle=90]{makahiki-architecture.eps}
+  \caption{\em \small Architecture of Makahiki}
+  \label{fig:MakahikiArchitecture}
+\end{figure*}
+
+Figure \ref{fig:MakahikiArchitecture} provides an overview of the different components of Makahiki and how they interoperate with each other. Section \ref{sys:Architecture} discusses the underlying technology of Makahiki and the 2011 Kukui Cup, while section \ref{sys:GameDesign} details the various games we implemented for the competition.
 
 \subsection{Architecture}
+\label{sys:Architecture}
 
-The website is implemented using the Django web framework and the Python programming language. In addition to the modules we created, we used other third party libraries including ``django\_cas'' (an authentication plugin that allows users to log in through a CAS server), ``brabeion'' (a Django module for badges), and ``restclient'' (a library for interacting with RESTful web services). The website is hosted on a Xserve running Mac OS X Snow Leopard and Apache. To handle server loads more efficiently, we used memcached (an in-memory caching system) to cache parts of the website for quicker access.
+The website is implemented using the Django web framework and the Python programming language. In addition to the modules we created, we used other third party libraries including ``django\_cas'' (an authentication plugin that allows users to log in through a CAS server), ``brabeion'' (a Django module for badges), ``minidetector'' (detects if a client is a mobile phone), and ``restclient'' (a library for interacting with RESTful web services). The website is hosted on a Xserve running Mac OS X Snow Leopard and Apache. To handle server loads more efficiently, we used memcached (an in-memory caching system) to cache parts of the website for quicker access.
 
-We access another system called WattDepot for energy information. However, calculating energy (power over a period of time) can be computationally expensive if we have to calculate it every time a user accesses a page. We implemented a ``cloud cache'' that uses a Google Spreadsheet to store precomputed energy values for the different floors in the competition. The user's browser accesses the public spreadsheet using client-side javascript and the Google GData library. The server may access the cloud cache or WattDepot directly. For example, to award points in the energy goal game, a script is executed on the server once a day to check the spreadsheet and see if the individual lounges made their goal.
+We access another system called WattDepot for energy information.  WattDepot handles the storage of power data from the individual meters in the residence hall. However, calculating energy (power over a period of time) can be computationally expensive if we have to calculate it every time a user accesses a page. We implemented a ``cloud cache'' that uses Google Spreadsheets to store precomputed energy values for the different floors in the competition. The user's browser accesses the public spreadsheet using client-side javascript and the Google GData library. The server may access the cloud cache or WattDepot directly. For example, to award points in the energy goal game, a script is executed on the server once a day to check the daily energy goal spreadsheet and see if the individual lounges made their goal. Energy data for the floors over the past 30 days are also stored in a spreadsheet, so we can use client-side Javascript to compute the energy used during the competition.
 
 \subsection{Game Design}
-The game mechanics is ...
+\label{sys:GameDesign}
+
+During the course of developing Makahiki, we constructed several components and games for users in order to keep them more engaged. The following sections will discuss how each of these components and games contribute to the overall system.
+
+\subsubsection{Rounds}
+
+As part of the configuration for Makahiki, a competition period can be split up into rounds. The energy usage and points during a round are tracked separately but still contribute to the overall totals. If there is no round configured during the competition period, then the overall score is tracked. As an example, the 2011 Quest for the Kukui Cup was three weeks and had two week long rounds (round 3 was the overall round). This had the interesting side effect of putting the top players in round 1 in a slight disadvantage during round 2, since they have completed most of the tasks available to them. Players who are relatively new to the competition in Round 2 can complete tasks that were available in Round 1, although they do miss out on any events and excursions that happened during that time.
 
 \subsubsection{Smart Grid Game}
+
+\begin{figure}[h!]
+  \center
+  \includegraphics[width=0.5\textwidth]{smart-grid.eps}
+  \caption{\em \small Smart Grid Game}
+  \label{fig:SmartGrid}
+\end{figure}
+
+One of the primary components of Makahiki is the Smart Grid Game shown in figure \ref{fig:SmartGrid}. This is the primary place users go to to earn points in the competition. Tasks are organized into a grid of squares (hence the name ``Smart Grid'') and organized by category columns. There are 4 different types of tasks a user can complete in the Smart Grid; activities, commitments, events, and excursions.
+
+Activities are the most basic task available in the Smart Grid. In order to get points for an activity, a user will have to provide a response to the administrators. These responses can be free response or an uploaded picture. Administrators can log in and access an admin page to approve or deny submissions. If a submission is approved, the user will receive the points for that submission. Otherwise, a user will be sent a website notification informing them that their submission was not approved. The user can change and resubmit their response and still earn the full point value for that task.
+
+Commitments are pledges or declarations that the user will do something sustainable for a period of 5 days. Examples include reducing shower time, taking the stairs, and turning off the lights when you leave the room. Because these commitments are not verifiable, they are typically worth fewer points than activities. Furthermore, a user can only have up to 5 active commitments at any given time. After the 5 day period is up, the user can then declare that they completed the commitment. Once they do this, the points for the commitment are awarded immediately without any administrator approval. They can then sign up for another commitment, including the one they just completed.
+
+Events and excursions are tied to real world activities. Events are held on campus while excursions take place off campus. Seating is limited, so users are asked to RSVP in advance. Users that do so are provided with a two point signup bonus. Users can also set up a reminder that is sent to their email and/or their mobile phone. Once the event or excursion takes place, an administrator will hand out attendance codes that can be redeemed on the website. These attendance codes are generated by Makahiki and can only be used once. To discourage users from signing up and not attending, a 2 point penalty is assessed to users who do not submit an attendance code. If the user submits an attendance code for the event after receiving this penalty, the penalty is reversed.
+
+Not all of the tasks in the Smart Grid Game are necessarily available at the start of the game. We implemented a few predicates that can be used to determine if a task is locked or unlocked for a user. These predicates include:
+
+\begin{itemize}
+  \item Completed certain number of tasks within a category.
+  \item Completed all tasks within a category.
+  \item Completed certain tasks.
+  \item Time-based unlocking (the task is available after a certain date).
+\end{itemize}
+
+These predicates are implemented using a limited subset of Python and can be changed within the Django admin interface. Competition designers can combine any of these functions in order to limit a user's path through the game.
+
 \subsubsection{Daily Energy Goal Game}
+
+\begin{figure}[t!]
+  \center
+  \includegraphics[width=0.5\textwidth]{daily-energy-goal-game.eps}
+  \caption{\em \small Daily Energy Goal Game display on the energy page.}
+  \label{fig:DailyEnergyGoal}
+\end{figure}
+
+Users are also provided with a daily energy goal. The goal for each floor is typically a percent reduction from their normal usage and is stored in a Google Spreadsheet. When a user goes to the energy page, they can view their current progress toward their daily energy goal. Near the end of the day, Makahiki checks the spreadsheet to see if a floor reached their goal. If the floor did reach their goal, each member of the floor that is participating in the game receives 20 points. 
+
+Figure \ref{fig:DailyEnergyGoal} shows what a user would see when they go to the energy page. Note that the Daily Energy Goal display shows their current progress and their goal so far. We did this for two reasons. First, everyone will be under their actual energy goal for most of the day, so this display would not be very useful. Second, we have noticed that the students in the residence halls use more energy at night rather than during the day. Thus, it is easy to be under for most of the day and then jump over the goal at the very end. Displaying their goal so far provides a pace for users to follow. 
+
 \subsubsection{Raffle Game}
+
+\begin{figure}[t!]
+  \center
+  \includegraphics[width=0.5\textwidth]{raffle-small.eps}
+  \caption{\em \small Raffle Game for the Overall Round}
+  \label{fig:RaffleGame}
+\end{figure}
+
+In addition to the prizes for the individual and residence hall floor points and energy leaders, players can also earn prizes through the Raffle Game. Every 25 points in a user's overall score earns them one raffle ticket. A user can then add or remove their tickets from each raffle prize. Each round of the competition has their own set of raffle prizes and any unused raffle tickets carry over to the next round. It is also important to note that raffle tickets are independent from their score; using a raffle ticket does not affect their rank. Figure \ref{fig:RaffleGame} shows the Raffle Game during the last overall round of the 2011 Kukui Cup.
+
 \subsubsection{Social and Referral Bonuses}
-\subsubsection{Confirmation Code}
+
+In an effort to get people to get friends or floor members to participate in the competition, we implemented two types of bonuses; social and referral. The social bonus is an administrator option when a task is created in the Smart Grid Game and awards extra points if the user has done the task with someone else. Examples of tasks that could be done with others include going to an event, recording a song related to energy, or decorating a door. When a user submits a response for a task with a social bonus, they have the option of providing the email address of the person they did it with. Then, once the other person submits their response, both users receive the social bonus. Social bonuses are not bi-directional; if the second user doesn't provide the first user's email address, they will still both get the social bonus.
+
+When a user logs in to Makahiki for the first time, they are taken through a setup process. One of the steps in this process is the referral bonus. If  a user was referred by another user in the system, they can use this step to input their email address. Then, once the user earns 30 points in the competition, both users are awarded a referral bonus of 10 points. Typically, going through the setup process gives you 25 points, so we wanted to encourage the new user to at least complete another task in order to get the referral bonus.
+
 \subsubsection{Quest Engine}
+
+The main challenge we faced when designing Makahiki was providing adequate help to the user. We want the website to be intuitive, but a new user coming to Makahiki probably does not know what to expect. This is unlike most web applications, like Gmail, where the user has a specific task that they wish to accomplish. In an effort to provide a user with guidance through Makahiki after the setup process, we implemented the Quest Engine. Quests are used to guide the user through the various workflows of the site, like completing a task, signing up for an event, or allocating a raffle ticket. These quests can be created in the admin interface and also use a set of predicates to determine unlock and completion conditions. These predicates are:
+
+\begin{itemize}
+  \item Participating in a task or type of task.
+  \item Completed a task or type of task.
+  \item Has a certain number of points (in a round or overall).
+  \item Completed a certain number of tasks in a category or of a given type.
+  \item Awarded a badge.
+  \item Wrote a post on their floor wall.
+  \item Added a picture to their profile.
+\end{itemize}
+
 \subsubsection{Canopy}
 
+\begin{figure}[t!]
+  \center
+  \includegraphics[width=0.5\textwidth]{canopy-missions-visualizations.eps}
+  \caption{\em \small Canopy Missions and Visualizations}
+  \label{fig:CanopyMissions}
+\end{figure}
 
+We designed the Canopy to be a place for the top users of the competition to go and view more advanced energy visualizations and tasks. The current visual design of the system has a forest background with trees, bushes, and grass. The Canopy got its name because it is a level above this forest level. The background of the canopy is actually different from the rest of the system, with tree tops on the bottom and blue skies on top. Players need to be invited to the canopy; it is not available to just anyone. A competition administrator runs a command on the server that adds the top n users to the Canopy.
+
+In addition to the new background, the Canopy page includes new components. First, there is a Canopy wall that members can use to communicate with other Canopy members as well as administrators (who can always access the Canopy). Second, there are Canopy missions that replace the quest interface. Unlike quests, missions do not use predicates in order to determine when they are completed. Instead, missions are completed when their related Canopy tasks are completed. These Canopy tasks are based on the tasks in the Smart Grid game, but they do not appear in the Smart Grid. Also, some Canopy tasks may require collaboration with others instead of it being optional. Finally, the Canopy includes advanced energy visualizations, which give members additional insight into how the other floors are doing in the energy competition. Unlike the energy data displayed on other pages, these advanced energy visualizations access WattDepot's API directly. Figure \ref{fig:CanopyMissions} shows an example of a mission and an advanced energy visualization.
+
+When we designed the Canopy, we initially thought we would provide points for completing Canopy tasks. However, because of the invitational nature of the Canopy, we wanted it to be fair to users who are not in the Canopy. The Canopy should not look like a way for the Canopy members to separate themselves from the rest of the users. Thus, instead of points, Canopy tasks award ``Canopy Karma''. A scoreboard is shown on the Canopy page and the top member earns a prize.
 
 \section{Lessons Learned}
 
