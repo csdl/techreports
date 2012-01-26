@@ -2,8 +2,8 @@
 %% project.modeling.tex --
 %% Author          : Philip Johnson
 %% Created On      : Fri Jan 13 07:58:21 2012
-%% Last Modified By: Philip Johnson
-%% Last Modified On: Mon Jan 23 09:46:17 2012
+%% Last Modified By: Alek Kavcic
+%% Last Modified On: Mon Jan 25 16:35:19 2012
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsubsection{Modeling and analysis}
@@ -37,7 +37,10 @@ methods, or else the signal processing methods will not be of much use.
        The factor graph consists
        of the behavior layer and the observation layer. The
        communication layer provides additional global
-       communication features. The belief-propagation algorithm is
+       communication features. In this figure, the state
+       variables are denoted by $x_i$ and available observations
+       (sparse measurements) are denoted by $y_i$.
+       The belief-propagation algorithm is
        a monitoring algorithm that works by passing only {\em local}
        messages along the solid edges of the graph, yet achieves {\em global}
        monitoring.}
@@ -106,41 +109,44 @@ velocity sensors and cloud cameras distributed around the campus.
 
 \paragraph{Prediction.} It is a well-known fact that the Kalman predictor
 is the optimal predictor of spatial and temporal Gaussian
-processes~\cite{Kalman,Kalman_Bucy61,Kailath}. When the Gaussian process
-further possesses a Markov structure (i.e., a Gauss-Markov process), the
-Kalman predictor is computationally less
-intensive~\cite{Kschischang01,Loeliger07}. In our case, we will likely have
-a two-layer spatial and temporal Gauss-Markov/finite-state process to
-track. The optimal tracker of this process would be a spatiotemporal
-combination of a Kalman predictor~\cite{Kalman,Kalman_Bucy61} and a forward
-recursion of the Baum-Welch algorithm~\cite{Baum66,Bahl74}. However, this
-approach will likely be too computationally intensive to be practical.
-Therefore, we will ignore the loops in the model, and implement the
-predictor using belief propagation derived for a tree-like double-layer
-(Gauss-Markov/finite-state) graph, but applied to the exact loopy microgrid
-graph.
+processes~\cite{Kalman60,Kalman_Bucy61,Kailath68}. When the Gaussian
+process further possesses a Markov structure (i.e., a Gauss-Markov
+process), the Kalman predictor is computationally less
+intensive~\cite{Kschischang01,Loeliger07}. In our case, we will
+likely have a two-layer spatial and temporal
+Gauss-Markov/finite-state process to track. The optimal tracker of
+this process would be a spatiotemporal combination of a Kalman
+predictor~\cite{Kalman60,Kalman_Bucy61} and a forward recursion of
+the Baum-Welch algorithm~\cite{Baum66,Bahl74}. However, this
+approach will likely be too computationally intensive to be
+practical. Therefore, we will ignore the loops in the model, and
+implement the predictor using belief propagation derived for a
+tree-like double-layer (Gauss-Markov/finite-state) graph, but
+applied to the exact loopy microgrid graph.
 
-We envision that the developed prediction tool will be used to indicate
-where and how the control mechanisms (e.g., peak-shaving, gray-outs, etc.)
-should be applied. However, we must consider the sensitivity of certain
-locations when applying control.  For example, it would be detrimental to
-shut off the air conditioner in a sensitive climate controlled laboratory,
-or in computer server clusters that must remain cool. For this reason, it
-is desirable to have a prediction method that will account for these
-sensitivities.  It is well-known that any prediction method suffers form
-uncertainly, misdetection and false alarms. Grossly false estimation or
-prediction of the state of certain sensitive nodes may adversely affect the
-stability of the network or sensitive campus locations.  This can be
-minimized in two possible ways. Firstly, we may choose to place sensors in
-the vicinities of highly sensitive nodes, and thus minimize the risk of
-misprediction. Secondly, we may choose to dampen the belief-propagation
-algorithm to prevent wild belief swings in the vicinities of highly
-sensitive nodes. This amounts to placing weights (or other types of
-constraints) on beliefs corresponding to highly sensitive nodes. We shall
-term this approach {\em sensitivity weighted} belief-propagation. To our
-knowledge, no such approach has been attempted in smart-grid networks,
-although similar strategies are available in the communications and
-error-control coding literature~\cite{Poor,Narayanan,Varnica}.
+We envision that the developed prediction tool will be used to
+indicate where and how the control mechanisms (e.g., peak-shaving,
+gray-outs, etc.) should be applied. However, we must consider the
+sensitivity of certain locations when applying control.  For
+example, it would be detrimental to shut off the air conditioner in
+a sensitive climate controlled laboratory, or in computer server
+clusters that must remain cool. For this reason, it is desirable to
+have a prediction method that will account for these sensitivities.
+It is well-known that any prediction method suffers form
+uncertainly, misdetection and false alarms. Grossly false estimation
+or prediction of the state of certain sensitive nodes may adversely
+affect the stability of the network or sensitive campus locations.
+This can be minimized in two possible ways. Firstly, we may choose
+to place sensors in the vicinities of highly sensitive nodes, and
+thus minimize the risk of misprediction. Secondly, we may choose to
+dampen the belief-propagation algorithm to prevent wild belief
+swings in the vicinities of highly sensitive nodes. This amounts to
+placing weights (or other types of constraints) on beliefs
+corresponding to highly sensitive nodes. We shall term this approach
+{\em sensitivity weighted} belief-propagation. To our knowledge, no
+such approach has been attempted in smart-grid networks, although
+similar strategies are available in the communications and
+error-control coding literature~\cite{Wang99,Jiang06a,Varnica07}.
 
 \paragraph{Analysis.} The final piece of the modeling and analysis effort
 is the actual analysis of the proposed models and tracking methods. In
@@ -152,17 +158,19 @@ techniques, and combine them with bounding techniques typical for
 finite-state processes~\cite{Huang09}, to develop bounds for tracking the
 layered Gauss-Markov/finite-state process in under certain stationarity assumptions.
 
-Under extremely non-stationary conditions, however, it will be extremely
-difficult to come up with analytical tools that will be able to bound the
-performance of the estimator/tracker. Indeed, in the signal processing
-literature, response to extreme non-stationarities are typically
-demonstrated by simulations~\cite{BinYang,Toshi}. For this reason, it is
-actually very important to design a good model that will not only be useful
-for designing the detector, but also for designing the simulator.  The
-usefulness of this approach will be extremely important when determining
-the response to {\em rare events}. Rare events are events that are rarely
-(or never observed) in practice until they happen in reality (e.g.,
-black-outs, shut-downs, catastrophic failures). The only way to understand
-how such events would affect the system is through simulations. We will
-conduct analysis studies of these rare, extremely non-stationary events
-through the means of simulations using the developed process models.
+Under extremely non-stationary conditions, however, it will be
+extremely difficult to come up with analytical tools that will be
+able to bound the performance of the estimator/tracker. Indeed, in
+the signal processing literature, response to extreme
+non-stationarities are typically demonstrated by
+simulations~\cite{Yang95,Tanaka05}. For this reason, it is actually
+very important to design a good model that will not only be useful
+for designing the detector, but also for designing the simulator.
+The usefulness of this approach will be extremely important when
+determining the response to {\em rare events}. Rare events are
+events that are rarely (or never observed) in practice until they
+happen in reality (e.g., black-outs, shut-downs, catastrophic
+failures). The only way to understand how such events would affect
+the system is through simulations. We will conduct analysis studies
+of these rare, extremely non-stationary events through the means of
+simulations using the developed process models.
