@@ -2,7 +2,7 @@
 \ProvidesClass{proposalnsf}[2008/06/01 NSF proposal style v1.3 SGLS]
 \DeclareOption*{\PassOptionsToClass{\CurrentOption}{article}}
 \ProcessOptions
-\LoadClass[12pt]{article}
+\LoadClass[11pt]{article}
 \RequirePackage{calc}
 %\RequirePackage{pdffig}
 \RequirePackage{natbib}
