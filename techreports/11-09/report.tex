@@ -1,5 +1,5 @@
 % 
-\documentclass[a4paper,10pt]{report}
+\documentclass[a4paper,10pt]{article}
 \usepackage[utf8x]{inputenc}
 \usepackage[OT1]{fontenc}
 \usepackage{hyperref}
@@ -122,7 +122,7 @@ and devoted to advancing of open standards for mobile devices.
 
 The Android code is open-source and released under the Apache License; it is a complete 
 mobile platform built on the monolithic Linux 2.6 kernel. The Android platform provides 
-developers with an SDK which consits of a set of development tools, debugger and a true emulator. 
+developers with an SDK which consist of a set of development tools, debugger and a true emulator. 
 There are an Eclipse plugin, a set of libraries a multimedia user interface, and a core set of 
 phone applications. The Android application model alleviates the cost of software development by 
 allowing extending, replacing, and reusing of existing software components. The Dalvik virtual 
@@ -145,7 +145,7 @@ In Q3, 2011 (November 15, 2011) Android officially become the most popular OS fo
 devices. In December 2011 there were registered 10 billions of downloads from Android store called
 Android Marketplace. 
 
-\section{MSR-2012}
+\section{MSR 2012 Challenge}
 The research field of Mining Software Repositories (MSR) is focused on analyzes of the rich 
 data available in software repositories. The immediate goal of such research is to infer interesting 
 and actionable information about software systems and projects. While there are multiple scientific 
@@ -157,16 +157,6 @@ researchers demonstrate application of their tools to the selected repository mi
 year Android platform was selected for the challenge. Two XML files containing change and bug report 
 data were offered to participants to uncover interesting facts related to the Android platform.
 
-\section{Data provided, auxiliary information collection and assimilation.}
-The two files offered for the research track of MSR conference contained most of the information
-obtainable from Google-hosted source code repository as well as Google-hosted bug and issue
-tracking system. The full XSD for both XML files can be found in the Appendix section of this report.
-While the issues and comments trail \ref{bugsXSD} was provided nearly complete,
-the change trail \ref{changeXSD} provided for a challenge contained only the high-level information as 
-shown at \ref{changeXSDFragment}. (i need to mention the specificity of what Trajectory is capable of
-to show the limitation imposed by incomplete data)
-By using this data it is possible to infer the temporal activity of every repository contributor along with some quantitative data concerning the total number of changed 
-targets. However the amount of information provided provided change it offers some projection 
 \lstset{label=changeXSDFragment,caption=List of metadata provided by change trail XML (fragment) }
 \begin{lstlisting}
  <xs:element name="change">
@@ -190,11 +180,81 @@ targets. However the amount of information provided provided change it offers so
   </xs:element>
 \end{lstlisting}
 
+\section{Offered data.}
+The two files offered for the research track of MSR conference contained most of the information
+obtainable from Google-hosted source code repository as well as Google-hosted bug and issue
+tracking system. The full XSD for both XML files can be found in the Appendix section of this report.
+While the issues and comments trail \ref{bugsXSD} was provided nearly complete,
+the change trail \ref{changeXSD} provided for a challenge contained only the high-level information.
+The thirteen data fields of the change trail XSD file shown at Listing \ref{changeXSDFragment}. 
+Since I am focusing on mining temporal patterns inferring recurrent behaviors, I consider the dataset 
+provided for the challenge rather poor since there is very few information attached to every 
+time event. In fact, among relevant to Trajectory toolkit data fields, every timestamped event has 
+only data about author of the commit and the indication of affected targets (the committer information
+is rather useless for trajectory since it could not be trusted due to the nature of git merged commits).   
+
+\begin{wrapfigure}{l}{0.5\textwidth}
+   \begin{center}
+   \includegraphics[scale=0.4,width=0.5\textwidth]{schema-change-fragment}
+   \end{center}
+   \caption{The Trajectory DB schema fragment. Change and target tables shown.}
+   \label{fig:android_downloads}
+\end{wrapfigure}
 
 
-There are 1771667 changes 
+\subsection{Auxiliary information collection and data organisation.}
+In order to enrich the provided data for recurrent pattern analysis I decided to enrich offered by MSR
+challenge dataset with auxiliary information. I used existing change information (commit hash) to 
+query Android repository for retrieval of data indicating whether the affected within a commit target 
+was added, modified or deleted along with quantitative summary about that target change - the amount of 
+lines added, modified or deleted. I have coded the auxiliary information retrieval module using Java and
+JGit API, this module extends existing Trajectory SCM connectors.
 
-registered in the repository. First change commit to Android repository dates back 
+Some additional information concerned the retrival of data need to be added here.
+
+\section{Threats to Validity}
+Before discussing the mining methodology and findings I discuss several threats to validity and how 
+I have addressed them. These includeg general threats to construct validity, external validity,
+and specific threats to my particular methodology, including repository threats, recall and 
+precision threats.
+
+\subsection{General threats.}
+Construct validity requires that Trajectory must correctly identify authors and corresponding activity
+along with quantitative data. First of all, it is hard to access how much of the contributor's activity 
+is actually captured within the trails provided for MSR Challenge and in Android OS SCM. I just assume 
+that provided and retrieved data represent a valid trail of commits into SCM and will and will not 
+claim external validity and draw any general conclusions about all or part of Android software. 
+
+\subsection{Repository data threats.}
+The information enclosed for the challenge appears to be not reproducible due to the changes happened 
+within the Android OS hosting scheme. Based on my own retrieval of the auxiliary data, it is impossible 
+to confirm about 40\% of the commits for various reasons. 
+(I can actually put categories and numbers here, something like
+1771670 rec in XML from which 714025 are nulls)\ldots 
+\ldots analogous to previous research, I can determine sort of ``confusion matrix'' by 
+randomly sampling 200 null commits from each project and manually verifying whether or not they 
+are indeed nulls or Trajectory pipeline failed \ldots. 
+All of my data is retrieved from Git repositories. Git is known to track records of each 
+developer’s local time and the time zone with a commit. Thus the potential imprecisions
+in time-of-day results are negligible. I believe that all of the developers are have accurate local 
+time on their workstations.
+I ignore Git merge commits as well as cherry-pick commits which tend to only record metadata about 
+integration between different maintainers’ trees.
+
+\subsection{Threats to commit characteristics.}
+Despite the nature of Android community development model where commits may be performed by 
+Android OS maintainers who merge data from external contributors, Git preserves commit metadata 
+from original authors. I use the author\_date field in my analyses for the change time-stamp identification 
+thus avoiding any confusion.
+There is a treat to changes which belong to contributors with several email addresses. \ldots, must be addressed.
+
+\subsection{Data assimilation.}
+In order to proceed with patterns mining apply Trajectory framework After the collection of auxiliary data The data collected at the previous step was filtered into the separate database table for further analyses.
+The reason to perform this step was the overall amount of merged commits as well as the amount of commits
+which lacked the auxiliary data.
+
+\subsection{Android SCM facts}
+There are 1771667 changes registered in the repository. First change commit to Android repository dates back 
 to Monday January 12th 1970, 14:46:40 and belongs to Upstream, while the last change
 within the analyzed data set belongs to to Guy Zadickario and dated 
 Tuesday June 21st 2011, 12:41:41.
@@ -239,11 +299,19 @@ As per January, 1, 2012 Android repository contains a total of 26851267 lines of
   \end{tabularx}
 \end{table}
 
-\section{MSR 2012 Challenge}
+\section{Future work}
+Ultimately by application of Trajectory I want to discover recurrent behaviors from
+software process artifacts trails. This data can be further applied to improve the
+productivity of development.
+
 
 \clearpage
 \lstinputlisting[label=bugsXSD,caption=Bugs XML file schema]{bugs.xsd}
 
 \clearpage
 \lstinputlisting[label=changeXSD,caption=Change XML file schema]{git.xsd}
+
+\bibliographystyle{abbrv}
+\bibliography{seninp}
+
 \end{document}
