@@ -98,9 +98,9 @@
 
 \begin{abstract}
 MSR (mining software repositories) challenge is an annual competition for researchers working in the area of
-sofwtare engineering to demonstrate their tools and approaches for discovering actionable information within
+software engineering to demonstrate their tools and approaches for discovering actionable information within
 software artifacts trails. Android OS was selected as the research subject for 2012 MSR Challenge. 
-Here I report an apllication of Software Trajectory toolkit to the challenge data along with discussing my findings.
+Here I report an application of Software Trajectory toolkit to the challenge data along with discussing my findings.
 (I will put a summary of findings here later)
 \end{abstract}
 
@@ -203,17 +203,8 @@ message and affected targets.
 Since I am focusing on mining of temporal patterns for inferring recurrent behaviors, I consider 
 this provided dataset rather poor since it lacks many of auxiliary change and target information. 
 In fact, among relevant to Trajectory toolkit data fields, every timestamped entity of the offered trail
-containe only author id and an indication of affected targets (the committer information
+contain only author id and an indication of affected targets (the committer information
 is rather useless for trajectory since it could not be trusted due to the nature of git merged commits).   
-
-\begin{wrapfigure}{l}{0.5\textwidth}
-   \begin{center}
-   \includegraphics[scale=0.4,width=0.5\textwidth]{figures/schema-change-fragment.png}
-   \end{center}
-   \caption{The Trajectory DB schema fragment. Change and target tables shown.}
-   \label{fig:schema_change_fragment}
-\end{wrapfigure}
-
 
 \subsection{Android SCM facts}
 There are 1771667 changes registered in the repository. First change commit to Android repository dates back 
@@ -222,7 +213,7 @@ June 21st 2011, 12:41:41. The detailed data about changes per project is availab
 \ref{tab:projects}. I was not able to recover the state of repository as it was parsed into XML, but 
 per January, 1, 2012 Android repository contains a total of 26851267 lines of source code in 152225 files. 
 
-\section{Auxiliary information collection and data organisation.}
+\section{Auxiliary information collection and data organization.}
 In order to enrich the provided data for recurrent pattern analysis I decided to collect auxiliary 
 information for changes. I have created a local mirror of Android OS and by iterating over existing 
 commits hashes was able to recover auxiliary data for 68\% of existing commits. The rest 
@@ -233,12 +224,20 @@ For every recoverable change record I collected a summary of added, modified or 
 as well as a summary about LOC changes: added, modified or deleted lines.
 
 All this information was stored in the Trajectory database backend (since the TrajectoryDB schema
-was designed to accomodate change artifact trails from CVS and SVN repositories I have extended
-it to accomodate Git change data such as tree hash, commit hash and a commiter identification).
+was designed to accommodate change artifact trails from CVS and SVN repositories I have extended
+it to accommodate Git change data such as tree hash, commit hash and a commiter identification).
 The main tables of TrajectoryDB correspond to entities of change log and issue log; these tables 
 accompanied with separate tables for change targets and issue comments as well as tables for
 authors, contributors etc. Overall, the TrajectoryDB is normalized and optimized for the fast 
 retrieval of change and issue information using SQL language.
+
+\begin{wrapfigure}{l}{0.5\textwidth}
+   \begin{center}
+   \includegraphics[scale=0.4,width=0.5\textwidth]{figures/schema-change-fragment.png}
+   \end{center}
+   \caption{The Trajectory DB schema fragment. Change and target tables shown.}
+   \label{fig:schema_change_fragment}
+\end{wrapfigure}
 
 \section{Threats to Validity}
 Before discussing the mining methodology and my findings I discuss several threats to validity 
@@ -261,41 +260,66 @@ study this work should be considered together with evaluation methodology.
 The Android OS developers using Git as the SCM system. Git is a distributed revision control system 
 with an emphasis on speed. Git keeps all the history on the local machine allowing very fast 
 branching and easy repeated merging of branches thus creating multiple trees which deviate from 
-mainline (trunk). In my analyses I ignore Git merge commits which only record metadata about 
+mainline (trunk). In my analyzes I ignore Git merge commits which only record metadata about 
 integration between different development trees. 
 
 \subsection{Treats due to incompleteness of data.}
 The information enclosed for the challenge appears to be partially not reproducible due to the 
 changes happened within the Android OS hosting scheme and deletion of some legacy projects.
 Based on my own retrieval of the auxiliary data, it is impossible to confirm about 32\% of all
-change records found in XML file. This fact implies that in my analyses I missed some of the 
+change records found in XML file. This fact implies that in my analyzes I missed some of the 
 quantitative change information, however in my opinion there is no reason to believe that 
 the lack of this data affect behavioral patterns recognition and classification. The reason
-for this statement is that the general development behavior doesnt change much between projects.
+for this statement is that the general development behavior doesn't change much between projects.
 For example \ldots
 
 \subsection{Threats to commit characteristics.}
 Some of the contributors of Android OS commit using several email addresses and some of the 
-contributors have a variation in their names thus posessing a threat to author classification.
+contributors have a variation in their names thus possessing a threat to author classification.
 In order to address this threat I have merged together authors which share the same full name
 reducing the authors id set from 11311 names to 8706.
 
 \section{Data curation.}
 In order to proceed with patterns mining apply Trajectory framework After the collection of auxiliary data 
-The data collected at the previous step was filtered into the separate database table for further analyses.
+The data collected at the previous step was filtered into the separate database table for further analyzes.
 The reason to perform this step was the overall amount of merged commits (~35K) as well as the amount of 
 commits which lacked the auxiliary data (~581K).
 
-\section{Indexing}
+\section{Data reduction and indexing}
 SAX indexing depends on the three parameters which are required input. First parameter is
 the sliding window, second is the PAA approximation size and third is the SAX Alphabet size.
-In this work I have selected three sizes for sliding window: 7 days, 14 days and 30 days window.
+
+In this work I have selected three sizes for sliding window: 7 days, 14 days and 30 days. 
+These represent an intuitive and logical intervals of a week, two weeks and a month.
+
+For the PAA reduction I choose 3 steps for 7 days window, 5 steps for a weekly interval,
+and 7 steps for a monthly window.
+
+Finally the alphabet, I choose 3 letters for weekly window, and 5 letters for bi-weekly and monthly windows.
+All these are summarized in the Table \ref{tab:parameters}.
+
+\begin{table}
+  \caption{Sliding window, PAA and alphabet size choices.}
+  \centering
+  \label{tab:parameters}
+  \begin{tabularx}{270pt}{ | X | c | c |}
+  \hline                       
+  Sliding window size & PAA size & Alphabet size \\
+  \hline 
+    one week (7) & 3 & 3 \\  
+    two weeks (14) & 5 & 5 \\ 
+    month (30) & 5 & 5 \\ 
+  \hline  
+  \end{tabularx}
+\end{table}
+
+There will be a detailed indexing procedure description
 
 \section{Results}
 For application of the Trajectory toolkit I need to select particular projects from the Android OS
 project tree \url{https://sites.google.com/a/android.com/opensource/projects}. I have decided to 
-select three sub-projects: the one of OS kernels, the Core Android app framework libraries 
-(frameworks\/base) and a bluetooth subsystem components (platform\_external\_bluetooth\_bluez and 
+select three sub-projects: the one of OS kernels, the Core Android App Framework libraries 
+(frameworks\_base) and a bluetooth subsystem components (platform\_external\_bluetooth\_bluez and 
 platform\_external\_bluetooth\_glib).
 
 \begin{figure}[htb]
@@ -305,11 +329,17 @@ platform\_external\_bluetooth\_glib).
   \label{fig:kernels_changes}
 \end{figure}
 
-As Figure \ref{fig:kernels_changes} shows there is almost no difference in the SCM trails of 
+As Figure \ref{fig:kernels_changes} shows that there is almost no difference in the SCM trails of 
 pre-2010 kernels, thus I have arbitrary selected the OMAP-kernel which is a customized 
 Linux 2.6 kernel for OMAP-based devices. OMAP is a proprietary system on chips (SoCs) for 
 portable and mobile multimedia applications and based on general-purpose ARM architecture 
 processor provided by Texas Instruments \url{http://en.wikipedia.org/wiki/OMAP}.
+
+While picking a single project from the kernel sub-projects was a trivial task. The choice of 
+other projects was not that easy. If we look at the number of changes and their distribution
+in time, picking project randomly could impose the treat of insufficient sample size. By 
+looking on the the number of changes and the activity interval I have picked the 
+Core Android App Framework \ref{fig:projects_changes} and a bluetooth stack \ref{fig:bluetooth_changes}.
 
 \begin{figure}[htb]
   \centering
@@ -317,6 +347,8 @@ processor provided by Texas Instruments \url{http://en.wikipedia.org/wiki/OMAP}.
   \caption{Weekly changes in Android OS sub-projects}
   \label{fig:projects_changes}
 \end{figure}
+
+By indexing these three trails with Trajectory SAX workflow and successive indexing,
 
 \begin{figure}[htb]
   \centering
@@ -334,7 +366,7 @@ productivity of development.
 
 \section{Appendix}
 \begin{table}
-  \caption{Android repository projects and assosiated change records statistics 
+  \caption{Android repository projects and associated change records statistics 
      for projects with more than 500 changes.}
   \label{tab:projects}
   \begin{tabularx}{\textwidth}{ | X | l | r |}
