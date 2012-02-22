@@ -98,14 +98,35 @@
 \maketitle
 
 \begin{abstract}
-This document has dual purposes. First of all, by writing it I am following the common Trajectroy analysis workflow. 
-The second purpose I am fulfilling is to compile a primer of how the data is getting transformed within the Trajectory and
-how one may itrepret results.
+This document has dual purpose. First of all, by writing it I am following the common Trajectroy analysis workflow reviewing 
+all steps and debugging for errors. The second purpose is to compile a primer of Trajectory-aided SCM data mining.
 \end{abstract}
 
-\section{Aggregating commits statistics in TrajectoryDB}
+\section{Outline}
+At the beginning I will discuss the research question.
+
+First section \ref{sec:first} explains the data aggregation within the Trajectory DB. I discuss two issues: first is
+the data organization and its curation through preliminary analysis. Second issue is the pre-aggregation of data by 
+time intervals (chunks) for future indexing.
+
+In the second section \ref{sec:second} I address the Symbolic aggregation workflow. I cover the data specificity,
+SAX parameters section and the index organization.
+
+In the third section \ref{sec:third} I address the mining question.
+
+\section{Research question}
+The research question I am trying to resolve with this work is the discovery of recurrent behaviors within the Android SCM
+trails by SAX application. Previously a variety of time-series mining algorithms was applied to the problem of finding
+of periodicity and \textbf{recurrent behaviors} within the \textbf{software change artifacts trails} such as Linear predictive
+coding and cepstrum coefficients \cite{citeulike:3378725}, Fourier Transform \cite{citeulike:10377345}
+and coding \cite{citeulike:10377366}. Lin\&Keogh \cite{citeulike:2821475} discovered and explored universal application power 
+od Symbolic Aggregate Approximation to variety of time-series data. In this work I explore the application of
+the SAX to the problem of discovering recurrent behaviors from software change artifacts trails.
+
+
+\section{Aggregating commits statistics in TrajectoryDB}\label{sec:first}
 The raw statistics from an SCM system is stored within the TajectoryDB. There is information about every change, its impact
-on the source code tree and information concerning contributors and projects.
+on the source code tree and an auxiliary data about projects and contributors.
 
 For the first test I have randomly selected a contributor with id \emph{153} (davem$@$davemloft.net) and a project with id 
 \emph{18} (android-kernel-omap). 
@@ -190,7 +211,7 @@ select date_format(c.author_date, '%Y-%m-%d') as day, count(distinct(c.id)) as c
  group by date_format(c.author_date, '%Y%m%d');
 \end{lstlisting}
 \end{minipage}
-\newpage
+
 \begin{table}[hb]
 \noindent\begin{minipage}{\textwidth}
   \caption{Result of running the query from Listing \ref{query2} against the TrajectoryDB.}
@@ -256,8 +277,33 @@ day & dtag & commits & t\_ad & t\_ed & t\_dlt & l\_ad & l\_ed & l\_dlt\\
 The repository trail data stored in this fashion considerably save the computation time. Running aggregation by time slot 
 and summarizing changes as in query from Listing \ref{query2} could take a very long time over large repositories, whether running 
 single \emph{SELECT} over indexed by user, project, dtag and day \emph{time\_patterns} table takes a fraction of a second.
-\newpage
 
+\section{Indexing aggregated commits statistics with SAX}\label{sec:second}
+This step is essential for the reduction of the data complexity and for enabling of the data mining. The SCM trails data 
+is getting transformed into sub-series chunks at first. These sub-series are converted into the symbolic representation
+and indexed at the next step.
+
+\subsection{Data distribution}
+Before explaining the Trajectory workflow with symbolic approximation and indexing, I would like to double-check some SAX 
+preliminaries.
+First of all, when defining SAX alphabets, Lin\&Keogh \cite{citeulike:2821475} assumed that the normalized series are 
+following Gaussian (normal) distribution. Within their work they concluded that the most of the real-life timeseries 
+(\textit{``large family of the time series data in our disposal''}) are approximately normally distributed, which, 
+unfortunately, is not the case of the Android SCM data in my disposal. 
+I have tested the distribution of values from OMAP data. It does not follow the Normal distribution, see \ref{fig:qqplots},
+thus I assume that the efficiency of SAX approximation will deteriorate. At this point I am unable to estimate to which
+degree it may happen since there is no relevant research I know about.
+However, according to Lin\&Keogh, the correctness of the SAX algorithm is unaffected by distribution.
+The lower-bounding property of the SAX distance measure guarantees correctness of results.
+
+\begin{figure}[p]
+   \centering
+   \includegraphics[width=\textwidth]{figures/OMAP_qqplots.ps}
+   \caption{The distribution of time-series values after normalization. OMAP-kernel.}
+   \label{fig:qqplots}
+\end{figure}
+
+\subsection{Symbolic approximation}
 \begin{wrapfigure}{}{0.42\textwidth}
   \begin{center}
      \caption{Result of the conversion of data from \ref{prestrings} into SAX strings.}
@@ -286,29 +332,7 @@ single \emph{SELECT} over indexed by user, project, dtag and day \emph{time\_pat
   \end{center}
 \end{wrapfigure}
 
-\section{Indexing aggregated commits statistics with SAX}
-
-\subsection{Data distribution}
-Before explaining the Trajectory workflow with symbolic approximation and indexing, I would like to review some SAX aspects.
-First of all, when defining SAX alphabets, Lin and Keogh \cite{citeulike:2821475} assumed that the normalized series are 
-following Gaussian (normal) distribution. Within their work they showed that the most of the real-life timeseries 
-(\textit{``large family of the time series data in our disposal''}) are approximately normally distributed. 
-I have tested the distribution of values from OMAP data. It does not follow the Normal distribution, see \ref{fig:qqplots},
-thus I assume that the efficiency of SAX approximation will deteriorate. At this point I am unable to estimate to which
-degree it may happen. However, according to Lin\&Keogh, the correctness of the SAX algorithm is unaffected by distribution.
-The lower-bounding property of the SAX distance measure guarantees correctness of results.
-
-\subsection{Symbolic data representation}
-
-
-\begin{figure}[p]
-   \centering
-   \includegraphics[width=\textwidth]{figures/OMAP_qqplots.ps}
-   \caption{The distribution of time-series values after normalization. OMAP-kernel.}
-   \label{fig:qqplots}
-\end{figure}
-
-The data from the Table \ref{prestrings} is getting then converted into SAX series on the next step. This process consists of 
+The data from the Table \ref{prestrings} is converted into SAX series on the next step. This process consists of 
 five consecutive steps:
 
 \begin{enumerate}
@@ -351,9 +375,46 @@ artifacts of patterns which do not fit into the current viewport (from 2010-03-0
 \end{minipage}
 \end{figure}
 
+\subsection{Choice of SAX parameters}
+The cornerstone question in SAX transformation is the choice of the parameters. By varying the sliding window 
+length I am able to slice the search space to only see patterns within the time-interval which is the length
+of this window or it's miltiple (I need citation here about the choice of natural to data intervals)\ldots
+
+For this time I picked weekly, bi-weekly and a monthly intervals. In my opinion they correspond to natural 
+units of time within the software process. 
+
+The choice of PAA size and an alphabet has a direct impact on the sensitivity of SAX algorithm and
+on the size of the resulting dictionaries.
+By varying the PAA size algorithm is able to smooth the high-frequency noise within the sliding window interval 
+by aggregating values within the PAA piece to their mean value. By proper choice of PAA size it is possible to 
+focus only on the certain-scale frequency within the data stream by analogy to FFT. The PAA size defines the length
+of the resulting dictionary words. 
+The choice of the alphabet size not only limits the amount of letters within the resulting words, thus having 
+direct influence on the size and complexity of the dictionary, but tunes the sensityvity of the search.
 
 
-\clearpage
+to this length discriminate only this 
+
+\begin{figure}[p]
+   \centering
+   \includegraphics[width=\textwidth]{figures/OMAP_qqplots.ps}
+   \caption{The distribution of time-series values after normalization. OMAP-kernel.}
+   \label{fig:qqplots}
+\end{figure}
+
+
+\subsection{Choice of storage strategy}
+
+
+\section{Data Mining}\label{sec:third}
+Here I discuss the results 
+
+\subsection{Patterns classification}
+
+\subsection{Hierarchical clustering}
+
+\subsection{K-means clustering}
+
 \section{Note to myself: wrong counts}
 \noindent\begin{minipage}{\textwidth}
 \begin{lstlisting}[label=query_wrong,caption=Wrong counts here in that second query due to the join. Look at the counts in third query to understand why]
