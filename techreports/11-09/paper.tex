@@ -483,18 +483,92 @@ allows the pre-release and post-release pattern classes discovery
 (3) SAX and TF$\ast$IDF application to the ``\textit{daytime}'' commit frequencies stream
 allows the contributor social characteristics pattern classes discovery 
 
+\section{Research question}
+The research question I am trying to resolve with this work is the discovery of recurrent behaviors within the Android SCM
+trails by SAX application. Previously a variety of time-series mining algorithms was applied to the problem of finding
+of periodicity and \textbf{recurrent behaviors} within the \textbf{software change artifacts trails} such as Linear predictive
+coding and cepstrum coefficients \cite{citeulike:3378725}, Fourier Transform \cite{citeulike:10377345}
+and coding \cite{citeulike:10377366}. Two last cited papers show that corresponding techniques allow the discovery of the 
+strong signal corresponding to the release of MySQL.
+Lin\&Keogh \cite{citeulike:2821475} discovered and explored universal application power 
+of Symbolic Aggregate Approximation to variety of time-series data. 
+
+In this work I explore the application of the SAX to the problem of discovering recurrent behaviors from software change 
+artifacts trails.
+
+To be precise in this writing I will check if I can see that there is a difference in recurrent behaviours before and after 
+software release.
+
 \section{Experimental methods}
-Following previous research I partitioned the change trails by the time of the day and by 
-time periods of a week, two weeks and a month. 
+\subsection{Data collection and organization}
+Two XML files offered for the MSR challenge contain the most of the information obtainable 
+from Google-hosted Android git repository as well as Google-hosted bug and issue tracking system.
+While the issues and comments trail contains nearly complete information, the change trail 
+provided for a challenge contains only the high-level change information. 
+
+The thirteen data fields of the change trail XML file provide information about the revision 
+tree, author and a commiter identification, change message and affected targets. 
+Since I am focusing on the mining of temporal patterns for inferring recurrent behaviors, 
+in addition to the existing data I collected auxiliary information about change. By creating
+a local mirror and by iterating over existing commits hashes I was able to recover auxiliary 
+data for 68\% of existing commits. The rest of changes which is about 32\% of total change 
+information belongs to legacy projects and is unrecoverable due to the changes in Android repository. 
+
+For every recoverable change record I collected a summary of added, modified or deleted files 
+as well as a summary about LOC changes: added, modified or deleted lines. All this information 
+was stored in the Trajectory database backend. Main tables of the database correspond to change 
+and issue events; these tables accompanied with change targets tables and issue comments as 
+well as tables for contributors. Overall, the database was normalized and optimized for the fast 
+retrieval of change and issue information using SQL language.
+
+Following the previous research I partitioned the change trails by the time of the day and 
+by natural time periods of one week, two weeks and a month. These data was aggregated into the 
+intermediate representation within MySQL database.
+
+\subsection{Symbolic approximation and indexing}
+SAX indexing depends on the three parameters which are required. First parameter is
+the sliding window, second is the PAA approximation size and third is the SAX Alphabet size.
+
+In this work I have selected three sizes for sliding window: 7 days, 14 days and 30 days as 
+these represent an intuitive and logical intervals of a week, two weeks and a month. 
+For the PAA reduction I choose 4 steps for 7 days window, 6 steps for a bi-weekly interval,
+and 10 steps for a monthly window.
+Finally the alphabet, I choose 3 letters for weekly window, and 5 letters for bi-weekly and monthly windows.
+All these are summarized in the Table \ref{tab:parameters}.
+
+By applying SAX to the pre-aggregated data I have obtained their symbolic temporal 
+representation. Do I need a figure explaining SAX transform here?
+
+\begin{table}
+  \caption{Sliding window, PAA and alphabet size choices.}
+  \centering
+  \label{tab:parameters}
+  \begin{tabular}{ | l | c | c |}
+  \hline                       
+  Sliding window size & PAA size & Alphabet size \\
+  \hline 
+    one week (7 days) & 4 & 3 \\  
+    two weeks (14 days) & 6 & 5 \\ 
+    month (30 days) & 10 & 5 \\ 
+  \hline  
+  \end{tabular}
+\end{table}
 
 \subsection{Token-based distance metrics}
-In my experiments I used two similarity metrics specifically designed for multisets comparison. These are token-based distance metrics:
-The Jaccard similarity between two sets $S$ and $T$ which is simply 
+For the experiments I have selected three similarity metrics. 
+First one is based on the SAX min distance and the Euclidean distance which applied to vector of tokens 
+sorted by frequency observed in the aggregated symbolic stream corresponding to selected stream class,
+aggregation parameters, user, project and time-interval of the interest. 
+\begin{equation}
+D(S,T) = \sqrt{ \sum SAXdist(s_{i},t_{i})^{2} }
+\end{equation} 
+where $SAXdist$ is the the SAX distance based on the Normal alphabet.
+
+As an alternative I have tried the Jaccard similarity between two sets $S$ and $T$ which is simply 
 \begin{equation}
 J_{\delta}(S,T) = \frac{|S\cup T| - |S\cap T|}{|S\cup T|}
 \end{equation} 
-and the $TFIDF$ or $cosine$ $similarity$ which can 
-be defined as 
+and the $TF\ast IDF$ similarity or which defined as a dot product 
 \begin{equation}
  TFIDF(S,T) = \sum_{\omega \in S \cap T} V(\omega, S) \cdot V(\omega, T)
 \end{equation} 
@@ -502,29 +576,62 @@ where
 \begin{equation}
  V(\omega, S) = \frac { V^{\prime} (\omega,S) } { \sqrt{ \sum_{\omega^{\prime}} V^{\prime} (\omega,S)^{2}} }
 \end{equation} 
-is a cosine normalization of $tf\ast idf$ (product of token frequency and inverse document frequency):
+is a normalization of $TF\ast IDF$ (product of token frequency and inverse document frequency):
 \begin{equation}
  V^{\prime} (\omega,S) = \log(TF_{\omega, S} +1) \cdot \log(IDF_{\omega})
 \end{equation} 
-Where $IDF_{\omega}$ is a measure of the general importance of the pattern among all users
+where $IDF_{\omega}$ is a measure of the general importance of the pattern among all users
 \begin{equation}
  IDF_{\omega} = \frac{|D|}{DF(\omega)}
 \end{equation} 
 where $|D|$ is cardinality of $D$ - the total number of users, and $DF(\omega)$ is the number of users having $\omega$ pattern in their activity set.
-By using $IDF$ we put more weight on words which occur less frequently among others in order to better separate 
 %% See \href{http://en.wikipedia.org/wiki/TFIDF}
 
+\section{Clustering}
+While the application of the SAX distance and Jaccard similarity yields a single number allowing
+the use of the convenient clustering libraries such as $hclust()$ and $kmeans()$ of R for manipulation
+with sparse vectors produced by the $TF\ast IDF$ application I used $sparcl()$ R package for hierarchical
+clustering and my own implementation of $k-means$ clustering.
+
 \section{Results}
-\subsection{Kernel-OMAP contributors partitioning}
-For the 
+\subsection{Kernel-OMAP life cycle patterns dicovery}
+I arbitrary selected the Android kernel-OMAP as one of the large Android OS subprojects. 
+OMAP is a proprietary system on chips (SoCs) for portable and mobile multimedia applications 
+based on general-purpose ARM architecture processor provided by Texas Instruments.
 
+As a training set for building dictionaries of pre and post-release patterns I choose three Android releases:
+\textit{Android 1.0}, \textit{Android 1.5} and \textit{Android 2.0}. For each release in the set I selected four 
+weeks before the release as \textit{pre-release} and four weeks after release as \textit{post-release} 
+training intervals. As an additional constraint for this experiment I have selected contributors affiliated
+with $@android.com$ e-mail domain and a telemetry stream of $ADDED_LINES$.
+After pre-generated patterns retrieval with SQL query I applied hierarchical clustering 
+based on $TF\ast IDF$ similarity as a sanity test. The almost perfect clustering picture \ref{fig:kernel_cluster}
+indicates that there are significant differences in the pre-release and post-release weekly behaviors among 
+selected contributors.
 
-\subsubsection{Subsubsection Heading Here}
-Subsubsection text here.
+While hierarchical clustering is a good sanity test, the K-means clustering is the most commonly used 
+data mining clustering algorithm \cite{citeulike:3562}, so for completeness of the test I performed
+k-means on the symbolic representation of data using $TF\ast IDF$ similarity. Algorithm converged after three
+iterations.
 
-\section{Type style and Fonts}
-Wherever Times is specified, Times Roman or Times New Roman may be used. If neither is available on your system, please use the font closest in appearance to Times. Avoid using bit-mapped fonts if possible. True-Type 1 or Open Type fonts are preferred. Please embed symbol fonts, as well, for math, etc.
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.5\textwidth]{figures/omap-google-added.ps}
+  \caption{Hierarchical clustering of pre and post commit patterns}
+  \label{fig:kernel_cluster}
+\end{figure}
 
+As a training set for building dictionaries of pre and post-release patterns I choose \textit{Android 1.0},
+\textit{Android 1.5} and \textit{Android 2.0} releases. For every release in the set I have selected four 
+weeks before the release as \textit{pre-release} and four weeks after release as \textit{post-release} 
+training intervals. The results 
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.5\textwidth]{figures/omap-google-added.ps}
+  \caption{Hierarchical clustering of pre and post commit patterns}
+  \label{fig:kernel_changes}
+\end{figure}
 
 % An example of a floating figure using the graphicx package.
 % Note that \label must occur AFTER (or within) \caption.
@@ -643,9 +750,12 @@ more thanks here
 % http://www.ctan.org/tex-archive/biblio/bibtex/contrib/doc/
 % The IEEEtran BibTeX style support page is at:
 % http://www.michaelshell.org/tex/ieeetran/bibtex/
-\bibliographystyle{IEEEtran}
+%\bibliographystyle{IEEEtran}
 % argument is your BibTeX string definitions and bibliography database(s)
-\bibliography{IEEEabrv,seninp}
+%\bibliographystyle{abbrv}
+%\bibliography{seninp}
+
+%\bibliography{IEEEabrv,seninp}
 %
 % <OR> manually copy in the resultant .bbl file
 % set second argument of \begin to the number of references
