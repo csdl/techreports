@@ -333,7 +333,20 @@
 % Read the url.sty source comments for usage information. Basically,
 % \url{my_url_here}.
 
-
+%% Package to linebreak URLs in a sane manner.
+\usepackage{url}
+%% Define a new 'smallurl' style for the package that will use a smaller font.
+\makeatletter
+\def\url@smallurlstyle{%
+  \@ifundefined{selectfont}{\def\UrlFont{\sf}}{\def\UrlFont{\small\ttfamily}}}
+\makeatother
+%% Now actually use the newly defined style.
+\urlstyle{smallurl}
+%% Define 'tinyurl' style for even smaller URLs (such as in tables)
+\makeatletter
+\def\url@tinyurlstyle{%
+  \@ifundefined{selectfont}{\def\UrlFont{\sf}}{\def\UrlFont{\scriptsize\ttfamily}}}
+\makeatother
 
 
 
@@ -352,7 +365,7 @@
 %
 % paper title
 % can use linebreaks \\ within to get better formatting as desired
-\title{Recognizing development behaviours corresponding to Android OS evolution and release life-cycle}
+\title{Recognizing recurrent development behaviours corresponding to Android OS release life-cycle}
 
 
 % author names and affiliations
@@ -409,18 +422,17 @@ senin@hawaii.edu}
 
 \begin{abstract}
 Android OS is an open-source Linux-based operating system for mobile devices developed by 
-Open Handset Alliance led by Google. We attempted to recognize recurrent behaviors within 
-Android development process through data mining of software process artifact trails 
-corresponding to eight years of continuous development. 
-By temporal partitioning of development activity artifacts, their symbolic approximation 
-and successive indexing, we have built dictionaries of observed patterns. 
-Further application of unsupervised learning and density estimation techniques allowed us 
-to recognize behavioral signals corresponding to Android release life cycle.
+Open Handset Alliance led by Google. I attempted to apply a novel data mining technique 
+based on SAX approximation and indexing of time-series with TF$\ast$ IDF weights in order to
+discover recurrent behaviors within Android development process. 
 
+By mining of software process artifact trails corresponding to eight years of OMAP kernel 
+development I was able to train a classifier which succesfully recognizes pre- and 
+post-release behaviors.
 \end{abstract}
 
 \begin{IEEEkeywords}
-component; formatting; style; styling
+Behaviors Detection, Empirical Study, Source Control System
 
 \end{IEEEkeywords}
 
@@ -439,65 +451,93 @@ component; formatting; style; styling
 
 \section{Introduction}
 % no \IEEEPARstart
-As many other open-source projects, the Android OS was in the development for many years. 
-There are about two millions of change records registered in the Android SCM by more than 
-eleven thousands of contributors. The change metadata is shown to be a rich source of 
-software process and social characteristics. For example it is possible to discover recurrent 
-behaviors by using Fourier Analysis of change events \cite{citeulike:10377345}, and relate
-them to the software product quality \cite{citeulike:10392277}. In this work I am extending 
-previous research by introducing a framework for the temporal partitioning of the software 
-change data and successive recurrent behaviors and knowledge discovery.
+As many other large open-source projects, Android OS was in the development for many years. 
+Android is ``an open-source software stack for mobile phones and other devices'',
+\url{http://source.android.com/} which is based on the Linux 2.6 monolithic kernel.
+Android Inc., the small startup company, begun the development. In 2005 company was 
+acquired by Google which formed the Open Handset Alliance - a consortium of 84 companies 
+which announced the availability of the Android Software Development Kit (SDK) 
+in November 2007. The Android OS code is open and released under the Apache License.
 
+There are about two millions of change records registered in the Android SCM by more than 
+eleven thousands of contributors within eight years span. Git is used as a version control
+system for Android and source code organized into more than two hundreds of sub-projects.
+These organized by the function (kernel, UI, mailing system, etc.) and underlying hardware 
+(CPU type, bluetooth communication chip, etc.). 
+
+By the large body of previous reserach it is shown that the change metadata is a rich 
+source of software process and developers social characteristics. Relevant to my
+research subject work showed a possibility to discover recurrent behaviors by use 
+of Fourier Analysis of change events \cite{citeulike:10377345}, in another work it was shown
+the relation between the activity time intervals and software product quality 
+\cite{citeulike:10392277}. In this paper I extend the previous research by introducing 
+a universal framework for the temporal partitioning of the software change artifacts 
+their complexity reduction and successive recurrent behaviors discovery.
+
+\subsection{Contribution}
+To the best of my knowledge, this work is the first attempt to study the applicability
+of symbolic aggregate approximation and term frequency–inverse document frequency
+weight statistics to the mining of software process artifacts trails. 
+This methodology enables one to significantly reduce the large complexity 
+(dimensionality and noise) of temporal artifacts left by software development and
+transform real-valued streams into the symbolic representation. These reduced symbolic 
+data streams can be indexed and reused for mining and knowledge discovery. 
+
+As an example of a possible data-mining workflow demonstrating the resolving power 
+and correctness of the approach I present a case study of building a classifier
+for pre- and post-release behaviors. 
+
+\section{Motivation}
 Previously it was found that software development as any other human activity could be 
 successfully partitioned by the time of the day reflecting our lifestyle and habits
-\cite{citeulike:10392325} \cite{citeulike:10392305}. However external constraints, 
-such as employment constraints, software release cycle \cite{citeulike:2739216} 
-and management constraints \cite{citeulike:6095797} found to be able to significantly alter 
-natural activity patterns. Furthermore, within the open-source projects with 
-diverse development community scattered over the globe and following often undocumented 
-development process the natural human activity cycles are often discarded as well as the 
-development and release cycles are significantly altered.
-Thus, the only way to discover open-source software process is to analyze its artifacts 
-trails such as SCM logs, bug-and issue tracking systems and mailing lists archives.
-Essentially these trails are event-series where every event is time-stamped and enclose 
-a set of metadata. In order to discover recurrent processes (frequent activity patterns)
-these trails must be partitioned by the event generating activity and further mined for 
-frequent time-patterns. 
+\cite{citeulike:10396459} \cite{citeulike:10392305}. However external constraints, 
+such as employment and management constraints \cite{citeulike:6095797}, 
+software release cycle \cite{citeulike:2739216} and other found to be able 
+to significantly alter natural activity patterns. Furthermore, within open-source 
+projects with diverse development community scattered over the globe and 
+often following undocumented development process, the natural human activity cycles 
+are often discarded as well as the development and release cycles are significantly altered.
+Thus, the only feasible way to discover an open-source software process is to analyze 
+its artifacts trails such as SCM logs, bug-and issue tracking systems and 
+mailing lists archives. Essentially these trails are event-series where every 
+time-stamped event has an attached set of metadata. 
+However the complexity of this data (large code-base, number of committers 
+with with wide range of experience and commit habits, etc..), the precision of 
+events recall (commit or bug report timestamp is not always a good indicator of the 
+event, SCM-introduced noise through merge commits etc.) impose a great 
+challenge for the researchers.
 
-Time series data mining research is a well-established research field with an enormous wealth 
-of methods, algorithms and data structures. To overcome the complexity of the temporal data 
-it can be transformed into virtually any of the other data representations such as spectral, 
-polynomial, wavelets, piece-wise, symbolic, etc. However, in spite of the fact that there are
-dozens of techniques for transform and comparison the overall complexity of data and the noise
-levels making data mining of temporal data difficult.
-
-In this paper, I investigate the application of the Symbolic Aggregate Approximation 
-\cite{citeulike:2821475} and the TF$\ast$IDF statistics \cite{citeulike:3056638} to the problem 
-of discovering recurrent behaviors in the Android software process.
-
-
-My main findings include: (1) the SAX and TF$\ast$IDF combination is applicable to the 
-problem of partitioning of users and the software project development activities;
-(2) SAX and TF$\ast$IDF application to the ``\textit{late night}'' commit frequencies stream
-allows the pre-release and post-release pattern classes discovery 
-(3) SAX and TF$\ast$IDF application to the ``\textit{daytime}'' commit frequencies stream
-allows the contributor social characteristics pattern classes discovery 
+These challenges are not new to the data-mining community and an enormous wealth 
+of methods, algorithms and data structures exist for overcoming these issues.
+One of the solution to facilitate mining of the temporal data is to transformed 
+it into other data representations such as spectral, polynomial, wavelets, piece-wise, 
+symbolic, etc. In this paper, I investigate the application of 
+Symbolic Aggregate Approximation \cite{citeulike:2821475} and the TF$\ast$IDF 
+statistics \cite{citeulike:3056638} to the problem of discovering recurrent 
+behaviors from software process artifacts with application to Android SCM data.
 
 \section{Research question}
-The research question I am trying to resolve with this work is the discovery of recurrent behaviors within the Android SCM
-trails by SAX application. Previously a variety of time-series mining algorithms was applied to the problem of finding
-of periodicity and \textbf{recurrent behaviors} within the \textbf{software change artifacts trails} such as Linear predictive
-coding and cepstrum coefficients \cite{citeulike:3378725}, Fourier Transform \cite{citeulike:10377345}
-and coding \cite{citeulike:10377366}. Two last cited papers show that corresponding techniques allow the discovery of the 
-strong signal corresponding to the release of MySQL.
-Lin\&Keogh \cite{citeulike:2821475} discovered and explored universal application power 
-of Symbolic Aggregate Approximation to variety of time-series data. 
+Previously a variety of time-series mining algorithms was applied to the 
+problem of finding of periodicity and recurrent behaviors within the software 
+change artifacts trails such as Linear predictive coding and cepstrum 
+coefficients \cite{citeulike:3378725}, Fourier Transform \cite{citeulike:10377345}
+and coding \cite{citeulike:10377366}. These work proved that recurrent behaviors 
+naturally occurring due to the variety of reasons are reflected in the 
+SCM trails and could be recovered with application of data-mining techniques.
 
-In this work I explore the application of the SAX to the problem of discovering recurrent behaviors from software change 
-artifacts trails.
+Recently Lin\&Keogh \cite{citeulike:2821475} discovered and explored the universal 
+application power of Symbolic Aggregate Approximation to a many time-series data 
+mining problems. 
 
-To be precise in this writing I will check if I can see that there is a difference in recurrent behaviors before and after 
-software release.
+In this work I am investigating the applicability of this technique to the discovery 
+of recurrent behaviors within SCM trails. Thus, the research questions I am resolving
+are: 
+\begin{itemize}
+ \item What is the optimal way of data representation and storage configuration? Which kinds of SCM data need to be collected for such analyzes?
+ \item Which partitioning (slicing) is appropriate and which set of parameters one should use for SAX approximation?
+ \item Which distance metrics serves best for similarity/dissimilarity estimation?
+ \item What is the general mining workflow, and which parameters are crucial for result?
+\end{itemize}
 
 \section{Experimental methods}
 \subsection{Data collection and organization}
