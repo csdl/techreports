@@ -428,7 +428,7 @@ the Android OS development process.
 
 By mining software process artifact trails corresponding to OMAP kernel development 
 I was able to discover recurrent behaviors in the new code lines dynamics before and after
-release. By building a classifier upon these behaviors I was able to succesfully recognize 
+release. By building a classifier upon these behaviors I was able to successfully recognize 
 pre- and post-release behaviors within the same and similar sub-projects of Android OS.
 \end{abstract}
 
@@ -466,14 +466,14 @@ two hundreds of sub-projects. These organized by the function (kernel, UI, maili
 There are about two millions of change records registered in the Android SCM by more than 
 eleven thousands of contributors within an eight years span.
 
-By the large body of previous reserach it is shown that the change metadata is a rich 
+By the large body of previous research it is shown that the change metadata is a rich 
 source of software process and developers social characteristics. The ability of 
-discivering of recurrent behaviors with Fourier Analysis of change events 
+discovering of recurrent behaviors with Fourier Analysis of change events 
 explained in \cite{citeulike:10377345} whether other work, such as \cite{citeulike:10392277}
 relates activity time intervals and software product quality. Thus, potentially,
 there is a possibility to relate the recurrent behaviors to the software product 
-quality and to the software process efficiency. The first necessery part of a toolkit
-aiding such a research is an efficient mechanism of dicovering recurrent behaviors
+quality and to the software process efficiency. The first necessary part of a toolkit
+aiding such a research is an efficient mechanism of discovering recurrent behaviors
 modulated by social and project-related constraints. In this paper I extend the 
 previous research by introducing a universal framework for the temporal 
 partitioning of software change artifacts, the data complexity reduction 
@@ -495,8 +495,8 @@ As an example of a possible data-mining workflow demonstrating the resolving pow
 and correctness of the approach I present a case study of building a classifier
 for pre- and post-release recurrent behaviors. 
 Whereas this classifier demonstrates a good performance within the project it was 
-trained on with less than 20\% of missclassification, it has less than 15\% 
-missclassification rate in similar Android OS kernel sub-projects.
+trained on with less than 20\% of miss-classification, it has less than 15\% 
+miss-classification rate in similar Android OS kernel sub-projects.
 
 \section{Motivation}
 Software development is a human activity resulting in software product. The 
@@ -559,7 +559,7 @@ tree, author and a committer identification, change message and affected targets
 Since I am focusing on the mining of temporal patterns for inferring recurrent behaviors, 
 in addition to the existing data I have collected many auxiliary data about change. By creating
 a local mirror and by iterating over existing commit hashes I was able to recover the auxiliary 
-data for 68\% of existing commits. The rest 32\% of change information is unretrievable and 
+data for 68\% of existing commits. The rest 32\% of change information is irretrievable and 
 belongs to legacy projects or is lost and unrecoverable due to the changes in Android repository. 
 
 For every recoverable change record I collected a summary of added, modified and deleted files 
@@ -585,48 +585,37 @@ a summary of early morning added lines for January 2007 for a particular sub-pro
 a group of contributors having emails with a domain ``...@ibm.com''.
 
 \subsection{Symbolic approximation and indexing}
-SAX algorithm requires three parameters where the first is the sliding window size, 
-second is the PAA approximation size and the third parameter is the SAX Alphabet size.
+SAX algorithm requires three input parameters where first is the sliding window size, 
+second is the PAA approximation size, and the third parameter is the SAX Alphabet size.
 
-In this work I have selected three sizes for sliding window: 7 days, 14 days and 30 days as 
-these represent an intuitive and logical intervals of a week, two weeks and a month. 
-For the PAA reduction I choose 4 steps for 7 days window, 6 steps for a bi-weekly interval,
-and 10 steps for a monthly window.
-Finally the alphabet, I choose 3 letters for weekly window, and 5 letters for bi-weekly and monthly windows.
+In this work I have experimented with three sizes for sliding window reflecting natural 
+intervals: a week (7 days), two weeks (14 days) and a month (30 days).
+For the PAA reduction I choose size 4 for 7 days window, size 6 for a bi-weekly interval,
+and 10 PAA steps for a monthly window. Finally for the alphabet, I have used 3 letters for 
+weekly window, 5 letters for bi-weekly and 7 for monthly windows.
 
-By applying SAX to the pre-aggregated data I have obtained their symbolic temporal 
-representation. Do I need a figure explaining SAX transform here?
-
-%\begin{table}
-%  \caption{Sliding window, PAA and alphabet size choices.}
-%  \centering
-%  \label{tab:parameters}
-%  \begin{tabular}{ | l | c | c |}
-%  \hline                       
-%  Sliding window size & PAA size & Alphabet size \\
-%  \hline 
-%    one week (7 days) & 4 & 3 \\  
-%    two weeks (14 days) & 6 & 5 \\ 
-%    month (30 days) & 10 & 5 \\ 
-%  \hline  
-%  \end{tabular}
-%\end{table}
+By applying SAX to the pre-aggregated streams I have obtained their symbolic representation
+which I store in the MySQL database organized and indexed in the way allowing
+instant retrieval of symbolic data for a specific SAX parameters set, a project, a contributor, 
+or a time-interval or any combination of these fields .
 
 \subsection{Token-based distance metrics}
-For the experiments I have selected three similarity metrics. 
-First one is based on the SAX min distance and the Euclidean distance which applied to vector of tokens 
-sorted by frequency observed in the aggregated symbolic stream corresponding to selected stream class,
-aggregation parameters, user, project and time-interval of the interest. 
-\begin{equation}
-D(S,T) = \sqrt{ \sum SAXdist(s_{i},t_{i})^{2} }
-\end{equation} 
-where $SAXdist$ is the the SAX distance based on the Normal alphabet.
+For the experiments I have selected three similarity metrics which were used to compare 
+vectors of SAX words frequencies for selected entities or their sets. Each of such vectors
+is two-dimensional and consists of pairs $\{\langle word\rangle,\langle word \: frequency\rangle\}$
 
-As an alternative I have tried the Jaccard similarity between two sets $S$ and $T$ which is simply 
+First distance I have experimented with is a weighted by SAX Euclidean 
+distance between frequencies of common to two sets words:
+\begin{equation}
+D(S,T) = \sqrt{ \sum_{S\cap T} (SAXdist(s_{i},t_{i}) * \lVert F_{s_{i}}-F_{t_{i}} \rVert )^{2}  }
+\end{equation} 
+
+The second distance I have tried is the Jaccard similarity between two sets $S$ and $T$ which is simply 
 \begin{equation}
 J_{\delta}(S,T) = \frac{|S\cup T| - |S\cap T|}{|S\cup T|}
 \end{equation} 
-and the $TF\ast IDF$ similarity or which defined as a dot product 
+
+The third distance is the $TF\ast IDF$ similarity which defined as a dot product 
 \begin{equation}
  TFIDF(S,T) = \sum_{\omega \in S \cap T} V(\omega, S) \cdot V(\omega, T)
 \end{equation} 
@@ -643,13 +632,21 @@ where $IDF_{\omega}$ is a measure of the general importance of the pattern among
  IDF_{\omega} = \frac{|D|}{DF(\omega)}
 \end{equation} 
 where $|D|$ is cardinality of $D$ - the total number of users, and $DF(\omega)$ is the number of users having $\omega$ pattern in their activity set.
-%% See \href{http://en.wikipedia.org/wiki/TFIDF}
+
+After a number of clustering experiments, from these three metrics, only $TF\ast IDF$ demonstrated an acceptable performance.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.5\textwidth]{figures/omap-hclust.eps}
+  \caption{Hierarchical clustering of pre- and post- commit patterns.}
+  \label{fig:kernel_cluster}
+\end{figure}
 
 \section{Clustering}
-While the application of the SAX distance and Jaccard similarity yields a single number allowing
-the use of the convenient clustering libraries such as $hclust()$ and $kmeans()$ of R for manipulation
-with sparse vectors produced by the $TF\ast IDF$ application I used $sparcl()$ R package for hierarchical
-clustering and my own implementation of $k-means$ clustering.
+As a universal tool for the exploration of derived pattern dictionaries through their partitioning, 
+and for assessment of the metrics' performance I have used the hierarchical clustering. The k-means
+clustering was used in the validation of the class assignment and for general assessment of 
+the validity of the approach.
 
 \begin{table*}
   \caption{Pre- and post-release patterns, their $TF\ast IDF$ weights and sample curves.}
@@ -688,33 +685,27 @@ I arbitrary selected the Android kernel-OMAP as one of the large Android OS sub-
 OMAP is a proprietary system on chips (SoCs) for portable and mobile multimedia applications 
 based on general-purpose ARM architecture processor provided by Texas Instruments.
 
-As a training set for building dictionaries of pre and post-release patterns I choose three Android releases:
-\textit{Android 1.0}, \textit{Android 1.5} and \textit{Android 2.0}. For each release in the set I selected four 
-weeks before the release as \textit{pre-release} and four weeks after release as \textit{post-release} 
-training intervals. As an additional constraint for this experiment I have selected contributors affiliated
-with $@android.com$ e-mail domain and a telemetry stream of $added\_lines$.
-After pre-generated patterns retrieval with SQL query I applied hierarchical clustering 
-based on $TF\ast IDF$ similarity as a sanity test. The almost perfect clustering picture \ref{fig:kernel_cluster}
-indicates that there are significant differences in the pre-release and post-release weekly behaviors among 
-selected contributors.
+As a training set for building dictionaries of pre- and post-release patterns I choose three Android releases:
+\textit{Android 1.0}, \textit{Android 1.5} and \textit{Android 2.0}. For each of these I have generated
+SAX words dictionaries corresponding to four weeks before the release - \textit{pre-release}, and to four 
+weeks after release - \textit{post-release}.
+As an additional constraint for this experiment I have selected contributors affiliated
+with $google.com$ e-mail domain and a telemetry stream of $added\_lines$.
+The almost perfect clustering picture \ref{fig:kernel_cluster} obtained with hierarchical clustering
+and $TF\ast IDF$ similarity measure indicates that there are significant differences in the pre-
+and post-release weekly behavior of contributors in selected time-windows.
 
-While hierarchical clustering is a good sanity test for the separation of data, the performance of K-means 
-clustering is the most valuable metrics \cite{citeulike:3562}. I performed k-means on the symbolic 
+While hierarchical clustering is a good sanity test for the data exploration, the performance of K-means 
+clustering is much more valuable metrics \cite{citeulike:3562}. I performed k-means on the symbolic 
 representation of data using $TF\ast IDF$ statistics and the Euclidean distance. Algorithm converged after two
 iterations separating pre- and post-release dictionaries with a single mismatch for the Android 2.0 pre-release.
 
-\begin{figure}[htb]
-  \centering
-  \includegraphics[width=0.5\textwidth]{figures/omap-hclust.eps}
-  \caption{Hierarchical clustering of pre- and post- commit patterns.}
-  \label{fig:kernel_cluster}
-\end{figure}
-
-By using centroids of resulting clusters as a basis for pre and post-release patterns I tested 
+By using centroids of two resulting clusters as a basis for pre and post-release patterns I tested 
 the classifier on the rest of Android releases for which kernel-OMAP remained an active project
-(some of the pre- and post- release interval contained non or only trivial patterns making them
+(some of the pre- and post- release interval contained none or only trivial patterns making them
 ineligible for classification). This classifier was able to successfully classify more than 81\% 
-of pre- and post-release behaviors (Table \ref{tab:success}).
+of pre- and post-release behaviors (Table \ref{tab:success}). When applied to the similar project -
+kernel-TEGRA - it demonstrated the error rate less than 15\%.
 
 \begin{table}
   \caption{Pre- and post-release development patterns classification results for kernel-OMAP.}
@@ -736,12 +727,10 @@ of pre- and post-release behaviors (Table \ref{tab:success}).
 \end{table}
 
 \section{Conclusions}
-The presented approach and workflow is able to recognize recurrent
-behaviors from software process artifact trails. Its application 
-to Android OS kernel-OMAP subproject SCM artifact trail yielded 
-the pre- and post-release behavior models. In particular, it was
-shown that error rate of recognition of releases within the same 
-as training project is less than 20\%, f
+The presented approach and workflow employs two novel techniques in order
+to discover and rank recurrent behaviors from software process artifact trails. 
+Its application to Android OS kernel-OMAP sub-project artifact trail yielded 
+valid pre- and post-release behavior models. 
 
 \section{Acknowledgement}
 
