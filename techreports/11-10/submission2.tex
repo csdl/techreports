@@ -103,8 +103,8 @@ into time-series.
 In this work I investigate the applicability of SAX-based approximation and 
 indexing of time-series with \textit{tf$\ast$idf} weights in order to discover recurrent 
 behaviors within development process. 
-I use SAX in order to reduce complexity and to transform real-valued time-series 
-into symbolic space. The \textit{tf$\ast$idf} statistics is used as a dissimilarity measure 
+I use SAX to reduce complexity and to transform real-valued time-series 
+into symbolic space, while \textit{tf$\ast$idf} statistics is used as a dissimilarity measure 
 of behavioral patterns.
 
 As a proof of the concept I have applied this technique to software process artifact trails 
@@ -131,38 +131,43 @@ recognize pre- and post-release behaviors within the same and similar sub-projec
 
 
 \section{Introduction}
-By the large body of previous research, it has been shown that software change meta-data is a rich 
-source of software process and developers' social characteristics. The ability to discover
+By the large body of previous research, it has been shown that software change
+meta-data is a rich 
+source of software process and developers' social characteristics. The ability
+to discover
 recurrent behaviors with Fourier Analysis of change events is 
-explained in \cite{citeulike:10377345} along with other work, such as \cite{citeulike:10392277}
-that relates activity time patterns and software product quality. Thus, potentially,
+explained in \cite{citeulike:10377345}, while another work
+\cite{citeulike:10392277}
+relates recurrent behaviors and software product quality. Thus, potentially,
 it is possible to relate recurrent behaviors to software product 
 quality and to software process efficiency. The main part of a toolkit
 aiding such a research is an efficient mechanism to discover recurrent behaviors
 modulated by social and project-related constraints. In this paper I extend 
 previous research by introducing a universal framework for temporal 
 partitioning and mining of software change artifacts and evaluate this
-framework on the extracted from Android SCM (software configuration management) data. 
+framework on the extracted from Android SCM (software configuration management)
+data. 
 
 The rest of the paper is organized as follows. 
 In Section 2, I discuss the motivation, results of previous work in MSR and present 
 the research questions. 
-In Section 3, I consider the data selection, collection, and partitioning, and describe 
-algorithms and methods used in analysis. Section 4 presents results and the contribution.
+In Section 3, I consider the workflow, data selection, collection, partitioning, 
+and describe algorithms and methods. Section 4 presents results and the contribution.
 Finally, in Section 5, I discuss limitations and possible extension of this work.
 
 \section{Motivation}
-Software development is a human activity resulting in a software product. The 
-amount of time and effort needed to complete a software project and the 
-quality of the final product affected by software
-process \cite{citeulike:9919804}. Thus, studying software processes is one of 
+Software development is a human activity resulting in a software product. The software
+process is the a structure imposed on the software development. 
+The amount of time and effort needed to complete a software project and the 
+quality of the final product affected by software process \cite{citeulike:9919804}.
+ Thus, studying software processes is one of 
 the important areas of software engineering. 
 
 Previously it was found that software development, as many other human activities,
 could be successfully partitioned by the time of the day reflecting our lifestyle and habits
-\cite{citeulike:10396459} \cite{citeulike:10392305}. However external constraints, 
-such as employment and management constraints \cite{citeulike:6095797}, 
-software release cycle \cite{citeulike:2739216} have been found altering 
+\cite{citeulike:10396459} \cite{citeulike:10392305}. However, external constraints, 
+such as employment and management constraints \cite{citeulike:6095797} and
+software release cycle \cite{citeulike:2739216},  have been found altering 
 natural activity patterns significantly. Furthermore, within open-source 
 projects with a diverse development community scattered over the globe and 
 often following undocumented development process \cite{citeulike:10377366}, natural human 
@@ -183,7 +188,7 @@ many are yet to be tried.
 In this paper, I investigate the application of 
 Symbolic Aggregate Approximation \cite{citeulike:2821475} and the 
 term frequency\textendash inverse document frequency weight statistics (\textit{tf$\ast$idf})
-statistics \cite{citeulike:3056638} to the problem of discovering recurrent 
+\cite{citeulike:3056638} to the problem of discovering recurrent 
 behaviors from software process artifacts. The motivation behind this choice is coming
 from the demonstration of outstanding performance by SAX in time-series mining, 
 and from the wide range of successful applications of \textit{tf$\ast$idf} 
@@ -217,31 +222,31 @@ which announced the availability of the Android Software Development Kit (SDK)
 in November 2007. The Android OS code is open and released under the Apache License.
 
 Google platform is used for hosting, issue and bug tracking systems, whether Git is used 
-as the version control system for Android. The source code is organized 
+as the distributed version control system for Android. The source code is organized 
 into more than 200 of sub-projects by function (kernel, UI, mailing system, etc.) 
 and underlying hardware (CPU type, bluetooth communication chip, etc.). 
 There are about two million change records registered in the Android SCM by more than 
-eleven thousands of contributors within an eight year span. The richness of data 
+eleven thousands of contributors within an eight year span. The richness of this data 
 makes Android SCM very interesting repository for exploring.
 
 By using provided Google Data API for bugs and issues retrieval, and custom coded
 Git repository data collection engine, I have collected information about bugs and issues,
-the revision tree, author and a committer identification, change messages, and affected targets. 
+the revision tree, authors and committers, change messages, and affected targets. 
 In addition to that data, by creating a local mirror and by iterating over changes, I was able 
-to recover the auxiliary data for the most of change records. This auxiliary data provides quantitative
+to recover the auxiliary data for the most of the change records. This auxiliary data provides quantitative
 summary of added, modified, and deleted targets, as well as the summary about LOC changes: 
 added, modified or deleted lines. All this information 
 was stored in the relational database. Main tables of this database correspond to change 
-and issue events; these accompanied with change target tables, issue details, comments and 
+and issue events; these accompanied with change target tables, issue details, comments, and 
 tables for contributor authentication. Overall, the database was normalized and optimized 
 for the fast retrieval of change and issue information using SQL language.
 
 The collected data constitute almost full set of collectible artifacts. 
 The only lacking information is the precise information for source-code line changes, which I 
 intentionally omitted in this step due to the storage space and collection time constraints. 
-Despite of being collected, bugs and issues data, has not been included into recurrent 
+Despite of being collected, bugs and issues data has not been included into recurrent 
 behaviors discovery experiments in this work. However, as was shown by previous research, 
-this data is a valuable source of information for recurrent behaviors discovery.
+this data is a valuable source of information for recurrent behaviors discovery \cite{citeulike:10392277}.
 
 \subsection{Temporal data partitioning} \label{partitioning}
 By following the previous research targeting social characteristics of committers \cite{citeulike:10392277}, 
@@ -255,13 +260,12 @@ the collected change trails by the time of the day using time windows of
     \item Night, 05PM - 12AM
 \end{itemize}
 For every of these windows, I then aggregated values for commits, added, edited, or deleted 
-targets, and lines. 
+targets and lines, producing equidistant time-series abstraction of software development activity.
 
-One of the effects of this data transformation is an instant increase of change data 
-entities by the factor of 5, moreover the resulting data streams are very sparse. 
-In order to reduce the space needed for storage, and to reduce the sparseness and the 
-complexity (dimensionality) of the data, two additional procedures were applied within 
-the post-collection data treatment step: PAA and SAX.
+One of the effects of this data transformation is an instant increase of the number of
+change data entities by the factor of 5 and production of very sparse equidistant time-series.
+In order to reduce the sparseness and the complexity (dimensionality) of data, 
+two additional procedures were applied within the post-collection data treatment step: PAA and SAX.
 
 \subsection{Piecewise Aggregate Approximation (PAA)} \label{paa}
 PAA performs a time-series feature extraction based on segmented means \cite{citeulike:2946589}. 
@@ -301,7 +305,7 @@ and showing that $D_{PAA}(\bar{X}, \bar{Y}) \leq D(X,Y)$.
 
 Symbolic Aggregate approXimation extends the PAA-based approach, inheriting algorithmic 
 simplicity and low computational complexity, while providing satisfactory sensitivity and 
-selectivity in range-query processing \cite{citeulike:2821475}. 
+selectivity \cite{citeulike:2821475}. 
 
 SAX transforms a time-series $X$ of length $n$ into a string of arbitrary length $\omega$, 
 where $\omega << n$ typically, using an alphabet $A$ of size $ a \geq 2$. 
@@ -382,55 +386,54 @@ on bursty (non-periodic) data sets.
 
 \subsection{Symbolic approximation and indexing}
 As explained above, application of SAX to the single time-series results in its symbolic 
-representation which is much shorter (reduced dimensionality) and easier to manipulate. 
+representation which is much shorter (reduced in the dimensionality) and easier to manipulate. 
 
 By following a sliding window sub-series extraction and SAX indexing technique described 
 in detail by Lin et al. in \cite{citeulike:2821475} and Keogh et al. in 
-\cite{citeulike:532335}, I have built a number of symbolic indexes for every timeseries 
-generated at partitioning step (\ref{partitioning}) choosing following parameters for 
-SAX transformation. 
+\cite{citeulike:532335}, I have built a number of symbolic indexes for every time-series 
+generated at partitioning step (\ref{partitioning}) combining following parameters for 
+SAX transformation: 
+\begin{itemize}
+ \item three sizes for sliding window reflecting natural intervals of a week (7 days), 
+      two weeks (14 days) and a month (30 days);
+ \item 4 PAA steps for a weekly window, 6 PAA steps for a bi-weekly window,
+      and 10 PAA steps for a monthly window;
+ \item 3 letters alphabet for weekly window, 5 letters for bi-weekly,
+      and a 7 letters alphabet for monthly window.
+\end{itemize}
 
-Three sizes for sliding window reflecting natural intervals of a week (7 days), 
-two weeks (14 days) and a month (30 days) were selected. Since this work is an exploratory 
-study and a proof of the concept,for the PAA reduction and SAX approximation I have
-arbitrary selected 4 PAA steps for a weekly window, 6 PAA steps for a bi-weekly window,
-and 10 PAA steps for a monthly window. Finally, for the alphabet size, I have used 3 letters 
-for weekly window, 5 letters for bi-weekly and 7 for monthly windows.
-
-By applying sliding-window based SAX indexing to the pre-aggregated streams I have obtained 
-their symbolic representation which was stored in the same relational database organized and 
-indexed to allow the fast retrieval of SAX words and their frequencies for a specific project, 
+These indexes were stored in the same relational database organized and indexed to allow the fast 
+retrieval of SAX words and their frequencies for a specific project, 
 a contributor, a time-interval, a SAX parameters set, or any combination of these fields. 
 
-I define a term of ``behavioral portrait'' of a contributor $c$ as the set of all observed SAX words 
+Here I define a term of ``behavioral portrait'' of a contributor $c$ as the set of all observed SAX words 
 in her software artifact trail(s):
 \begin{equation}
  BP_{c} = \{ (w_{1},f_{1}), (w_{2},f_{2}), ..., (w_{n},f_{n}) \}
 \end{equation}
-where pair $(w_{1},f_{1})$ corresponds to the observed SAX word and its frequency. This portrait can
+where each pair $(w_{1},f_{1})$ corresponds to the observed SAX word and its frequency. This portrait can
 be further specified by project, time-interval and SAX parameters set. Also it can be easily extended 
 from the individual contributor to a team, whose ``behavioral portrait'' is a union set
 of ``behavioral portraits'' of team members.
-
 
 \subsection{Token-based distance metrics application to behavioral portraits}
 In my previous experiments I have measured the performance of three similarity metrics 
 when applied to the behavioral portraits. 
 
-The first metrics I tried is weighted by SAX Euclidean distance defined for common to two 
+The first metrics I have tried is weighted by SAX Euclidean similarity distance defined for common to two 
 behavioral portraits words:
 \begin{equation}
 D(S,T) = \sqrt{ \sum_{S\cap T} (MINDIST(s_{i},t_{i}) * \lVert F_{s_{i}}-F_{t_{i}} \rVert )^{2}  }
 \end{equation} 
 where $S$ and $T$ are two behavioral portraits whose words are ordered by frequency.
 
-The second metrics I tried is the Jaccard similarity coefficient between two behavioral portraits
+The second metrics I have tried is the Jaccard similarity coefficient between two behavioral portraits
 $S$ and $T$ which is simply 
 \begin{equation}
 J_{\delta}(S,T) = \frac{|S\cup T| - |S\cap T|}{|S\cup T|}
 \end{equation} 
 
-The third metrics is the \textit{tf$\ast$idf} similarity which defined as a dot product 
+The third metrics I have tried is the \textit{tf$\ast$idf} similarity which defined as a dot product 
 \begin{equation}
  TFIDF(S,T) = \sum_{\omega \in S \cap T} V(\omega, S) \cdot V(\omega, T)
 \end{equation} 
@@ -449,8 +452,8 @@ where $IDF_{\omega}$ is a measure of the general importance of the pattern among
 where $|D|$ is cardinality of $D$ - the total number of users, and $DF(\omega)$ is the number of users 
 having $\omega$ pattern in their activity set. 
 
-While first two metrics demonstrated very poor performance in the clustering tests, 
-the \textit{tf$\ast$idf} similarity statistics performed very well.
+While first two metrics demonstrated very poor performance in the clustering tests (discussed in the section \ref{clustering}), 
+the \textit{tf$\ast$idf} similarity statistics performed very well and is presented in this work.
 
 \begin{figure}[t]
   \centering
@@ -459,7 +462,7 @@ the \textit{tf$\ast$idf} similarity statistics performed very well.
   \label{fig:kernel_cluster}
 \end{figure}
 
-\subsection{Clustering}
+\subsection{Clustering} \label{clustering}
 As a universal tool for the exploration of derived behavioral portraits through their partitioning, 
 and for assessment of the metrics' performance, I used hierarchical clustering. The k-means
 clustering was used in the validation of the class assignment and for general assessment of 
@@ -468,8 +471,8 @@ the validity of the approach.
 \begin{table*}
   \caption{Patterns observed within pre- and post-release behavioral portraits, their \textit{tf$\ast$idf} weights and sample curves.
   \textit{(here pre-\textit{x.x} and post-\textit{x.x} rows of the table correspond to pre-release and post-releases of Android OS version x.x; 
-   columns of the table correspond to non-trivial patterns observed in all windows; cells of the table contain \textit{tf$\ast$idf} 
-   weights computed for pattern within a release)}}
+   columns of the table correspond to non-trivial patterns observed in all behavioral portraits; cells of the table contain \textit{tf$\ast$idf} 
+   weights computed for a particular SAX word in a particular behavioral portrait)}}
   \label{tab:tokens}
   \begin{tabular}{ | b{1.5cm} | c | c | c | c | c | c | c | c | c | c | c |}
   \hline
@@ -501,9 +504,10 @@ release & "bbac" & "abca" & "babc" & "bbba" & "bcaa" & "bcbb" & "ccaa" & "cbaa" 
 
 \section{Results}
 For the experiments related to this work I have tried a number of contributors 
-partitioning schemes, variety of time-intervals and sub-projects selections. 
-However, due to the space constraint of this paper, 
-I present only one validation experiment in this section as the proof of concept.
+partitioning schemes, variety of time-intervals and sub-projects selections observing
+satisfactory performance of investigated approach. However, due to the space constraint 
+of this paper, I present only single validation experiment in this section 
+as the proof of concept.
 
 \subsection{Kernel-OMAP life cycle patterns discovery}
 I have arbitrary selected the Android kernel-OMAP project as one of the large sub-projects in Android OS. 
@@ -517,13 +521,13 @@ release - \textit{pre-release behavioral portrait},
 and to four weeks after release - \textit{post-release behavioral portrait}
 having in place an additional constraint on contributors and the artifacts trail. 
 I have selected contributors affiliated with $google.com$ e-mail domain only, expecting
-that paid developers will have more consistent behavior \cite{citeulike:10392277}.
+that paid developers will have much more consistent behavior \cite{citeulike:10392277}.
 By selecting the $added\_lines$ artifacts stream only, I additionally limited the scope of the
-analyzes and the complexity of captured behaviors.
+analyzes and the complexity of captured behaviors to the ``new code lines dynamics'' only.
 The almost perfect clustering picture (Figure \ref{fig:kernel_cluster}) 
-obtained with hierarchical clustering and \textit{tf$\ast$idf} similarity measure indicates that 
-there are significant differences 
-in the pre- and post-release weekly behaviors of contributors in selected time-windows.
+obtained with hierarchical clustering and \textit{tf$\ast$idf} statistics as the distance function 
+indicates that there are significant differences in the pre- and post-release weekly behaviors
+ of contributors in selected time-windows.
 
 While hierarchical clustering is a good sanity test for the data exploration, the performance of K-means 
 clustering is much more valuable \cite{citeulike:3562}. I performed k-means on the symbolic 
@@ -536,9 +540,9 @@ more than 81\% of pre- and post-release behaviors (Table \ref{tab:success}).
 When applied to the similar project - kernel-TEGRA - it demonstrated the error rate less than 15\%.
 
 The classifier demonstrated a weak, almost random performance on other sub-projects, such as user-interface
-or e-mail client. However, when re-trained on the platform-external-bluetooth-bluez, its performance on 
-other bluetooth stack implementation related sub-projects such as platform-external-bluetooth-glib, 
-platform-external-bluetooth-hcidump and platform-system-bluetooth recovered to 20\% miss-classification.
+related projects and e-mail client. However, when re-trained on the platform-external-bluetooth-bluez, 
+its performance on other bluetooth related sub-projects, such as platform-external-bluetooth-glib,
+platform-external-bluetooth-hcidump, and platform-system-bluetooth, recovered to 20\% miss-classification.
 
 \begin{table}
   \caption{Pre- and post-release development patterns classification results for kernel-OMAP.}
@@ -568,7 +572,7 @@ reduction of the large complexity (dimensionality and noise) of temporal artifac
 and opens the door to application of a plethora of string search and text-mining algorithms.
 In addition, the \textit{tf$\ast$idf} statistics provides an efficient mechanism for 
 discrimination of the signal by ranking symbolic data while focusing on dissimilarity.
-Finally the third component I have used - the relational database - facilitates 
+Finally, the third component I have used - the relational database - facilitates 
 efficient data slicing, indexing, and retrieval.
 
 As an example of a possible data-mining workflow demonstrating the resolving power 
@@ -583,10 +587,14 @@ miss-classification rate in similar Android OS kernel sub-projects.
 The presented approach and workflow employs two novel techniques in order to discover and 
 rank recurrent behaviors from software process artifact trails. While the approach 
 demonstrates satisfactory performance, the interpretation of the captured behaviors requires
-more work. The discovered behaviors are organized in Table \ref{tab:tokens} by their 
-occurrence: the first three columns belong to the post-release time-window while
-the four next columns belong to pre-release time-window, the rest are the behaviors observed 
-in both. It appears that during pre-release most of the added lines within a week fall on the 
+more work. 
+The discovered behavioral patterns are organized in Table \ref{tab:tokens} by their 
+occurrence: the first three columns belong to the post-release time-window, the four next 
+columns belong to pre-release time-window, while the rest are the behavioral patterns observed 
+in both. 
+The bottom row of the table contains plots visualizing examples of the raw-data streams 
+corresponding to symbolic behavioral patterns. By the visual examination of these examples, 
+it appears that during pre-release most of the added lines within a week fall on the 
 Monday and Tuesday, whereas during post-release time, most of the lines are added during the 
 end of the week and the week-end. While an explanation of these findings requires an additional
 study to be made, one of the interpretations of such behavior could be based on the 
@@ -594,7 +602,7 @@ contributors employment profile. For example, if the coding activity of develope
 to work on Android (thus mostly commit during working days) has fallen below the activity of 
 developers working on their own volition (who commit mostly off business hours), which in turn 
 could be a consequence of removing of a pre-release code-freeze, or that the paid developers 
-switched in post release time to design, documentation or bug-fixing activities.
+switched in post release time to design, documentation, or bug-fixing activities.
 
 \section{Acknowledgment}
 I thank to Philip Johnson for his time, useful discussions and comments.
