@@ -11,13 +11,13 @@ The second component of our open source software stack, Makahiki, represents res
 \label{fig:makahiki-architecture}
 \end{figure}
 
-Makahiki consists of a configurable game engine that can be customized to the needs of different organizations.  It includes a library of pre-built game ``widgets'' that implement a variety of game mechanics.  Using the widgets, an organization can create a custom energy challenge in which players can compete individually and/or in teams to earn the most points by reducing their energy consumption as well as by learning about energy concepts in general.  Some of the pre-built widgets include:
+Makahiki consists of a configurable game engine that can be customized to the needs of different organizations.  It includes a library of pre-built game ``widgets'' that implement a variety of game mechanics.  Using the widgets, an organization can create a custom energy challenge in which players can compete individually and/or in teams to earn the most points by reducing their energy consumption as well as by learning about energy concepts in general.  The next sections present some of the most important widgets in Makahiki.
 
-\subsubsection{Smart Grid Game}
+\subsection{Smart Grid Game}
 
 The {\em Smart Grid Game widget} shown in Figure \ref{fig:SmartGrid}, is the primary place players go to learn about energy issues and earn points. Actions are organized into a grid of squares (hence the name ``Smart Grid'') and organized by category columns. The grid contains four different types of actions: activities, commitments, events, and excursions.
 
-\begin{figure}[ht!]
+\begin{figure}[th]
   \center
   \includegraphics[width=0.4\textwidth]{smart-grid.eps}
   \caption{\em \small Smart Grid Game}
@@ -38,35 +38,56 @@ be changed within the Django admin interface. Competition designers can use
 logical operators to combine any of these functions in order to organize
 the players' path through the Smart Grid Game.
 
-\subsubsection{Daily Energy Goal Game}
+\subsection{Power Meter}
 
-The {\em Daily Energy Goal Game widget} provides a way for players to earn points by reducing their current consumption from a baseline that is typically determined prior to the challenge. Both the historical baseline data and the current consumption is typically provided by API calls from Makahiki to an underlying WattDepot server.
+A fundamental requirement for enabling more active participation by consumers in the smart grid is feedback regarding their energy usage.  One of the most simple mechanisms provided by Makahiki for this purpose is the Power Meter widget, illustrated in Figure \ref{fig:PowerMeter}.
 
-\begin{figure}[t!]
+%% PJ-- Yongwen, can you replace this with the "full" widget image with borders (like DEGG image).
+\begin{figure}[th]
+  \center
+  \includegraphics[width=2in]{power-meter.eps}
+  \caption{\em \small Power Meter visualization}
+  \label{fig:PowerMeter}
+\end{figure}
+
+The Power Meter widget provides basic feedback on energy consumption via a display of the team's power consumption, updated every few seconds.  The visualization can normalized using baseline values so that when the needle is pointing straight up, the power consumption is average for that team during that specific hour of that specific day of the week.  Thus, if the needle leans left toward the green side, the team's power consumption at that moment in time is below average, while if the needle leans right toward the red side, the team's power consumption at that moment in time is above average.  
+
+The Power Meter widget obtains its values by querying the WattDepot system for the latest power data consumed by the associated team.  The use of WattDepot, rather than directly querying the meter(s), simplifies the widget design significantly.  First, the physical meters can vary significantly in the protocol implemented to obtain current power consumption.   These protocol variations are handled by the WattDepot sensors, so this widget can simply query the WattDepot server using a simple single HTTP request that is independent of the physical meter characteristics.  Second, the power consumed by a team might be measured by one or multiple meters.  Again, the WattDepot virtual source capability means that this physical difference can be abstracted away by WattDepot, enabling the widget to obtain the aggregate power for the team through a single HTTP request. 
+
+The Power Meter widget is a useful, though simple mechanism for energy feedback that uses the WattDepot+Makahiki stack.   The next section presents a more sophisticated mechanism called the Daily Energy Goal Game.
+
+\subsection{Daily Energy Goal Game}
+
+The {\em Daily Energy Goal Game widget} provides a way for players to earn points by reducing their current consumption from a baseline. Both the baseline data and the current consumption is typically provided by API calls from Makahiki to an underlying WattDepot server.
+Figure \ref{fig:DailyEnergyGoal} illustrates this widget.
+
+\begin{figure}[th]
   \center
   \includegraphics[width=0.4\textwidth]{daily-energy-goal-game.eps}
   \caption{\em \small Daily Energy Goal Game visualization}
   \label{fig:DailyEnergyGoal}
 \end{figure}
 
-The goal for each lounge is typically a percent reduction from their baseline usage of the previous two weeks. When a player goes to the energy page of the web application, they can view their lounge's current progress toward their daily energy goal. Near the end of the day, Makahiki checks the energy data from Wattdepot to see if a floor reached their goal. If the floor did reach their goal, each member of the floor that is participating in the game receives 20 points. The energy goal game provides a link between the energy conservation competition and the point competition.
+The goal for each team is typically a percent reduction from their baseline usage of the previous two weeks. When a player goes to the energy page of Makahiki, they can view their team's current progress toward their daily energy goal. Near the end of the day, Makahiki checks the energy data from Wattdepot to see if a floor reached their goal. If the floor did reach their goal, each member of the floor that is participating in the game receives 20 points. The energy goal game provides a link between the energy conservation competition and the point competition.
 
-Figure \ref{fig:DailyEnergyGoal} shows what a player would see when they go to the energy page. The Daily Energy Goal display shows both their current progress and their goal so far for two reasons. First, everyone will be under their actual energy goal for most of the day, so this display would not be very useful. Second, we have noticed that the students in the residence halls use more energy at night rather than during the day. Thus, it is easy to be under for most of the day and then jump over the goal at the very end. Displaying their goal so far provides a pace for players to follow.
+The Daily Energy Goal display shows both their current progress and their goal so far for two reasons. First, everyone will be under their actual energy goal for most of the day, so this display would not be very useful. Second, we have noticed that the students in the residence halls use more energy at night rather than during the day. Thus, it is easy to be under for most of the day and then jump over the goal at the very end. Displaying their progress toward the goal so far provides a pace for players to follow.
 
-\subsubsection{Raffle Game}
+\subsection{Raffle Game}
 
-The {\em Raffle Game widget} provides a way to incentivize participation from all individuals, even those who are not in the running for a top prize. For every 25 points a player earns, they receive one virtual raffle ticket. Players can dynamically allocate their tickets to any raffle prizes they are interested in at any time, up to the end of the raffle.
+The {\em Raffle Game widget} provides a way to incentivize participation from all individuals, even those who are not in the running for a top prize. For every 25 points a player earns, they receive one virtual raffle ticket. Players can dynamically allocate their tickets to any raffle prizes they are interested in at any time, up to the end of the raffle.  Figure \ref{fig:RaffleGame} shows an example of the Raffle Game. 
 
-\begin{figure}[t!]
+
+%% PJ--Yongwen, please provide more recent image of raffle game?
+\begin{figure}[th]
   \center
   \includegraphics[width=0.4\textwidth]{raffle-small.eps}
   \caption{\em \small Raffle Game for the Overall Round}
   \label{fig:RaffleGame}
 \end{figure}
 
-Players can dynamically allocate their tickets to any raffle prizes they are interested in at any time, up to the end of the raffle. Each round of the competition has its own set of raffle prizes and any unused raffle tickets carry over to the next round. Raffle tickets are independent from a player's score; allocating a raffle ticket does not affect their rank. Figure \ref{fig:RaffleGame} shows an example of the Raffle Game.
+Players can dynamically allocate their tickets to any raffle prizes they are interested in at any time, up to the end of the raffle. Each round of the competition has its own set of raffle prizes and any unused raffle tickets carry over to the next round. Raffle tickets are independent from a player's score; allocating a raffle ticket does not affect their rank. 
 
-\subsubsection{Social and Referral Bonuses}
+\subsection{Social and Referral Bonuses}
 
 The {\em Social and Referral Bonus widgets} provide game mechanics that help encourage participation by providing additional points to players who participate in activities with other players and/or facilitate the entry of new players into an energy challenge.
 
@@ -74,17 +95,27 @@ The social bonus is an administrator option when a task is created in the Smart 
 
 Players are led through a setup process when logging into Makahiki for the first time. One of the steps in this process is the referral bonus. If a player was referred by another player in the system, they can use this step to input their email address. Once the new player earns 30 points in the competition, both players are awarded a referral bonus of 10 points. Typically, going through the setup process gives you 25 points, so we wanted to encourage the new player to at least complete one additional task in order to get the referral bonus.
 
-\subsubsection{Quest Engine}
+\subsection{Quest Engine}
 
-One challenge we faced when designing Makahiki was providing adequate help to the player. The game needed to be intuitive, even if a new player coming to Makahiki has not participated in an energy competition. Unlike many web applications, such as webmail, Kukui Cup players do not know in advance what specific tasks they wish to accomplish. In an effort to provide a player with guidance through Makahiki after the setup process, we implemented the Quest Engine. Quests are used to guide the player through the various workflows of the site, like completing a task, signing up for an event, or allocating a raffle ticket. These quests can be created in the admin interface. They also use a set of predicates to determine unlock and completion conditions. These predicates are: participating in a task or type of task, completed a task or type of task, has a certain number of points (in a round or overall), completed a certain number of tasks in a category or of a given type, awarded a badge, wrote a post on their floor wall, and added a picture to their profile.
+One challenge we faced when designing Makahiki was providing adequate help to the player. The game needed to be intuitive, even if a new player coming to Makahiki has not participated in an energy competition. Unlike many web applications, such as webmail, game players generally do not know in advance what specific tasks they wish to accomplish. In an effort to provide a player with guidance through Makahiki after the setup process, we implemented the Quest Engine. Quests are used to guide the player through the various workflows of the site, like completing a task, signing up for an event, or allocating a raffle ticket. These quests can be created in the admin interface. They also use a set of predicates to determine unlock and completion conditions. These predicates are: participating in a task or type of task, completed a task or type of task, has a certain number of points (in a round or overall), completed a certain number of tasks in a category or of a given type, awarded a badge, wrote a post on their floor wall, and added a picture to their profile.
 
-\subsubsection{Real Time Game Analytics}
+\subsection{Game Analytics}
 
-Makahiki includes real-time game analytics that provides quantitative instrumentation to track when, where, and for how long each player accessed each page of the site and the interaction with each game components.  Unlike generic web server logs, this feature could track per-player game-specific behaviors in real-time. For example, instrumentation could enable us to determine how players allocated and deallocated tickets to the Raffle game, or whether they watched, paused, or skipped over the video portion of an Activity game. Figure \ref{fig:status} shows an example of the game analytics components.
+Makahiki is designed to support energy challenges involving hundreds or thousands of users lasting weeks or months.  In these circumstances, effective use of the technology requires the ability to understand the state of the game, such as: Who is using it? What are they doing? What is the player response to activities, commitments, excursions, and events?   Such state information is important for planning purposes, such as assessing the transportation needs for an upcoming excursion by seeing how many players signed up.   It can also be used for making in-game changes to game analytics, such as changing the point values associated with activities to encourage or discourage participation.  It can also help identify breakdowns in game play, such as significant numbers of unallocated raffle tickets indicating that users do not understand the nature of that game mechanic.  
 
+To address these needs and others, Makahiki includes a variety of widgets that work together to provide high level game play state to the administrators of a challenge. Figure \ref{fig:status} shows an example of two game analytic widgets.  
+
+%% PJ--Yongwen, please use the forest theme for this image for consistency with other images. 
 \begin{figure}[t!]
   \center
   \includegraphics[width=0.4\textwidth]{status.eps}
   \caption{Real time game analytics}
   \label{fig:status}
 \end{figure}
+
+The top widget, User Stats, shows trends in the total number of players, the total number of new users, and the total number of players visiting the site each day.  The bottom widget provides information on the ability of teams to achieve their daily energy goal each day and over time.  
+
+We have now introduced the primary components of our software stack, WattDepot and Makahiki.  The next section presents our experiences and lessons learned so far. 
+
+
+
