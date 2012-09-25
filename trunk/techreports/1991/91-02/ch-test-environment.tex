@@ -1,0 +1,524 @@
+\chapter{Test Environment}
+\section {Introduction}
+
+The objective of the Egret test system is to detect the presence of
+errors in the Egret implementation by detecting deviations of the
+implementation from its design specification.
+
+The test system is object-oriented.  It is internally organized as a
+set of classes, attributes and public operation.  It maintains a
+database of test cases, test data, precondition and postcondition
+functions, and a set of top-level operations to manage the invocation
+of the test system.
+
+Each test-case can be broken down into four parts: preconditions, an
+operation to be tested, test-data, and postconditions.  Preconditions
+are sequences of operations to set the behavior of the system prior to
+testing the operation, test-data are parameter-values passed to the
+operation during the testing, and postconditions are sequences of
+operations to assess the result of the testing by examining the state
+of the system.  Multiple preconditions or postconditions will be
+executed in the order of their appearances in the test-case
+definition.
+
+Since any operations used in preconditions or postconditions are also
+part of the Egret system which may be error prone, the test system
+protects itself against possible malfunctions of these operations
+during execution.  If the operations abort in the middle of execution,
+they will not interfere with other test cases.
+
+\section {Defining test-cases}
+
+Running a test case include defining the operation to be tested, as
+well as the corresponding test data, preconditions, and
+postconditions.  Specifically, for each test-case definition, we may
+have zero or more precondition definitions, test-data definitions, and
+postcondition definitions, but only one operation definition.  The
+latter describes the operation to be tested by the test case.
+
+\begin{figure*}
+\figureline
+\small\begin{verbatim}
+(tf*tcase*define
+     :name           ;A test name, which may not contain white space.
+     :documentation  ;A string describing the test-case.
+     :operation      ;The name of the operation definition 
+     :data           ;The name(s) of the data definition(s) for the test-case.
+                     ;Multiple data definitions must be enclosed within parentheses.
+     :preconditions  ;The name(s) of the precondition definitions 
+     :postconditions ;The name(s) of the postcondition definitions
+)       
+
+
+(tf*toper*define
+ :name          ; the unique name of the operation-definition.
+ :documentation ; the documentation string of this definition
+ :op-name       ; the name of the operation/function.
+ :ret-type      ; the expected return type from this operation.
+ :ret-value     ; the expected return value from this operation.
+ )
+
+
+(tf*tdata*define
+ :name          ; the unique name of the test-data definition 
+ :documentation ; the documentation string of this definition
+ :values        ; the data passed to the operation defined in the test-case
+ )
+
+
+(tf*tpre*define
+ :name          ; the unique name of the precondition-definition
+ :documentation ; the documentation string of this definition   
+ :op-name       ; the operation/function name
+ :param-values  ; the parameter-values passed to the op-name above
+ :ret-type      ; the expected return-type of the operation/op-name above.
+ :ret-value     ; the expected return-value of the op-name above.
+ )
+
+
+(tf*tpost*define
+ :name          ; the unique name of the postcondition definition.
+ :documentation ; the documentation string of this definition
+ :op-name       ; the name of the postcondition operation.
+ :param-values  ; the parameter values passed to the op-name above
+ :ret-type      ; the expected return-type of the op-name above.
+ :ret-value     ; the expected return-value of the op-name above.
+ )
+\end{verbatim}\normalsize
+\figureline
+\caption{Test Environment Function Templates}
+\label{test-defs}
+\end{figure*}
+
+
+\begin {enumerate}
+\item {\bf Test-case definition:}
+Test cases are defined using {\bf tf*tcase*define}, which is 
+illustrated in Figure \ref{test-defs}.
+
+The documentation string in the definition must follow the style given
+in the subsequent examples below.  The test system will generate the
+natural language description of a test case based on these
+documentation strings.
+
+The test-case definition specifies a scenario to test the operation
+described in the operation field.  For example, 
+
+\small\begin{verbatim}
+(tf*tcase*define
+ :name s*sp*connect:normal-connection
+ :documentation "tests that a connection 
+  can be made to the server in a normal manner"
+ :operation Normal-connection
+ :data (Valid-machine-name1 Valid-machine-name2)
+ :preconditions Ensure-no-connection
+ :postconditions Connection-exist
+ )
+\end{verbatim}\normalsize
+
+This test case tests that a connection can be made to the server in a
+normal manner.  First, it runs the operation defined in the
+precondition Ensure-no-connection, then it invokes the operation to be
+tested defined in Normal-connection with parameter values defined in
+Valid-machine-name1 or Valid-machine-name2 depending on which
+test-data is being run, and finally it executes the operation defined
+in the postcondition Connection-exist.
+
+When running a test case, a specific test data must be included or nil
+if no test-data is associated with this test case. In the above
+example, both Valid-machine-name1 and Valid-machine-name2 are eligible
+for testing s*sp*connect in a normal manner.  Thus, to test this
+particular scenario of connection (normal connection) comprehensively,
+the test case must be run twice, first with the test data
+Valid-machine-name1 and then with the test data Valid-machine-name2.
+
+To test the operation s*sp*connect in general, other connection
+scenarios must be included.  These other scenarios are defined in
+separate test cases. We use the term {\it collection} when referring
+to a set of test-cases which tests a specific operation, and the name
+of the collection is the name of the operation to be tested.
+
+
+\item {\bf Operation definition:}
+  
+  Operations are defined using {\bf tf*toper*define}, as illustrated in
+  Figure \ref{test-defs}.  Operation definition describes the expected
+  return-value of an operation when the test case is run. There are
+  currently four different types of return-value: {\it object}, {\it
+  item}, {\it predicate} and {\it error}.
+
+The object indicates the operation will return a value specified in
+the return-value field of the definition.
+
+The item indicates the operation will return one of the values
+specified in the return-value field of the definition.  Thus, the
+return value field must contain a list of the expected return values.
+
+The predicate indicates  the operation will return a specific 
+type of objects regardless of the value (e.g., integer), and
+testable using the predicate function specified in the return-value
+field of the definition.  Thus, specifying a type predicate requires specifying
+the name of the predicate function in the return-value field.
+
+The error indicates the operation will return an error object 
+with the error-name specified by the return-value field of the
+definition. The error name must conform to the Egret's specification.
+For example, the operation definition for the test-case above is
+the following:
+
+\small\begin{verbatim}
+(tf*toper*define
+ :name Normal-connection
+ :documentation 
+  ''expects the return-value \"zero.ics.hawaii.edu\"''
+ :op-name s*sp*connect
+ :ret-type object
+ :ret-value "zero.ics.hawaii.edu"
+ )
+\end{verbatim}\normalsize
+
+This definition specifies that the function s*sp*connect will return
+``zero.ics.hawaii.edu'' when its corresponding test case is run regardless
+of the test data being supplied (in this case, both Valid-machine-name1 
+and Valid-machine-name2 are applicable)
+
+\item {\bf Test-data definition}
+  
+  Test data is defined using {\bf tf*tdata*define}, as illustrated in
+  Figure \ref{test-defs}.  The values field contains the actual data
+  passed (as the parameter) to the operation defined by the test case.
+
+If more than one test-data are defined, they all need to conform to the
+operation as well as the preconditions and the postconditions defined 
+by the test-case.
+For example, the test-data definitions for the above test-case are
+the following:
+
+\small\begin{verbatim}
+(tf*tdata*define
+ :name Valid-machine-name1
+ :documentation 
+  ``a valid machine name \"zero.ics.hawaii.edu\"''
+ :values ("zero.ics.hawaii.edu")
+ )
+
+(tf*tdata*define
+ :name Valid-machine-name2
+ :documentation 
+  ``a valid machine name \"zero.ics\"''
+ :values ("zero.ics")
+ )
+\end{verbatim}\normalsize
+
+These definitions specify that the test-case s*sp*connect:normal-connection
+will invoke s*sp*connect with the parameter value either
+``zero.ics.hawaii.edu''or ``zero.ics''.
+
+\item {\bf Precondition definition:}
+
+Preconditions are defined using {\bf tf*tpre*define}, as illustrated
+in Figure \ref{test-defs}.  For example,
+
+\small\begin{verbatim}
+(tf*tpre*define
+ :name Ensure-no-connection
+ :documentation 
+  "ensures that no connection exists''
+ :op-name tf*no-connection
+ :param-values nil
+ :ret-type object
+ :ret-value t
+ )
+\end{verbatim}\normalsize
+
+This precondition specifies that the operation tf*no-connection will
+be invoked with parameter nil and will have return-value t on successful
+invocation.
+
+\item {\bf Postcondition definition:}
+
+Postconditions are defined using {\bf tf*tpost*define}, as illustrated
+in Figure \ref{test-defs}.  For example,
+
+\small\begin{verbatim}
+(tf*tpost*define
+ :name Connection-exist
+ :documentation 
+  "ensures that a connection exists to the server"
+ :op-name tf*connected-p
+ :param-values nil
+ :ret-type object
+ :ret-value t
+ )
+\end{verbatim}\normalsize
+
+This postcondition specifies that the operation tf*connected-p
+will be invoked with parameter nil and will have return-value t on
+successful invocation.
+
+\end {enumerate}
+
+Definitions (except test-case definitions) can be shared among different
+test-cases.
+For example, the test-data definitions of the
+test-case s*sp*connect:reestablish-connection uses
+the same test-data definition of the s*sp*connect:normal-connection.  
+
+\small\begin{verbatim}
+(tf*tcase*define
+ :name s*sp*connect:reestablish-connection
+ :documentation  
+  "tests that a connection can be made 
+   to the server even when it already exists"
+ :operation Reconnect
+ :data (Valid-machine-name1 Valid-machine-name2)
+ :preconditions Ensure-connection
+ :postconditions Connection-exist
+ )
+\end{verbatim}\normalsize
+
+This test-case uses the same test-data and postconditions definitions
+of the test-case s*sp*connect:normal-connection.  
+This is applicable because both test-cases test the same operation
+s*sp*connect with the same parameter-values (Valid-machine-name1 and
+Valid-machine-name2).
+
+The operation definition, however, is not shareable because s*sp*connect
+for reestablish-connection expects a different return value  from the one
+in the s*sp*connect:normal-connection.  Specifically, the definition of
+Reconnect expects return-type error and return-value connection-is-on, 
+whereas the definition of Normal-connection expects return-type object
+and return-value ``zero.ics.hawaii.edu''
+
+Although, two test-cases may share the same definitions (operation, test-data,
+preconditions and postconditions), the testings are completely independent.
+The intermediate or final results from one test case do not interfere
+with the intermediate or final results from the other test case.
+The user is responsible for ensuring that this condition is met
+when defining the test-cases.
+ 
+Within the same test-case, however, intermediate results may affect other 
+operations defined elsewhere. The user is allowed
+to refer to the return-value of any operations within the same test-case.
+For example, a precondition can have a parameter value which comes from 
+the return-value of another precondition, or the value of test-data comes 
+from the return-value of a precondition.  
+
+The convention is when referring to the return value
+of an operation or a function defined in the preconditions or 
+postconditions, the name of the definition must be used.
+Furthermore, the user is responsible for ensuring the order in which
+the definitions will be invoked.
+
+\noindent For example,
+
+\noindent Test-case definition:
+
+\small\begin{verbatim}
+(tf*tcase*define
+ :name s*link*name:valid-link-id
+ :documentation 
+  "tests that the attribute link-name 
+   can be retrieved in a normal manner"
+ :operation Normal-link-name
+ :data Valid-link-id
+ :preconditions (Ensure-connection 
+                 Create-node1 
+                 Create-node2 
+                 Create-link1)
+ )
+\end{verbatim}\normalsize
+
+This test-case tests that the operation defined in Normal-link-name
+will behave in a normal manner when the test-data Valid-link-id is applied.
+The preconditions first invoke the operation defined in
+Ensure-Connection, then Create-node1, then Create-node2, and finally
+Create-link1.
+
+\noindent Test-data definition for Valid-link-id:
+
+\small\begin{verbatim}
+(tf*tdata*define
+ :name Valid-link-id  
+ :documentation 
+  "a valid link-id resulting from 
+   the precondition create link operation"
+ :values Create-link1 
+ )
+\end{verbatim}\normalsize
+
+This test-data supplies a valid link id obtained from the Create-link1
+execution.  The ordering constraint is satisfied because
+Create-link1 is one the preconditions in the test case; thus
+it will be executed prior to running this test-data.  
+
+
+\section{Features and Limitations}
+
+Conceptually, running a test case is similar to invoking a set of LISP
+functions in the order described by the test case definition.
+However, unlike a regular LISP function, the parameter values passed
+to the function defined as a precondition or postcondition must follow
+the following rules:
+
+\begin {enumerate}
+\item Any symbolic name declared in the {\it param-values} slot will be
+  passed to the operation uninterpreted except when the name refers to the
+  existing definition (precondition, postcondition or operation
+  definition) of the test case. In this case, the symbolic name will be
+  replaced by the actual object returned by the corresponding definition
+  (see similar example in the data definition for Valid-link-id above).
+  When no replacement takes place, the symbol will appear as is to the
+  operation.  For example, 
+\small\begin{verbatim} 
+        :
+    :op-name foobar
+    :param-values (foo1 foo2 foo3)
+        :
+\end{verbatim}\normalsize
+
+will be evaluated as a function call to (foobar foo1 foo2 foo3).
+Thus, foo1, foo2 and foo3 are passed as variables to the function
+foobar.  To pass foo1, foo2 or foo3 as symbol, a quote must be
+included, i.e., :param-values ('foo1 'foo2 'foo3).
+
+\item When a (list-form) appears in the param-values slot, the list
+will be passed as '(list-form) to the operation, except when the
+list-form is a function call.
+For example,
+\small\begin{verbatim}
+        :
+    :op-name foobar
+    :param-values (foo1 (foo2 foo3))
+        :
+\end{verbatim}\normalsize
+
+will be evaluated as (foobar foo1 '(foo2 foo3)), but
+
+
+\small\begin{verbatim}
+        :
+    :op-name foobar
+    :param-values (foo1 (foobar2 foo3))
+        :
+\end{verbatim}\normalsize
+
+will be evaluated as (foobar foo1 (foobar2 foo3)) given that
+foobar2 is a valid function.
+
+This latter form should not be used to run  operations or functions
+which have not been proven correct, such as the operations under testing; 
+we must apply the operation using a test case definitions instead. 
+Thus, in the example, if the function foobar2
+is part of the operation to be tested, then foobar must be split into
+two definitions:
+
+\small\begin{verbatim}
+    (tf*tpre*define
+    :name foobar-definition
+    :op-name foobar
+    :param-values (foo1 foobar2-definition)
+       :
+    )
+\end{verbatim}\normalsize
+
+
+\small\begin{verbatim}
+    (tf*tpre*define
+    :name foobar2-definition
+    :op-name foobar2
+    :param-values (foo3)
+       :
+    )
+\end{verbatim}\normalsize
+
+\item Expected return value slots (:ret-value) do not accept 
+Lisp function forms, except for the return value of type predicate
+which accepts functions with one argument.  Thus, for example, to
+test whether the return value of function foobar1 is equal to the
+return value of foobar2, the user cannot use the following definition:
+\small\begin{verbatim}
+  (tf*toper*define
+  :name foobar1-definition
+  :op-name foobar1
+  :param-values (foo1 foo2)
+  :ret-type object
+  :ret-value (foobar2)
+  )
+\end{verbatim}\normalsize
+The user must instead define the foobar2-definition (e.g., as a precondition
+function) and supply
+its definition in the ret-value slot of the foobar1 definition:
+\small\begin{verbatim}
+  (tf*toper*define
+  :name foobar1-definition
+  :op-name foobar1
+  :param-values (foo1 foo2)
+  :ret-type object
+  :ret-value foobar2-definition
+  )
+\end{verbatim}\normalsize
+
+
+\item In some cases,  we must write our own precondition or postcondition 
+functions.
+For example, in the precondition {\bf Ensure-no-connection} above, 
+we use the function tf*no-connection which is not part of the operations
+being tested. If the implementation of this function requires or calls
+any operations being tested, then the latter call must be quoted
+using the following macro:
+
+(with-error-handler (operation-name args))\
+
+This macro will ensure any errors resulting from the execution of the
+operation-name be caught appropriately, instead of aborting
+the operation.  
+When dealing with error condition, this user's supplied precondition
+must follow the same convention  as given in the EGRET specification.
+
+However, whenever possible it would be better simply pass the error as 
+the return value of the function, and thus,  be caught by the test system 
+itself. For more  information, see the implementation of tf*no-connection.
+\end{enumerate}
+
+\section {Running test-cases}
+
+The current version of  test system requires all test-cases 
+be compiled and loaded prior to running the test. The system
+only performs limited syntactic and semantic checking during 
+compilation of the test-case definitions.  The system will report
+any errors due to incorrect use of the definition template,
+or existence of multiple definitions.  Missing or incorrect
+definitions, however, will not be detected until run time.
+
+\noindent To run the test system, the user first brings up the system
+to be tested, then loads the compiled version of the 
+test system.
+
+\noindent There are two ways to run the test:
+\begin {enumerate}
+
+\item {\bf Atomic function: tf*tcase*run {\it test-case-name} {\it \&optional test-data-name.}}
+This function runs a specific {\it test-case-name} with a specific
+{\it test-data-name}.  The latter is optional indicating no test-data
+is specified for the  test-case-name.
+This function returns t when the test runs successfully, or nil otherwise.
+
+\item {\bf Interactive: tf*\{tcase\}*run.}
+This command runs a collection of test-cases specified by the
+user during the interactive session.  Completion table for the existing
+or the user's supplied collection-name are also provided.  
+
+At the end of the testing, the test system will enter the 
+{\bf Egret-Test} mode.
+In this mode, the user can analyze the result of the testing. A number
+of commands are provided to browse the test cases and to interpret the
+result. The help menu is available by typing {\bf ?}.
+
+Two buffers will be created: buffer {\it Test-result} which summarizes the
+the result of the test including a brief description of each test-case
+and buffer {\it Test-log} which shows actual sequence of operations
+executed  during the test. 
+\end {enumerate}
+
+

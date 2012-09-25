@@ -1,0 +1,529 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% icse94-csrs.tex -- 
+%% RCS:            : $Id: icse94-csrs.tex,v 1.1 93/09/02 10:59:26 johnson Exp Locker: johnson $
+%% Author          : Philip Johnson
+%% Created On      : Mon Aug 16 14:32:13 1993
+%% Last Modified By: Philip Johnson
+%% Last Modified On: Wed Feb 16 08:29:41 1994
+%% Status          : Unknown
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1993 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+%% History
+%% 16-Aug-1993		Philip Johnson	
+%%    
+
+
+
+\section{CSRS}
+\label{sec:csrs}
+
+CSRS is implemented using Egret \cite{csdl-92-01}, an environment for
+exploratory collaborative group work. Egret provides a multi-user,
+hypertext environment for Unix and X windows.  Egret has a client-server
+architecture, where a database back-end server process written in C++
+communicates over TCP/IP to client processes implemented via a customized
+version of Lucid Emacs.
+
+Just as Egret is a generic framework for collaborative group work, CSRS is
+a generic framework for computer-mediated FTR.  The current version of CSRS
+provides a set of language constructs for instantiation of a
+computer-mediated FTR method in terms of an interconnected data model and
+process model.  This paper focusses on FTArm, the method with which we have
+the most experimental experience.
+
+
+\begin{figure*} [t]
+ {\centerline{\psfig{figure=/group/csdl/techreports/93-22/process.ps}}}
+\caption{{\em The seven phases in the FTArm method, along with the primary
+entry condition for each phase.}}
+\label{fig:process-model}
+\end{figure*}
+
+\subsection{The FTArm Method}
+
+FTArm is a computer-mediated FTR method designed to leverage off the
+strengths of an on-line environment to address the problems of manual
+review raised in Section \ref{sec:issues-manual-review}.  The FTArm process
+consists of seven well-defined phases, as illustrated by the diagram in
+Figure \ref{fig:process-model}. The FTArm method is not specific to a
+review artifact type or development phase.
+
+
+\paragraph{Setup.} In this phase, the moderator and/or the producer
+decide upon the composition of the review team and the artifacts to be
+reviewed. The moderator or producer then restructures the review artifact
+into a multi-node, interlinked hypertext document stored within the CSRS
+database.  Regular expression-based parsing tools available in CSRS can
+partially or fully automate this database entry and restructuring process.
+
+\paragraph{Orientation.} This phase prepares the participants for the
+private review phase through an overview of the review artifacts.  The
+exact nature of this overview depends upon the complexity of the
+review artifact and the familiarity of the reviewers with it, and can range
+from a simple e-mail message to a formal, face-to-face meeting.
+
+\paragraph {Private review.} In this phase, reviewers analyze the
+review artifact nodes (termed ``source'' nodes) privately and create issue,
+action and/or comment nodes.  Issue and action nodes are not publicly
+available to other reviewers, though comment nodes are publicly available.
+Comment nodes allow reviewers to request clarification about the
+logic/algorithm of source nodes, or about the review process, and may also
+contain answers to these questions by other participants.
+
+Figure \ref{fig:issue-screen} contains a snapshot of one reviewer's
+screen during the private review phase.  The function {\tt
+t*node-schema!combine-field-IDs} is the review artifact under
+analysis, as displayed in the left hand window.  A checklist of defect
+classifications appears in the upper right window, while a defect
+concerning this function is being documented in the lower right
+window.
+
+\begin{figure*} [t]
+ {\centerline{\psfig{figure=/group/csdl/techreports/93-22/issue-private.ps}}}
+\caption{{\em A CSRS screen illustrating the generation of an issue.}}
+\label{fig:issue-screen}
+\end{figure*}
+
+In FTArm, reviewers must explicitly mark each source node as reviewed
+when finished. While reviewers do not have access to each other's
+state during private review, the moderator does.  This allows the
+moderator to monitor the progress of private review.  Private review
+normally terminates when all reviewers have marked all source nodes as
+reviewed. In the event that no reviewer has created any issues, review
+would terminate at this point.  Otherwise, public
+review begins.
+
+\paragraph{Public review.} In this phase, all nodes are now
+accessable to reviewers, and all participants (including the producer)
+react to the issues and actions by voting (a modified Delphi process).
+Participants can also create new issue, action or comment nodes based upon
+the votes or nodes of others.  Voting is used to determine the degree of
+agreement within the group about the validity and implications of issues
+and actions.  Public review normally concludes when all nodes have been read
+by all reviewers, and when voting has stabilized on all issues.
+
+\paragraph{Consolidation.} In this phase, the moderator analyzes the results of
+public and private review, and produces a condensed written report of the
+review thus far.  These consolidated reports are more
+comprehensive, detailed, and accurate than typical review reports from
+traditional review methods. Rather than simply a checklist of
+characteristics with brief comments about the general quality of the
+source, consolidation reports contain a re-organized and condensed
+presentation of the analyses provided by reviewers in issue, action, and
+comment nodes, thus providing contrasting opinions, the degree of
+consensus, and proposals for changes.
+
+CSRS provides the moderator with various tools to support the generation of
+a nicely formatted LaTeX document containing the consolidated report.  If
+the group reached consensus about all of the issues and actions during
+public review, then this report presents the review outcome with
+respect to artifact assessment.  A second review outcome is the
+measurements of review process and products, as discussed in Section
+\ref{sec:instrumentation} below.
+ 
+\paragraph {Group review meeting.} If the consolidated report 
+identifies issues or actions that were not successfully resolved via
+public and private review, the FTArm method requires a face-to-face,
+group meeting as the final phase.  Here the moderator presents only
+the unresolved issues or actions and summarizes the differences of
+opinion.  After discussion, the group may vote to decide them, or the
+moderator may unilaterally make the decision. The moderator then
+updates the CSRS database, noting the decisions reached during the
+group meeting and then generating a final consolidated report
+representing the product of review.
+
+
+
+
+\subsection{Instrumenting FTR in CSRS}
+\label{sec:instrumentation}
+
+Since the initial design of CSRS in 1991, research on effective
+instrumentation for software review has been a primary research focus.  Our
+goal for this instrumentation is to provide a basis for empirically-based
+process experimentation and improvement.
+
+Such instrumentation is a major feature distinguishing CSRS from other
+automated review environments such as ICICLE \cite{Brothers90}, Scrutiny
+\cite{Gintell93}, or INSPEQ \cite{Knight91}.  CSRS supports both {\em
+outcome} and {\em process} instrumentation.
+
+\paragraph{Outcome instrumentation.} 
+
+These mechanisms allow review analysts to query the CSRS database
+during or after review for such information as the number of nodes
+generated of a given type, the set of nodes containing a particular
+value in a particular field, or the set of nodes partaking in a
+specific relationship to other nodes.
+
+Outcome measures are very useful. First, the number and severity
+of identified defects provides a first-order estimate of the quality of the
+software under review.
+
+Second, outcome measures may suffice to reveal certain problems
+with the review team or review process.  For example, marginally productive
+members of the review team might be identified (after a sufficient number
+of review instances) as those who contribute little, or who contribute
+non-productively (by simply affirming comments made by others), or who use
+review for political purposes.  Such a method is less expensive and more
+objective than techniques where behavioral data (such as ``Shows
+solidarity'', ``Shows Tension'', and so forth) is collected by a passive
+observer of the review in order to provide feedback on the quality of
+reviewer participation \cite{Freedman90}.
+
+Third, outcome measures can contribute to empirically-guided process
+improvement.  For example, an organization may be able to bound certain
+review factors (such as the number of participants or the size of artifact
+to review) by measuring these factors across a large number of otherwise
+similar review instances, and then correlating them to review
+effectiveness.
+
+\paragraph{Process instrumentation.} 
+
+These mechanisms provide insight into the {\em sequence}\/ and {\em
+duration}\/ of review activities.  Analysis and application of this
+process instrumentation is an exciting and intensive focus of our current
+research.
+
+Process instrumentation is implemented by a general purpose timestamp
+subsystem in Egret, the collaborative infrastructure for CSRS.  This
+facility enables calls at strategic points within CSRS to record the
+occurrence of application-specific events of interest. For example, CSRS
+timestamps when the user reads a node, writes a node, closes a node,
+traverses a link, marks a node as reviewed, and so forth.  Egret provides
+mechanisms to cache timestamp data at the local client during a review
+session, and write the cache contents out to the server database at
+disconnect time.
+
+One simple use of timestamp data is to calculate elapsed-time
+information.  For example, subtracting the timestamp recorded when a
+user reads a particular source node from the timestamp recorded when
+the user closes that node yields the elapsed time during which the
+source node was displayed to the user.
+
+However, this elapsed display time is not a useful measure of the {\em
+effort} spent reviewing a node, as we found out after experimental
+evaluation of this mechanism.  In a multiple window, multi-tasking
+workstation environment, review using CSRS is typically interrupted by
+phone calls, impromptu meetings with colleagues, reading and
+answering e-mail, and so forth. Thus, the elapsed display time has two
+components: the time during which the user was actually reviewing, and
+the during which the node was displayed but the user's focus of
+attention was elsewhere.
+
+Our process instrumentation currently detects this latter ``idle
+time'' via a bottom-up, timer-initiated timestamp process that runs in
+parallel with the top-down, user-triggered timestamps.  Once per
+minute, the timer process wakes up, determines whether or not there
+has been any recent low-level mouse or keystroke activity within the
+CSRS application, and if so generates a ``busy'' timestamp. In our
+experiences thus far, this combination of top-down and bottom-up
+timestamping provides high quality measures of effort with a precision
+of plus or minus one minute.
+
+Process instrumentation can provide substantial new insight into review.
+First, these process measures can combine with outcome measures to indicate
+the effort expended on review by each participant on {\em individual}
+source nodes, as well as the cumulative effort expended by all participants
+across the entire review artifact. It is well known that precise and
+accurate measurement of cumulative review effort (including preparation) is
+notoriously difficult to obtain in typical industrial settings
+\cite{Freedman90}.  Moreover, no other manual or automated review method
+provides effort data at the grain size of individual components of a review
+artifact.  Such fine-grained, high quality data makes possible interesting
+new forms of experimentation, as discussed below.
+
+
+\section{Current results}
+\label{sec:results}
+
+Our results fall into two categories: design results, involving the impact
+of previous research on software review and collaborative work on the
+design of CSRS and FTArm, and empirical results, involving the measurements
+produced thus far by our use of the system and method.
+
+\subsection{Design results} 
+
+One insight from our research with CSRS and FTArm is that introducing
+substantial computer support into the fundamentally manual process of
+traditional review creates a fundamentally different process.  As a result,
+we take issue with research claiming to ``automate'' Fagan code inspection,
+such as the research on ICICLE \cite{Brothers90}.  While this system
+appears to provide a useful form of computer-supported review, the
+introduction of substantial computer support results in a method
+fundamentally different from Fagan's code inspection.
+
+The design of CSRS and FTArm, therefore, has not been motivated by the goal
+of transliterating a manual ``best practice'' into a computer-supported
+form.  Instead, our design attempts to implement an environment and method
+that exploits the known strengths of computer-supported cooperative work
+environments to address known problems in FTR.  To illustrate, the next
+paragraphs discuss how the FTArm method addresses the pitfalls in manual
+review presented earlier in Section \ref{sec:issues-manual-review}.
+
+\begin{itemizenoindent}
+  
+\item {\em Insufficient preparation.} FTArm eliminates the problem of
+  detecting insufficient preparation, since the preparation phase in
+  traditional review corresponds to private review in FTArm, and since the
+  activities of each reviewer during private review is precisely
+  instrumented and known to the moderator.  Of course, the method cannot
+  force an intransigent participant to bring up the system and look at the
+  materials, but it does eliminate the most important problem of reviewers
+  ``exaggerating'' their degree of preparedness to the review leader. 
+  
+\item {\em Moderator domination.} FTArm is designed to prevent the
+  moderator from most forms of domination that are possible in manual review.
+  During private review, of course, all moderator influence is eliminated.
+  During public review, the moderator can potentially influence outcome by
+  ``flaming'', but cannot physically prevent contributions of other members
+  by monopolizing air time as is possible in synchronous review.  Even the
+  group meeting phase of FTArm is less vulnerable to moderator domination,
+  since the set of issues has already been established and documented.
+  
+\item {\em Incorrect review rate.} Since most review in FTArm occurs
+  asynchronously, the cost of review is much less sensitive to its rate.
+  The desire of one participant to review slowly makes no impact on the
+  rate (or cost) of review for any other participant.  Asynchronous
+  interaction also eliminates ``air-time fragmentation''---the costly idle
+  time spent by participants in face-to-face reviews while waiting
+  for a turn to speak.
+  
+\item {\em Ego-involvement and personality conflict.} On-line and
+  asynchronous review allows reviewers time to consider their choice of
+  words carefully.  During private review, in fact, it is possible to use
+  CSRS the ``day after'' to modify comments that appear inappropriate,
+  after a night's reflection, before any other reviewers see them.  In
+  general, diplomacy is much easier in a non-real time environment.
+  
+\item {\em Issue resolution and meeting digression.} As noted previously,
+  the constraints of a synchronous meeting context require participants to
+  raise issues, but not to resolve them.  In FTArm, the problems of cost and
+  digression arising from issue resolution are vastly minimized or
+  eliminated.  
+  
+  More importantly, analysis of node content data from our review
+  experiences reveals that issues are frequently difficult to articulate
+  {\em except in the context of proposing an action to resolve it}, and
+  that a natural tendency of most reviewers, immediately upon the
+  identification of an issue, is to suggest a solution.  As a result,
+  FTArm explicitly {\em encourages} the interleaving of action proposal
+  and discussion with issue proposal and dicussion during review.  Our
+  experiences suggest that capturing action proposals when the reviewer
+  first thinks of them, rather than artificially delaying their
+  discussion until some future meeting time, is certainly a more natural
+  and possibly a more efficient method of review.
+  
+\item {\em Recording difficulties and clerical overhead.} FTArm
+  eliminates the role of scribe altogether, except for the group meeting
+  phase where the role is considerably simplified.  The CSRS system
+  trivially resolves the problems of capturing review commentary completely
+  and accurately.  CSRS also provides the moderator with tools to support
+  restructuring and reformatting of the data from its on-line, hypertext
+  format into a form suitable for a linear, hardcopy presentation.  Such
+  features substantially reduce the clerical overhead normally associated
+  with review.
+ 
+  Most important from a research perspective, CSRS collects data and
+  process measures automatically and unobtrusively.  This means that
+  research on review can be performed in any size organization with any
+  amount of resources allocated to review.
+
+\end{itemizenoindent}
+
+Taken as a whole, the FTArm method implements an incrementally increasing
+level of both collaborative involvement and review cost.  During private
+review, collaboration is actively prevented, and the cost of review to each
+participant is restricted to the expense of their personal review efforts.
+During public review, partial collaboration is supported by allowing each
+reviewer on-line access to the comments made by others, which incurs some
+additional cost.  Finally, the review group meeting provides the highest
+cost collaboration, but is restricted in scope to only those issues that
+cannot be resolved by the previous, lower-cost forms of collaboration.
+
+\subsection{Empirical results}
+
+The second category of results involves the empirical data derived from the
+laboratory use of CSRS.
+
+\begin{figure}[h]
+  \begin{center}
+  \begin{tabular} {|l|c|} \hline   
+    Review Experiments & 7 \\ \hline
+    Artifact Size & 450--750 lines \\ \hline
+    Review Rate & 200--500 lines/hr \\ \hline
+    Group Size &  4--6 people\\ \hline
+    Duration & 10--35 days \\ \hline
+    CSRS Sessions & 2--28 logins/reviewer \\ \hline
+    Issues Generated & 50--104 nodes\\ \hline
+    Issue Generation Rate & 3--12 issues/hr \\ \hline 
+  \end{tabular}
+  \caption{{\em Ranges of key review statistics.}}
+  \label{fig:statistics}
+  \end{center}
+\end{figure}
+
+Figure \ref{fig:statistics} summarizes some key data concerning our review
+experiences during the development of CSRS and FTArm. The primary goal of
+these reviews were to validate the essential design characteristics of the
+system and to support our own quality assurance activities.  However, some
+general observations can be made.
+
+First, the asynchronous nature of FTArm review appears to extend the upper
+bound on the size of the review artifact. For larger artifacts, reviewers
+tend to partition the review into a larger number of sessions without loss
+of quality.  Most manual methods require the entire artifact to be
+reviewed within a single meeting, which restricts the maximum size of the
+artifact.
+
+Second, the on-line nature of CSRS also appears to extend the upper bound
+on the number of review participants.  Unless all participants generate a
+very large number of nodes during private review, FTArm should scale
+unchanged to review group sizes of 10-12.  Much greater increases in review
+group size may be possible by modifying the method instantiated in CSRS to
+prevent a ``combinatorial node explosion.''  Most manual methods, in
+contrast, strictly limit the group size to between three and six
+participants.
+
+Third, the asynchronous style of public review in FTArm can potentially
+lead to longer review durations than those normally occurring in manual
+methods. We did not limit the duration of public review phase in our
+reviews, though this is a very reasonable approach to meeting a scheduled
+review duration.
+
+Finally, these reviews exhibit wide variation in such measures as the total
+number of issues generated, the issue generation rate, and review rate.
+Discovering the underlying causal factors for these values and their
+variations motivate several on-going studies, discussed next.
+
+\subsubsection{Predictive measures of review effort}
+
+The goal of one research project is to discover predictive measures for
+review effort. This has been identified as a key open problem in formal
+technical review \cite{Fagan86}.  We are currently investigating whether or
+not various measures of complexity can serve as a predictive measure of
+review effort for source code artifacts. Three measures have been chosen
+for analysis: Halstead's volumetric complexity, McCabe's cyclometric
+complexity, and simple lines of code.  Intuitively, it seems reasonable
+that the more complicated a program entity, the more difficult it is to
+understand and review, and the greater the number of issues and errors it
+will contain.
+
+A sufficiently precise correlation would allow accurate estimation of time
+and resources required for review of source code based upon its computed
+complexity or conversely, accurate sizing of the artifacts to the time and
+resources available for review.  CSRS is uniquely able to support this
+research, since no other review method is able to measure effort at the
+grain size required to assess complexity-related relationships.
+
+So far, however, no statistically significant correlation has been observed
+for any of the three measures of complexity and review effort, either
+within or across reviewers.  Values of $r^{2}$ tend to vary between 0.15
+and 0.30.  Interestingly, the lines of code measure of complexity is highly
+correlated with Halstead's volumetric complexity ($r^{2} \approx 0.95$),
+while McCabe's cyclometric complexity was uncorrelated with any other
+measure of complexity or review effort.
+
+Our initial experiences lead us to believe that either lines of code or
+Halstead's complexity measure can serve as a partial, complexity-based
+predictor of review effort, but that a high quality predictor must take
+more than just a single factor into account.  For example, review of code
+produced by inexperienced developers leads to a wide spectrum of issue
+types, ranging from comments about the appropriate use of the programming
+language, to the application platform, to design aesthetics, and so forth.
+Review of code by experienced developers has a much narrower range of
+comments.  We have observed that very simple functions written by
+inexperienced developers may engender a great deal of review activity
+involving these types of issues.  As we accumulate more data using CSRS, we
+will continue to explore correlations between review effort and these and
+other factors.
+
+
+\subsubsection{Behavioral strategies during review}
+
+A second empirical investigation involves analysis of participant behavior
+during review as captured by the timestamp mechanism.  Timestamps record
+the sequence and duration of reviewer actions, and provide a means to
+reconstruct the fine-grained strategies employed by reviewers.  As a simple
+example, one private review strategy is to visit each source node, generate
+all issues relevent to that node, then move on to the next.  Another
+strategy is to visit all source nodes first to provide an overview of the
+entire artifact, then selectively choose nodes for issue generation.  
+
+Identification of behavioral strategies used in CSRS will help us to
+improve the system by identifying bottlenecks and opportunities for
+additional support. It can also lead to improved understanding of what
+makes a system easily reviewed.  Finally, it provides a means to determine
+when and if common review strategies are used, which is extremely useful in
+comparative analysis of review factors and methods.
+
+To facilitate behavioral strategy analysis, we developed a simple
+visualization system called Timeplot. This system processes the thousands
+of timestamps generated during a review and generates a graphical
+representation of the contents of the reviewer screen during each minute of
+review, along with any idle periods for each CSRS session.  Timeplot graphs
+allow identification of potential strategic behaviors by manually ``walking
+through'' a reviewer's behavior.  These graphs also facilitate a number of
+advanced analytical techniques, such as phase analysis, that can be used
+detect and classify low-level sequences of activity as higher-level
+patterns.
+
+\subsubsection{Review commentary classification}
+
+Another empirical investigation concerns analysis of the types of
+information captured by CSRS.  In one representative review, we found that
+approximately 80\% of issues detail traditional FTR concerns such as
+defects. The remaining 20\% provided either: (a) significant new design
+rationale information; (b) new clarification of the specifications or
+behavior of the application under development; or (c) new clarification of
+the specifications or behavior of the underlying infrastructure (such as
+the source language or operating system).  These forms of knowledge are not
+typically captured in manual FTR---indeed, they might well be viewed as a
+``digression".
+
+
+\section{Conclusions and future directions}
+
+CSRS and FTArm demonstrate that an appropriately instrumented collaborative
+support environment for formal technical review can be designed to
+ameliorate or overcome significant obstacles to the success and efficiency
+of current manual FTR practice.  Perhaps more importantly, however, this
+paper has described how such an environment can provide instrumentation
+that provides a wealth of high quality, useful data on the process and
+products of FTR.  With manual methods, capturing this data is always
+time-consuming, expensive, and error-prone, if it can be captured at all.
+In CSRS, this data is captured for {\em free}.  We hope that this paper
+will inspire more research and development on automated formal technical
+review environments, and that useful instrumentation support will form an
+essential part of such efforts.
+
+One upcoming empirical study is a controlled laboratory experiment to
+assess the relative contributions of three examination techniques to review
+effectiveness and efficiency.  This research, conducted as part of an
+upcoming doctoral dissertation, will help to clarify some of the
+confusion in current FTR research about the causal factors underlying
+review outcomes.
+
+A second upcoming project is external validation through a select number of
+technology transfer experiments with industry sites.  This will provide
+useful experience and data on the process of CSRS adoption within a variety
+of industrial software development organizations.  We hope that future
+research on CSRS will be motivated through its use to improve the quality
+of the industry software. 
+
+
+
+\section*{Acknowledgments}
+
+The author gratefully acknowledges the other members of Collaborative
+Software Development Laboratory: Danu Tjahjono, Rosemary Andrada, Carleton
+Moore, Dadong Wan, and Robert Brewer for their contributions to the
+development of CSRS. Support for this research was partially provided by
+the National Science Foundation Research Initiation Award CCR-9110861.
+
+
+
+%% comment about specializing the method to a particular artifact or 
+%% development phase.

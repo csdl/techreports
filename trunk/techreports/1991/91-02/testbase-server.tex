@@ -1,0 +1,810 @@
+\chapter {Server Subsystem Tests}
+
+\section {Class: s*sp}
+\subsection {Operation: s*sp*connect}
+\subsubsection {Test-case scenario: normal-connection, Valid-machine-name}
+
+
+This test case tests that a connection can be made to the server in a normal manner.
+Its precondition ensures that no connection already exists to the server.
+Then it calls the function s*sp*connect  with a valid machine name uhunix.uhcc.hawaii.edu, and expects the return-value uhunix.uhcc.hawaii.edu.
+Afterwards, its postcondition ensures that a connection exists to the server.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: reestablish-connection, Valid-machine-name}
+
+
+This test case tests that a connection cannot be made to the server even when it already exists.
+Its precondition ensures that a connection exists to the server.
+Then it calls the function s*sp*connect  with a valid machine name uhunix.uhcc.hawaii.edu, and expects the error connection-is-on.
+Afterwards, its postcondition ensures that a connection exists to the server.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: unknown-machine-name, Unknown-machine-name}
+
+
+This test case tests that a connection cannot be made to an unknown server.
+Its precondition ensures that no connection already exists to the server.
+Then it calls the function s*sp*connect  with unknown machine name "aloha-hawaii", and expects the error 'server-not-found as its return-value.
+Afterwards, its postcondition ensures that no connection exists to the server.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsection {Operation: s*sp*disconnect}
+\subsubsection {Test-case scenario: normal, nil}
+
+
+This test case tests that a disconnection can be made to the server in a normal manner.
+Its precondition ensures that a connection exists to the server.
+Then it calls the function s*sp*disconnect , and expects a return-value uhunix.uhcc.hawaii.edu.
+Afterwards, its postcondition ensures that no connection exists to the server.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: already-disconnect, nil}
+
+
+This test case tests that a disconnection cannot be made to the server when connection no longer exists.
+Its precondition ensures that no connection already exists to the server.
+Then it calls the function s*sp*disconnect , and expects a return value of the error-name connection-is-off.
+Afterwards, its postcondition ensures that no connection exists to the server.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\section {Class: s*node}
+\subsection {Operation: s*node*make}
+\subsubsection {Test-case scenario: normal-node-creation, Valid-node-name}
+
+
+This test case tests that a node can be created in a normal manner.
+Its precondition ensures that a connection exists to the server.
+Then it calls the function s*node*make  with a valid node-name "Valid node name", and expects a return value of an integer number.
+Afterwards, its postcondition ensures that a node with node-name "Valid node name" exists in the server.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: invalid-node-name, Empty-string}
+
+
+This test case tests that a node with invalid node name cannot be created in the server.
+Its precondition ensures that a connection exists to the server.
+Then it calls the function s*node*make  with an empty string as node-name, and expects a return-value of error-name 'invalid-node-name.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: invalid-node-name, Leading-space}
+
+
+This test case tests that a node with invalid node name cannot be created in the server.
+Its precondition ensures that a connection exists to the server.
+Then it calls the function s*node*make  with a leading space in a node-name, and expects a return-value of error-name 'invalid-node-name.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: disconnected-server, Node-disconnected}
+
+
+This test case tests the node make operation when the server is disconnected.
+Its precondition ensures that no connection already exists to the server.
+Then it calls the function s*node*make  with provides the string for node-make operation after disconnection, and tests that node make operation on a disconnected server.
+Afterwards, its postcondition ensures that no connection exists to the server.
+
+
+\noindent {\bf Result: FAILED}\
+\begin {itemize}
+\item 	Error-name             : system-abort
+\item Error-data             : (error "Process s*sp!write-socket not running")
+\item Operation and Parameter: s*node*make ("Node-disconnected")
+\item Expected-return-type   : error
+\item Expected-return-value  : connection-is-off
+\item Location               : Operation
+
+
+
+\end {itemize}
+\subsection {Operation: s*node*delete}
+\subsubsection {Test-case scenario: existing-node, Valid-node-ID}
+
+
+This test case tests that a node deletion can be made in a normal manner.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server.
+Then it calls the function s*node*delete  with Valid node-id resulting from the precondition create-node operation, and expects node-id resulting from the precondition create-node operation as the return-value.
+Afterwards, its postcondition ensures that node1 does not exist.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: non-existent-node, Invalid-node-ID}
+
+
+This test case tests that a node deletion cannot be made given an invalid node-id.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it deletes node1 from the server.
+Then it calls the function s*node*delete  with a non-extant node-id, and expects error-name node-not-found as the return-value.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: locked-node, Valid-node-ID}
+
+
+This test case tests that a locked node cannot be deleted.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it locks the node.
+Then it calls the function s*node*delete  with Valid node-id resulting from the precondition create-node operation, and expects error message return-value node-locked.
+Afterwards, its postcondition tests that the lock exists and the attribute operation returns the login user name.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: incoming-linked-node, Valid-node-ID2}
+
+
+This test case tests that a node which has an incoming link cannot be deleted.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*node*delete  with Valid node-id resulting from the precondition create-node operation, and expects error return-value NODE-STILL-REFERENCED.
+Afterwards, its postcondition verifies that the link does exist after the operation.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: outgoing-linked-node, Valid-node-ID}
+
+
+This test case tests that a node which has an outgoing link can be deleted.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*node*delete  with Valid node-id resulting from the precondition create-node operation, and expects the node ID of the deleted node.
+Afterwards, its postcondition ensures no specified link-id exists.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: node-created-by-others, Valid-node-ID-another-user}
+
+
+This test case tests node-delete operation on a node created by another user.  This test case is not automated yet, and has to be performed external to this testing system.
+Its precondition ensures that a connection exists to the server, then it a different user has to create this node.
+Then it calls the function s*node*delete  with this node has to be created by another user, but for the time being its created under the same user name, and should delete a node if its not already locked by other user.
+
+
+
+\noindent {\bf Result: FAILED}\
+\begin {itemize}
+\item 	Error-name             : unknown-return-value
+\item Error-data             : 2080
+\item Operation and Parameter: s*node*delete (2080)
+\item Expected-return-type   : object
+\item Expected-return-value  : nil
+\item Location               : Operation
+
+
+
+\end {itemize}
+\subsection {Operation: s*node*lock}
+\subsubsection {Test-case scenario: existing-node, Valid-node-ID}
+
+
+This test case tests that a node can be locked in a normal manner.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server.
+Then it calls the function s*node*lock  with Valid node-id resulting from the precondition create-node operation, and expects return-value t since the node is previously unlocked.
+Afterwards, its postcondition tests the lock exists by attempting to delete the node, then it tests that the lock exists and the attribute operation returns the login user name.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: linked-node1, Valid-node-ID}
+
+
+This test case tests the node lock operation on a linked-node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*node*lock  with Valid node-id resulting from the precondition create-node operation, and should be able to lock the node with outgoing links.
+Afterwards, its postcondition tests the lock exists by attempting to delete the node.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: linked-node2, Valid-node-ID2}
+
+
+This test case tests the node lock operation on a linked-node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*node*lock  with Valid node-id resulting from the precondition create-node operation, and should be able to lock the node with incoming links.
+Afterwards, its postcondition tests the lock exists by attempting to delete the node.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: deleted-node, Valid-node-ID}
+
+
+This test case tests that lock operation on non-extant node will return error node-not-found.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it deletes node1 from the server.
+Then it calls the function s*node*lock  with Valid node-id resulting from the precondition create-node operation, and expects the error message 'node-not-found' .
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: node-created-by-others, Valid-node-ID-another-user}
+
+
+This test case tests that lock operation on a node created by another user.  This test case is not automated yet and has to be performed external to this testing system.
+Its precondition ensures that a connection exists to the server, then it a different user has to create this node.
+Then it calls the function s*node*lock  with this node has to be created by another user, but for the time being its created under the same user name, and should lock the node if it is not already locked by another user.
+
+
+
+\noindent {\bf Result: FAILED}\
+\begin {itemize}
+\item 	Error-name             : unknown-return-value
+\item Error-data             : t
+\item Operation and Parameter: s*node*lock (2092)
+\item Expected-return-type   : object
+\item Expected-return-value  : nil
+\item Location               : Operation
+
+
+
+\end {itemize}
+\subsubsection {Test-case scenario: node-locked-by-others, Valid-node-ID-another-user}
+
+
+This test case tests that lock operation on a node locked by another user.  This test case is not automated yet and has to be performed external to this testing system.
+Its precondition ensures that a connection exists to the server, then it a different user has to create this node.
+Then it calls the function s*node*lock  with this node has to be created by another user, but for the time being its created under the same user name, and expects an error message as the node is already locked by another user.
+
+
+
+\noindent {\bf Result: FAILED}\
+\begin {itemize}
+\item 	Error-name             : unknown-return-value
+\item Error-data             : t
+\item Operation and Parameter: s*node*lock (2094)
+\item Expected-return-type   : object
+\item Expected-return-value  : nil
+\item Location               : Operation
+
+
+
+\end {itemize}
+\subsubsection {Test-case scenario: locked-node, Valid-node-ID}
+
+
+This test case tests that a locked node cannot be locked again.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it locks the node.
+Then it calls the function s*node*lock  with Valid node-id resulting from the precondition create-node operation, and expects return-value nil since the node is already locked.
+Afterwards, its postcondition tests the lock exists by attempting to delete the node.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsection {Operation: s*node*unlock}
+\subsubsection {Test-case scenario: existing-locked-node, Valid-node-ID}
+
+
+This test case tests that a node can be unlocked in a normal manner.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it locks the node.
+Then it calls the function s*node*unlock  with Valid node-id resulting from the precondition create-node operation, and expects return-value t since the node is previously locked.
+Afterwards, its postcondition checks that the node is unlocked by deleting the node.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: non-existing-node, Valid-node-ID}
+
+
+This test case tests the unlock operation on a non-existing node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it deletes node1 from the server.
+Then it calls the function s*node*unlock  with Valid node-id resulting from the precondition create-node operation, and expects an error message node-not-found.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: node-locked-by-others, Valid-node-ID-another-user}
+
+
+This test case tests an unlock operation on a node locked by another user.  This test case is not automated yet and has to be performed external to this testing system.
+Its precondition ensures that a connection exists to the server, then it a different user has to create this node.
+Then it calls the function s*node*lock  with this node has to be created by another user, but for the time being its created under the same user name, and expects an error message as the node is already locked by another user.
+
+
+
+\noindent {\bf Result: FAILED}\
+\begin {itemize}
+\item 	Error-name             : unknown-return-value
+\item Error-data             : t
+\item Operation and Parameter: s*node*lock (2098)
+\item Expected-return-type   : object
+\item Expected-return-value  : nil
+\item Location               : Operation
+
+
+
+\end {itemize}
+\subsubsection {Test-case scenario: unlocked-node, Valid-node-ID}
+
+
+This test case tests that unlock operation can be issued to an unlocked-node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server.
+Then it calls the function s*node*unlock  with Valid node-id resulting from the precondition create-node operation, and expects return-value t.
+Afterwards, its postcondition tests that the node is unlocked by checking the attribute
+s*node*locked-by equal to nil, then it checks that the node is unlocked by deleting the node.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: linked-unlocked-node, Valid-node-ID}
+
+
+This test case tests the node unlock operation on a linked and unlocked node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*node*unlock  with Valid node-id resulting from the precondition create-node operation, and expects a t return value .
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: linked-unlocked-node, Valid-node-ID2}
+
+
+This test case tests the node unlock operation on a linked and unlocked node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*node*unlock  with Valid node-id resulting from the precondition create-node operation, and expects a t return value .
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: linked-locked-node1, Valid-node-ID}
+
+
+This test case tests the node unlock operation on a linked and locked node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2, then it locks the node.
+Then it calls the function s*node*unlock  with Valid node-id resulting from the precondition create-node operation, and should be able to unlock the linked and locked node.
+Afterwards, its postcondition checks that the node is unlocked by deleting the node.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: linked-locked-node2, Valid-node-ID2}
+
+
+This test case tests the node unlock operation on a linked and locked node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2, then it locks the node.
+Then it calls the function s*node*unlock  with Valid node-id resulting from the precondition create-node operation, and should be able to unlock the linked and locked nodes.
+Afterwards, its postcondition checks that the node is unlocked by deleting the node.
+
+
+\noindent {\bf Result: FAILED}\
+\begin {itemize}
+\item 	Error-name             : unknown-return-value
+\item Error-data             : (u*error node-still-referenced nil (2112))
+\item Operation and Parameter: s*node*delete (2112)
+\item Expected-return-type   : error
+\item Expected-return-value  : node-still-refernced
+\item Location               : Postcondition
+
+
+
+\end {itemize}
+\subsection {Operation: s*node*set-name}
+\subsubsection {Test-case scenario: change-node-name, node-ID-Valid-node-name}
+
+
+This test case tests that a node can be renamed in a normal manner.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server.
+Then it calls the function s*node*set-name  with a valid string as the node-name, and expects the new name as the return-value.
+Afterwards, its postcondition ensures that the new node name exists.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: change-node-name, node-ID-same-node-name}
+
+
+This test case tests that a node can be renamed in a normal manner.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server.
+Then it calls the function s*node*set-name  with the same node-name as created originally, and expects the new name as the return-value.
+Afterwards, its postcondition ensures that the new node name exists.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: non-existing-node, node-ID-Valid-node-name}
+
+
+This test case tests s*node*set-name on a non-existing node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it deletes node1 from the server.
+Then it calls the function s*node*set-name  with a valid string as the node-name, and expects an error message node-not-found .
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: non-existing-node, node-ID-same-node-name}
+
+
+This test case tests s*node*set-name on a non-existing node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it deletes node1 from the server.
+Then it calls the function s*node*set-name  with the same node-name as created originally, and expects an error message node-not-found .
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsection {Operation: s*node*set-data}
+\subsubsection {Test-case scenario: non-existing-node, node-ID-node-data}
+
+
+This test case tests s*node*set-data on a non-existing node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it deletes node1 from the server.
+Then it calls the function s*node*set-data  with a non-empty string as the data, and expects an error message node-not-found.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: non-existing-node, node-ID-empty-data}
+
+
+This test case tests s*node*set-data on a non-existing node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it deletes node1 from the server.
+Then it calls the function s*node*set-data  with an empty string as the data, and expects an error message node-not-found.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: save-node-data, node-ID-node-data}
+
+
+This test case tests that a node can store data in a normal manner.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server.
+Then it calls the function s*node*set-data  with a non-empty string as the data, and expects the node-id where the data is stored as the return-value.
+Afterwards, its postcondition ensures the data exists in the node.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: save-node-data, node-ID-empty-data}
+
+
+This test case tests that a node can store data in a normal manner.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server.
+Then it calls the function s*node*set-data  with an empty string as the data, and expects the node-id where the data is stored as the return-value.
+Afterwards, its postcondition ensures the data exists in the node.
+
+
+\noindent {\bf Result: FAILED}\
+\begin {itemize}
+\item 	Error-name             : unknown-return-value
+\item Error-data             : nil
+\item Operation and Parameter: s*node*data (2120)
+\item Expected-return-type   : item
+\item Expected-return-value  : ("non empty string" "")
+\item Location               : Postcondition
+
+
+
+\end {itemize}
+\subsubsection {Test-case scenario: save-exceeding-data, node-exceeding-data}
+
+
+This test case tests that a node cannot store data that is exceeding 150k in total.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server.
+Then it calls the function s*node*set-data  with a string of data exceeding 150 characters, and expects the node-id where the data is stored as the return-value.
+Afterwards, its postcondition ensures that node that was created still exists.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsection {Operation: s*node*set-geometry}
+\subsubsection {Test-case scenario: change-geometry, Valid-node-ID-geometry-string}
+
+
+This test case tests the set-geometry operation on a node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server.
+Then it calls the function s*node*set-geometry  with , and the setable attribute of the node, geometry is given a value.
+Afterwards, its postcondition see if the node geometry is set.
+
+
+\noindent {\bf Result: FAILED}\
+\begin {itemize}
+\item 	Error-name             : unknown-return-value
+\item Error-data             : (u*error write-attribute-fails nil (write-attribute-fails "write" 2122 "geometry" -205))
+\item Operation and Parameter: s*node*set-geometry (2122 "geo-string")
+\item Expected-return-type   : object
+\item Expected-return-value  : geo-string
+\item Location               : Operation
+
+
+
+\end {itemize}
+\subsection {Operation: s*node*set-font}
+\subsubsection {Test-case scenario: change-node-font, Valid-node-ID-font-string}
+
+
+This test case tests the set-font operation on a node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server.
+Then it calls the function s*node*set-font  with , and the setable attribute of the node font is given a value.
+Afterwards, its postcondition see if the node font is set.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\section {Class: s*link}
+\subsection {Operation: s*link*name}
+\subsubsection {Test-case scenario: valid-link-id, Valid-link-id}
+
+
+This test case tests that the attribute link-name can be retrieved in a normal manner.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*link*name  with a valid link-id resulting from the precondition create link operation, and expects the return-value "Valid Link Name1".
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: invalid-link-id, Invalid-link-id}
+
+
+This test case tests that the operation s*link*name with invalid link-id fails to retrieve any link-name.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2, then it deletes a link between node1 and node2.
+Then it calls the function s*link*name  with a link-id which no longer exists, and expects a return value of error-name 'link-not-found.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsection {Operation: s*link*make}
+\subsubsection {Test-case scenario: normal-link-make, Valid-link-name-node-ids}
+
+
+This test case tests that a link can be made in a normal manner.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server.
+Then it calls the function s*link*make  with a valid link-name "Valid Link Name", a valid source and destination node-ids from precondition operations, and expects an integer number as the return-value.
+Afterwards, its postcondition ensures that the link "Valid Link Name" or the link-name with 29 characters long exists, then it ensures that the attribute s*link*created-by exists, then it ensures that the attribute s*link*created-date exists, then it ensures that the attribute s*link*last-modified-by exists, then it ensures that the attribute s*link*last-modified-date exists, then it ensures that the source-node of the link is the valid node1, then it ensures that the destination-node of the link is the valid node2, then it ensures that the link is incoming to node2, then it ensures that the link is outgoing from node1.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: normal-link-make, Max-link-name}
+
+
+This test case tests that a link can be made in a normal manner.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server.
+Then it calls the function s*link*make  with a valid link-name of 29 characters, a valid source and destination node-ids from precondition operations, and expects an integer number as the return-value.
+Afterwards, its postcondition ensures that the link "Valid Link Name" or the link-name with 29 characters long exists, then it ensures that the attribute s*link*created-by exists, then it ensures that the attribute s*link*created-date exists, then it ensures that the attribute s*link*last-modified-by exists, then it ensures that the attribute s*link*last-modified-date exists, then it ensures that the source-node of the link is the valid node1, then it ensures that the destination-node of the link is the valid node2, then it ensures that the link is incoming to node2, then it ensures that the link is outgoing from node1.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: invalid-link-name, Lname-empty-string}
+
+
+This test case tests that a link cannot be made when an invalid link-name is supplied.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server.
+Then it calls the function s*link*make  with an empty string as the link-name, and expects error-name invalid-link-name as its return-value.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: invalid-link-name, Lname-leading-space}
+
+
+This test case tests that a link cannot be made when an invalid link-name is supplied.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server.
+Then it calls the function s*link*make  with the link name contains leading space, and expects error-name invalid-link-name as its return-value.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: invalid-link-name, Lname-string-too-long}
+
+
+This test case tests that a link cannot be made when an invalid link-name is supplied.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server.
+Then it calls the function s*link*make  with the link-name is a string of length 31 characters, and expects error-name invalid-link-name as its return-value.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: invalid-source-node, Invalid-source-node}
+
+
+This test case tests that s*link*make fails to create a link when invalid source-node is supplied.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it deletes node1 from the server.
+Then it calls the function s*link*make  with an invalid node-id as the source-node, and expects error-name node-not-found as its return-value.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: invalid-destination-node, Invalid-destination-node}
+
+
+This test case tests that s*link*make fails to create a link when invalid destination-node is supplied.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it deletes node2 from the server.
+Then it calls the function s*link*make  with an invalid destination-node, and expects error-name node-not-found as its returns value.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsection {Operation: s*link*delete}
+\subsubsection {Test-case scenario: normal-delete, Valid-link-id}
+
+
+This test case tests that a link can be deleted in a normal manner.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*link*delete  with a valid link-id resulting from the precondition create link operation, and expects return-value link-id.
+Afterwards, its postcondition ensures no specified link-id exists.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: invalid-link-id, Invalid-link-id}
+
+
+This test case tests that s*link*delete fails to delete a non-extant link-id.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2, then it deletes a link between node1 and node2.
+Then it calls the function s*link*delete  with a link-id which no longer exists, and expects error-name link-not-found as the return-value.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsection {Operation: s*link*set-name}
+\subsubsection {Test-case scenario: new-name, Shorter-new-name}
+
+
+This test case tests that the operation s*link*set-name can successfully rename a link under normal condition.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*link*set-name  with a shorter new name, and expects the new-name as its return value.
+Afterwards, its postcondition ensures the link name exists.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: new-name, Same-name}
+
+
+This test case tests that the operation s*link*set-name can successfully rename a link under normal condition.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*link*set-name  with the exact same name as originally created, and expects the new-name as its return value.
+Afterwards, its postcondition ensures the link name exists.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: new-name, Longer-new-name}
+
+
+This test case tests that the operation s*link*set-name can successfully rename a link under normal condition.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*link*set-name  with a longer new name, and expects the new-name as its return value.
+Afterwards, its postcondition ensures the link name exists.
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: invalid-link-ID, Same-name}
+
+
+This test case tries to set-name for a link with invalid-link ID.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2, then it deletes a link between node1 and node2.
+Then it calls the function s*link*set-name  with the exact same name as originally created, and expects an error value link-not-found.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: Valid-link-ID-invalid-names, Empty-link-string}
+
+
+This test case tries to set-name for a link with valid-link ID but invalid link names.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*link*set-name  with this link name is an empty string, and expects an error return value invalid-link-name.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: Valid-link-ID-invalid-names, Leading-space-link-name}
+
+
+This test case tries to set-name for a link with valid-link ID but invalid link names.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*link*set-name  with this link name has leading spaces, and expects an error return value invalid-link-name.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsubsection {Test-case scenario: Valid-link-ID-invalid-names, Limit-exceeding-name}
+
+
+This test case tries to set-name for a link with valid-link ID but invalid link names.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2.
+Then it calls the function s*link*set-name  with this string name exceeds the limit of valid llink name of 30 characters, and expects an error return value invalid-link-name.
+
+
+
+
+
+\noindent {\bf Result: PASSED}\
+\subsection {Operation: s*link*set-destination-node}
+\subsubsection {Test-case scenario: normal, Valid-destination-node-id}
+
+
+This test case tests that the destination-node of a link can be moved successfully to a new node.
+Its precondition ensures that a connection exists to the server, then it creates node1 with node-name "Valid Node Name1" in the server, then it creates node2 with node-name  "Valid Node Name2" in the server, then it creates a link with link-name "Valid Link Name1" from node1 to node2, then it creates node3 with node-name "Valid Node Name3" in the server.
+Then it calls the function s*link*set-destination-node  with a valid destination node-id resulting from the precondition to create node3, and expects new destination-node-id (node3) as the return value.
+Afterwards, its postcondition ensures the link-name exists, then it ensures the source-node of the link exists and equal to node1, then it ensures the destination-node of the link exists and equal to the new node3, then it ensures node2 now does not contain the link.
+
+\noindent {\bf Result: PASSED}\

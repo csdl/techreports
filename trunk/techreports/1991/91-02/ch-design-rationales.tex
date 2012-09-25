@@ -1,0 +1,218 @@
+\chapter{Design Rationales}
+\section{ECTS Design Rationale}
+\label{ects-dr}
+
+The capabilities of ECTS to define and modify database structure at
+both class and instance level raises many important and complex
+issues.
+
+The first issue is the classic database schema modification impact
+analysis problem.  Given a class (which can be thought of as
+corresponding to a database schema) and a set of instances created
+from that class, what is the effect of making changes to the class
+structure?  There is a growing body of literature addressing the types
+of schema modifications that can be made without impact upon existing
+instances, as well as literature proposing mechanisms that dynamically
+and automatically restructure existing instances to bring them into
+conformance with the changed schema. (Staudt-Lerner, Skarra).
+
+ECTS differs from this research by rejecting two of the premises upon
+which the work is based: (1) that instances must necessarily be
+constrained to the structure of their parent classes' schema, and (2)
+that structure can only be defined at the class and not at the
+instance level.  Admittedly, these extra degrees of freedom can be
+tolerated only in exploratory domains, where their benefits to design
+experimentation outweigh their costs in reduced reliabilty and
+consistency.  The result is while this classic problem certainly
+exists in ECTS, we address the problem in a different way that
+reflects the differences in our domain.  This answer will be developed
+in more detail below.
+
+A second issue concerns inheritance vs. copying of structural
+information.  In classic database schema data models, structural
+information is always inherited.  Conceptually, the structure of all
+instances conforms to a single structural description that is
+maintained within the schema for the parent class.  As a result,
+changes to the structure of the class' structural information must
+necessarily change the structure of all its instances.
+
+In ECTS, copying as well as inheritance of structural information is
+needed.  Inheritance is needed for all the usual reasons: structural
+specification, structural consistency, and code sharing. Copying is
+also needed in order to experiment with changes to a structure without
+making an impact upon previously created structures. Thus, if an
+instance copies structural information from a class (or another
+instance), then any changes it makes to that structural description
+will be local to the instance.  Conversely, changes to the original
+structural description from which the copy was made will not affect
+the copying instance.
+
+Given the ability to change structural attributes at both the class
+and the instance level, and the ability to both inherit and copy
+attributes, a wide variety of models for the structural relationships
+between classes and instances are possible.
+
+To facilitate this discussion, we adopt the following notation.  Let upper case A, B,
+and C denote different classes, and let lower case a1, a2, a3...,  b1, b2, b3, 
+and so forth denote instances of these classes.  Let p denote a 
+structural property, and let p' denote a copy of property p.   Let -> indicate 
+either an inheritance relationship or a copying relationship between two 
+classes/instances.  If the relationship is inheritance, then p appears on both 
+sides; if copying, then p' appears on the right hand side.   Finally, let A/p 
+indicate that class A has property p.
+
+The set of possible relationships are summarized in Figure \ref{inher}.
+
+\begin{figure*}
+\figureline
+\small\begin{verbatim}
+A/p -> B/p                (class B inherits property p from class A)
+A/p -> B/p                (class B copies property p from class A)
+A/p -> a1/p               (instance a1 inherits property p from class A)
+A/p -> a1/p'              (instance a1 copies property p from class A)
+a1/p  -> b1/p             (instance b1 inherits property p from instance a1)
+a1/p  -> a2/p             (instance a2 inherits property p from instance a1)
+a1/p  -> b1/p'            (instance b1 copies property p from instance a1)
+a1/p  -> a2/p'            (instance a2 copies property p from instance a1)
+\end{verbatim}\normalsize
+\figureline
+\caption{Possible inheritance relationships}
+\label{inher}
+\end{figure*}
+
+The true set of possible relationships is much more complex, since it is the 
+transitive closure of these relationships over finite sets of properties, 
+classes, and instances.  However, this summarization provides an idea of the 
+complexity of relationships between classes and instances that could be 
+supported in the ECTS model.
+
+It is our assertion, in fact, that this set of possible relationships is too 
+general for exploratory purposes.  
+
+First, allowing unrestricted possibilities for inheritance and copying of 
+properties essentially eliminates the distinction between classes and instances
+entirely.  Thus, it allows users to essentially set up parallel, first class 
+schema systems within a single database system, a situation we explicitly wish 
+to avoid.  
+
+Second, it very easy for users to create databases with complicated mixtures of
+inheritance and copying within and between classes and instances that make 
+effective impact analysis and subsequent "rationalization" of the database
+during consolidation extremely difficult.   
+
+Third, supporting this generality will impose representational and computational
+overhead that we would like to avoid.
+
+Instead, ECTS supports only the forms of copying and inheritance in Figure
+\ref{inher-actual}.
+
+\begin{figure*}
+\figureline
+\small\begin{verbatim}
+A/p -> B/p                (class B inherits property p from class A)
+A/p -> a1/p               (instance a1 inherits property p from class A)
+a1/p  -> b1/p'            (instance b1 copies property p from instance a1)
+a1/p  -> a2/p'            (instance a2 copies property p from instance a1)
+\end{verbatim}\normalsize
+\figureline
+\caption{Actual inheritance relationships}
+\label{inher-actual}
+\end{figure*}
+
+To motivate this decision, recall that the requirements for the ECTS is to allow
+exploration, or deviation from the consensus representation embodied by the 
+class schema, while still providing the means necessary to bring some or all of
+the instances and classes back into consistency through modifications to both 
+the class schema and the instances.
+
+These restrictions are easily understood by the simple three-part rule: classes
+only inherit; instances only inherit from their class, and instances can copy 
+from any other instance.  They preserve the separate statue of classes as the 
+sole manner to obtain structural sharing and economy of expression; building a 
+separate hierarchy at the instance level is not economical.  Finally, it 
+provides a crucial aid to experimentation by allowing users to create an 
+instance of a class, then freely import interesting structural ideas from any 
+other existing instance.  Once a suitable instance structure has been generated,
+it can be easily ``cloned" for further experimentation in different contexts.  
+When the utility of this experimental structure has been proven and agreed upon,
+it can be reified within the class hierarchy itself.
+
+ECTS also recognizes that in exploratory situations, it is not
+critical for all instances of a class to be consistent with the
+current schema structure, since exploratory domains generate
+significant amounts of ``archivable garbage"---i.e. outmoded instances
+that should be retained in order to preserve the historical evolution
+of the system, but which are no longer current to the task at hand.
+
+ECTS represents this distinction between ``active" instances and
+classes and ``historical" instances and classes by the aggregation
+constructs of layers and surfaces.  Collaborative exploratory
+development consists of a current, top-level surface upon which new
+activities takes place.  The tools for assessing variance between
+classes and instances are normally confined to the structures on the
+current surface.  (In standard software engineering terms, surface
+corresponds most closely to a configuration.)  Surfaces are made up of
+a set of layers, within which semantically cohesive sets of classes
+and instances are aggregated.  (Layers correspond most closely to the
+concept of a framework in object oriented terminology combined with
+the concept of version from change control terminology.)
+
+
+\section{Efficient Type System Node Retrieval}
+\label{type-dr}
+
+
+The ability to dynamically define new fields at the class or instance
+level leads to an important efficiency problem.  First, remember that
+server subsystem retrieves information on a field-by-field basis.
+This behavior is maintained at the type subsystem, except that these
+retrieval operations allow uniform transparent access to either the
+fixed server node fields or the dynamic type node fields.
+
+Unfortunately, the straightforward implementation of this design leads
+to one of two situations: (1) The presentation of a node's contents by
+interface mechanisms involves multiple retrieval operations for each
+field in the node, each resulting in a separate type access and
+unpacking operation; or (2) The presentation of a node's contents by
+interface mechanisms involves a single retrieval operation on the DATA
+field.  This latter approach has the advantage of retrieving an entire
+group of node fields with a single network access.  However, it has
+the disadvantages that the interface mechanism now is given knowledge
+of the internal representation of nodes (in order to know that the
+DATA field contains the required information to begin with), as well
+as requiring the interface mechanism to know how to unpack the DATA
+field in order to get at the desired information.
+
+To partially overcome this disadvantage, the type subsystem not only
+exports to other subsystems the basic retrieval operation for any
+field defined on a particular node instance, but a set of unpacking
+operations for the DATA field as well.  These unpacking operations
+take a node-ID, its DATA field contents, and a field-name. They return
+the field-name's contents, or a (continuable) error if the field-name
+does not exist in the DATA field.  \foot{Note that the node-ID is required
+since the unpacking operation might be type dependent.}  These
+unpacking operations hide the actual representation of fields inside
+the server subsystem DATA fields, allowing this design decision
+(though not the design decision as to whether to store the field
+within the DATA field or someplace else) to remain encapsulated in the
+type subsystem.
+
+The advantage of this design is that if another subsystem just needs
+to know the value of a single field in a node instance, they can
+simply invoke the standard type subsystem retrieval operation with
+the field name and get that information without needing to know
+whether the field was fixed or dynamic, without having to unpack it,
+and without paying any performance penalty.  This design also allows 
+prototypes to be constructed and later optimized with additional code
+for DATA field handling.
+
+On the other hand, if another subsystem needs to efficiently retrieve
+the value of several fields in a node instance, it can go through the
+slightly more complicated procedure of retrieving the DATA field and
+manually invoking the unpacking operations to get the values.  In this
+latter case, the higher subsystem needs to know somewhat more about
+the internal representation (for example, it needs to know that the
+fields it wants are actually in the DATA field), but it still doesn't
+need to know exactly how the field contents are represented in the
+DATA field.  And, most importantly, this avoids paying any performance
+penalty for the information.

@@ -1,0 +1,968 @@
+Return-Path: <jli@uhunix.uhcc.Hawaii.Edu>
+Received: from uhunix.uhcc.Hawaii.Edu by uhics.ics.Hawaii.Edu (4.1/SMI-4.1)
+	id AA07691; Sat, 15 May 93 18:56:37 HST
+Received: by uhunix.uhcc.Hawaii.Edu (4.1/Sun690)
+	id AA14657; Sat, 15 May 93 18:56:34 HST
+Date: Sat, 15 May 93 18:56:32 HST
+From: Johnny Ching Chi Li <jli@uhunix.uhcc.Hawaii.Edu>
+To: johnson@uhunix.uhcc.Hawaii.Edu
+Cc: jli@uhunix.uhcc.Hawaii.Edu
+Subject: Browser Documentation
+Message-Id: <CMM.0.90.2.737528192.jli@uhunix.uhcc.Hawaii.Edu>
+Status: RO
+
+
+
+
+
+
+
+
+University of Hawaii at Manoa
+
+
+
+X Windows Graphical Browser Project 
+
+
+
+
+
+
+A project description summitted to
+Professor Philip Johnson to fulfill the requirements of
+ICS 499(V) - Special Projects
+
+Department of  Information and Computer Science
+
+
+
+
+
+
+
+by 
+
+Johnny Li
+
+
+
+
+
+
+
+Honolulu, Hawaii
+May 1993
+
+
+
+
+Contents
+
+Introduction    1
+Abstract        1
+Purpose of Project      1
+Organization of Document        2
+User Documentation      3
+Installation    3
+Tutorial        3
+Starting the Browser    3
+Sending nodes and links 3
+Sending a tree  4
+Loading a Lisp File Layout      4
+Clearing a Layout       4
+Loading a Layout        5
+Saving a Layout 5
+Moving a node   5
+Creating a Link 5
+Displaying the Layout as a Circle       6
+Displaying the Layout as a Tree 6
+Closing the Browser     6
+Command Reference       7
+Program Design  8
+Specifications  8
+Methodology     8
+Risk Assessment and Aversion    9
+Data Structures 9
+Program Architecture and Data Flow      10
+High-Level Description  11
+Internal Information Access     12
+Program Implementation  13
+Global Variables Descriptions   13
+Program Descriptions    14
+Program gb.c    14
+Function main( )        14
+Program event.c 14
+Function setup_event( ) 15
+Function repaint( )     15
+Function event_proc( )  15
+Function repaint_proc( )        15
+Function select_proc( ) 16
+Function drag_proc( )   16
+Function repaint_all_windows( ) 16
+Program interface.c     16
+Function stdin_parser( )        16
+Function setup_notifier( )      16
+Program lisptoc.c       17
+Function file_read_nodes_and_links( )   17
+Function getnode( )     17
+Function getlink( )     17
+Function clean( )       17
+Program nodelink.c      17
+Function show_nodes( )  17
+Function show_links( )  17
+Function number_of_nodes( )     18
+Function find_node_Xpos( )      18
+Function find_node_Ypos( )      18
+Function set_link_coordinates( )        18
+Function UpdateLinks( ) 18
+Function drag_node( )   18
+Function drag_link( )   18
+Function selected_node( )       18
+Function selected_link( )       19
+Function CreateLink( )  19
+Program layout.c        19
+Function create_circular_layout( )      19
+Function create_link_layout( )  19
+Function ClearLayout( ) 19
+Function save_layout( ) 19
+Function load_layout( ) 20
+Program graphics.c      20
+Function DrawLink( )    20
+Function print_right_footer( )  20
+Function print_left_footer( )   20
+Program menu.c  20
+Function link_source( ) 20
+Function link_dest( )   21
+Function setup_menu( )  21
+Program panel.c 21
+Function save_link_type( )      21
+Function cancel_link_type( )    21
+Function get_link_panel( )      21
+Program cursor.c        21
+Function normal_cursor( )       21
+Function cursor_off( )  21
+Function CursorImage( ) 22
+Function CursorPixmap( )        22
+Program icon.c  22
+Function load( )        22
+Function setup_icons( ) 22
+Function ShowIcon( )    22
+Program xpm.c   22
+Function xpm_main( )    22
+Program Tree.c  23
+Function CreateTree( )  23
+Function SetTreeCoordinates( )  23
+Program Testing 25
+Problems encountered    25
+Possible Improvements   25
+Positive Experiences    26
+Conclusion      27
+Information learned     27
+Closing Comments        28
+Acknowledgment  29
+References      30
+Appendix        31
+Index of Functions      31
+Browser source code     33
+Abstract
+
+The X Windows graphical browser project is an attempt to build a browser for hypertext that operates graphically.  Objects are represented as nodes and connections are indicated by links.  Example manipulation functions are the arrangement of nodes in different layouts and the creation of links.  This paper documents the initial phase of the project, which has been successful in setting up a basic graphical user interface.  In the future, the browser will be extended to include query, layout, and hierarchical functions.  This paper describes the design and implementation of the X Windows based graphical browser, gives performance test results, and includes a user's manual and the browser source files.
+
+Purpose of Project
+
+The Collaborative Software Development Laboratory (CSDL) of the University of Hawaii has been developing software systems that make extensive use of hypertext.  An important data model used in CSDL software systems is that of nodes and links, which implements hypertext by representing objects and their relationships.  Currently, nodes and links are displayed in textual form, which can become difficult to use and visualize if a great number of them exist.  Through the experience of CSDL director, Professor Philip Johnson, he  predicts that the uses of a graphical user interface would make their hypertext and hypertext-like manipulations easier.  
+
+To realize the brainchild of Professor Johnson, the author has implemented a graphical browser which shows objects and their relationships in graphical form.  Objects are displayed as icons that can be customized, and relationships between objects are represented as lines between objects.  The lines are named to convey their precise relationships.   The use of different icons facilitates the user in recognizing different objects quickly and easily.  Because the graphical browser is visual in nature, the user can more easily see the "big picture" as compared to the exact information represented in textual form.
+
+Organization of Document
+
+The body of this document is arranged in the following order:
+
+User documentation
+Program design
+Program implementation
+Program testing
+Conclusion
+Appendix A
+Browser Source Code
+
+Reading the user documentation and using the browser will help the reader understand the design and implementation of the browser.  Design, implementation, and testing correspond to the software engineering cycle.   Learning the technical aspects of the browser by its evolution is probably easiest.  Therefore, reading this document in a chronological fashion is recommended.
+
+The design section presents the major ideas used and strategies developed for the implementation stage.  The implementation section describes each of the browser components--headers files, programs, and functions--which bring the browser to life.  Functions are sometimes referred to before the implementation section.  Therefore, looking up that particular function may help in your understanding.  The testing section gives the results of testing and makes suggestions for possible improvements.  
+
+Appendix A indexes each of the functions used in the browser.  The index indicates which program contains the source code of a function.  You may find the index useful when reading the browser source code and one function calls another.  The index will help you find the other function.
+
+At the very end of this document is the complete listing of the browser source code and well as other miscellaneous files.  At the time of this writing, all files are in the uhunix directory /home/13/csdl/browser/Browser/version.01.  This may be temporary, however.
+
+User Documentation
+
+
+Installation
+
+Installation involves copying all graphical browser files to a UNIX directory.  The graphical browser was implemented to run under the X Windows environment.  Therefore, the X Windows environment must be available on the user's computer system.  
+Tutorial
+
+This section is a tutorial on how to use the existing functions of the graphical browser.  Keyboard inputs by the user are printed in italic, and browser outputs are printed in bold. 
+
+Starting the Browser
+
+1.       To start the graphical browser, first start Emacs.  
+
+2.       In Emacs, type M-x load-file.  Hit Enter.  M stands for the escape key and x is the x key.  M-x means to press escape and then x without releasing escape.
+
+3.       Enter browser.el.
+
+4.       Type M-x br-start.  The browser window should appear.
+
+Sending Nodes and Links
+
+1.       In Emacs enter M-x br-send.
+
+2.       Next to the command: prompt, enter display.
+
+3.       Next to the data: prompt, type: 
+
+	(((8 "node1" "Johnny" "question") (78 "node2" "Dadong" "problem")) (5 "link1" 8 78))
+
+	Note:  The node/link format is:
+
+	(((node 1) (node 2) (node 3) ... (node n)) (link 1) (link 2) (link 3) ... (link m))
+
+4.     Observe that two nodes and one link appear in the browser.
+
+Sending a Tree
+
+1.     In Emacs, enter M-x br-send.
+
+2.     Next to the command: prompt, enter display-tree.
+
+3.     Next to the data: prompt, enter
+
+	(((1 "rootnode" "Johnny" "question") (2 "firstchild" "Dadong" "critique") (3 "secondchild" "Philip" "theory")) (3 "suggest" 1 2) (4 "leads_to" 1 3))
+
+	Note:  The format of a tree is:
+
+	(((rootnode) (node 2) (node 3) ... (node n)) (link 1) (link 2) (link 3) ... (link n))
+
+4.     Observe the tree that appears in the browser.
+
+Loading a Lisp File Layout
+
+1.       In Emacs, enter M-x br-send.
+
+2.       Next to the command:  prompt, enter load-lisp-file.
+
+3.       Next to the data: prompt, enter sample.dat.
+
+4.       Observe the layout that appears in the browser.
+
+Clearing a Layout
+
+1.       In Emacs, enter M-x br-send
+
+2.       Next to the prompt Command: , enter clear.
+
+3.       When the data: prompt appears, just press Enter.  No data is necessary.
+
+4.      All nodes and links should erase from the memory and the screen should clear.
+
+Loading a Layout
+
+1.       In Emacs, enter M-x br-send.
+
+2.       Next to the command:  prompt, enter load.
+
+3.       Next to the data: prompt, enter sample.gbf.
+
+4.       Observe the layout that appears in the browser.
+
+Saving a Layout
+
+1.       In Emacs, enter M-x br-send.
+
+2.       Next to the command:  prompt, enter save.
+
+3.       Next to the data: prompt, enter tutorial.gbf.
+
+4.       The current layout should be saved to the file "tutorial.gbf."
+
+Moving a Node
+
+1.      If no nodes are in the browser, load the file "sample.gbf" according to the   instructions mentioned earlier.
+
+2.       Place the arrow cursor above any node.
+
+3.       Press the left mouse button.
+
+4.       Without letting go of the button, move the mouse to a different location.
+
+5.       Observe that the position of the icon changes.
+
+Displaying the Layout as a Circle
+
+1.       In Emacs, enter M-x br-send.
+
+2.       Next to the prompt Command: , enter display-as-circle.
+
+3.       When the data: prompt appears, just press enter.  No data is necessary.
+
+4.       The nodes should now be arranged in a circle.
+
+Displaying the Layout as a Tree
+
+If the nodes and links represent a tree, the browser can display them as a tree.
+
+1.       In Emacs, enter M-x br-send.
+
+2.       Next to the prompt Command: , enter display-as-tree.
+
+3.       When the data: prompt appears, just press enter.  No data is necessary.
+
+4.       The nodes should now be arranged as a tree.
+
+Creating a Link
+
+1.      In the browser, place the arrow cursor above a link type.
+
+2.      Press the right mouse button.  A menu should appear.
+
+3.      Select Link Source.
+
+4.      A window with various link types should appear.  Select the choice leads-to by placing the arrow cursor above the choice and pressing the left mouse button.  
+
+5.      Place the cursor above a node different from the source node.   Press the right mouse button.  A menu should appear.
+
+6.      From the menu select Link Destination.
+
+7.      The link should be created.  
+
+Closing the Browser
+
+1.       In Emacs, enter M-x br-close.
+
+2.       The browser windows should close and disappear.
+Command Reference
+
+Command         Data                    Function
+________________________________________________________________
+clear                   none                    clear layout from memory
+display                 nodes / links           display a set of nodes and links
+display-as-circle               none                    display layout as circle
+display-as-tree         none                    display layout as tree
+display-tree            nodes / links           display a tree
+load                    <filename>              load standard layout format
+load-lisp-file          <filename>              load lisp nodes / links data
+save                    <filename>              save standard layout format
+
+
+
+Program Design
+
+Specifications
+
+The specifications for the graphical browser is that it :
+
+1.  Be X Windows based
+2.  Be efficient
+3.  Have user-definable unique icons for each entity type
+4.  Have labels for icons and links
+5.  Have a built-in tree layout
+6.  Allow for a customized layout
+7.  Be able to save and retrieve layouts
+8.  Have a seamless integration with an Emacs/EGRET process
+9.  Support aggregation, i.e., zoom in/out
+
+Due to time constraints, not all features specified above has been implemented.   Specification number six and nine have not yet been implemented.  However, functions completed so far present a very optimistic sign that the browser could soon become a fully functioning and productive program with future extensions.
+
+Methodology
+
+The graphical browser was developed on the Sun Workstation operating on the UNIX operating system.  The program language used was C.  Xlib and XView 3.0 were used for graphics and the XPM format was used for icons. The graphical browser was develop on X Windows. 
+
+Principles of good program practice was used to develop the graphical browser.  Functions are highly modular with high cohesion and low coupling.  The average length of functions, including comments, is half a page.  Similar functions are grouped together.  Numerous but concise comments help describe the logic of functions.  The graphical browser was designed to assist future programmers in the its modification and improvement.
+
+At different phases of the project, the source code was backed up.  This is insurance against accidental loss of the code.  Also, the code was being continually modified as the program was being developed.  Modifications may cause previously working functions to fail.  Code was backed up whenever there was a major improvement in functionality that usually occurred at the end of each week.
+Risk Assessment and Aversion
+
+Several risks existed in developing the graphical browser.  First, the analysis of the graphical browser in preparation for coding was incomplete.  The reason is that the author/programmer was not experienced in most of the tools used to develop the graphical browser.  Therefore, a "learn as you work" approach was taken.  The risk involved in coding without thorough analysis was partly averted by the use of sound programming practices, such as high modularity.  This also facilitated in the modification of the source code with changing specifications. 
+
+Second, there was the possibility that as the code grew longer and more complicated, modification of the graphical browser would be too difficult for anyone except for the author.  Like with the first risk, good programming practices will aid in future modifications.  Flowcharts, tables and diagrams, as well as documentation on the source code is provided in this document, and numerous comments are provided in the source code.
+
+Data Structures
+
+The browser deals with the manipulation of nodes and links on the window surface.  For example, displaying and moving nodes and links.  Therefore, the most important data structures are the ones for the nodes and links.  Both are:
+
+	C "struct" data structures
+	Linked list of individual elements--for nodes, linked list of nodes; for links, linked list of links
+
+Each node has an id, name, creator, type, coordinates for its window position; pointers for its child, sibling, and icon; its current status (normal or highlighted); and a pointer to the next node.  Changing the coordinates and repainting the window changes the nodes window position.  The child and sibling pointers are used to display trees.  
+
+Each link has an id, type, source, destination, and coordinate positions for its start, middle, and endpoints.  The links are connect by means of link pointers.  Like with the nodes, the positions of the links are changed by changing their coordinates.  
+
+The nodes and links list are accessed by means of the nodes and links head pointers, firstnode and firstlink.  For example, an operations like searching for a particular node can be done by doing the following:
+
+1.      From firstnode, move to the next node by setting a temporary variable to firstnode->next, which is a pointer to the next node.
+
+2.      Check if the temporary variable's node id matches the node you are looking for.
+
+3.      Repeat steps one and two until you have found the node.
+
+This example gives an idea of how to find or change data in the nodes and links structures.  Most of the functions which manipulate nodes and links data are in the program nodelink.c.  If you want to add another field to the node or link structures, just add the desired field in gb.h and then recompile all source code by typing "make" at the UNIX prompt.  It is as easy as that.
+
+Program Architecture and Data Flow
+
+The following is a data flow diagram of the graphical browser that illustrates the interaction of the browser with other entities and the types of data passed.
+
+
+
+
+Emacs is a UNIX process and the browser is a Emacs sub process.  As shown in the diagram, Emacs and the browser have a peer relationship, meaning they both pass data to and receive data from each other.  Unlike a parent to child relationship, both the browser and Emacs pass information.  Keyboard commands are given by the user through Emacs by a command such as M-x br-send, and the commands are received by the browser's notifier.  The notifier is an XView function which is always listening for information input.  In the case of the browser, the browser is set up to listen to the standard input device.  Emac's output goes to the standard output device.  Since both the standard input and output devices are the same, because Emacs and the browser are UNIX processes started on the same system, the browser and Emacs can communicate.
+
+When a link is created in the browser, the browser sends a message notifying Emacs.  The browser places the message on the standard output device and Emacs receives the message from the standard input device, both devices being the same.  In using the C language, the standard input and output devices are stdin and stdout.  An example to output the word "hello" would be fprintf(stdout,"hello").
+
+The browser window is sensitive to the right and left mouse buttons and mouse movements.  The right button pops up a menu and the left button selects an object.  The browser picks up these events through the function event_proc( ).  
+
+The screen displays the layout of the nodes and links and well as XView objects used to get information such as panels and menus.  Window movement, re-sizing, and scrolling are handle by XView and X Windows window manager instead of the browser.
+
+High-Level Description
+
+The behavior of the browser can be summarized by the following statements:
+
+1.      The browser is always waiting for input from the right and left mouse buttons and the standard input device (Emacs, but not limited to it).
+
+2.      Mouse inputs are processed by event_proc( ) and the standard input device inputs are processed by stdin_parser( ).  
+
+3.      If the right mouse button is pressed, meaning the user wants to select an object, the function select_proc( ) is called.  If the mouse is then moved, drag_proc( ) is called to drag the object.
+
+4.      If the left mouse button is pressed, the browser menu, set up by setup_menu( ), appears.  When the choice Link Source is selected, link_source( ) is called.  When the choice Link Destination is selected, link_dest( ) is called.
+  
+The following table categorizes the browser files according to there functions:
+
+Data Structure            Program Configuration   Main Module       
+------------------------------------------------------------------------------------------
+gb.h                                  gb_config.h                            gb.c                        
+
+Graphics                        Input / Output                   Data Manipulaton
+------------------------------------------------------------------------------------------
+cursor.c                        interface.c                             nodelink.c               
+graphics.c                    lisptoc.c                                   layout.c                    
+icon.c                             event.c                                    tree.c                       
+menu.c                                                                         
+xpm.c                                                                                                                 
+
+The main module initializes all of the functions browser and starts the main loop.  Within the main loop the input/output programs interact with the user.  The input/output programs also call on graphics programs to display graphics as well as to get input information.  When functions are called to operate on nodes and links, data manipulation programs the data in the data structure.
+
+Internal Information Access
+
+Some data is accessible throughout the entire program because it is defined globally and by the use of the C "extern" definition.  Consult a C manual if you do not know the what "extern" does.
+
+One very good feature of XView is that an object's attribute (or a record's field data) can be simply attained by the XView function xv_get(object, attribute).  Data in the browser is often accessed by this means.  For example, getting the browser window's (object) width (attribute).
+
+
+Program Implementation
+
+
+Global Variable Descriptions
+
+The following is a description of global variables.  They are not described in the source code since they are presented here.  
+
+Name                    Type            Description
+__________________________________________________________________
+baseframe               Frame           Browser frame / window
+box_icon                        XpmIcon         Dotted rectangular box for link type
+canvas                  Canvas          Browser canvas / drawing surface
+claim_icon              XpmIcon         Icon used to represent claim nodes
+concept_icon            XpmIcon         Icon used to represent concept nodes
+critique_icon           XpmIcon         Icon used to represent critique nodes
+current_link            LINK *          Pointer to currently selected link
+current_node            NODE *          Pointer to currently selected node
+evidence_icon           XpmIcon         Icon used to represent evidence nodes
+firstlink                       LINK *          Pointer to head link
+firstnode                       NODE *          Pointer to head node 
+height_max              int             Maximum height of tree
+link_type                       char[20]                Stores link type when creating link
+menu                    Menu            Browser menu
+method_icon             XpmIcon         Icon used to represent method nodes
+newstring                       char[30]                Stores new string after calling Clean( )
+problem_icon            XpmIcon         Icon used to represent problem nodes
+question_icon           XpmIcon         Icon used to represent question nodes
+scrollbar_x             Scrollbar               Browser horizontal scrollbar
+scrollbar_y             Scrollbar               Browser verticle scrollbar
+source_icon             XpmIcon         Icon used to represent source nodes
+subframe                        Frame           Frame used to get link type
+suggestion_icon         XpmIcon         Icon that represents suggestion nodes
+theory_icon             XpmIcon         Icon used to represent theory nodes
+thing_icon              XpmIcon         Icon used to represent thing nodes
+width_max               int             Maximum width of tree
+
+Program Descriptions
+
+The following table summarizes the functions of each of the browser's programs:
+
+File            Purpose                                        
+-----------------------------------------------------------------------------------------------------------------
+gb_config.h    Define configuration information, i.e. window size     
+gb.h           Define structures of nodes and links           
+gb.c           Main module and top-level funtion              
+event.c                Set up the canvas and handle inputs            
+panel.c                Display a panel and get information            
+nodelink.c     Handle node and link related functions         
+xpm.c          Initialize Xt toolkit to use XPM icons         
+graphics.c     Display graphic objects                        
+cursor.c               Change the appearance of the cursor            
+icon. c                Load XPM icons to memory and display icons     
+layout.c               Create node/link layouts, i.e. tree, circle             
+lisptoc.c              Accept layout in lisp format and convert to C  
+menu.c         Create a popup menu and process choice 
+tree.c         Create a tree layout from nodes and links      
+Interface.c    Receive and process Emacs commands     
+
+Program gb.c
+
+Function main( )
+
+The function main is the highest level function in the graphical browser.  It calls functions which set up the browser for use.  The last statement causes XView to start a loop which does not exit until the browser is closed.  Within the loop, the browser is constantly monitoring inputs from various input devices that the user can trigger.
+
+Program event.c 
+
+Event.c monitor events from the user and then issues appropriate actions.  An event is any input intruction from the user such as clicking on a mouse button or pressing a key.  When the user triggers an event, event.c start a series of function calls which eventually leads to something such as selecting an item or poping up a menu.  
+
+Function setup_event( )
+
+The function setup_event( ) is the first function in event.c that is called by the browser.  This function does the following:
+
+	Creates the canvas and defines canvas attributes such as width and height.
+	Creates the vertical and horizontal scrollbars.
+	Set a filter on the particular types of events to sense--mouse buttons, for example.
+
+An important attribute of canvas is CANVAS_REPAINT_PROC, which is defined as repaint_proc.  This means that the function repaint_proc( ) will be used to repaint the canvas.
+
+Function repaint( )
+
+Function repaint( ) repaints a window.  
+
+Function event_proc( )
+
+Function event_proc( ) is the heart of the event-sensing mechanism.  When an event is received from XView, it is passed on to event_proc( ).  The event is passed with the parameters window and event, where window is the window receiving the event and event is a pointer to the event.  The switch and case statements determine what event was received and then executes the relevant code to satisfy the user's request. 
+
+Function repaint_proc( )
+
+Function repaint_proc( ) is called by the browser to repaint a window when some visual element in the window has changed.  For example, if a node is moved, all links connected to this particular node need to be erased and repainted to go to the node's new location.  Function repaint_proc( ) is sometimes called indirectly through the functions repaint_all_windows( ) and repaint( ).  Function repaint_proc( ) is called by XView when the scrollbars are moved or when the canvas is resized.  Function repaint_all_windows( ) is used by the program to repaint the window when visual elements are altered.
+
+The visual elements are repainted in the following order:
+
+1.  Icon name
+2.  Icon image
+3.  Link between icons (nodes)
+Function select_proc( )
+
+Function select_proc( ) is called by event_proc( ) whenever the select (left) mouse button is pressed.  Function select_proc( ) compares the cursor's x and y coordinates with all links and node to determine if the cursor is on them.  If a node is selected, the cursor is changed to the image of the node's icon by CursorPixmap( ).  If a link is selected the cursor is change to a retangular box, which symbolizes the link name.  When the user lets go of the select button, another event occurs and the cursor is converted back to its normal state by normal_cursor( ).  Lastly, the object's final position is adjusted and the window is repainted to reposition the node or link.
+
+Function drag_proc( )
+
+Function drag_proc( ) is called whenever an object is being dragged.  To drag an item is to select it then move it.  Function drag_proc( ) calls drag_node( ) and drag_link( ) to move nodes and links.  An object is dragged by making its coordinates the same as the most recent cursor position.  
+
+Function repaint_all_windows( )
+
+This function repaints all windows by moving through all canvases, erasing it, then repainting it.  For the current browser, only one window is repainted since the browser only has one window.
+
+Program interface.c
+
+Function stdin_parser( )
+
+This function has been indicated by setup_notifier( ) that it should be called whenever there is input from the standard input device, stdin.  When Emacs outputs on the standard output device, this function will receive it.  The input received is parsed and the appropriate action is taken.  
+
+Function setup_notifier( )
+
+This function starts the XView notifier and assigns the function stdin_parser( ) to receive input from stdin.
+
+Program lisptoc.c
+
+Function file_read_nodes_and_links( ) 
+
+This function is called when the user executes a load-lisp-file command.  The function attempts to open the file if it exist.  The firstnode and firstlink pointers are allocated memory spaces in preparation to accept data.  The file is loaded and then closed.
+
+Function getnode( )
+
+This is a recursive function that continually gets nodes until two right parentheses appear in the file, signifing all nodes have been read.  The nodes are transfered from the file to the memory spaces allocated for the nodes.  The last node's pointer to the next node is set to null to terminate the node list.
+
+Function getlink( )
+
+This is a recursive function that continually gets links until two right parentheses appear in the file, signifing all links have been gotten.  The links are transfered from the file to the memory spaces allocated for the links.  The last link's pointer to the next link is set to null to terminate the link list.
+
+Function clean( )
+
+Function clean( ) cleans a string by removing all quotes and parentheses, which are present in the Lisp formats.  It does this by reading a character, and then placing the character into the a new string only if the character is used in the browser's text.
+
+Program nodelink.c
+
+Function show_nodes( )
+
+Function show_nodes( ) is used to display important information about each node.  This function is not used by the browser but may be useful for debugging purposes.
+
+Function show_links( )
+
+Function show_links is used to display important information about each link.  This function is not used by the browser but may be useful for debugging purposes.
+
+Function number_of_nodes( )
+
+This function returns the number of nodes in the nodes list.  This function is used when laying out the nodes in a circle.  The number of nodes indicate how many pieces to divided the circle into for proportional spacing.
+
+Function find_link_Xpos( )
+ 
+This function returns the x coordinate of a given link.  It is used to set the x coordinate(s) of a node's link(s).
+
+Function find_link_Ypos( )
+ 
+This function returns the y coordinate of a given link.  It is used to set the y coordinate(s) of a node's link(s).
+
+Function set_link_coordinates( )
+
+This function sets the start, middle, and end coordinates of each link.  The middle coordinate is set differently when the link is pointing downwards versus when it is pointer upwards.   This is for balance spacing between objects.
+
+Function UpdateLinks( )
+
+When a node is moved, the coordinates of all of the links connect to it need to be adjusted.   Function UpdateLinks( ) searches the links list for all links that are connected to the moved node, and re-adjust their coordinates.
+
+Function drag_node( )
+
+This function drags a node by setting it coordinates to the coordinates passed to it--usually the current cursor position.
+
+Function drag_link( )
+
+This function drags a link by setting its coordinates to the coordinates passed to it--usually the current cursor position.
+
+Function selected_node( )
+
+This function returns a pointer to the node selected.  It does this by examining the coordinates of each of the elements in the node list and seeing whether any nodes is in the area of the mouse cursor.  If none of the nodes are selected, null is returned to indicate this.
+
+Function selected_link( )
+
+This function returns a pointer to the link selected.  It does this by examining the coordinates of each of the elements in the link list and seeing whether any links is in the area of the mouse cursor.  If none of the links are selected, null is returned to indicate this.
+
+Function CreateLink( )
+
+This function adds a link to the links list.  Memory is allocated for the new link, the attributes of the link are set, and pointers in the links list are re-adjusted to include the new link.
+
+Program layout.c
+
+Function create_circular_layout( )
+
+This function layouts nodes in a circle.  It does this by making the circle diameter slighter shorter than the shorter dimension of the window, dividing the circle into the same number of pieces as the number of nodes, and finally placing each node on each piece of the circle.
+
+Function create_link_layout( )
+
+This function sets the coordinates for each of the links in the links list.  There are tree pairs of coordinates:  the start, middle, and end of each link.  The field link->type_x_disp contains a displacement used to center the link type text.
+
+Function ClearLayout( )
+
+This function deallocates the nodes and links list from memory by freeing each element until the end of the list is encountered.  The list heads are set to null to signify an empty list.
+
+Function save_layout( )
+
+This function is called when the command save is issued.  This function saves a graphical browser layout file.  All nodes and links are written to the layout file unformated and then the file is closed.
+
+ Function load_layout( )
+
+This function is called when the command load is issued.  This function loads a graphical browser layout file.  All nodes and links are read from the layout file unformated.  Memory is allocated for each node and link.  The default layout is a circle and the canvas size is adjusted to fit the circle.
+
+Program graphics.c
+
+Function DrawLink( )
+
+Function DrawLink( ) draws a link by drawing the first half, the last half, the link type name, and lastly the arrowhead.  The rather intimidating-looking code calculates the following:
+
+1.  The slope of the line formed by the link.
+2.  The length of the link.
+3.  Each of the points that delineates the shape of the arrowhead.
+
+The slope of the last half of the link indicates which direction the arrowhead should point.  The region delineated by arrow points are then filled with black to show the arrowhead.
+
+Function print_right_footer( )
+
+This function prints a string on the bottom right-hand corner of the browser window.
+
+Function print_left_footer( )
+
+This function prints a string on the bottom left-hand corner of the browser window.
+
+Program menu.c
+
+Function link_source( )
+
+This function is called when the user selects the choice link source from the menu.  It checks if a node is selected and calls get_link_panel( ) to get the link type.  The type is stored in the variable link_type, which is used later in completing the link creation process.
+
+Function link_dest( )
+
+This function completes the link creation process when the menu choice Link Destination is chosen.  A new link is created in the links list and the window is redrawn to show the new link.
+
+Function setup_menu( )
+
+This function sets up the menu by indicating the menu choices and the function to call for each choice.
+
+Program panel.c
+
+Function save_link_type( )
+
+This function closes the window used to get the link type.  The link type selected by the user is placed in the variable link_type, and link_type is subsequently retrieved in menu.c to be stored and displayed.
+
+Function cancel_link_type( )
+
+This function nullifies the Link Source operation in the menu.  The panel window is cleared and the icon is unselected.  Currently, this function is not being used by the browser, but it can easily be integrated into the browser for extensions.
+
+get_link_panel( )
+
+This function creates a window and a number of link types as choice panels.  When a panel is selected, the function save_link_type( ) is called to save the panel choice.
+
+Program cursor.c
+
+Function normal_cursor( )
+
+This function changes the cursor to it normal appearance, which is a pointer.
+
+Function cursor_off( )
+
+This function makes the cursor invisible by making all bits null.
+
+Function CursorImage( )
+
+This function turns the cursor to the server image passed to it.  The browser currently does not use this function, but it may be useful for the extension of the browser.
+
+Function CursorPixmap( )
+
+This function turns the cursor into the XPM icon passed to it.  When an icon is selected, the cursor changes to the icon image through this function.  
+
+Program icon.c
+
+Function load( )
+
+Function load_icons reads each of the icons used by the browser from the disk to memory.  Each icon is stored in its own XpmIcon variable.  The XPM function XpmReadFileToPixmap( ) does the transfer.
+
+Function setup_icons( )
+
+This function examines the node type for each of the nodes and assigns the appropriate icon to it.  It does this by making the XpmIcon pointer in the node pointer to its icon in memory.
+
+Function ShowIcon( )
+
+This function displays an icon by using the icon pixmap as a pattern in the graphical context.  The graphical context is a record that contains many attributes of the drawing area such as foreground and background color.  If the icon is highlighted/inverted the foreground and background are reversed.
+
+Program xpm.c
+
+Function xpm_main( )
+
+This function initializes the Xt toolkit so that the XPM icons can be used.
+
+Program tree.c
+
+Function CreateTree( )
+
+This function takes the nodes and links lists and convert them into a tree.  The nodes and links must be a tree for this function to work.  It works in the following manner:
+
+1.      A node is made a child to its parent if the parent does not already have a child.  
+
+2.      If a parent has a child the node is made a sibling of the child.
+
+3.      If the child already has a sibling, the node becomes the last sibling.
+
+The above steps are done for each node in the nodes list.
+
+Function SetTreeCoordinates( )
+
+This function sets the coordinates for each of the nodes in the tree layout.  This is a recursive function that traverses the tree set up by CreateTree( ) and then assigns the node coordinates.  The traversal is done, starting from the root node, in the following order :
+
+1.  Traverse the child of the node.
+2.  Then traverse the siblings of the child.
+
+If we visualize the tree as having tree levels and growing to the right right, then the order of traversal is:  root node (node 1), root node's child (node 2), node 2's child (node 3), node 3's sibling (sibling 1), sibling 1's sibling, etc.  A graphical representation of this is:
+
+	3 
+       /
+     2  
+   /   \
+1       4
+   \ 
+      5 - 6
+	\
+	   7
+
+The numbers indicate the order of the traversal.  At each step the coordinates are assigned.  A child is positioned to the right of its parent, and a sibling is placed below the previous sibling.  A parent's position is then adjusted to be symetric with its children.  The y coordinate of the lowest node and the x coordinate of the most right node are saved so that the canvas can be adjusted to the size of the tree.
+
+Program Testing
+
+
+Problems Encountered
+
+The browser initially contained a number of problems.  Most problem have been rectified.  The problems that still exist are:
+
+	An icon can be dragged out of the browser window.  The icon then cannot be t scroll into that area.  
+
+	There is no error checking for incoming nodes and links information.  I
+
+	The window scrolls too slowly when the scroll arrows are pressed.  The number of 
+
+No other problems have been discovered.
+
+Possible Improvements
+
+Some of the possible improvements for the browser are:
+
+	Making the links an arc when they are bent would be more aesthetic in 
+
+	Implementing heuristics for displaying the most readable layout of nodes and 
+
+	Customizing layouts allowing for partial layouts and layout contraints.
+
+	Creating a zoom in/out function allowing for the display and storage of information at different levels.
+  
+Positive Experiences
+
+The browser has a number of wonderful features.  Among them:
+
+	It is extremely fast in performing all current functions, all of which are accomplished in a fractions of a second.
+
+	Its graphical nature allows for easy-of-use and it is easy to learn.  
+
+	All graphical manipulations are refined and quick.
+
+	It can be easily modified.
+
+Conclusion
+
+Evaluation of Success
+
+A measure of success is how closely the final product satifies the initial software specifications. 
+
+The specifications for the graphical browser was that it :
+
+1.  Be X Windows based
+2.  Be efficient
+3.  Have user-definable unique icons for each entity type
+4.  Have labels for icons and links
+5.  Have a built-in tree layout
+6.  Allow for a customized layout
+7.  Be able to save and retrieve layouts
+8.  Have a seamless integration with an Emacs/EGRET process
+9.  Support aggregation, i.e., zoom in/out
+
+All features specified above has been implemented except for specification number six and nine.  The functions completed so far present a very optimistic sign that the browser could soon become a fully functioning and productive program with future extensions.  The author foresees the methods by which the unfinished functions can be accomplished, but has not implemented them functions due to time contraints.  In the opinion of the author, the major risks involved in the creation of the graphical browser has been overcomed.  
+
+Information learned
+
+In the course of planning and implementing the graphical browser, the author has read papers on the following topics:
+
+1.  EHTS graphical browser
+2.  EGRET graphical browser
+3.  XPM format
+4.  Slingshot extensions to XView
+5.  Drawing graphs
+6.  XView and Xlib
+
+The first five topics gave the author a good idea of the framework which he was working in.  But the most important document was the XView Programming / Reference Manual for XView and Xlib Programming / Reference Manual for Xlib, both of which he spent many hours scrutinizing.  These books have many useful yet simple examples on how to use various objects.  The author has learned the use of almost all objects in XView.  Among them:
+
+ Frames  
+ Canvases  
+ Panels  
+ Notifier  
+ Scrollbars 
+ Menus 
+ Cursors
+
+XView is a wonderful software development environment.  Its object oriented nature makes implementing objects simple and coding functions concise.  Also, it is easy to access information on various objects such a canvas or panel.  
+
+In designing icons, the author has realized some important points.  Icons should be:
+
+	Simple in appearance  Do not use too much details, because they are difficult to see anyway.  The graphics should convey one thought.
+
+	The right size  Small icons convey too little and large icons convey too much information.  Also, large icons take up too much space.  The ideal size for browser icons was about 32x32 bits.
+
+	Three dimensional in appearance  This helps to make it more of a "real" object.
+
+The UNIX programs "indent" and "cb" are great at formatting C code to be used in the source code documentation.
+
+Closing Comments
+
+Working on the browser has been a fun and very educational experience.  It is exciting to be in an effort that will grow to be a useful software system.  I hope future programmers will be able to make good use of this document and the graphical browser program.  
+
+Acknowledgment
+
+
+I would like to thank Professor Philip Johnson for providing me with the opportunity to work with XView and X Windows.  The Sun Workstation, UNIX, and the X Windows environment is certainly the most advanced and exciting system I've ever worked on.  
+
+Also, I would like to thank Dadong Wan for providing major specifications used to create the browser.  He provided me with papers and manuals relevant to the browser project, and he helped set up my X Windows working environment.  
+
+References
+
+
+1.      Arnaud Le Hors, "XPM Manual," 1990-92.
+
+2.      Dadong Wan, Danu Tjahjono, and Kiran Kavoori, "EB:  A Graphical Browser/ Interface to EGRET Using GARNET," 1992.
+
+3.      Giuseppe Di Battista, Peter Eades, and Roberto Tamassia, "Algorithms for Drawing Graphs: an Annotated Bibliography,"  1993.
+
+4.      O' Reilly & Associate, Inc, XView Programming Manual for XView Version 3,  1991.
+
+5.      Uffe Kock Wiil, "Issues in the Design of EHTS:  A Multiuser Hypertext System for Collaboration," 1991.
+
+6.      Uffe Kock Wiil, "Using Events as Support for Data Sharing in Collarborative Work," 1991.
+
+7.      Uffe Kock Wiil and Claus Bo Nielsen, EHTS Browser,  1990.
+
+Appendix A
+ 
+Index of Functions
+
+Function                                        Program Located in
+_________________________________________________________________
+cancel_link_type( )                             panel.c
+clean( )                                        lisptoc.c
+ClearLayout( )                          layout.c
+create_circular_layout( )                       layout.c
+create_link_layout( )                   layout.c
+CreateLink( )                           nodelink.c
+CreateTree( )                           tree.c
+cursor_off( )                           cursor.c
+CursorImage( )                          cursor.c
+CursorPixmap( )                         cursor.c
+drag_link( )                            nodelink.c
+drag_node( )                            nodelink.c
+drag_proc( )                            event.c
+DrawLink( )                             graphics.c
+emacs_read_nodes_and_links( )           lisptoc.c
+event_proc( )                           event.c
+file_read_nodes_and_links( )                    lisptoc.c
+find_node_Xpos( )                               nodelink.c
+find_node_Ypos( )                               nodelink.c
+get_link_panel( )                               panel.c
+getlink( )                                      lisptoc.c
+getnode( )                              lisptoc.c
+link_dest( )                            menu.c
+link_source( )                          menu.c
+load_icons( )                           icon.c
+load_layout( )                          layout.c
+main( )                                 gb.c
+normal_cursor( )                                cursor.c
+number_of_nodes( )                      nodelink.c
+print_left_footer( )                            graphics.c
+print_right_footer( )                           graphics.c
+repaint( )                                      event.c
+repaint_all_windows( )                  event.c
+repaint_proc( )                         event.c
+save_layout( )                          layout.c
+save_link_type( )                               panel.c
+select_proc( )                          event.c
+selected_link( )                                nodelink.c
+selected_node( )                                nodelink.c
+set_link_coordinates( )                 nodelink.c
+SetTreeCoordinates( )                   tree.c
+setup_event( )                          event.c
+setup_icons( )                          icon.c
+setup_menu( )                           menu.c
+setup_notifier( )                               interface.c
+show_links( )                           nodelink.c
+show_nodes( )                           nodelink.c
+ShowIcon( )                             icon.c
+stdin_parser( )                         interface.c
+UpdateLinks( )                          nodelink.c
+xpm_main( )                             xpm.c
+
+Browser Sourc

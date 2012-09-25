@@ -1,0 +1,385 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ieee93-measurement.tex -- 
+%% RCS:            : $Id: ieee93-measurement.tex,v 1.4 93/12/27 10:43:01 johnson Exp Locker: johnson $
+%% Author          : Philip Johnson
+%% Created On      : Mon Dec 13 09:08:00 1993
+%% Last Modified By: Philip Johnson
+%% Last Modified On: Wed Nov 23 12:17:59 1994
+%% Status          : Unknown
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1993 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+%% History
+%% 13-Dec-1993		Philip Johnson	
+%%    
+
+\section{High Quality Measurement in CSRS}
+\label{sec:metrics}
+
+\subsection{Coarse-grained measurement}
+
+Measurement of traditional manual review practice results in coarse-grained
+statistics concerning the {\em outcome} of review, such as the number of
+defects found, their breakdown with respect to the type and severity of
+defect, their relationship to the size of the artifact under review, and so
+forth.  Manual review practice also results in coarse-grained statistics
+concerning the {\em process} of review, such as reviewer-supplied estimates
+of the time spent preparing for review and participating in the meeting.
+
+Unfortunately, high quality collection of even these coarse statistics can
+be difficult and expensive.  Weller's report on 6000 manual review
+experiences at Bull HN states that the preferred method involved the
+transcription by clerical staff of paper-based review commentary into a
+PC-based record-keeping system, even though this introduced errors and led
+to the need for various ``data sanity'' checks by the technical
+staff\foot{This method was preferred even over direct entry by technical
+staff into a notebook PC during meetings.}.  A report on Digital's internal
+educational practice reveals that even after 10 years of experience with a
+software inspection curriculum, they were still unable to consistently
+train technical staff to effectively collect and utilize data on the review
+process \cite{Hutchings93}. As a final example, one respondent to our
+informal USENET survey on FTR noted that his organization had been
+collecting review data for over 10 years, but had never actually used any
+of it due to the overhead of manual collection, entry, and analysis. 
+
+By moving the review process on-line, CSRS trivially resolves some of
+the traditional difficulties and expenses associated with the collection of
+coarse-grained outcome statistics.  For example, Weller states
+that one of the two major sources of review measurement error in his
+organization is module size, presumably because this value is calculated by
+hand by clerical staff.  In an on-line system such as CSRS, however, the
+size of each review artifact is calculated automatically and reliably.
+Similarly, outcome-oriented data on the number of defects found, their
+breakdown with respect to type and severity, and the location of the source
+artifact in which they appear are reported by CSRS automatically and
+reliably in the Consolidated Report.  
+
+CSRS also provides coarse-grained process statistics concerning effort
+similar to those in traditional manual review.  Once again, reliable
+collection of coarse-grained process statistics is problematic in manual
+review methods.  For example, inadequate reviewer preparation for the group
+meeting is a substantial problem in traditional review \cite{Freedman90}.
+Rather than simply confess to insufficient preparation, a reviewer may
+instead try to ``bluff'' their way through the meeting, exaggerating their
+preparation time and then generating comments ``on the fly''.  Inadequate
+preparation can fundamentally undermine the entire review process and
+measurement interpretation, since it is difficult to distinguish the review
+of a high quality artifact by well-prepared reviewers (that generates a
+small number of minor issues) from the review of a moderate or low quality
+artifact by ill-prepared reviewers (that also generates a small number of
+minor issues.)  In traditional review practice, draconian responses are
+suggested to detect insufficient preparation, such as having the moderator
+omit one page from the review materials, and checking to see that all
+reviewers request the missing page before the group meeting begins
+\cite{Freedman90}.
+
+Once again, moving the review process into an instrumented, on-line
+environment can alleviate these difficulties.  CSRS keeps
+track of the effort spent by each reviewer during the analysis of the
+review artifact.  This information about each reviewer is also available to
+the moderator (although reviewers do not have access to each other's
+process statistics).  Thus, there is no ambiguity about the preparation
+effort, and while reviewers may not always adequately prepare, at least
+this fact will be visible and can be noted as a qualification to the review
+outcome.  Additional process support, such as quality assurance tests that must be
+explicitly checked off by the reviewers, can be used to increase the rigor
+and confidence in the review. 
+
+
+\begin{figure} 
+ {\centerline{\psfig{figure=coarse.ps}}}
+\caption{High quality, coarse-grained review measures.}
+\label{fig:coarse-grained}
+\end{figure}
+
+Figure \ref{fig:coarse-grained} shows a table containing coarse-grained
+outcome and process statistics from the Type-I review.  This table can be
+generated automatically by CSRS without any clerical transcription and
+without the need for data sanity checks by the technical staff. 
+
+\subsection{Fine-grained measurement}
+
+The fact that CSRS simultaneously increases the quality of coarse-grained
+statistics about review process and outcome and decreases the overhead of
+their collection is a useful contribution.  CSRS goes even farther than
+this by providing high quality collection of {\em fine-grained} statistics
+about review process and outcome, again without incurring review overhead.
+
+Fine-grained outcome statistics include the number of minutes spent by each
+reviewer on each hypertext node in the review artifact.  The Source-nodes
+Summary window in Figure \ref{fig:initial-screen} shows one place in which
+this data is available in an on-line, cumulative fashion; CSRS can also
+generates spreadsheet data files containing this information.  Fine-grained
+process statistics include the precise sequence of actions taken by
+reviewers to perform the analysis, including how the review artifact was
+initially read, how many sessions of what duration were required, when and
+how issues were generated, and so forth.  Fine-grained statistics about
+outcome and process provide a qualitatively different level of insight that
+opens the way to new forms of inquiry into formal technical review.
+
+The ability of CSRS to collect fine-grained measures is a result of a
+combination of design decisions.  First, CSRS re-represents all review
+artifacts as a hypertext document, where each node contains a single
+semantic ``unit'' of the artifact at a fine grain size. As
+discussed in Section \ref{sidebar:ftr-systems},  other
+computer-supported review environments represent review artifacts at a
+coarser grain size, such as the file or document level, or do not exploit
+the use of hypertext for instrumentation. 
+
+Second, CSRS monitors each reviewer as they use the system, and
+unobtrusively generates a log file of timestamped ``CSRS events'' in
+background during each session. This log file is cached locally at the
+client process during the session, then written out to the database server
+process at disconnect time.  CSRS provides a variety of tools for
+post-processing of this raw instrumentation data.
+
+Given that each node appears in its own window, CSRS can detect the focus
+of reviewer attention by generating events to record display and dismissal
+of each CSRS node during the review session.  CSRS also records the
+occurrence of interesting reviewer actions, such as voting or marking a
+node as reviewed, that do not result in window activity.
+
+\begin{figure} 
+ {\centerline{\psfig{figure=event-log.ps}}}
+ \caption{An example event log from the first minute of one review session.}
+\label{fig:event-log}
+\end{figure}
+
+Figure \ref{fig:event-log} shows a small portion of the timestamped event
+log for the Type-I review. (Over 4300 timestamps were generated during
+this review.)  It is easy to see that certain measures, such as the
+elapsed time a node is reviewed, could be calculated by simply subtracting
+the time that a node is closed from the time the node is read from the
+server database process.
+
+Although this approach appears reasonable at first glance, our initial
+experiences (in reviews prior to Type-I) quickly demonstrated otherwise.
+In a multi-tasking, multi-windowing system such as Unix and X-windows,
+reviewers may interrupt their CSRS activities to read their e-mail or
+perform other computer-related functions.  Perhaps the phone rings, or a
+colleague interrupts with unrelated business.  When dedicated workstations
+are involved, a reviewer might leave the CSRS system up and running over
+the weekend in the middle of review, as we discovered to our chagrin when
+we measured an apparent effort of over 50 hours by one reviewer for a small
+5 line function!
+
+To account for each of these types of idle time, we augmented the ``top
+down'' timestamping with a timer-based, ``bottom-up'' timestamp process
+that wakes up once per minute, determines whether there has been any
+low-level editing activity (such as a keypress or mouse movement) within
+CSRS during the past minute, and if so, generates a ``busy'' timestamp in
+the event log. 
+
+This combination of top-down and bottom-up timestamping has proven to be very
+effective: it provides us with a record of the ``interesting'' user
+activities from a measurement perspective, as well as providing an accurate
+reflection of the time spent by the reviewer actually working with CSRS,
+with a precision of plus or minus one minute. 
+
+We have investigated one potential flaw in this approach: what about a
+reviewer who simply ``stares at the screen'' for many minutes at a time?
+CSRS would represent such behavior as idle time, even though the reviewer
+was hard at work.  Fortunately, empirical analysis of our timestamp logs
+indicates that such a behavior rarely, if ever, happens, at least during
+our laboratory studies.  We investigated this by calculating the
+inter-event interval for top-down events and found that timestamps are
+typically generated less than 30 seconds apart over 80\% of the time, less
+than a minute apart over 90\% of the time, and less than three minutes
+apart over 98\% of the time.
+
+Once again, the hypertext structure of the review artifact plays an
+essential role in high quality data collection. Since the artifact is
+presented to the reviewer in individual small nodes, it appears to be very
+rare that a user will spend many minutes on a single node without {\em any}
+keyboard activity (including scrolling the screen, moving the mouse to
+``keep your place'', etc.)
+
+\section{Applications of High Quality Measurement}
+\label{sec:applications}
+
+\subsection{Improving coarse-grained measurement applications}
+
+High quality, fine grain measures of FTR provided by CSRS
+improve traditional empirical inquiries into FTR-based software
+quality improvement, as well as support entirely new forms of empirical
+investigation.
+
+FTR measures are commonly used to provide insight into review productivity,
+such as the number of errors found per unit size of an artifact, and the
+cost to detect them.  Researchers suggest that such a cost-effectiveness
+metric can be used as a driver for changes to the FTR process, such as
+increasing or decreasing the number of reviewers, shortening or lengthening
+the review time, changing the specific analysis technique used for review,
+and so forth.
+
+While feasible in principle, such empirically-based process improvement is
+very difficult to practice with traditional, manual methods.  First, as
+noted above, collection and analysis of FTR data is very expensive and
+requires significant quality assurance\foot{In other words, the quality
+assurance data requires quality assurance :-)}.  Thus, an organization must
+be willing to commit new resources over and above the basic resources for
+FTR.  In effect, management is betting that this additional investment will
+result in data that can be used to improve the quality and efficiency
+enough to offset this investment.  This may explain why only very large
+corporations with a strong commitment to process improvement have published
+findings on FTR measurements, and why our informal USENET survey finds such
+low percentages of FTR data usage.
+
+Second, in order to provide a scientifically sound basis for process
+change, the organization must be willing to undertake FTR under controlled
+experimental conditions in order to minimize the effect of extraneous
+procedural variables on the outcome data. In addition, the organization
+must replicate the FTRs enough to yield statistically significant
+conclusions that warrant changes to the FTR process.  Once again, only very
+large corporations have the time and sufficient numbers of FTRs required to
+perform such empirically-justified process improvement.  FTR data published
+by different organizations is virtually incomparable, since these studies
+do not specify the technique or control its application sufficiently to
+support experimental replication within another organization.
+
+CSRS addresses both of these issues.  First, collection of FTR data in CSRS
+is automated, and CSRS provides analysis tools to automate the generation
+of many popular measures of cost-effectiveness from the raw data.  Thus, an
+organization needs commit only the resources for formal technical review;
+no additional resources are required for measurement collection and initial
+analysis.
+
+Second, CSRS intrinsically controls for many of the extraneous variables
+that can weaken the validity and comparability of manual FTR measurements.
+Since the review process is on-line, and since CSRS can enforce a
+particular process and analysis technique, review experiment designers can
+both specify a particular style of review, and analyze the data to see if
+it was actually followed.  As a result, CSRS data is much more amenable to
+cross-organizational comparison than any manual technique.  This means that
+smaller organizations with less resources can both contribute to and profit
+from the experiences of others with CSRS.  (As CSRS technology is
+transferred into industry, we intend to set up an on-line public database
+of CSRS metric data to support such inter-organizational cooperation.)
+
+\subsection{Fine-grained measurement applications}
+
+While CSRS can provide significant improvement to traditional
+coarse-grained measurements of FTR, perhaps the most exciting aspect of its
+design is that it enables entirely new forms of inquiry into review
+processes through fine-grained instrumentation. In this section, we will
+overview two ongoing research studies that exploit this capability.
+
+
+\subsubsection{Complexity/Effort Relationships}
+
+The overall effort required for formal technical review is difficult to
+predict at other than very general levels, such as ``15\% of the entire
+software development effort''.  This information is useful from a
+historical perspective, but provides little help to allocating specific
+resources to specific review artifacts.  The need for better estimators of
+review effort has long been identified as an important open problem in
+review practice \cite{Fagan86}.
+
+The fine-grained instrumentation in CSRS provides a novel approach to this
+problem.  Since both the review artifact and the precise time and effort
+spent upon each component of it by each reviewer are captured by the
+system, it may be possible to correlate features of the review artifact to
+effort expended and generate a predictive measure of effort.  A
+sufficiently precise correlation would allow an organization to predict the
+resources required for review activities based upon the complexity computed
+for the code, or conversely, to fit the set of artifacts to the resources
+available for review.
+
+We are currently studying this possibility for the review of code 
+artifacts.  In this study, we are investigating the relationship of 
+review effort to three size-based measures of software complexity: Halstead's 
+volume measure \cite{Halstead77}, McCabe's cyclomatic
+number \cite{McCabe76}, and lines of code.  
+
+\begin{figure}
+ {\centerline{\psfig{figure=complexity.ps}}}
+\caption{A scatter plot of review effort vs. one size-based complexity
+measure: lines of code.}
+\label{fig:scatter}
+\end{figure}
+
+Figure \ref{fig:scatter} illustrates some of the data we have collected so
+far.  There is no statistically significant {\em linear} correlation between effort and
+any of the three measures of complexity for this data set, although, with
+some imagination, a general positive correlation might be seen.  Thus far,
+lines of code is the most predictive of the three complexity
+measures. The most important result of these initial analyses has been a
+refinement of our experimental hypotheses.  We will continue to add new
+review experiments to our data set to see if, given an increased sample
+size, a statistically significant trend emerges.  In addition, these
+analyses have suggested to us that other factors, such as reviewer
+experience, may be an important influence on review effort.  We will be
+investigating these alternative hypotheses as well, which may result in a
+multi-factored predictive function of review effort, similar in spirit to
+the COCOMO model.
+
+\subsubsection{Protocol Analysis of Reviewer Behavior}
+
+If formal technical review methods are to reach their full potential, much
+more needs to be known about the details of both individual and group FTR
+behavior.  Past research on FTR has determined that the effectiveness of
+FTR will vary tremendously depending upon the review technique employed and
+the quality of the group process.  Yet little is known about the precise
+``styles'' of review adopted by different people, the structure and process
+of consensus building during review, and the effect of these behaviors upon
+the review outcome.  Precise measurement of the process of formal technical
+review is the first step toward understanding, and ultimately, improvement.
+
+The design of CSRS provides unique insight into the fine-grained process of
+individual and group review.  By breaking down a review artifact into
+its constituent components, representing it as an interlinked hypertext
+network, and recording the patterns of traversal and actions of the
+reviewers, CSRS provides a qualitatively different level of 
+process representation than is possible in other manual or automated
+approaches to review.
+
+This representation does, however, require automated support tools, since
+many thousands of individual timestamped review events are recorded during
+a typical review experience.  We have implemented a visualization tool for
+review called Timeplot to support our initial inquiries in this area.
+Timeplot processes the review event logs, and automatically generates a
+LaTeX document illustrating the contents of each CSRS screen during each
+minute of review.  Timeplot also reveals patterns of idle time during 
+a review session.  Figure \ref{fig:timeplot} shows the process 
+of one review session generated by Timeplot for the exemplary review 
+experience. 
+ 
+
+\begin{figure}
+\input{timeplot.tex}
+\caption{An excerpt from an example Timeplot graph from one review
+session during the Type-I review. This session actually lasted for 
+22 minutes, but only the first 10 minutes are shown here.}
+\label{fig:timeplot}
+\end{figure}
+
+We are currently engaged in analyzing this fine-grained behavior from a
+variety of perspectives.  We are working on a grammar-based approach to
+extracting patterns from the sequence of reviewer actions, with the goal of
+identifying typical behaviors across reviewers, and to identify
+higher-level activities occurring during the review process.  Such work
+builds upon recent research in protocol analysis \cite{Smith91} and
+statistical techniques \cite{Gottman90}.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+

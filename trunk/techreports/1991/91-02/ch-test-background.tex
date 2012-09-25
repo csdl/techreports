@@ -1,0 +1,106 @@
+\chapter{Testing Concepts}
+\section{Introduction}
+
+Standard software engineering practice for testing involves several
+interrelated concepts.
+
+The {\em test framework}\/ describes and implements the set of
+functions and procedures that support definition of the test plan,
+test cases, test data, and test log.
+
+The {\em test environment}\/ specifies the required state of the
+environment that must exist in order to start running the test.
+
+The {\em test plan}\/ specifies the flow of control to be followed
+during the running of the test. In particular, it specifies the
+sequence of test cases to be run, and how this sequence changes in
+response to positive or negative results of previous test cases.  The
+test plan also specifies the results of the test in terms of the
+format of the test log.
+
+Each {\em test case}\/ specifies a test of some particular behavior,
+function, or other aspect of the system.  For example, each public
+operation and attribute of the system will have a corresponding test
+case.  Test cases can be further broken down into sets of test data.
+
+Each {\em test data}\/ item specifies (a) input to the system, (b) the
+state of the system during the test, and (c) the expected output.  For
+example, the server subsystem test case might have a test data item
+that requests connection to a particular server while the system is
+already connected to a server, and which expects the connection
+function to return a specific value that indicates this particular
+error.
+
+An integral part of the Egret environment is a testing environment,
+which supports the incremental definition of test cases and 
+regression testing of any subset of the Egret system after changes
+are made.  More specifically, the Egret testing environment 
+satisfies the following requirements:
+
+\begin{itemize}
+\item {\bf Background, batch operation.} Egret tests can be invoked
+  with a single command and then left to run test cases unattended.
+  The results of this run are accumulated in a log file.
+  
+\item {\bf Testing of all public operations and attributes.} All
+  public operations for a given class and subsystem have associated
+  test cases.  In general, all arguments to all public operations are
+  tested with valid values, invalid values, and invalid types of
+  values.  A test case for one public operation can implicitly presume
+  that all other public operations are implemented correctly.
+  
+\item {\bf Independence from private operations or encapsulated
+  representations.} The Egret test methodology is ``black box''.  Test
+  cases are generated from reference to the Design specification for
+  classes, not by reference to the code.  
+  
+\item {\bf Verification, not diagnosis.} The goal of a test run is
+  determine that the system either (a) passes testing, or (b) fails
+  testing.  The Egret test environment does not currently support any
+  diagnosis of the reasons for test failure.
+  
+\end{itemize}
+
+\section{Test Case Design Heuristics}
+
+While the types of tests for a particular class are in general
+domain-specific, there are a few broadly applicable guidelines 
+useful in generating test cases across many classes. These are
+enumerated below:
+
+\begin{itemize}
+  
+\item Invoke each operation with invalid data at the type and the
+  value level.  For example, the attribute {\bf s*node*name} accepts a
+  node-ID as its argument.  This attribute should be tested by passing
+  {\bf s*node*name} both a string (i.e. the wrong type of argument) and
+  an integer that is guaranteed not to be a valid node-ID (such as -1).
+  
+\item Set, then test the state of the system as reified by attributes.
+  For example, invoke {\bf s*node*set-name} on a newly created node to
+  change its name, then use {\bf s*node*name} to see if the name was
+  actually changed.
+  
+\item Set, then test the state of the system as reified by global
+  structures.  For example, an implicit result of creating a node
+  should be a change in the collection operation {\bf s*\{node\}*IDs}.
+  
+\item Test the recovery operations.  This is difficult, since
+  corrupting the tested state normally requires access to the
+  internal, private state.  An alternative method is to assume the
+  current state is correct, invoke the recovery operations, and see if
+  the rebuilt state matches the previous one.
+  
+\item Test concurrent and cooperative access. Automating this kind
+  of test requires a shell script that starts up two Emacs processes,
+  changes the user-name of one of them, then tests locking, event
+  propogation, and so forth while sychronizing the two subprocess
+  accesses to the database.  The Egret test framework does not 
+  currently provide these facilities, although test cases (which 
+  always fail) could be written to describe the kinds of tests that
+  should be performed manually by test teams.
+  
+\end{itemize}
+
+The next chapter presents a more detailed look at the Egret testing 
+environment.

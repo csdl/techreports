@@ -1,0 +1,335 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% cscw94-urn.tex -- 
+%% RCS:            : $Id: cscw94-urn.tex,v 1.11 94/02/08 15:39:38 rbrewer Exp $
+%% Author          : Robert Brewer
+%% Created On      : Thu Feb  3 10:22:26 1994
+%% Last Modified By: Robert Brewer
+%% Last Modified On: Tue Feb  8 15:39:29 1994
+%% Status          : Unknown
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1994 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+%% History
+%% 3-Feb-1994		Robert Brewer	
+%%    Created
+
+\section{COLLABORATIVE USENET PARTICIPATION WITH URN}
+
+To better understand the information overload problem and to explore
+approaches to effective information management in Usenet, we designed,
+implemented, and evaluated a collaborative system called URN.  This section
+presents URN's requirements, design, implementation, and relationship
+to other Usenet interfaces.  The next section will discuss our results from
+its evaluation.
+
+\subsection{Requirements}
+
+The design of URN is influenced by the following essential requirements,
+which we believe must be satisfied by any system providing effective
+information management in Usenet.
+
+\begin {itemizenoindent}
+
+\item {\em URN must provide a representation of the user.} The range of
+  domains in Usenet, and the variety of users require an effective information
+  management technique to explicitly represent users and their interests.
+  Given the dynamic nature of both Usenet domains and user interests, the
+  representation should be adaptive and provide confidence levels. For example,
+  it should distinguish between topics for which the user evidences a strong
+  interest, topics for which the user evidences a strong disinterest, and topics
+  for which URN has no evidence of the user's level of interest.
+  
+\item {\em URN must provide an improved representation of Usenet
+  articles.} The effectiveness of current information management systems
+  for Usenet is vastly circumscribed by the poor quality of their
+  representations. This poor quality results from two features. First,
+  representations at the level of newsgroups are too coarse. For example,
+  comp.software-eng is too coarse a representation of a user's interests for
+  effective assessment of individual article relevancy.  Second,
+  representations at level of individual articles (i.e. based upon the
+  Subject line or References line) is frequently inadequate or wrong.  For
+  example, subject lines frequently do not fully summarize the contents, or
+  even misrepresent them entirely.
+  
+\item {\em URN must introduce minimal overhead.} An information
+  management system that introduces substantial additional overhead beyond
+  that which Usenet already incurs will not be successful.  Any
+  ``investment'' the user makes in terms of URN overhead must ``pay off''
+  directly in terms of improved Usenet information access.
+  
+\item {\em URN must exploit the power of collaboration.} The preceding
+  requirements create a dilemma: URN must provide new, explicit
+  representations for users and information, yet do so without introducing
+  excessive overhead.  We believe collaboration is the only effective means
+  to increase the representational quality and expressiveness of a Usenet
+  information management system without introducing excessive overhead on
+  individual users.
+\end {itemizenoindent}
+
+\subsection{Design}
+
+To satisfy these requirements, the design of URN incorporates three
+intertwined design features.  First, URN provides a weighting mechanism
+that explicitly represents both the level and confidence associated with
+interests.  Second, URN provides a simple voting mechanism as part of its
+navigation facilities that enables users to express their interest in an
+article without incurring any additional overhead.  Third, URN provides a
+method for users to improve the quality of representation of individual
+articles by editing a default list of keywords generated automatically for
+each article by URN.  Each of these design features are discussed in more
+detail below.
+
+\subsubsection{Weighting Functions}
+
+Conceptually, a weighting function takes a feature of an article and a user
+as input, and returns an integer value representing the level of interest
+that the user has displayed in that feature.  Highly positive values
+indicate that the user has expresses highly predictable interest in
+articles with this feature, while highly negative values indicate the
+reverse.  URN might represent our hypothetical Apple lover with one
+weighting function that assigns a moderately negative weight to articles
+related to IBM, and another weighting function that assigns a high positive
+value to articles related to Apple.
+
+Given a set of features associated with an article, a prediction of
+the user's interest in an article can be made by simply summing up the
+values returned by the weighting function for each feature.  The user can
+then order articles by interest level (``weight'' is somewhat of a
+misnomer, considering that articles with high weight rise to the top).
+
+For example, given the weights described above, an article discussing an
+Apple/IBM partnership would get a low positive rating because the moderate
+negative weight associated with IBM would be added to the high positive
+weight associated with Apple. Because conflicting weights indicate
+representational uncertainty about the relevancy of an article to a user,
+negative weighting functions make a smaller relative contribution than
+equivalently positive weighting functions to the total value attributed to
+an article. This means that URN tends to give higher rankings to articles
+for which it has been provided with ``mixed messages''.
+
+%%% The weighting is performed by an autonomous background process that
+%%% computes the weights of all the Usenet articles in the current database for
+%%% each user.  This computation is performed during off-peak hours and cached
+%%% to improve the responsiveness of the system.
+
+\begin{figure*}[t]
+  {\centerline{\psfig{figure=figures/sbuff.eps}}}
+  \caption{The URN Unread Article Selector.  The second column displays the
+  weights assigned to each article by URN, based upon the votes applied to
+  similar articles by this user in the past.  Weights of 0 typically
+  indicate that URN does not have any information about the user's
+  interests relevant to assessing the article.}
+  \label{fig:sbuff}
+\end{figure*}
+
+
+\subsubsection{Voting}
+
+Article weighting overcomes one of the problems associated with current
+Usenet information practice, since it explicitly represents both interest
+and non-interest at the article level.  However, manual generation and
+maintainance of these values would be error-prone and introduce substantial
+new overhead.  For this reason, URN completely automates the generation and
+maintenance of weighting functions based upon a simple voting mechanism. To
+indicate that they are finished with an article, users press one of three
+keys indicating that the article was: interesting, ambivalent, or
+uninteresting.  The design of explicit voting requires a careful balance
+because if users are asked to do too much rating, they will become annoyed
+and stop giving useful ratings.  While some interest level information
+might be inferred indirectly from user actions (such as not completely
+displaying the entire article before moving on to the next one), the more
+simple strategy of explicit voting appears more robust.  We believe that
+our three level rating system presents a low enough overheard that that
+users will make use of it.
+
+The next section on the implementation of URN describes in detail how 
+votes are transformed into weighting functions. 
+
+\subsubsection{Collaborative Article Representation}
+
+A second problem introduced by weighting functions is the requirement for
+each article to be represented in terms of a set of features.  As noted
+previously, a fundamental problem with Usenet is that it encompasses a
+virtually unbounded set of domains, and the structure imposed upon
+individual articles is insufficient for both precise and accurate
+representation of article content.  To resolve this, URN generates a
+default list of keywords to be associated with each article, which can then
+be edited by any user to better conform to the true content of an article.
+This keyword-based representation of article content is shared by all
+users, which means that the overhead of its construction and maintenance is
+also shared among all users.  
+
+Having now overviewed the essential requirements and major design features
+of URN, the next section presents details of its implementation.
+
+
+\subsection{Implementation}
+
+URN is implemented using Egret, a Unix/X-window environment for the
+implementation of exploratory collaborative hypertext applications
+\cite{csdl-91-03,csdl-92-01}.  Egret consists of a 20 KLOC server process
+written in C++, which communicates via TCP/IP to Lucid Emacs clients
+extended with 15 KLOC of Lisp. The URN application specializes Egret to
+Usenet with approximately four additional KLOC of Lisp.
+
+\subsubsection{Inputting Articles}
+
+URN keeps its own database of Usenet articles. Articles are read into the
+URN database periodically by an agent process via the NNTP protocol
+\cite{rfc977}.  As it reads in each article, keywords are extracted from
+the header of the article. The header fields Subject, Summary, Author, and
+Keywords from the original article are parsed into separate words. Next
+``noise'' words (such as ``the'', ``or'', ``and'') are removed and the words
+are converted to lower case.  These words are then stored with the article,
+and are called the article's keywords. We keep track of how many unique
+keywords are in the database, and the frequency of each keyword. Articles
+in a thread contain hypertext links to their neighbors.
+
+\subsubsection{User Interface}
+
+Once there are articles in the database, users connect to the database
+through an URN client. After connection, they are shown a list of all the
+articles in the database, sorted in descending order by weight (see Figure
+\ref{fig:sbuff}). Users click on any article from the list to retrieve and
+display it. Articles are displayed similarly to other news readers: the
+header lines are on the top, followed by the list of hyperlinks and
+keywords, and then the body of the article (see Figure \ref{fig:nbuff}).
+
+\begin{figure*}[t]
+  {\centerline{\psfig{figure=figures/nbuff.eps}}}
+  \caption{An Article Displayed with URN. Articles are displayed along
+  with a field containing a list of keywords representing the
+  collaboratively built, consensual representation of the content of this
+  article.}
+  \label{fig:nbuff}
+\end{figure*}
+
+From any article, the user can click on any of the highlighted links to
+move to the related article.  The user may also select any keyword in the
+Keywords field and delete it, or select text from the body of the article
+and add it to the Keywords field (Free-form entry of keywords not found in
+the article is also supported.) In this way, users collaboratively build a
+consensual representation of the contents of each article. In fact, one
+user may vote on an article, and later on another user may change the
+keywords associated with that article.  URN will then recalculate the
+weighting functions associated with the first user to correspond to the
+improved representation of the article.
+
+After reading the article, the user votes on the article as either:
+interesting, ambivalent, or uninteresting. This vote is recorded, and the user
+goes on to the next article in this thread. When users finish reading articles,
+they disconnect from the URN database to end their URN session.
+
+\subsubsection{Keyword Agent}
+
+After users vote on articles, a background process called the Keyword Agent
+takes their votes and turns them into weights. First, the agent reads a
+list of all keywords that have been manually added by users. The bodies of
+all articles in the database are then scanned for these words, and if any
+are found then those keywords are ``promoted'' to the Keywords field for
+the article it was found in. User keywords are treated this way because URN
+assumes that user-added keywords are more relevant than automatically-added
+keywords, and less likely to be bogus. The net effect is that if a user
+adds a keyword to an article, then the keyword is added to all other
+articles in the database containing that keyword in their body.
+
+Next, the Keyword Agent uses each user's votes to generate their weighting
+functions. URN's weighting functions are currently quite simple: a keyword
+and its associated weight. For each user of the system, URN assembles a
+list of all the articles that they voted as interesting.  URN then builds a
+list of all of the keywords from those articles, noting the frequency of
+each keyword. This is called the ``goodlist''.  URN does the same thing for
+articles that were voted as uninteresting, resulting in the ``badlist''.
+URN then compares the two lists and eliminates any keyword that appears in
+both lists.  For each keyword in the goodlist, URN computes a weight using
+the following formula:
+
+\begin{displaymath}
+W_g = f_l \cdot \frac{1}{f_g}
+\end{displaymath}
+
+where $W_g$ is the weight computed, $f_l$ is the local frequency of this
+keywords, and $f_g$ is the global frequency of this keyword. The local
+frequency of a keyword is simply the number of times it appeared in the
+goodlist. The global frequency of a keyword is the number of times it appeared
+in the whole database. By taking the product of the local frequency with the
+inverse of the global frequency, URN generates higher weights for rare
+words, and lower weights for more ubiquitous words
+\cite{cacm-infofiltering-92}.
+
+For each keyword in the badlist, URN computes a weight using the following
+formula:
+
+\begin{displaymath}
+W_b = - f_l \cdot \frac{1}{f_g} \cdot \frac{8}{10}
+\end{displaymath}
+
+where the variables are defined similarly to $W_g$. Note that bad weights
+are negative, and that for any given $f_l$ and $f_g$, $W_b$ will be smaller
+in magnitude than $W_g$ due to the constant term in the calculation of
+$W_b$.  As stated previously, URN does this to bias the system toward
+presenting irrelevant articles with false positive weights rather than
+missing relevant articles with false negative weights.
+
+Importantly, all the weighting functions are dynamic: they are recomputed
+each time the Keyword Agent runs. This allows the weights of articles to
+change over time as user interests change or new information about the user
+is provided.
+
+Once all individual weighting functions are generated, the Keyword Agent
+computes the new weights of all articles in the database for each user. For
+each article, the agent compares the list of keywords for that article to
+the list of weighting functions for a user. If there is a match, then that
+weighting function's weight is added to that user's weight for the article.
+
+
+\subsection{Other Usenet Readers}
+
+Many different programs have been written to read Usenet. What follows is a
+brief survey of some that are related to URN's goals.
+
+\subsubsection{trn, GNUS, etc.}
+
+These are the standard programs used by most Usenet users. They allow
+subscription to newsgroups and threads are explicitly represented. Typically a
+user will be shown a list of all the threads from a group, and the user can
+select any number to be read. The only filtering technique provided is kill
+files. There is primitive support for the automated creation of kill files
+(i.e. a user may ask to have the Subject line from the article they are reading
+deposited in their kill file). There is no support for signalling articles as
+especially interesting, nor is there any kind of collaboration support.
+
+\subsubsection{strn.}
+
+``Scan Threaded Read News'' is an enhanced version of trn. It adds the
+concept of virtual newsgroups which are categorizations of newsgroups by
+certain search criteria, and assigning ``scores'' to articles by patterns
+(similar to URN's weighting functions). Its scores can only be based on
+the header lines of an article, and they must be created manually. There is
+some collaborative potential available through sharing of ones' virtual
+newsgroup index files.
+
+\subsubsection{INFOSCOPE.}
+
+This newsreading tool allows the creation of virtual newsgroups
+via filtering \cite{chi-infoscope-91,cacm-infoscope-92}. The filters are
+generated by background agents that monitor users' activity and display their
+findings to the user, who can either accept or reject them.  The filtering is
+performed on individual users and INFOSCOPE does not provide any collaboration
+support.  The filters are a subset of boolean logic, and they only search
+header lines. It also provides a graphical user interface for browsing through
+the Usenet hierarchy. Because it derives all its information about articles
+through the header lines, it cannot determine that a thread's contents have
+changed from the actual Subject line.
+
+\subsubsection{Tapestry.}
+
+This collaborative document filtering tool \cite{cacm-tapestry-92} contains a
+complex query language (TQL) which users can use to write their own queries.
+Filters written in TQL can access ``annotations'' or ``endorsements'' created
+by other users in order to filter a message. These endorsements are similar to
+votes in URN, and allow for ``virtual moderation'' of newsgroups. However,
+filters must all be created manually by the user using TQL. Articles are only
+prioritized for display in the last step of the Tapestry process using a email
+client program that does not have access to the full TQL language.

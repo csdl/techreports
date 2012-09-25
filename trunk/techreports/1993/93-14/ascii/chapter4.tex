@@ -1,0 +1,686 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% chapter4.tex -- 
+%% RCS:            : $Id: chapter4.tex,v 1.9 94/04/07 21:20:09 dxw Exp $
+%% Author          : Dadong Wan
+%% Created On      : Mon Jul 26 20:56:26 1993
+%% Last Modified By: Dadong Wan
+%% Last Modified On: Thu Apr  7 21:19:23 1994
+%% Status          : Unknown
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1993 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+%% History
+%% 26-Jul-1993		Dadong Wan	
+%%    created. CLARE system: design and implementation
+%%% \documentstyle [12pt,/group/csdl/tex/definemargins,
+%%% /group/csdl/tex/lmacros]{report}
+%%% \input{/home/3/dxw/c/tex/psfig}
+%%% \special{header=/group/csdl/tex/psfig/lprep71.pro}
+%%% \begin{document}
+
+%%% \tableofcontents
+%%% \newpage
+%%% \pagenumbering{arabic}
+
+\setcounter{chapter}{3}
+\chapter{CLARE: the System}
+\label{sec:clare}
+
+CLARE is a computerized collaborative learning environment that implements
+the conceptual framework described in Chapter 2. This chapter provides an
+overview of the design and implementation of CLARE. Section
+\ref{sec:requirements} describes the requirements for the system. Section
+\ref{sec:c4-design} discusses two major design considerations: a combined
+object-oriented and layered approach, and the initial choice of services
+over interface. Section \ref{sec:architecture} describes the five
+architectural components: {\it kernel\/}, {\it exploration\/}, {\it
+consolidation\/}, {\it initialization\/}, and {\it utilities\/}. Section
+\ref{sec:interface} depicts the user interface. Section \ref{sec:roadmap}
+shows a road map that outlines major process steps that the user goes
+through in a typical session. The chapter concludes with a brief review of
+the development history of CLARE, and a report of its current status.
+
+This chapter is supplemented by a detailed design specification
+\cite{csdl-93-24}, and a user's guide to CLARE \cite{csdl-93-15}. Readers
+whose primary interest is in using the system should read the latter.
+Readers with the system designer and implementor perspectives might find it
+worthwhile to browse the former.  Readers with a research focus on CLARE
+should start with this chapter, and consult the other two documents as
+necessary.
+
+
+\section{Basic requirements}
+\label{sec:requirements}
+
+CLARE is a research tool. As such, it has three primary objectives: 1) to
+demonstrate the implementational viability of the proposed approach, that
+is, whether or not the approach can be implemented within the constraint of
+available resources; 2) to provide an instrumentation mechanism to capture
+the data necessary for gaining new insights on the nature of
+computer-augmented collaborative learning; and 3) to show that CLARE is a
+usable system to the potential user population. The first objective is
+bounded by the conceptual framework of the current research; it is called
+the {\it conceptual\/} requirement. The second aims at yielding new
+empirical understanding of the underlying process; it is the {\it data}
+requirement of the system. And, finally, it is the {\it usability
+requirement,\/} which ensures the resulting system is usable by the
+intended user. The following sections address each of the three
+requirements.
+
+
+\subsection{Conceptual requirements}
+\label{sec:conceptual-requirement}
+
+Conceptually, there are three key requirements for CLARE: (1) multi-user,
+distributed environment; (2) support for the RESRA representation language;
+and (3) support for the proposed collaborative learning model.
+
+\paragraph{As a collaborative system.}
+
+As a collaborative system, CLARE must support the following five essential
+functions:
+
+\begin{itemize}
+\item To allow multiple simultaneously connected users from physically
+  dispersed locations;
+  
+\item To ensure data consistency and integrity via concurrency control
+  mechanisms;
+  
+\item To maintain {\it What-You-See-Is-What-I-See\/} (WYSIWIS) among
+  distributed clients, i.e., synchronization of the client's views of the
+  shared data;
+  
+\item To provide capabilities to identify individual users and track
+  their status; and
+  
+\item To manage access and actions on the shared data, for example, not
+  allowing deletion of a node created by another user.
+\end{itemize}
+
+CLARE is primarily an asynchronous system. In other words, the {\it virtual
+co-presence\/} of multiple users in the system is not required for engaging
+online conversations. However, the effect from any user action ought to be
+communicated to all connected users in a consistent and transparent manner.
+
+
+\paragraph{As a representation-based learning system.}
+
+One key feature that differentiates CLARE from other collaborative learning
+systems is the embedded representation language, i.e., RESRA. In essence,
+CLARE is a RESRA-centered environment. Operations for manipulating RESRA
+primitives, templates, and instances constitute a core of that system.
+Specifically, CLARE must support the following capabilities:
+
+\begin{itemize}
+\item To define, update, annotate, instantiate, and view RESRA node and
+  link primitives;
+  
+\item To define, update, annotate, view, and associate RESRA templates with
+  specific artifacts;
+  
+\item To create, update, select, and navigate RESRA node instances;
+  
+\item To support context-sensitive creation and deletion of link instances;
+  
+\item To define, update, select, consult, and browse RESRA template
+  instances;
+  
+\item To define, update, and browse example RESRA node, link, tuple, and
+  template instances;
+  
+\item To support artifact-based comparison of node, tuple, and template
+  instances among different users; and
+  
+\item To generate hardcopy summary report of session activities.
+\end{itemize}
+
+The ability to extend RESRA by adding new node primitives, link primitives,
+and templates, and by amending existing ones is deemed essential to the
+long-term viability of RESRA. However, during an initial phase, such a
+feature does not have to be directly available to the user via interactive
+invocation. This restriction gives the user opportunity to gain a full
+grasp of the existing primitives and templates before attempting to invent
+new ones.
+
+
+\paragraph{As a collaborative learning system.}
+
+The term {\it collaborative learning \/} has a well-defined meaning in
+CLARE: the use of RESRA to represent, evaluate, deliberate, and integrate
+the thematic features of scientific text according to the SECAI learning
+model (see Section \ref{sec:secai} for details on SECAI). Below are a set
+of specific requirements derived from this model:
+
+\begin{itemize}
+\item RESRA-based operations should be structured into five groups, which
+  correspond to the five components of SECAI: {\it summarization\/}, {\it
+  evaluation\/}, {\it comparison\/}, {\it argumentation\/}, and {\it
+  integration\/};
+  
+\item CLARE's main functions should be partitioned into at least two main
+  modules, corresponding to the two phases of the SECAI model, i.e., {\it
+  exploration\/} and {\it consolidation\/};
+  
+\item Since exploration is a {\it private} activity, CLARE needs to provide
+  access control to ensure that a user at this phase is not allowed to view
+  or act on RESRA instances created by other users; and
+  
+\item The {\it anchor point} for exploration is the source nodes that
+  constitute the selected artifact; the anchor point for consolidation is
+  the RESRA representations of the contents of the selected artifact and
+  the points of view on the content from individual users.
+\end{itemize}
+
+The SECAI learning model is adaptable to support a variety of learning
+tasks. For example, with the omission of {\it summarization\/} and {\it
+integration\/}, the system can be used to critique peer's term papers or
+project proposals. Similarly, by importing an interesting thread from any
+newsgroup into CLARE, one may only need the {\it argumentation\/} functions
+to continue the discussion in CLARE. Such variations, however, go beyond
+the initial scope of this prototype.
+
+
+\subsection{Data requirements}
+\label{sec:data requirements}
+
+As a research tool, CLARE needs to be equipped with built-in
+instrumentation mechanism which gathers fine-grained process data.
+Specifically, such a mechanism must meet the following four requirements:
+
+\begin{itemize}
+\item Instrumented data points should be available for all important CLARE
+  operations;
+  
+\item Each data point should include the name of the operation, the order
+  and exact time of invocation, and the name of the user who invokes it;
+  
+\item Data capturing should be done in a non-obtrusive manner, and should
+  not incur substantial runtime overhead; and
+  
+\item Certain measures should be taken to maximize the validity of
+  the process data gathered, e.g., eliminating spurious elapsed time.
+\end{itemize}
+
+Ultimately, CLARE should have an analysis back-end which
+automatically extracts instrumented process and outcome data and exports
+them into a format importable to plot programs (e.g., {\sf gnuplot\/}), and
+statistical packages (e.g., {\sf SAS}, {\sf S Plus\/}). Currently, it is
+adequate that analyses be done on an ad hoc basis.
+
+
+\subsection{Usability requirements}
+\label{sec:usability requirements}
+
+Despite its research orientation, CLARE was designed to be used by users in
+real classroom settings. As a result, it needs to meet some minimal
+usability requirements, including:
+
+\begin{itemize}
+\item Abiding by established interface design standards, for example,
+  \cite{Apple87};
+  
+\item Response time for interactive commands should be acceptable; and
+  
+\item Examples should be provided whenever possible to show the user the
+  proper way of using the system constructs and functions.
+\end{itemize}
+
+In the initial prototype, no attempt is made to offer graphical means of
+browsing and manipulating RESRA instances. Hence, the usability or
+user-friendliness of CLARE is ultimately constrained by the textual nature
+of its interface.
+
+
+\section{Main design considerations}
+\label{sec:c4-design}
+
+CLARE is not a stand-alone system. Rather, it is a tool built upon a
+generic collaborative application platform called EGRET\footnote{EGRET,
+which stands for {\bf E}xploratory {\bf GR}oup {\bf E}nvironmen{\bf T}, is
+hypertext-based distributed environment for supporting collaborative
+applications. See \cite{csdl-93-09} for details on EGRET. Besides CLARE,
+there are also other applications built on top of EGRET, including CSRS ---
+a collaborative software review system (\cite{csdl-93-04}), and URN --- a
+collaborative knowledge structuring tool for USENET
+(\cite{csdl-93-06}).}. The two principal design features of CLARE, namely,
+a layered, object-oriented design, and the emphasis of services over
+interface, are both inherited from the underlying platform.
+
+
+\subsection{Layered + object-oriented design}
+\label{sec:oo design}
+
+EGRET --- the platform on which CLARE is built --- was designed with the
+special consideration given to the extensibility and verifiability. To
+reach the two goals, it blends a layered design with the object-oriented
+method (see \cite{csdl-93-02} for more details). CLARE has adopted the same
+design principle for two main reasons:
+
+\begin{itemize}
+\item CLARE is a domain-specific instantiation of EGRET.  It relies
+  heavily on EGRET for infrastructure support. As a result, the more
+  consistent CLARE is with EGRET at the design level, the more it can
+  leverage on the services EGRET offers, for example, the automatic
+  generator of design documentation.
+  
+\item Like in EGRET, extensibility is one of the primary concerns for
+  CLARE.  Because of the ill-structured nature of the problem domain, the
+  initial implementation was purposely kept small, containing only
+  functions that are well-understood and deemed as essential. As the usage
+  experience of the system increases, and as the underlying process becomes
+  better understood, new features, such as support for domain-specific
+  RESRA, will be likely to find their way into the system.  The combination
+  of the layered and the object-oriented paradigm provides an effective
+  means of addressing changing requirements.
+\end{itemize}
+
+See \cite{csdl-93-24} for details of the object-oriented design
+specification of the system.
+
+
+\subsection{``Services'' versus ``interface''}
+\label{sec:service versus interface}
+
+Although having a fancy graphical user interface would probably enhance the
+usability of CLARE, there are two other competing design factors to
+consider as well.  The first concerns the accessibility of the chosen
+platform.  The state-of-the-art interface is typically available only from
+commercial vendors, some of which run only on specialized hardware and
+software platforms, for example, SGI or NextStep, which are not widely
+accessible.  In contrast, publicly available environments, such as the ones
+from the Free Software Foundation, are often less up-to-date in terms of
+interface. At the very early stage, it was decided that both EGRET and
+CLARE should be implemented on a widely accessible platform. Hence, we have
+chosen what we consider as the best of publicly available environments,
+i.e., {\sf Lucid Emacs}, as the initial delivery mechanism.
+
+Second, CLARE is still an early stage of its evolution. It will be some
+time before it reaches the point of maturation. Until then, the primary
+purpose of this project remains as to explore the exact requirements for
+system through successive instrumented usage and revisions. The principal
+requirement at this phase is flexibility --- the ability to accommodate new
+functionalities and to adapt the existing ones. The interface, on the other
+hand, occupies a secondary importance.
+
+
+\section{Architecture}
+\label{sec:architecture}
+
+Architecturally, the CLARE environment consists of two main components: the
+{\it platform\/} and the {\it system proper\/}. The former includes the
+EGRET client and the hypertext database server. Together, the two provide
+basic infrastructure-level services such as storage, retrieval, updating,
+and caching of typed nodes, links, and fields, data locking and
+synchronization, and so forth. The CLARE system proper is composed of five
+modules: {\it kernel\/}, {\it preparation\/}, {\it exploration\/}, {\it
+consolidation\/}, and {\it utilities\/}. The relationships between these
+five modules are depicted in Figure \ref{fig:arch}.
+
+\begin{figure}[htb]
+ \fbox{\centerline{\psfig{figure=Figures/arch.eps,width=5.0in}}}
+  \caption{CLARE architecture}
+  \label{fig:arch}
+\end{figure}
+
+
+\subsection{Kernel}
+\label{sec:kernel}
+
+The {\it kernel\/} performs two essential functions: it is an interface to
+EGRET, and it provides support for RESRA. As an interface, it encapsulates
+all primitive services provided by EGRET, including node and link creation,
+update, retrieval, packing/unpacking, display, attribute data caching, and
+etc. Hence, it forms the foundation of the entire system. All other CLARE
+modules need to go through the kernel to access necessary EGRET
+functions. This design provides a single point of entry to EGRET, which can
+minimize potential ripple effects due to changes in the underlying
+platform. In addition, it also enables flexibilities such as customized
+default parameters, additional error checking, etc.
+
+The other principal service provided by the kernel is the support for RESRA
+representational language (see Chapter 3).  Specifically, it include three
+types of operations: {\it primitives\/}, {\it CRFs\/}, and {\it
+examples\/}. Typical operations on RESRA primitives are initialization,
+instantiation, validity checking, type-based instance listing, and status
+tracking. Important CRF functions are CRF creation, updating, annotation,
+listing, consulting, and importing/exporting. The example mechanism allows
+the user to tag and untag the current node as an example, browse predefined
+examples in the current database, and import/export example
+instances. Examples are intended to help the user clarify the semantics of
+RESRA primitives and guide them toward the proper use of the representation
+language.
+
+
+\subsection{Preparation}
+
+This module implements a set of supervisory facilities accessible only to
+the designated individuals, e.g., the instructor, researcher, or
+administrator. Its functions fall into three categories: {\it artifact
+conversion\/}, {\it session setup\/}, and {\it session tracking\/}. First,
+learning artifacts such as research papers are imported into the CLARE
+database. If an artifact is available only from the printed source, it is
+first converted into the electronic format. The online document is then
+marked up in terms of {\it semantic units,\/} with each corresponding to a
+section or subsection. Any cross-reference, such as footnotes,
+bibliographic references, is also identified explicitly at this time. The
+marked-up document is converted into CLARE's internal hypertext format.
+Necessary links are added automatically by CLARE  between various nodes.
+
+The {\it session setup\/} involves defining parameters specific to a given
+CLARE session, which typically include participants for the current
+session, leading questions, CRF, and perspectives for the current artifact.
+The {\it session tracking\/} includes periodic checking of the status of
+individual participants, answering online feedback questions, and toggling
+phases.
+
+
+\subsection{Exploration}
+\label{sec:exploration}
+
+This module implements functions that constitute the {\it exploration\/}
+component of the SECAI learning model. It consists of two parts: {\it
+summarization\/} and {\it evaluation\/}. The former includes the creation,
+updating, and navigation of RESRA summarative node and link instances;
+consultation of the predefined CRFs for guidance on what to do next,
+viewing examples selected from previous sessions, and so on.  The
+evaluation includes the creation, updating, and navigation of evaluative
+nodes, and answering the leading questions defined for the current
+artifact. At the invocation level, the former is very similar to that of
+summarization. Leading questions are a set of standard questions
+pre-prepared by the instructor or researcher for the current artifact. They
+are much less structured than the CRFs, and are used to address global
+aspects of different types of artifacts, e.g., major contributions.
+
+One main feature of the exploration module is that most of its functions
+operate on data that is private to individual users. For example, {\bf User
+A} is not allowed to read a RESRA node instance created by {\bf User B}.
+Similarly, {\bf User B} cannot follow a RESRA link generated by {\bf User
+A}. However, both users are allowed to read each other's online feedback
+nodes and, follow-up them as necessary. CLARE provides an access control
+mechanism that supports this feature.
+
+
+\subsection{Consolidation}
+\label{sec:consolidation}
+
+This module implements functions that constitute the {\it consolidation\/}
+component of the CLARE learning model. Specifically, it consists of three
+parts: {\it comparison\/}, {\it argumentation\/}, and {\it integration\/}.
+The purpose of comparison is to highlight the differences and similarities
+between different users' representations of the selected artifact. CLARE
+supports four types of comparison: {\it summarization\/}, {\it template\/},
+{\it evaluation\/}, and {\it leading questions\/}. It allows the user to
+easily toggle between different types of comparison, and to move back and
+forth between one RESRA type to another (e.g., \fbox{{\sf problem\/}},
+\fbox{{\sf claim\/}}), and one leading question and another.
+
+CLARE's argumentative functions are similar to their summarative and
+evaluative counterparts in the exploration module. There are two main
+differences, however. First, while the summarative and evaluative functions
+are applied primarily to the selected artifact itself, the argumentative
+functions focus on the user's representation and evaluation of the
+artifact. Second, summarization and evaluation are private activities,
+argumentation, on the other hand, is a direct form of {\it discussion\/} among
+the participants. This public nature of argumentation requires CLARE to
+maintain a synchronized view of the shared database.
+
+One key feature of CLARE's support for argumentation is
+context-sensitivity, namely, the actions available to a user at a given
+point is constrained by the type of the current node. Such constraints are
+reflected in the options available from the popup menu.
+
+CLARE's integrative functions are divided into three categories: (1) adding
+integrative links between existing nodes; (2) identifying perspectives
+related to the current discussion, and associate existing nodes to those
+perspectives; and (3) endorsing existing positions and relationships
+between those positions. The user can also find out the current state of
+consensus among users by invoking consensus report functions.
+
+
+\subsection{Utilities}
+\label{sec:utilities}
+
+The {\it utility\/} module consists of two types of functions: generic,
+infrastructure-level utilities not supplied by EGRET, and miscellaneous
+functions that do not fit to other modules of CLARE. The former, which
+constitutes the majority of this module, include support for regions,
+screens, modes, menus, styles, and so on. Most of these functions are
+application independent; they are implemented in a way such that,
+ultimately, they might be smoothly incorporated into EGRET.
+
+The second group includes reporting facilities, which parse the CLARE
+database content to produce structured, typeset hardcopy summary of session
+activities, and CLARE-specific instrumentation functions, e.g., extracting
+metric data from the database.
+
+
+\section{Interface}
+\label{sec:interface}
+
+CLARE is implemented on top of Lucid Emacs, an X Window based version of
+the GNU Emacs editing environment. Most of its interface facilities, such
+as multi-screens, pulldown and popup menus, multi-fonts, active-regions,
+are inherited from the underlying platform.
+
+Figure \ref{fig:explore} represents a typical user view of CLARE during the
+{\it exploration\/} phase. The screen consists of three windows: one
+occupies the entire left half of the screen, and the other two equally
+divide up the remaining portion of the screen. The left window is for
+displaying source or artifact nodes. The upper-right window is used to list
+a group of related RESRA instances (e.g., all unseen \fbox{{\sf claim\/}})
+so that the user may selectively view their detailed content through mouse
+clicking. The lower-right window is used to show the detailed content of a
+node.  All user-level commands are available from popup and pulldown menus,
+both of which are sensitive to such contexts as the node type, the current
+phase, and so forth.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/explore.eps,width=6.0in}}
+  \caption{Example view of CLARE during exploration}
+  \label{fig:explore}
+\end{figure}
+
+Figure \ref{fig:consolidate} is a typical view of CLARE during the
+consolidation phase. The upper left window contains a comparative view of
+the RESRA instances generated from the previous phase. In the example
+shown, it is a listing of \fbox{{\sf Problems\/}} by Peter, Cam, and Rose
+ --- the three participants of the current session.  The highlighted text
+(i.e., with the bold italic font) represents the links to the corresponding
+node that contains more detailed information, e.g., the source nodes from
+which the RESRA node instances are derived. In the example shown, when the
+user mouse clicks the {\bf Problem 1}, i.e., ``Software discipline,'' the
+corresponding node will be shown in the lower right window. When the user
+follows the link under the {\bf Summarization\/}, the related source node
+is shown in the lower left window. The highlighted text (in {\bf bold}
+font) is the place from which Peter derives his \fbox{{\sf problem}}.
+
+The upper-right window shows the summary statistics of each user has done
+during the exploration phase. Entries in this window are
+mouse-sensitive. When an entry is selected using the middle mouse button,
+the detailed listing of the corresponding user will be displayed. For
+example, if the first entry is chosen, the list of all the 19 nodes created
+by Peter will the be shown in that window. The user may then select any
+node to view.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/consolidate.eps,width=6.0in}}
+  \caption{Example view of CLARE during consolidation}
+  \label{fig:consolidate}
+\end{figure}
+
+
+\section{The road map}
+\label{sec:roadmap}
+
+Figure \ref{fig:roadmap} is an overview map of process steps a user follows
+in a typical CLARE session. The shaded and numbered boxes on the left
+represent main activity steps. The unidirectional link from {\it exploration\/}
+to {\it consolidation\/} indicate the sequential order of the process, i.e.,
+once the group enters the consolidation phase, they are normally not
+allowed to revert to the exploration phase, nor is it permissible to have
+the two going on at the same time.  The bidirectional links connected
+shaded boxes within each phase show that the associated activities might be
+engaged simultaneously or intermixed in any order. For example, although it
+is typical that {\it evaluation\/} comes after {\it summarization\/}, it is
+also not uncommon to see the two unfolding simultaneously, or even {\em
+evaluation\/} invoked before {\it summarization\/}. The boxes on the right
+side list major sub-activities of the corresponding entries on the
+left. The one-line question/statements in the middle capture the basic
+question to be answered by the corresponding process step.
+
+\begin{figure}
+ \fbox{\centerline{\psfig{figure=Figures/road-map.eps,width=5.5in}}}
+  \caption{CLARE functional road map}
+  \label{fig:roadmap}
+\end{figure}
+
+
+\section{History and status}
+\label{sec:c4-history}
+
+\subsection{Brief history}
+\label{sec:history1}
+
+CLARE, in its various incarnations, has been in existence for almost three
+years. During this time, it has undergone substantial changes at both
+conceptual and implementation levels.  Because CLARE is the first system
+built on top of EGRET, it is not surprising that the evolutionary path of
+CLARE is interleaved with that of EGRET. Figure \ref{fig:history} depicts a
+few important milestones in the development history of CLARE.
+
+\begin{figure}
+  \fbox{\centerline{\psfig{figure=Figures/history.eps,width=5.5in}}}
+  \caption{Evolutionary path of CLARE}
+  \label{fig:history}
+\end{figure}
+
+
+\paragraph{Plover.}
+\label{sec:plover}
+
+The origin of CLARE traces back to {\sf Plover\/}, an 800-LOC
+implementation of a rudimentary hypertext system based on {\sf Info\/}, the
+Emacs' online documentation browsing system. Plover uses the same internal
+storage format as that of Info. However, it differs from Info in an
+important way: unlike Info, which is a read-only, online browsing tool,
+Plover is a collaborative system that supports semi-structured group
+discussions about design and research. As such, it emphasizes interactive
+creation of nodes and links. However, as a group tool, Plover suffers from
+several vital flaws. First, it provides very limited distributed support.
+Even though the user is allowed to access and modify the shared document on
+the remote machine via anonymous FTP, Plover has no locking mechanism to
+prevent concurrent updates.  Furthermore, because Plover was implemented on
+top of the vanilla Emacs, it does not have support for multi-screens,
+popup/pulldown menus, and active regions.  The latter constraint forces
+links and field labels to be treated as plain text which are modifiable by
+anyone and, consequently, can lead to in corrupted data.  Plover had only a
+brief existence; it was used by the development group a few times, and was
+quickly succeeded by the initial implementation of COREVIEW/EGRET.
+
+
+\paragraph{COREVIEW: prototype and experience.}
+\label{sec:coreview}
+
+Following the public availability of Hyperbase in May, 1991, a hypertext
+database server from the University of Aalborg, Denmark, an initial
+prototype of COREVIEW was implemented \cite{csdl-92-03}. This prototype was
+largely derived from EHTS, the Emacs interface to the hyperbase that comes
+with the distribution, which runs under Epoch, an X-window based version of
+Emacs from University of Illinois. The primary purpose of this system is to
+support collaborative literature review in seminar settings using IBIS-like
+nodes and link types. In fact, COREVIEW was used, albeit briefly, in a
+graduate seminar on object-oriented design in the Fall, 1991, at the
+Information and Computer Sciences Department of the University of Hawaii.
+The attempt, however, was unsuccessful; frustrations and overwhelming
+negative feedback about the system from the students forced us to withdraw
+the original plan of using it in throughout the semester. The experience
+reveals three major problems with our initial system:
+
+\begin{itemize}
+\item {\it Fragility of COREVIEW.} The initial prototype, which was
+  implemented from bottom-up, i.e., restructured from an existing system,
+  rather than from top-down, i.e., based upon well-defined specifications,
+  was not sufficiently robust and reliable for public usage. At the
+  interface level, the lack of context-sensitive popup/pulldown menus of
+  available commands also presented quite a barrier to the uninitialized
+  users.
+  
+\item {\it Lack of understanding of the problem domain.\/} At the
+  conceptual level, COREVIEW provides no definite answer to such basic
+  questions as, ``what is the precise problem the system attempts to
+  address?'' ``What approach it embodies?'' ``How does the approach
+  addresses specific aspects of the problem?'' Such ambiguities were
+  visible from the absence of an explicit process model and a coherent
+  representation in COREVIEW.
+  
+\item {\it Lack of specification in experimental procedures.\/} Although,
+  empirically, the initial usage of COREVIEW was guided by some preliminary
+  research hypotheses, detailed procedures and the range of outcomes from
+  the experiment, however, were not specified.
+\end{itemize}
+
+The above factors had led to the birth of EGRET and a complete
+re-conceptualization of CLARE.
+
+
+\paragraph{CLARE and the new EGRET.}
+
+Following the first unsuccessful use of COREVIEW and, for that matter,
+EGRET, much effort in the next 10 months was devoted to the redesign,
+implementation, and optimization of the platform using more rigorous
+development methodology, i.e., a combination of layered and object-oriented
+methods. A separate regression testing module was also developed for
+assuring the reliability of the system.  Meanwhile, work on CLARE itself
+took place mainly at the conceptual level, i.e., characterizing the problem
+domain and developing a new representation-based approach to solving the
+problem. During the summer, 1992, six rounds of paper-and-pencil based
+usage experiments within the CSDL were conducted in an attempt to test the
+viability of the solution and refine the representation, i.e., RESRA.
+
+As EGRET became stable and the conceptual framework for CLARE gradually
+came into form, efforts began to shift toward implementing the system.
+During next 10-months, CLARE underwent several cycles of ``prototype \(
+{\Rightarrow} \) shakedown use \( {\Rightarrow} \) re-design/refinements.''
+The initial prototype, for example, does not support online browsing and
+marking of the full-text of the selected artifact; the user was required to
+read the printed artifact and create necessary RESRA instances online. The
+next release provides such a feature but only supports a {\it flat\/} view
+of the artifact, i.e., the entire artifact was treated as a single entity,
+which, among other things, makes it difficult to collect fine-grained
+process data. The subsequent prototype introduces the concept of {\it semantic
+units,\/} and provides functions for semi-automatically converting the
+linear text into a hypertext network.
+
+
+\subsection{Current status}
+\label{sec:status}
+
+The current implementation of CLARE consists of approximately 15 KLOC of
+Emacs Lisp code. Although it is still a research prototype, CLARE has been
+functionally stable. The system is being used on a regular basis both
+within the Collaborative Software Development Laboratory and in real
+classroom settings. The main pending change to the system is to upgrade it
+to use the most recent version of EGRET with improved reliability,
+efficiency, and functionality. Another important extension that is
+currently under consideration is a graphical front-end which, based on our
+experience and user feedback thus far, will enhance the usability of the
+system by allowing direct manipulation of RESRA instances and better
+visualization of the relationships between various RESRA nodes.
+
+
+%%% 
+%%% \newpage
+%%% \singlespace
+%%% \bibliography{../bib/clare,../bib/csdl-trs}
+%%% \bibliographystyle{alpha}
+%%% 
+%%% 
+%%% 
+%%% \end{document}
+
+
+
+
+

@@ -1,0 +1,499 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% bookstore-def.tex -- 
+%% Author          : Taeho Yum-499SM94
+%% Created On      : Tue Jul 12 11:18:57 1994
+%% Last Modified By: Taeho Yum-499SM94
+%% Last Modified On: Tue Jul 12 13:05:53 1994
+%% Status          : Unknown
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1994 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\documentstyle [12pt,/group/csdl/tex/definemargins,
+                /group/csdl/tex/lmacros]{report}
+
+\begin{document}
+
+\title{Virtual Bookstore}
+\author{Philip M. Johnson\\
+	Tae Ho Yum\\
+	Sang-Woo Han\\
+	John S. Johnson\\
+  Collaborative Software Development Laboratory\\
+  Department of Information and Computer Sciences\\
+  University of Hawaii\\
+  Honolulu, HI 96822\\}	
+
+\date{ICS/CSDL Technical Report 94-05}
+
+
+\maketitle 
+
+\newpage
+\tableofcontents
+\newpage
+
+
+\chapter{Introduction}
+
+\section{Motivation}
+
+The University of Hawaii, as with all other major universities, supports a
+flourishing used book business.  This business can be roughly characterized
+in the following way:
+
+\begin{enumerate}
+\item A student decides that a book that they own is no longer useful to them.
+\item The student offers the book to the bookstore.
+\item The bookstore determines whether or not a market exists for the book
+     (i.e. that a professor will require the book the following term, and
+     that course enrollment justifies "investing" in this book.)
+\item The bookstore evaluates the condition of the book and makes an offer
+     to the student.
+\item The student accepts or rejects the offer.
+\item The bookstore offers the book for sale with a sizable markup (typically 50-100%).
+\item The bookstore either succeeds or fails in selling the book during the
+     following semester.  If the bookstore fails to sell the used book, it
+     must decide whether or not to: (a) keep it for the following semester
+     and attempt to sell it again, in which case it incurs overhead for storage;
+     (b) sell the book to a national used book distributor, or (c) throw
+     away the book.  
+\end{enumerate}
+
+The purpose of this research project is to explore the requirements for a
+``virtual bookstore'' by exploring the process alternatives and outcomes
+for how such a bookstore would be organized and run.  After this initial
+analysis, an instrumented, collaborative environment will be designed and
+built that will allow students to buy and sell books where the current
+``physical'' bookstore has been replaced by an on-line, ``virtual''
+bookstore running on uhunix.  A simple electronic mail interface will be
+developed to allow any current UH student with basic computer skills and a
+uhunix account to successfully use the system.  More elaborate interfaces
+will also be developed for skilled computer users, as well as for bookstore
+administrators.  Several different process models for this virtual
+bookstore will be developed and experimentally evaluated through actual use
+of the system by the UH student community.  Systematic changes to the
+bookstore process model will explore the impact upon fairness, efficiency,
+and effectiveness of variations in information access and information
+requirements for the roles of buyer and seller.
+
+\section{Process Modelling a Virtual Bookstore}
+
+In general, the goal of a virtual bookstore is very simple: create a more
+efficient and thus lower-cost method for students to exchange used books by
+eliminating the physical bookstore from the transaction.  This can benefit
+both buyer and seller: for example, a selling price mid-way between the
+physical bookstore's buying cost and its subsequent markup can
+simultaneously give the student selling the book more money and save the
+student buying the book an equivalent amount of money.  
+
+The increased efficiency of a virtual bookstore is produced through
+eliminating the overhead and risk incurred by a physical bookstore: no
+salaries are paid to buy, sell, and stock books, nor is there a risk of
+buying a book that cannot be sold.  In some respects, the virtual bookstore
+is similar to a ``just-in-time'' inventory system.
+
+While this goal is simple and obvious, the design of a process requires
+more reflection than might first be apparent.  First, the design of the
+process should satisfy, as much as possible and as often as possible (if
+not guarantee), the following constraints:
+
+\begin{itemize}
+\item {\bf Fairness.}  The process should lead to the buyer paying a reasonable and
+    equitable price for the goods received. The process might also try to
+    guarantee that the longer a buyer waits for a book, the higher the
+    probability that the buyer will be able to buy the next instance of the
+    book that becomes available for sale.
+
+\item {\bf Efficiency.} The process should occur fast: a seller wanting to sell a
+    book should be able to do so as quickly as possible, and a buyer
+    wanting to buy a book should be able to do so as quickly as possible.
+
+\item {\bf Effectiveness.}  The process should lead to all sellers being able to
+    sell their books if buyers are available, and all buyers being able to
+    buy their books if sellers are available.
+\end{itemize}
+
+To illustrate just a few of the issues and interactions, consider the
+following example process models.
+
+\subsection{The ``Public BBS" process model}
+
+This first process model is perhaps the simplest: sellers post a book for
+sale to a public database, and buyers peruse the database and contact
+sellers if a book is offered that they have an interest in.  While simple,
+this process model can fail to satisfy all three essential requirements:
+
+{\em Fairness.} Sellers can be unfair by falsely advertising a book
+as being in ``excellent" condition when it is actually in poor
+condition.  Buyers can be unfair by getting their friends to ``flood"
+the database with false offers for the books of interest at unfairly
+low prices.  This would artificially depress the perceived ``going
+rate" for a book, leading to an unfairly low price for the honest
+sellers.
+
+The process also does not support fairness in the sense of
+preventing ``starvation''---a buyer may never be able to buy a book,
+even though instances of the desired book become available, simply
+because other buyers continually ``get there first".
+
+{\em Efficiency.} The bookstore must handle hundreds, if not thousands of
+transactions, but the process model does not specify how to expire listings
+or how to organize the database.  Sellers must presumably decide for
+themselves how and where to post the notice, which may lead to
+inconsistencies and ``lost" postings.
+
+The process model states only that buyers can browse for books that they
+want.  To maximize effectiveness, then, buyers must be continuously
+checking the bookstore to see if a desired book has just been added, which
+is very inefficient.
+
+{\em Effectiveness.} As noted above, if not well organized, the
+bookstore will lead to ``lost'' postings---situations in which a buyer
+and seller do not connect, either because the buyer cannot find the
+seller's listing (and thus the seller loses out), or because the
+buyer does not check frequently enough and another buyer gets it (in
+which case the buyer loses out).
+
+
+\subsection{The Electronic Marketplace (Eager Transaction System)}
+
+The system that we named the Eager Transaction system was basically a system that operated like an
+electronic marketplace.  It basically served as a central place to do
+trading.  In this system, a student is assured to get a better deal or
+to sell their book quickly if they were eager to do a little work.
+Thus the name "Eager Transaction System".
+
+This system is actually very similar to the Public BBS process model, but we
+have worked it out to better control, the market.  In this case the system just
+acted as a moderator for the marketplace.  Many issues that disqualified the
+Public BBS model were addressed, but there were still many faults.
+
+{\em Fairness.} We were able to come up with a pretty fair model with some
+basic restrictions.  We would penalize for false advertisments and we would
+only allow a certain number of posts in the public listing.  Also the
+information that is given to the system will be formatted and then parsed for
+fields such as title, author, price...  This way we would have formatted
+postings and the database will be able to search by field.
+
+{\em Efficiency.} This system is more efficient than the Public BBS model, but
+the users would still have to do a little work to find the better deals.  We
+later decided that the students in fact do not want to do anything besides
+telling the system what they want to do with a book and some criteria for the
+system to choose one for them.  Basically, buying and selling college texts are
+not very interesting tasks and selling or buying quickly is much more important
+that getting stuck with a book or having to buy one brand new.
+
+{\em Effectiveness.}  As with the Public BBS model, some postings can get
+lost. in the system forever.  Students will probably not be interested in
+checking into the system to see what they can find and doing ``work'' to buy or
+sell a book.
+
+\section{Evaluation of Requirements for a Virtual Bookstore} 
+
+We have concluded that there will be no ``perfect" process model for a
+virtual bookstore---one that simultaneously satisfies the fairness,
+efficiency, and effectiveness requirements.  This is great, because it
+makes the design process an interesting one: which requirements must be
+sacrificed, and to what degree, in order to fulfill others?  
+
+Although it may be possible to theoretically
+sketch out the pros and cons of a particular process model, that in fact
+there is no way to really understand its strengths and weaknesses except by
+experimentation. 
+
+The following tasks have been recommended to evaluate the requirements for a
+virtual bookstore:
+
+\begin{itemize}
+  
+\item {\em Literature Review.} It will be helpful to learn more about such
+  systems.  A virtual bookstore system was recently designed for the Anderson
+  Graduate School of Management \cite{bookstore-AGSM94}.  How does the
+  process/data model suggested in this report fair with respect to fairness,
+  effectiveness, and efficiency?
+
+\item {\em Process Model Design.} Concurrently with literature research,
+  try constructing a few process models for a virtual bookstore using Egret.
+  Specify the process and data model as precisely as you can, using whatever
+  notation you feel is useful.
+
+\item {\em Process Model Evaluation.} For each model, evaluate its
+  strengths and weaknesses with respect to fairness, efficiency, and
+  effectiveness.  Can you discover other criteria to be used in addition to
+  these three?
+  
+\item {\em Process Model Measurement.} For each model, design on-line
+  measurements of the process that can provide an empirical basis for
+  evaluating the fairness, efficiency, and effectiveness of the process.
+  
+\item {\em Process Model Experimentation.} Eventually, we will decide upon
+  one or more models to implement using Egret and evaluate using the
+  specified measures.  This experimentation will be designed and 
+  evaluated according to the CSDL research process model \cite{csdl-ro-93-01}. 
+
+\end{itemize}
+
+
+
+\chapter{Process Model Design}
+
+\section{Introduction (Lazy Transaction System)}
+
+This is the working process model that we have agreed upon for now.  There
+are more details to be worked out, such as the actual matching algorithm.  One
+is currently in the works as a background process.
+
+We call this the  ``Lazy Transaction System'' and it is a system that does all
+the work.  A student will 
+basically send in a request to buy or sell and the system will do all
+of the work.  It will try to match up as many sales as possible and
+keep everyone fairly satisfied.  All a student has to do is put their
+faith in the system.  In this case, it is the students who are lazy rather than
+the computer.
+
+We chose this system from our experiences of being a university student as well
+as knowing many others.
+The more we thought about it, the more we came to conclude
+that buying and selling college text books is not interesting.  It is, however, 
+still a necesary chore that would be best if carried out in the most
+efficient manner.  Efficiency in this case would be the greatest
+number of sales for the least amount of human activity.  Who better to
+give the uninteresting work than a computer?
+
+\section{Some principles of the model}
+
+\begin{itemize}
+
+\item Users will send in requests to buy or sell describing exactly what
+they want.
+
+\item They will also specify ranges of prices and conditions of
+books.
+
+\item If a match is found within the user specified thresholds, then it will
+be assumed that they will take the deal.
+I
+\item If the computer cannot make a match within user specified thresholds,
+then it will try to make the best fit.
+
+\item In any case where the computer makes a decision outside of what the
+user allowed it to, the user will be allowed to bargain.
+
+\item Time is also a factor.  Users can specify the amount of time they need
+to sell the book by.
+
+\end{itemize}
+
+\section{The basic workings of the model}
+
+\subsection{Condition of books}
+
+For our model we will be considering the condition of the books.  We will
+define a linear scale for the condition of books.  A linear scale should make
+it easier to implement a matching algorithm.  We will clearly define the
+criteria for the categories of books and hopefully most people will agree.  For
+this writing we will use the letters A,B,C,D,F for the book categories.
+
+\subsection{Data input from buyers and sellers}
+\\
+Seller:\\
+1.	Book\\
+2.	Condition\\
+3.	Asking price\\
+4.	Lowest accepted offer\\
+5.	Time to sell book by\\
+6.	Personal information\\
+\\
+Buyer:\\
+1.	Book\\
+2.	Conditions wanted\\
+3.	Asking price\\
+4.	Highest accepted offer\\
+5.	Time to buy book by\\
+6.	Personal information\\
+\\
+
+We will specify for them to be strict in entering price and condition ranges so
+that they will pretty much accept if there is something in that range.  The
+system will still find matches for them even if it's not in their range.
+This data can be entered either by a telnet session or by a formatted email
+message.
+
+\subsection{The matching process}
+
+We decided to have the system do the actual matchings at the end of the day or
+after some other fixed time period.  For now we will assume that there will be
+enough entrys by the end of the day.
+
+\subsubsection{Best fit matches:}
+
+Here we had an argument over the "best fit".  Should we try to obtain as many
+matches as possible within user specified thresholds at the expense of breaking
+up some perfect matches (where both asking prices and conditions match)?  The
+argument there is what percentage of these "close" matches will actually result
+in sales.  Or could we try to get as many perfect matches as possible at the expense of the
+number of close matches?  The argument there is that that these perfect matches
+should result in a guaranteed sale.
+It's basically low risk-low yield or high risk-high yield.\\
+\\
+For now we will go with the most possible matches.
+
+We will make the most matches possible and send out notices to the people
+matched.  Those requests are now on hold until we get a confirmation from the
+users.  All requests that have not been matched will cary over to be matched
+the next day.  If both parties agree, then great, we release personal
+information and let the transaction take place.  If someone does not agree,
+then we put that request back as active again.  We are assuming that most
+people will take offers that are withing their specified range.
+
+If a match is not made by a certain amount of time, then the computer should go
+and make a match that is close, but not within the user specified threshold.
+That time period could be a week or so.  So someone using the system can expect
+a match every week.  Notices will be send like the other matches.  If either
+party refuses, then we can at that point let them bargain.  All possible (buyer
+and seller exists) matches will be made by the end of that time period.  This
+is so we don't have any requests that float in the system forever.
+
+If a user specified a time period they need to sell the book by, then a match
+will be made for the person by that time no matter what.
+
+
+\section{Algorithm specifics}
+
+Matches within user specified thresholds:
+
+Scenario:  If a person wanted \$30-25 for a book and a person is willing to pay
+\$30-25 for a book, then at what price do we notify the parties to buy/sell.
+Should we let them meet half way or go to either end.  It would probably be
+fair to give both of them the half way price in any overlap.
+
+This would really be a simple model if we didn't have to deal with the
+condition of the book.  If a buyer specified A-C condition and \$30-50, he
+most likely does not want a C book for \$50.  The graph would look something
+like this:
+
+\begin{verbatim}
+	A              xxxxxxxxx
+	B      	       xxxxxxxxx
+	C              xxxxxxxxx
+	D
+	F
+
+	   0  10  20  30  40  50  60
+\end{verbatim}
+
+They probably want a graph that looks more like this:
+
+\begin{verbatim}
+	A                   xxxx
+	B      	         xxxx
+	C              xxxx
+	D
+	F
+
+	   0  10  20  30  40  50  60
+\end{verbatim}
+
+Should we let them specify the price range for each book?
+
+
+\chapter{Activities}
+\begin{noindent}
+
+\section{Objective and Activity Development}
+
+\paragraph{} Formally define the research objective.  Define the method of research and the
+data to be collected.
+
+\paragraph{}Will be tracked by activities concerning files in ~csdl/objectives/94-05 and
+~csdl/activities/94-05.
+
+\paragraph{}This activity must be completed before any data can be collected.  Risk is
+minimal in the stage of designing different process models for the bookstore.
+Probably best if completed before any implementation of the virtual
+bookstore.
+
+\paragraph{}Tentatively will set a completion date of July 19, 1994.
+
+
+\section{Literature Review}
+
+\paragraph{}Research other similar systems.  Review report by Anderson Graduate School of
+Management \cite{bookstore-AGSM94}.  Send out Usenet messages for comments on
+the subject.  Review text on various business transactions.
+
+\paragraph{}Not tracked.
+
+\paragraph{}Required to continue with project.  Can be done concurently with any other
+activity.
+
+\paragraph{}Finished as of July 7, 1994.  Can be reopened any time to aid with project.
+
+\section{Process Model Design}
+
+\paragraph{}Design the process of the virtual bookstore.
+
+\paragraph{}Will be tracked by file ~csdl/techreports/94-05/bookstore-model.*
+
+\paragraph{}Must be completed before any further work.  Can be done concurently with
+Literature Review and Process Model Evaluation.
+
+\paragraph{}Working model exists as of July 7, 1994.
+
+\section{Process Model Evaluation}
+
+\paragraph{}Evaluate different process models with respect to fairness, efficiency, and
+effectiveness.  Try to pick one working model to continue with project.
+
+\paragraph{}Not tracked.
+
+\paragraph{}Must be completed before any further work.  Can be done concurently with
+Literature Review and Process Model Design
+
+\paragraph{}Completed as of July 7, 1994.
+
+\section{Matching Algorithm Design}
+
+\paragraph{}This is one aspect of our current process model.  The current model centers
+around this aspect and changes to the process model will most likely not affect
+the existence of this aspect.  This involves the specification of a formal
+algorithm to match buyers and sellers with data entered into the database.
+
+\paragraph{}Will be tracked by file ~csdl/techreports/94-05/bookstore-algorithm.*
+
+\paragraph{}Must be completed before any coded implementation of the virtual bookstore.
+Can be done concurently with Matching Algorithm Evaluation.
+
+\paragraph{}Projecting July 19, 1994 for a working algorithm.
+
+\section{Matching Algorithm Evaluation.}
+
+\paragraph{}Design on-line simulations to evaluate the matching algorithm to provide
+emperical data to study the different aspects of the algorithm.
+
+\paragraph{}Tracking method to be announced later.
+
+\paragraph{}Must be completed before any coded implementation of the virtual bookstore.
+Can be done concurently with Matching Algorithm Design.
+
+\paragraph{}No date set as of July 7, 1994
+
+\section{Process Model Experimentation}
+
+\paragraph{}Implement a process model(s) using Egret and evaluate.  This experimentation
+will be designed and evaluated according to the CSDL research process model
+\cite{csdl-ro-93-01}.
+
+\paragraph{}Tracking method to be announced later.
+
+\paragraph{}Must be completed to finish research.
+
+\paragraph{}No date set as of July 7, 1994
+
+\bibliography{/group/csdl/bib/bookstore,/group/csdl/objectives/csdl-objectives}
+\bibliographystyle{plain}
+
+\end{document}

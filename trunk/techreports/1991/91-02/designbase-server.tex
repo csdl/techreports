@@ -1,0 +1,2631 @@
+\chapter{Server}
+\label{Server}
+
+\begin{description}
+\item [Name:]  Server Subsystem
+
+\item [Description:]
+The server subsystem is the interface between the remote
+database server and other modules of the Egret system. As
+such, it provides transparent and efficient access to the
+functions of the server via such facilities as caching,
+events, etc. It also offers encapsulation via
+comprehensive error checking and additional services
+(e.g., global nodes) essential for the implementation of
+advanced Egret functions.
+
+The server module consists of six classes: s*node, s*link,
+s*server-process, s*sys-node, s*serror, and s*event.
+
+S*node and s*link provide a set of primitive operations
+on nodes and links.  S*server-process manages connection
+sessions and synchronizes the states of the remote and
+local data.  S*sys-node supports a set of special nodes
+which contain data used by various Egret modules for
+internal purposes.  S*serror tracks all error objects,
+and S*event, all public events in the server system.
+
+\item [Public-classes:]
+\item {\sl s*node}\hfill(page~\pageref{s*node})
+\item {\sl s*link}\hfill(page~\pageref{s*link})
+\item {\sl s*server-process}\hfill(page~\pageref{s*server-process})
+\item {\sl s*snode}\hfill(page~\pageref{s*snode})
+\item {\sl s*serror}\hfill(page~\pageref{s*serror})
+\item {\sl s*event}\hfill(page~\pageref{s*event})  
+
+\item [Private-classes:]
+
+
+
+
+\end{description}
+\horizontalline
+
+\section{s*node}
+\label{s*node}
+
+\begin{description}
+\item [Name:]  s*node
+
+\item [Layer:] {\sl Server}\hfill(page~\pageref{Server})
+
+\item [Description:]
+This class implements primitive operations on nodes, including
+creation, deletion, field content retrieval and updating,
+locking, and so forth. Most of these functions are available from
+the remote server. The primary purpose of this class is to
+provide a uniform and location-independent access, i.e., the
+caller does not need to know whether the returned data is from
+local cache or directly from the remote server.
+
+Note that except for the two node repairing functions, which are
+accessable only to the system administrator, all other operations
+and attribute functions are public. 
+
+\item [Attributes:]
+\item {\sl s*node*name}\hfill(page~\pageref{s*node*name})
+\item {\sl s*node*data}\hfill(page~\pageref{s*node*data})
+\item {\sl s*node*created-by}\hfill(page~\pageref{s*node*created-by})
+\item {\sl s*node*created-date}\hfill(page~\pageref{s*node*created-date})
+\item {\sl s*node*last-modified-date}\hfill(page~\pageref{s*node*last-modified-date})
+\item {\sl s*node*last-modified-by}\hfill(page~\pageref{s*node*last-modified-by})
+\item {\sl s*node*font}\hfill(page~\pageref{s*node*font})
+\item {\sl s*node*geometry}\hfill(page~\pageref{s*node*geometry})
+\item {\sl s*node*locked-by}\hfill(page~\pageref{s*node*locked-by})
+\item {\sl s*node*incoming-links}\hfill(page~\pageref{s*node*incoming-links})
+\item {\sl s*node*outgoing-links}\hfill(page~\pageref{s*node*outgoing-links})
+
+\item [Operations:]
+\item {\sl s*node*make}\hfill(page~\pageref{s*node*make})
+\item {\sl s*node*delete}\hfill(page~\pageref{s*node*delete})
+\item {\sl s*node*lock}\hfill(page~\pageref{s*node*lock})
+\item {\sl s*node*unlock}\hfill(page~\pageref{s*node*unlock})
+\item {\sl s*node*set-name}\hfill(page~\pageref{s*node*set-name})
+\item {\sl s*node*set-data}\hfill(page~\pageref{s*node*set-data})
+\item {\sl s*node*set-geometry}\hfill(page~\pageref{s*node*set-geometry})
+\item {\sl s*node*set-font}\hfill(page~\pageref{s*node*set-font})
+
+\item {\sl s*\{node\}*IDs}\hfill(page~\pageref{s*node*IDs})
+\item {\sl s*\{node\}*mapc-IDs}\hfill(page~\pageref{s*node*mapc-IDs})
+
+\item {\sl s*node@reset-incoming-links}\hfill(page~\pageref{s*node@reset-incoming-links})
+\item {\sl s*node@reset-outgoing-links}\hfill(page~\pageref{s*node@reset-outgoing-links})
+
+
+
+\item [Collections:]
+
+\item [Subclasses:]
+
+\item [Superclasses:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*name}
+\label{s*node*name}
+
+\begin{description}
+
+\item [Name:]  s*node*name
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node}) 
+
+\item [Contents:] String (40)
+
+\item [Description:]
+The name of the node. Node names are not
+required to be unique at the server subsystem
+level, although higher subsystems may wish to
+enforce this constraint.
+
+\item [Setf-able:] See s*node*set-name
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*data}
+\label{s*node*data}
+
+\begin{description}
+
+\item [Name:]  s*node*data
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Contents:]  Unspecified 
+
+\item [Description:]
+This is the famous, variable length data
+field, of which the server subsystem is
+permitted to know practically nothing about.
+
+\item [Setf-able:]
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*created-by}
+\label{s*node*created-by}
+
+\begin{description}
+
+\item [Name:]  s*node*created-by
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Contents:] String (20)
+
+\item [Description:]
+
+The original author of the node.  This is 
+automatically set by the server during 
+node creation, but its value is accessable.
+
+\item [Setf-able:]
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*created-date}
+\label{s*node*created-date}
+
+\begin{description}
+
+\item [Name:]  s*node*created-date
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Contents:] String
+
+\item [Description:]
+Node creation date. Automatically set by 
+the server subsystem during node creation.
+
+\item [Setf-able:]
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*last-modified-date}
+\label{s*node*last-modified-date}
+
+\begin{description}
+
+\item [Name:]  s*node*last-modified-date
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Contents:] string
+
+\item [Description:]
+Last modified date.  Automatically 
+set by the server subsystem during 
+node field updating.
+
+\item [Setf-able:]
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*last-modified-by}
+\label{s*node*last-modified-by}
+
+\begin{description}
+
+\item [Name:]  s*node*last-modified-by
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Contents:] String (20)
+
+\item [Description:]
+Automatically maintained by server subsystem
+during node field updates.
+
+\item [Setf-able:]
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*font}
+\label{s*node*font}
+
+\begin{description}
+
+\item [Name:]  s*node*font
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Contents:] String
+
+\item [Description:]
+A font specification.  This might be checked
+for validity.  This attribute is not
+maintained by the server.
+
+\item [Setf-able:]
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*geometry}
+\label{s*node*geometry}
+
+\begin{description}
+
+\item [Name:]  s*node*geometry
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Contents:] string
+
+\item [Description:]
+This should be a valid geometry
+specification.  Its value is not
+maintained by the server.
+
+\item [Setf-able:]
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*locked-by}
+\label{s*node*locked-by}
+
+\begin{description}
+
+\item [Name:]  s*node*locked-by
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Contents:] string
+
+\item [Description:]
+
+This attribute is either nil (if the node is
+unlocked) or a user-name (if the node is locked by
+the specified user). It can also return an error
+object {\sl show-lock-fails} (page~\pageref{show-lock-fails}).
+
+This value is maintained by the server
+subsystem.
+
+\item [Setf-able:]
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*incoming-links}
+\label{s*node*incoming-links}
+
+\begin{description}
+
+\item [Name:]  s*node*incoming-links
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Contents:] List of link-IDs
+
+\item [Description:]
+This attribute holds a list of link-IDs
+whose destination node-IDs are equal 
+to the ID of this node instance.
+
+Since this is corruptable local information,
+the function s*node@reset-incoming-links
+exists to rebuild this node's attribute.
+
+\item [Setf-able:]
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*outgoing-links}
+\label{s*node*outgoing-links}
+
+\begin{description}
+
+\item [Name:]  s*node*outgoing-links
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+ 
+\item [Contents:] A list of link-IDs
+
+\item [Description:] 
+A list of link-IDs corresponding to the
+links pointing away from this node.
+
+Since this is local, corruptable information,
+the operation s*node!reset-links rebuilds
+this by reference to the hbserver.
+
+\item [Setf-able:]
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*make}
+\label{s*node*make}
+
+\begin{description}
+\item [Name:]  s*node*make
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Parameters:]
+\item {\sl node-name}:  
+A valid node name. This currently means that it is a
+string of less than 40 characters, and that it does
+not contain leading space(s) or tabs.
+  
+
+\item [Return-value:] 
+A node-ID if successful.
+
+Error object {\sl invalid-node-name} (page~\pageref{invalid-node-name}) if node-name
+violates node naming conventions.
+
+Error object {\sl create-node-fails} (page~\pageref{create-node-fails}) if node
+creation hb-call fails.
+
+\item [Description:]
+This is the primitive function for obtaining
+new node-IDs from the remote server.
+
+On successful node creation, the following node
+attributes are set:
+
+(1) s*node*created-by and s*node*last-modified-by are
+set to the original author of the node; (2)
+s*node*created-date and s*node*last-modified-date are
+set to the creation date; (3) s*node*geometry and
+s*node*font are set to repective user defaults, or
+system defaults if user defaults are not set.
+
+\item [Public:]
+
+
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*delete}
+\label{s*node*delete}
+
+\begin{description}
+\item [Name:]  s*node*delete
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Parameters:] 
+\item {\sl node-ID}:   An integer representing
+a valid hbserver node ID.
+ 
+
+\item [Return-value:]
+NODE-ID if the node-ID was successfully deleted.
+
+Error object {\sl node-still-referenced} (page~\pageref{node-still-referenced}) if the
+target node still contains incoming links.
+
+Error object  {\sl node-still-locked} (page~\pageref{node-still-locked}) if the target
+node is still locked.
+
+Error object {\sl unknown-hb-error} (page~\pageref{unknown-hb-error}) if node
+deletion hb-operation fails for reasons other
+than the above.
+
+\item [Description:]
+Permanently removes node NODE-ID from remote database.
+
+\item [Public:]
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*lock}
+\label{s*node*lock}
+
+\begin{description}
+\item [Name:]  s*node*lock
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Parameters:] 
+\item {\sl node-ID}:   An integer representing
+a valid hbserver node ID.
+
+
+\item [Return-value:]
+T if the lock was successfully obtained, nil otherwise.
+
+\item [Description:]
+Attempts to get a lock on node-ID.  Will fail if 
+node-ID is already locked by another user.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*unlock}
+\label{s*node*unlock}
+
+\begin{description}
+\item [Name:]  s*node*unlock
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Parameters:] 
+\item {\sl node-ID}:   An integer representing
+a valid hbserver node ID.
+ 
+
+\item [Return-value:]
+T if node-ID was successfully unlocked, nil otherwise.
+
+\item [Description:]
+Unlocks node-ID. The user who is trying to unlock the node
+must be the same as the one who locks the node.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*set-name}
+\label{s*node*set-name}
+
+\begin{description}
+\item [Name:]  s*node*set-name
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Parameters:]
+\item {\sl node-ID}:   An integer representing
+a valid hbserver node ID.
+
+\item {\sl node-name}:  
+A valid node name. This currently means that it is a
+string of less than 40 characters, and that it does
+not contain leading space(s) or tabs.
+
+
+\item [Return-value:]
+A node-ID if successful.
+
+Error object {\sl invalid-node-name} (page~\pageref{invalid-node-name}) if node-name
+violates node name conventions. 
+
+Error object {\sl write-attribute-fails} (page~\pageref{write-attribute-fails}) if rename
+hb-operation fails.
+
+\item [Description:]
+Resets the name of the node. Involves a write
+out to the database.
+
+\item [Public:]
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*set-data}
+\label{s*node*set-data}
+
+\begin{description}
+\item [Name:]  s*node*set-data
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Parameters:]
+\item {\sl node-ID}:   An integer representing
+a valid hbserver node ID.
+
+\item {\sl node-data}:  string
+
+
+\item [Return-value:]
+A node-ID if successful.
+
+Error object {\sl write-attribute-fails} (page~\pageref{write-attribute-fails}) if set-data
+hb-operation fails.
+
+\item [Description:]
+Saves data to the persistent datastore on the remote
+database server.
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*set-geometry}
+\label{s*node*set-geometry}
+
+\begin{description}
+\item [Name:]  s*node*set-geometry
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Parameters:]
+\item {\sl node-ID}:   An integer representing
+a valid hbserver node ID.
+
+\item {\sl node-geometry}:  A string containing a valid 
+geometry specification. 
+ 
+
+\item [Return-value:]
+NODE-GEOMETRY if successful.
+
+Error object {\sl write-attribute-fails} (page~\pageref{write-attribute-fails}) if set geometry
+hb-operation fails.
+
+\item [Description:]
+Resets the geometry attribute of node-ID.  
+Involves a write out to the database.
+Since geometry is inherently a kind of 
+domain-specific idea, the server subsystem
+does not checks for the validity of its
+value. Instead, it treats it simply as
+string. 
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node*set-font}
+\label{s*node*set-font}
+
+\begin{description}
+\item [Name:]  s*node*set-font
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Parameters:]
+\item {\sl node-ID}:   An integer representing
+a valid hbserver node ID.
+
+\item {\sl node-font}:  a string corresponding to a valid font name.
+
+
+\item [Return-value:]
+NODE-FONT if successful.
+
+Error object {\sl write-attribute-fails} (page~\pageref{write-attribute-fails}) if set font
+hb-operation fails.
+
+\item [Description:]
+Resets the font attribute.  Since this
+is relatively domain-specific, the server
+subsystem is not responsible for its
+validity checking.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*\{node\}*IDs}
+\label{s*node*IDs}
+
+\begin{description}
+\item [Name:]  s*\{node\}*IDs
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Parameters:] none
+
+\item [Return-value:]
+
+A list of s*node IDs.
+
+\item [Description:]
+
+Returns a freshly consed list of all currently
+defined s*node IDs.
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*\{node\}*mapc-IDs}
+\label{s*node*mapc-IDs}
+
+\begin{description}
+\item [Name:]  s*\{node\}*mapc-IDs
+
+\item [Class:] {\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Parameters:]
+\item {\sl map-ID-fn}:  A function that takes one argument, an ID,
+and which performs some side-effect based upon that
+value.
+
+ 
+
+\item [Return-value:] nil
+
+\item [Description:]
+
+Calls map-ID-fn once one each currently defined
+s*node ID.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node@reset-incoming-links}
+\label{s*node@reset-incoming-links}
+
+\begin{description}
+\item [Name:]  s*node@reset-incoming-links
+\item [Class:]
+{\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Parameters:]
+\item {\sl node-ID}:   An integer representing
+a valid hbserver node ID.
+
+
+\item [Return-value:] 
+list of link-IDs
+
+\item [Description:]
+
+Rebuilds the list of link-IDs that point to this node
+by directly calling the remote server to traverse 
+all node and link objects to determine which ones point
+to this node. 
+This is curruption repairing function.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node@reset-outgoing-links}
+\label{s*node@reset-outgoing-links}
+
+\begin{description}
+\item [Name:]  s*node@reset-outgoing-links
+
+\item [Class:]
+{\sl s*node}\hfill(page~\pageref{s*node})
+
+\item [Parameters:]
+\item {\sl node-ID}:   An integer representing
+a valid hbserver node ID.
+ 
+
+\item [Return-value:] 
+List of link-IDs.
+
+\item [Description:]
+Rebuilds the list of link-IDs that point away from this
+node by calling the remote server to traverse all nodes
+and links determine which ones point away.  
+This is a corruption recovery function.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\section{s*link}
+\label{s*link}
+
+\begin{description}
+\item [Name:]  s*link
+
+\item [Layer:] {\sl Server}\hfill(page~\pageref{Server})
+
+\item [Description:]
+The S*LINK class implements a set of primitive
+operations on links, including link creation, deletion,
+link attribute retrieval and update, and so forth.
+Most of these operations are straightforward
+translation of the corresponding remote database server
+functions. Because of the asymmetric handling of links
+by the current server, S*LINK has to maintain a
+separate structure to keep track of the source and
+destination nodes of a link. Nevertheless, certain
+operations, such as S*LINK*SET-SOURCE-NODE, can still
+not be provided due to the built-in constraints on
+links.
+
+\item [Attributes:]
+\item {\sl s*link*name}\hfill(page~\pageref{s*link*name})
+\item {\sl s*link*created-by}\hfill(page~\pageref{s*link*created-by})
+\item {\sl s*link*created-date}\hfill(page~\pageref{s*link*created-date})
+\item {\sl s*link*last-modified-by}\hfill(page~\pageref{s*link*last-modified-by})
+\item {\sl s*link*last-modified-date}\hfill(page~\pageref{s*link*last-modified-date})
+\item {\sl s*link*source-node}\hfill(page~\pageref{s*link*source-node})
+\item {\sl s*link*destination-node}\hfill(page~\pageref{s*link*destination-node})
+
+\item [Operations:]
+\item {\sl s*link*make}\hfill(page~\pageref{s*link*make})
+\item {\sl s*link*delete}\hfill(page~\pageref{s*link*delete})
+\item {\sl s*link*set-name}\hfill(page~\pageref{s*link*set-name})
+\item {\sl s*link*set-destination-node}\hfill(page~\pageref{s*link*set-destination-node})
+
+\item {\sl s*\{link\}*IDs}\hfill(page~\pageref{s*link*IDs})
+\item {\sl s*\{link\}*mapc-IDs}\hfill(page~\pageref{s*link*mapc-IDs})
+
+\item [Collections:]
+
+\item [Subclasses:]
+
+\item [Superclasses:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link*name}
+\label{s*link*name}
+
+\begin{description}
+\item [Name:]  s*link*name
+
+\item [Class:] {\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Contents:] string (30)
+
+\item [Description:]
+The name of the link; limited to thirty chars.
+
+\item [Setf-able:]
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link*created-by}
+\label{s*link*created-by}
+
+\begin{description}
+\item [Name:]  s*link*created-by
+
+\item [Class:] {\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Contents:] string
+
+\item [Description:] 
+Name of the user who created this link.
+
+\item [Setf-able:] no
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link*created-date}
+\label{s*link*created-date}
+
+\begin{description}
+
+\item [Name:]  s*link*created-date
+
+\item [Class:] {\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Contents:] string
+
+\item [Description:] 
+the creation date for this link
+
+\item [Setf-able:]
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link*last-modified-by}
+\label{s*link*last-modified-by}
+
+\begin{description}
+
+\item [Name:]  s*link*last-modified-by
+
+\item [Class:] {\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Contents:] string
+
+\item [Description:] 
+The name of user who was last in modifying this
+link.
+
+\item [Setf-able:]
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link*last-modified-date}
+\label{s*link*last-modified-date}
+
+\begin{description}
+
+\item [Name:]  s*link*last-modified-date
+
+\item [Class:] {\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Contents:] string
+
+\item [Description:] 
+The date of the last modification of this link.
+
+\item [Setf-able:]
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link*source-node}
+\label{s*link*source-node}
+
+\begin{description}
+\item [Name:]  s*link*source-node
+
+\item [Class:] {\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Contents:] node-ID
+
+\item [Description:]
+The node-ID of the source node of this link.
+
+\item [Setf-able:]
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link*destination-node}
+\label{s*link*destination-node}
+
+\begin{description}
+
+\item [Name:]  s*link*destination-node
+
+\item [Class:] {\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Contents:] node-ID
+
+\item [Description:] 
+The destination node for this link.
+
+\item [Setf-able:]
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link*make}
+\label{s*link*make}
+
+\begin{description}
+\item [Name:]  s*link*make
+
+\item [Class:] {\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Parameters:]
+\item {\sl link-name}:  string (30); a valid link name
+
+\item {\sl from-node-ID}:  node-ID
+
+\item {\sl to-node-ID}:  node-ID
+
+
+
+
+\item [Return-value:]
+link-ID if successful.
+
+error object {\sl invalid-link-name} (page~\pageref{invalid-link-name}) if LINK-NAME
+contains leading space(s), or its length exceeds 30.
+
+error object {\sl create-link-fails} (page~\pageref{create-link-fails}) if create-link
+hb-calls fails. 
+
+error object {\sl write-attribute-fails} (page~\pageref{write-attribute-fails}) if
+initialization of link attributes fails.
+
+error object {\sl update-link-info-fails} (page~\pageref{update-link-info-fails}) if update 
+operations on LINK-INFO node fails.
+
+\item [Description:]
+This function validates link-name, calls remote server
+to allocate a new link num; initializes
+link-attributes: created by, created ate, last update
+by, and last updated date; and runs s*link!make-hooks. 
+
+\item [Public:]
+
+
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link*delete}
+\label{s*link*delete}
+
+\begin{description}
+\item [Name:]  s*link*delete
+\item [Class:] {\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Parameters:]
+\item {\sl link-ID}:  
+valid HB link ID number (integer)
+
+\item {\sl from-node-ID}:  node-ID
+
+
+\item [Return-value:]
+LINK-ID if the link deletion was successful, or 
+error object otherwise.
+
+\item [Description:]
+Permanently remove the link from remote database.
+
+
+\item [Public:]
+
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link*set-name}
+\label{s*link*set-name}
+
+\begin{description}
+\item [Name:]  s*link*set-name
+
+\item [Class:] {\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Parameters:]
+\item {\sl link-ID}:  
+valid HB link ID number (integer)
+
+\item {\sl link-name}:  string (30); a valid link name
+ 
+
+\item [Return-value:]
+LINK-NAME if successful.
+
+error object {\sl invalid-link-name} (page~\pageref{invalid-link-name}) if LINK-NAME contains
+leading space(s)/tab(s), or its length exceeds 30.
+
+error object {\sl write-attribute-fails} (page~\pageref{write-attribute-fails}) if hb-write
+operation fails.
+
+\item [Description:]
+Resets the name of the link. Note that
+the link name does not necessarily
+correspond to the link label.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link*set-destination-node}
+\label{s*link*set-destination-node}
+
+\begin{description}
+\item [Name:]  s*link*set-destination-node
+
+\item [Class:]
+{\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Parameters:]
+\item {\sl node-ID}:   An integer representing
+a valid hbserver node ID.
+
+\item {\sl link-ID}:  
+valid HB link ID number (integer)
+
+
+\item [Return-value:]
+NODE-ID if the destination node of link LINK-ID can be
+set to NODE-ID, or error object {\sl move-link-fails} (page~\pageref{move-link-fails})
+otherwise. 
+
+\item [Description:]
+Reset the target node of the current link to another
+node. Note that there is no reciprocal operation,
+i.e., one cannot reset the source node of a link
+without necessitating the creation of a new link.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*\{link\}*IDs}
+\label{s*link*IDs}
+
+\begin{description}
+\item [Name:]  s*\{link\}*IDs
+
+\item [Class:] {\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Parameters:] none
+
+\item [Return-value:]
+
+A list of s*link IDs.
+
+\item [Description:]
+
+Returns a freshly consed list of all currently
+defined s*link IDs.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*\{link\}*mapc-IDs}
+\label{s*link*mapc-IDs}
+
+\begin{description}
+\item [Name:]  s*\{link\}*mapc-IDs
+
+\item [Class:] {\sl s*link}\hfill(page~\pageref{s*link})
+
+\item [Parameters:]
+\item {\sl map-ID-fn}:  A function that takes one argument, an ID,
+and which performs some side-effect based upon that
+value.
+
+
+
+\item [Return-value:] nil
+
+\item [Description:]
+
+Calls map-ID-fn once on each currently defined
+s*link ID.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\section{s*server-process}
+\label{s*server-process}
+
+\begin{description}
+\item [Name:]  s*server-process
+
+\item [Layer:] {\sl Server}\hfill(page~\pageref{Server})
+
+\item [Description:]
+The server-process class implements connection and
+communication operations and attribute functions
+related  to the server process, e.g., the directory the
+remote databases resides, the name of machine on which
+the server is running, the description of the database,
+etc. Currently, S*SERVER-PROCESS consists of only one
+instance, i.e., hbserver. But the class is designed to
+accommodate arbitrary number of server processes. 
+
+\item [Attributes:]
+\item {\sl s*sp*name}\hfill(page~\pageref{s*sp*name})
+\item {\sl s*sp*description}\hfill(page~\pageref{s*sp*description})
+\item {\sl s*sp*directory-path}\hfill(page~\pageref{s*sp*directory-path})
+\item {\sl s*sp*ip}\hfill(page~\pageref{s*sp*ip})
+
+\item [Operations:]
+\item {\sl s*sp*connect}\hfill(page~\pageref{s*sp*connect})
+\item {\sl s*sp*disconnect}\hfill(page~\pageref{s*sp*disconnect})
+
+Administration Operations
+\item {\sl s*sp@defserver}\hfill(page~\pageref{s*sp@defserver})
+
+\item [Collections:]
+
+\item [Subclasses:]
+
+\item [Superclasses:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*sp*name}
+\label{s*sp*name}
+
+\begin{description}
+
+\item [Name:]  s*sp*name
+
+\item [Class:] {\sl s*server-process}\hfill(page~\pageref{s*server-process})
+
+\item [Contents:] String 
+
+\item [Description:]  
+Name of server database. It is the same as machine name,
+e.g. "uhics.ics.hawaii.edu".
+
+\item [Setf-able:] 
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*sp*description}
+\label{s*sp*description}
+
+\begin{description}
+\item [Name:]  s*sp*description
+
+\item [Class:] {\sl s*server-process}\hfill(page~\pageref{s*server-process})
+
+\item [Contents:] String
+
+\item [Description:]
+
+A short description of the contents or purpose of 
+this database.
+
+\item [Setf-able:]
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*sp*directory-path}
+\label{s*sp*directory-path}
+
+\begin{description}
+
+\item [Name:]  s*sp*directory-path
+
+\item [Class:] {\sl s*server-process}\hfill(page~\pageref{s*server-process})
+
+\item [Contents:] String
+
+\item [Description:]
+The pathname to the directory where the datafiles for 
+this database are kept.
+
+\item [Setf-able:]
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*sp*ip}
+\label{s*sp*ip}
+
+\begin{description}
+\item [Name:]  s*sp*ip
+
+\item [Class:]
+{\sl s*server-process}\hfill(page~\pageref{s*server-process})
+
+\item [Contents:] string.
+
+\item [Description:]
+Contains full IP address, eg. "128.171.2.5"
+
+\item [Setf-able:]
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*sp*connect}
+\label{s*sp*connect}
+
+\begin{description}
+\item [Name:]  s*sp*connect
+
+\item [Class:] {\sl s*server-process}\hfill(page~\pageref{s*server-process})
+
+\item [Parameters:]
+\item {\sl machine-name}:  
+A string which is a valid internet machine address. 
+	 
+
+\item [Return-value:] 
+t if the connection was made successfully.
+
+error object {\sl missing-required-arg} (page~\pageref{missing-required-arg}) if MACHINE-NAME is
+not supplied and public variable S*SP*CURRENT-SERVER is not
+set. 
+
+error object {\sl connection-is-on} (page~\pageref{connection-is-on}) if the user tries to 
+connect while the connection is already on.
+
+\item [Description:]
+This function sets up three network stream processes:
+read, write, and event; sets global variable
+S*SP*CURRENT-SERVER; subscribes the initial set of
+events; initializes local caches of nodes and links, and
+runs S*SP!CONNECT-HOOKS.
+
+
+\item [Public:]
+
+
+
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*sp*disconnect}
+\label{s*sp*disconnect}
+
+\begin{description}
+
+\item [Name:]  s*sp*disconnect
+
+\item [Class:] {\sl s*server-process}\hfill(page~\pageref{s*server-process})
+
+\item [Parameters:] none
+
+\item [Return-value:]
+t if the disconnection from the server was successful.
+
+Error object {\sl connection-is-off} (page~\pageref{connection-is-off}) if the user
+attempts to disconnect while the connection is not on. 
+
+
+\item [Description:]
+This function deletes all three network processes (ie.,
+read, write, and event) and sets global status variable
+S*SP!CONNECTED to nil.
+
+\item [Public:]
+
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*sp@defserver}
+\label{s*sp@defserver}
+
+\begin{description}
+\item [Name:]  s*sp@defserver
+
+\item [Class:]
+{\sl s*server-process}\hfill(page~\pageref{s*server-process})
+
+\item [Parameters:]
+\item {\sl name}:  string, eg, "zero.ics".
+
+
+\item {\sl description}:  string, e.g., "DesignBase", "Testbase". 
+
+
+\item {\sl path}:  string. It must be absolute path name. 
+
+
+\item {\sl ip}:  string. e.g., "128.71.4.4"
+
+
+
+\item [Return-value:]
+newly-defined server struct.
+
+\item [Description:]
+Defines a new instance of server structure.  Note that
+the system administrator should predefine all servers
+accessable to the user. Attempts to access an undefined
+server is an error condition.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\section{s*snode}
+\label{s*snode}
+
+\begin{description}
+\item [Name:]  s*snode
+
+\item [Layer:]
+{\sl Server}\hfill(page~\pageref{Server})
+
+\item [Description:]
+
+The SYS-NODE is provided by the server subsystem to other
+EGRET modules (including the server itself) as a uniform
+mechanism for handling a set of special nodes which store
+data used by these modules in implementing advanced
+functions. The major features of SYS-NODES in comparison
+with the regular Egret nodes are:
+
+* They are "hidden" from the users of the system.
+
+* They are internal to the modules in which they are
+  defined and used.
+
+* They are susceptible to corruption and thus require
+  recovery operations.
+*  They are normally not deleted once created.
+
+* Operations on them are normally performed via special
+  SYS-NODE specific event functions. A public function
+  also exists to update the contents of the system node.
+
+* Multiple subsystems can share the same system node. For
+  example, unread node uses the done-node data defined by
+  the to-do module.
+
+* SYS-NODEs store and retrieve a single, variable length
+  string, whose contents are interpreted by its utilizing
+  systems.
+
+* Unique IDs for system nodes (snode-ID) are not integers
+  but a unique string.
+
+* Concurrent access is maintained by the server
+  subsystem. Users cannot explicitly lock or unlock a
+  system node. All operations upon SNODEs are assumed to
+  require a brief amount of time; they are reliably
+  unlocked regardless of whether operations terminate
+  successfully or signal an error.
+
+* Definition and instantiation of a SYS-NODE are separate
+  operations. Definition describes the event operations
+  that will run if the instance of the system node exists
+  on the server. A separate operation (s*snode!make)
+  exists to actually create the entity. 
+
+\item [Attributes:]
+
+\item [Operations:]
+\item {\sl s*snode*define}\hfill(page~\pageref{s*snode*define})
+\item {\sl s*snode*with-data}\hfill(page~\pageref{s*snode*with-data})
+\item {\sl s*snode*with-data-locked}\hfill(page~\pageref{s*snode*with-data-locked})
+
+\item {\sl s*snode@make}\hfill(page~\pageref{s*snode@make})
+
+\item [Collections:]
+
+
+\item [Subclasses:]
+
+
+\item [Superclasses:]
+
+
+\item [Instances:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*snode*define}
+\label{s*snode*define}
+
+\begin{description}
+\item [Name:]  s*snode*define
+
+\item [Class:]
+{\sl s*snode}\hfill(page~\pageref{s*snode})
+
+\item [Parameters:]
+\item {\sl snode-name}:  string
+
+\item {\sl data-event}:  symbol
+
+\item {\sl connect}:  symbol
+
+\item {\sl disconnect}:  symbol
+
+
+\item [Return-value:]
+Macro with side effect of defining an SNODE object.
+
+\item [Description:]
+This macro defines a specialized system node class with a
+single instance SNODE-NAME. It registers SNODE-NAME on
+the global system node data structure, and data update
+event and connection event functions, if any, on
+respective hooks.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*snode*with-data}
+\label{s*snode*with-data}
+
+\begin{description}
+\item [Name:]  s*snode*with-data
+
+\item [Class:]
+{\sl s*snode}\hfill(page~\pageref{s*snode})
+
+\item [Parameters:]
+\item {\sl snode-name}:  string
+
+\item {\sl body}:  list of Lisp forms
+
+
+\item [Return-value:] 
+Macro with no interesting return value.
+
+\item [Description:]
+Retrieves sys-node NODE-NAME and then evals BODY.
+NODE-NAME must be a name of an existent node. 
+BODY is a list of forms to be executed. 
+
+This macro temporarily resets the current buffer to a
+special system node buffer that contains the contents of
+the system node, position cursor at tbe begining of
+buffer, evals forms in BODY, and restores the
+previous buffer context. It is evaled for side effect. 
+
+\item [Public:]
+
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*snode*with-data-locked}
+\label{s*snode*with-data-locked}
+
+\begin{description}
+\item [Name:]  s*snode*with-data-locked
+
+\item [Class:]
+{\sl s*snode}\hfill(page~\pageref{s*snode})
+
+\item [Parameters:]
+\item {\sl snode-name}:  string
+
+\item {\sl body}:  list of Lisp forms
+
+
+\item [Return-value:]
+Macro with no interesting return value if successful or
+error object {\sl lock-snode-fails} (page~\pageref{lock-snode-fails}) if s*snode-lock 
+operation fails..
+
+\item [Description:]
+Retrieves snode NODE-NAME with lock and then evals BODY.
+NODE-NAME must be a name of an existent node.  
+BODY is a list of forms to be executed.  
+
+This macro temporarily resets the current buffer to a
+special system node buffer that contains the contents of
+the system node, position cursor at tbe begining of
+buffer, evals the forms in BODY, which ought to alter
+the content of the buffer, saves the updated buffer to
+the database, and restores the previous buffer context.
+The macro is evaled for side effect.
+
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*snode@make}
+\label{s*snode@make}
+
+\begin{description}
+\item [Name:]  s*snode@make
+
+\item [Class:]
+{\sl s*snode}\hfill(page~\pageref{s*snode})
+
+\item [Parameters:]
+\item {\sl snode-name}:  string
+
+\item {\sl initial-value}:  string
+
+
+\item [Return-value:] SNODE-NAME
+
+\item [Description:]
+Instantiates an snode, i.e., creating node in remote
+database with name SNODE-NAME, and stores INITIAL-VALUE
+in the node. Note this is an administrative function. If
+SNODE-NAME already exists, re-initializes it to
+INIT-VALUE.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\section{s*serror}
+\label{s*serror}
+
+\begin{description}
+\item [Name:]  s*serror
+
+\item [Layer:]
+{\sl Server}\hfill(page~\pageref{Server}) 
+
+\item [Description:]
+This class contains all error objects in the Server subsystem.
+As a general rule, server level functions trap and report but
+do not handle errors. It is the responsility of the calling
+function to interpret various error objects and decide what
+actions to take. Lower-level server functions use SIGNAL to
+return to top-level server functions in case of error.
+Top-level server functions must catch all server-level errors,
+and guaranttee returning to the calling function with
+approciate error objects.
+
+\item [Attributes:] See U*ERROR
+
+\item [Operations:] See U*ERROR
+
+\item [Collections:]
+
+\item [Subclasses:]
+
+\item [Superclasses:]
+\item {\sl u*error}\hfill(page~\pageref{u*error})
+
+\item [Instances:]
+\item {\sl lock-snode-fails}\hfill(page~\pageref{lock-snode-fails})
+\item {\sl missing-required-arg}\hfill(page~\pageref{missing-required-arg})
+\item {\sl write-attribute-fails}\hfill(page~\pageref{write-attribute-fails})
+\item {\sl read-attribute-fails}\hfill(page~\pageref{read-attribute-fails})
+\item {\sl get-entity-IDs-fails}\hfill(page~\pageref{get-entity-IDs-fails})
+\item {\sl conflicting-hook-constraints}\hfill(page~\pageref{conflicting-hook-constraints})
+\item {\sl unknown-hb-error}\hfill(page~\pageref{unknown-hb-error})
+\item {\sl uninstantiated-system-node}\hfill(page~\pageref{uninstantiated-system-node})
+
+\item {\sl parse-event-fails}\hfill(page~\pageref{parse-event-fails})
+\item {\sl subscribe-event-fails}\hfill(page~\pageref{subscribe-event-fails})
+\item {\sl unsubscribe-event-fails}\hfill(page~\pageref{unsubscribe-event-fails})
+
+\item {\sl invalid-node-name}\hfill(page~\pageref{invalid-node-name})
+\item {\sl show-lock-fails}\hfill(page~\pageref{show-lock-fails})
+\item {\sl lock-node-fails}\hfill(page~\pageref{lock-node-fails})
+\item {\sl create-node-fails}\hfill(page~\pageref{create-node-fails})
+\item {\sl delete-node-fails}\hfill(page~\pageref{delete-node-fails})
+\item {\sl node-still-referenced}\hfill(page~\pageref{node-still-referenced})
+\item {\sl node-still-locked}\hfill(page~\pageref{node-still-locked})
+\item {\sl node-not-found}\hfill(page~\pageref{node-not-found})
+
+\item {\sl invalid-link-name}\hfill(page~\pageref{invalid-link-name})
+\item {\sl move-link-fails}\hfill(page~\pageref{move-link-fails})
+\item {\sl create-link-fails}\hfill(page~\pageref{create-link-fails})
+\item {\sl link-not-found}\hfill(page~\pageref{link-not-found})
+\item {\sl update-link-info-fails}\hfill(page~\pageref{update-link-info-fails})
+
+\item {\sl connection-is-on}\hfill(page~\pageref{connection-is-on})
+\item {\sl connection-is-off}\hfill(page~\pageref{connection-is-off})
+\item {\sl server-not-found}\hfill(page~\pageref{server-not-found})
+
+
+
+
+
+
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{lock-snode-fails}
+\label{lock-snode-fails}
+
+\begin{description}
+\item [Name:]  lock-snode-fails
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+\item [Description:]
+Attempt to lock a system node fails.
+
+
+\end{description}
+\horizontalline
+
+\subsection{missing-required-arg}
+\label{missing-required-arg}
+
+\begin{description}
+\item [Name:]  missing-required-arg
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:] 
+Required arg is either missing or unccaptable. 
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{write-attribute-fails}
+\label{write-attribute-fails}
+
+\begin{description}
+\item [Name:]  write-attribute-fails
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:] 
+Data fails to be written to remote persistent store.
+
+
+\end{description}
+\horizontalline
+
+\subsection{read-attribute-fails}
+\label{read-attribute-fails}
+
+\begin{description}
+
+\item [Name:]  read-attribute-fails
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:] 
+Field data fails to be retrieved from remote database
+server.
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{get-entity-IDs-fails}
+\label{get-entity-IDs-fails}
+
+\begin{description}
+\item [Name:]  get-entity-IDs-fails
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+\item [Description:]
+Operation on retrieving the list of either all node or link
+IDs from remote server fails.
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{conflicting-hook-constraints}
+\label{conflicting-hook-constraints}
+
+\begin{description}
+\item [Name:]  conflicting-hook-constraints
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+\item [Description:]
+The supplied ordering constraints are conflicting with each
+other and thus cannot be satisfied.
+
+\end{description}
+\horizontalline
+
+\subsection{unknown-hb-error}
+\label{unknown-hb-error}
+
+\begin{description}
+
+\item [Name:]  unknown-hb-error
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:] 
+Hyperbase operation fails due to some unknown reason(s).
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{uninstantiated-system-node}
+\label{uninstantiated-system-node}
+
+\begin{description}
+\item [Name:]  uninstantiated-system-node
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:] 
+A SYS-NODE must be initialized before use. Fails to do so
+would cause this error to be signaled.
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{parse-event-fails}
+\label{parse-event-fails}
+
+\begin{description}
+\item [Name:]  parse-event-fails
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+Incoming event string from the remote server cannot be
+parsed.. 
+
+
+\end{description}
+\horizontalline
+
+\subsection{subscribe-event-fails}
+\label{subscribe-event-fails}
+
+\begin{description}
+\item [Name:]  subscribe-event-fails
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+Operation for subscribing an event on remote server fails. 
+
+\end{description}
+\horizontalline
+
+\subsection{unsubscribe-event-fails}
+\label{unsubscribe-event-fails}
+
+\begin{description}
+
+\item [Name:]  unsubscribe-event-fails
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+Attempt to unsubscribe an event previsouly subscribed
+fails.
+
+
+\end{description}
+\horizontalline
+
+\subsection{invalid-node-name}
+\label{invalid-node-name}
+
+\begin{description}
+
+\item [Name:]  invalid-node-name
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+Node naming violation, i.e., exceeding 40 characters or
+containing leading space or tabs.
+
+
+\end{description}
+\horizontalline
+
+\subsection{show-lock-fails}
+\label{show-lock-fails}
+
+\begin{description}
+\item [Name:]  show-lock-fails
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+cannot determine who has the lock to the requested node.
+
+
+\end{description}
+\horizontalline
+
+\subsection{lock-node-fails}
+\label{lock-node-fails}
+
+\begin{description}
+
+\item [Name:]  lock-node-fails
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+cannot lock a node.
+
+
+\end{description}
+\horizontalline
+
+\subsection{create-node-fails}
+\label{create-node-fails}
+
+\begin{description}
+\item [Name:]  create-node-fails
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+Attempt to create new node fails.
+
+\end{description}
+\horizontalline
+
+\subsection{delete-node-fails}
+\label{delete-node-fails}
+
+\begin{description}
+\item [Name:]  delete-node-fails
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+Attempt to delete a node form remote persistent store fails.
+
+
+\end{description}
+\horizontalline
+
+\subsection{node-still-referenced}
+\label{node-still-referenced}
+
+\begin{description}
+
+\item [Name:]  node-still-referenced
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+Attempts to delete a node which still has incoming links.
+
+
+\end{description}
+\horizontalline
+
+\subsection{node-still-locked}
+\label{node-still-locked}
+
+\begin{description}
+\item [Name:]  node-still-locked
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+Trying to delete a node which is locked. 
+
+
+\end{description}
+\horizontalline
+
+\subsection{node-not-found}
+\label{node-not-found}
+
+\begin{description}
+\item [Name:]  node-not-found
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+\item [Description:] requested node does not exist.
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{invalid-link-name}
+\label{invalid-link-name}
+
+\begin{description}
+\item [Name:]  invalid-link-name
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+Link naming violation, i.e., either the name exceeds 30
+characters or contains leading space or tabs.
+
+
+\end{description}
+\horizontalline
+
+\subsection{move-link-fails}
+\label{move-link-fails}
+
+\begin{description}
+\item [Name:]  move-link-fails
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+\item [Description:]
+Attempt to reset the target node of a link fails.
+
+
+\end{description}
+\horizontalline
+
+\subsection{create-link-fails}
+\label{create-link-fails}
+
+\begin{description}
+
+\item [Name:]  create-link-fails
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+Attempt to create new link fails.
+
+
+\end{description}
+\horizontalline
+
+\subsection{link-not-found}
+\label{link-not-found}
+
+\begin{description}
+\item [Name:]  link-not-found
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+\item [Description:] requested link does not exist. 
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{update-link-info-fails}
+\label{update-link-info-fails}
+
+\begin{description}
+\item [Name:]  update-link-info-fails
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+\item [Description:] 
+attempts to update the link-info system node fails.
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{connection-is-on}
+\label{connection-is-on}
+
+\begin{description}
+\item [Name:]  connection-is-on
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+Trying to connect to the remote server while the
+current client is already connected.
+
+
+\end{description}
+\horizontalline
+
+\subsection{connection-is-off}
+\label{connection-is-off}
+
+\begin{description}
+
+\item [Name:]  connection-is-off
+
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+
+\item [Description:]
+Trying to disconnect while the client is already
+disconnected from the remote server.
+
+
+\end{description}
+\horizontalline
+
+\subsection{server-not-found}
+\label{server-not-found}
+
+\begin{description}
+\item [Name:]  server-not-found
+
+\item [Class:]
+{\sl s*serror}\hfill(page~\pageref{s*serror})
+
+\item [Description:] requested server is not defined.
+
+
+
+\end{description}
+\horizontalline
+
+\section{s*event}
+\label{s*event}
+
+\begin{description}
+\item [Name:]  s*event
+
+\item [Layer:]
+{\sl Server}\hfill(page~\pageref{Server})
+
+\item [Description:]
+S*EVENT represents a class of a predefined event types. It is
+implemented in terms of U*HOOK, which in turn is an extension of
+Emacs Lisp hook facility. S*EVENT allows arbitrary ordering
+constraints to be imposed on functions to be intalled on any
+given event dispatching queue.
+
+S*EVENT is special in that all its instances are predefined; the
+user of these events are not allowed to instantiated them, though
+they may add functions to or delete functions from them, or
+reinitialize them.  Currently, there are currently elevent (11)
+event types, all of which are documentated below.  The execution
+of functions on these event queues is triggered by events from
+the remote database server, rather than directed by the Server
+itself.
+
+\item [Attributes:]
+\item {\sl s*event*event-handlers}\hfill(page~\pageref{s*event*event-handlers})
+
+\item [Operations:]
+\item {\sl s*event*initialize}\hfill(page~\pageref{s*event*initialize})
+\item {\sl s*event*add-event-handler-fn}\hfill(page~\pageref{s*event*add-event-handler-fn})
+\item {\sl s*event*remove-event-handler-fn}\hfill(page~\pageref{s*event*remove-event-handler-fn})
+
+\item [Collections:]
+
+\item [Subclasses:]
+
+\item [Superclasses:]
+
+\item [Instances:]
+\item {\sl s*node!newname-event-hooks}\hfill(page~\pageref{s*node!newname-event-hooks})
+\item {\sl s*node!rename-event-hooks}\hfill(page~\pageref{s*node!rename-event-hooks})
+\item {\sl s*node!delete-event-hooks}\hfill(page~\pageref{s*node!delete-event-hooks})
+\item {\sl s*node!data-event-hooks}\hfill(page~\pageref{s*node!data-event-hooks})
+\item {\sl s*node!lock-event-hooks}\hfill(page~\pageref{s*node!lock-event-hooks})
+\item {\sl s*node!unlock-event-hooks}\hfill(page~\pageref{s*node!unlock-event-hooks})
+\item {\sl s*node!font-event-hooks}\hfill(page~\pageref{s*node!font-event-hooks})
+\item {\sl s*node!geometry-event-hooks}\hfill(page~\pageref{s*node!geometry-event-hooks})
+\item {\sl s*link!newname-event-hooks}\hfill(page~\pageref{s*link!newname-event-hooks})
+\item {\sl s*link!rename-event-hooks}\hfill(page~\pageref{s*link!rename-event-hooks})
+\item {\sl s*link!delete-event-hooks}\hfill(page~\pageref{s*link!delete-event-hooks})
+
+
+
+
+
+
+
+
+
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*event*event-handlers}
+\label{s*event*event-handlers}
+
+\begin{description}
+\item [Name:]  s*event*event-handlers
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Contents:] List of functions
+
+\item [Description:] 
+An ordered list of functions to be invoked upon
+receiving a given type of event.
+
+
+\item [Setf-able:] no
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*event*initialize}
+\label{s*event*initialize}
+
+\begin{description}
+\item [Name:]  s*event*initialize
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Parameters:]
+\item {\sl s*event-instance}:  symbol
+
+
+\item [Return-value:] t
+
+\item [Description:] Removes all current event handlers from 
+S*EVENT-INSTANCE.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*event*add-event-handler-fn}
+\label{s*event*add-event-handler-fn}
+
+\begin{description}
+\item [Name:]  s*event*add-event-handler-fn
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Parameters:]
+\item {\sl s*event-instance}:  symbol
+
+\item {\sl handler-fn-name}:  function symbol
+
+\item {\sl before-handlers}:  functional symbol
+
+\item {\sl after-handlers}:  function symbol
+
+
+\item [Return-value:] 
+List of function symbols or error object
+CONFLICTING-HOOK-CONSTRAINTS. 
+
+\item [Description:]
+Inserts HANDLER-FN-NAME into S*EVENT S*EVENT-INSTANCE
+so that BEFORE-HANDLERS and AFTER-HANDLERS constraintsw
+are satisfied.
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*event*remove-event-handler-fn}
+\label{s*event*remove-event-handler-fn}
+
+\begin{description}
+\item [Name:]  s*event*remove-event-handler-fn
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Parameters:]
+\item {\sl s*event-instance}:  symbol
+
+\item {\sl handler-fn-name}:  function symbol
+
+
+\item [Return-value:] Symbol of function being removed
+
+\item [Description:] 
+Removes function HANDLER-FN-NAME from S*EVENT-INSTANCE. 
+
+\item [Public:]
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node!newname-event-hooks}
+\label{s*node!newname-event-hooks}
+
+\begin{description}
+\item [Name:]  s*node!newname-event-hooks
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Description:]
+Holds a list of functions executed upon receiving a
+'new-node-name' event, i.e., with incoming event type 'n
+name', entity type is 'node' and the target node can be
+found in the local cache structure. 
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node!rename-event-hooks}
+\label{s*node!rename-event-hooks}
+
+\begin{description}
+\item [Name:]  s*node!rename-event-hooks
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Description:]
+Holds a list of functions executed upon receiving a
+'rename-node-name' event, i.e., with incoming event
+type 'n name', entity type is 'node' and the target
+node cannot be found in the local cache structure.
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node!delete-event-hooks}
+\label{s*node!delete-event-hooks}
+
+\begin{description}
+\item [Name:]  s*node!delete-event-hooks
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Description:]
+Holds a list of functions executed upon receiving
+delete-node event.  Each function is passed a node-ID.
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node!data-event-hooks}
+\label{s*node!data-event-hooks}
+
+\begin{description}
+\item [Name:]  s*node!data-event-hooks
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Description:]
+Holds a list of functions executed upon receiving a
+'write data' event.
+
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node!lock-event-hooks}
+\label{s*node!lock-event-hooks}
+
+\begin{description}
+
+\item [Name:]  s*node!lock-event-hooks
+
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+
+\item [Description:]
+Holds a list of functions executed upon
+receiving a 'lock' event.
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node!unlock-event-hooks}
+\label{s*node!unlock-event-hooks}
+
+\begin{description}
+\item [Name:]  s*node!unlock-event-hooks
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Description:]
+Holds a list of functions executed upon
+receiving a 'unlock' event.
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node!font-event-hooks}
+\label{s*node!font-event-hooks}
+
+\begin{description}
+\item [Name:]  s*node!font-event-hooks
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Description:]
+Holds a list of functions executed upon receiving
+a 'write-font' event.
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*node!geometry-event-hooks}
+\label{s*node!geometry-event-hooks}
+
+\begin{description}
+
+\item [Name:]  s*node!geometry-event-hooks
+
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+
+\item [Description:]
+Holds a list of functions executed upon receiving a
+'write-geometry' event.
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link!newname-event-hooks}
+\label{s*link!newname-event-hooks}
+
+\begin{description}
+\item [Name:]  s*link!newname-event-hooks
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Description:]
+Holds a list of functions executed upon receiving
+a 'write-geometry' event.
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link!rename-event-hooks}
+\label{s*link!rename-event-hooks}
+
+\begin{description}
+\item [Name:]  s*link!rename-event-hooks
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Description:]
+Holds a list of functions executed upon receiving a
+'new-link-name' event, i.e., with incoming event
+type 'n name', entity type is 'link' and the target
+link can be found in the local cache structure.
+
+
+\end{description}
+\horizontalline
+
+\subsection{s*link!delete-event-hooks}
+\label{s*link!delete-event-hooks}
+
+\begin{description}
+\item [Name:]  s*link!delete-event-hooks
+
+\item [Class:]
+{\sl s*event}\hfill(page~\pageref{s*event})
+
+\item [Description:]
+Holds a list of functions executed upon receiving
+delete-link event.  Each function is passed link-ID.
+
+
+\end{description}

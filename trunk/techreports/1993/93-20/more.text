@@ -1,0 +1,382 @@
+\section{Gtables in Egret-3.0.x}
+
+\subsection{General Assumptions}
+
+Let me start with a few general assumptions along with the rationale for
+making the design decision.  This initial section provides a broad overview
+of how things could work in 3.0.x.  Hopefully it will stimulate the reader to
+discover errors or improved mechanisms.
+
+\subsubsection*{Scope of Gagent Duties} 
+
+In 3.0, the event message field will be engineered in such a fashion as to
+provide all necessary information for non-connect time gtable maintenance.
+For example, each node creation event must include a message field that
+provides all the details about the node necessary to update all gtables.
+(Note: this might be somewhat interesting to engineer from the EGRET side.
+More about this below.)
+
+An implication of this assumption is that client-gagent interaction occurs
+only at connect time.
+
+{\em Rationale:} This assumption means that the scope of gagent duties are
+restricted to one goal: to support efficient and reliable connection by
+clients.
+
+\subsubsection*{Server-side representation of gtables}
+
+Each non-{\tt :automatic} gtable will be represented in the HBS by a single
+primary node.  Each {\tt :automatic} gtable will be represented in the HBS
+by a single primary node and by backup i-nodes for each entry. 
+
+The implication of this is that aux nodes and is-nodes, as well as all aux
+node and is-node processing is eliminated.
+
+{\em Rationale: } Since gtables are updated through events after
+connect-time, rather than through gagent communication, these
+representations and their associated processing is no longer necessary.
+
+\subsubsection*{Locking, or the lack thereof}
+
+Surprisingly, in this redesign there is no locking-related issues, since
+clients and the gagent have a strictly read-only relationship with each other.
+
+First, the gagent can keep a permanent lock on the gtable primary nodes,
+since it will be the only process writing to them.  And gtable primary
+nodes (and backup nodes) are the {\em only} nodes that the gtable is
+concerned with.  The gagent never writes to a user-node, and in fact never
+even reads one except when doing gtable recovery.  (It uses event messages
+under normal processing circumstances.)
+
+Similarly, clients can lock or unlock any of their own nodes independent of
+any gagent considerations, since the gagent will never desire a lock on
+them.
+ 
+\subsubsection*{New HBS operations}
+
+The HBS will be extended with the following new operations:
+
+\begin{itemize}
+
+\item RESTRICT (client-name)
+  
+  When the HBS processes this command, it will first send out an event
+  indicating the two clients to whom processing is now restricted. Next, it
+  begins processing commands from only two clients: the client that invoked
+  this operation and CLIENT-NAME.  Any requests received from other clients
+  during this time will be queued for later processing after an UNRESTRICT
+  command is processed.
+  
+  CLIENT-NAME may be the empty string, in which case processing is
+  restricted to the invoking client only.
+  
+  If processing is already restricted, then a non-success value is
+  returned and this request is ignored (no events generated).
+
+  All events are sent out to all clients as usual during RESTRICTED processing.
+
+\item  UNRESTRICT() 
+  
+  When the HBS processes this command, it sends out a corresponding event
+  indicating that processing is now unrestricted.
+  
+  Note that since the HBS is restricted when processing this command, one
+  of the restricted clients must be the one to invoke this command.
+  
+  Error signalled if processing was not restricted when this command was
+  processed.
+
+\item BROADCAST (message)
+  
+  When the HBS processes this command, it sends out a corresponding event
+  to all clients with MESSAGE as the message field.
+
+\item RECONNECT (client-name) 
+  
+  When the HBS processes this command, it sends out a corresponding event
+  indicating that client-name is "reconnecting".  Since the client is already
+  connected, the HBS does nothing else except generate the event.  (This
+  command will be used to resolve race conditions during client
+  connection.)
+
+\item CONNECTED (client-name)
+  
+  When the HBS processes this command, it sets an internal status flag for
+  the client to ``connected'', and sends out a corresponding event.  If this
+  status flag is not set, then the HBS will return an error and do nothing
+  if CLIENT-NAME attempts to DISCONNECT.
+  
+  {\em Rationale: } If a client sends a CONNECT request immediately
+  followed by a DISCONNECT request {\em before} the connect-time processing
+  is completed, then the gagent/HBS will likely hang in the RESTRICTED mode.
+  Thus, once a client attempts to CONNECT, it must be prevented from
+  disconnecting until the gagent/client handshaking is finished. 
+  
+  A second rationale for this command is so that clients can use the
+  receipt of a CONNECTED event to update their s*users gtable. (Recall that
+  they are required to ignore the CONNECT event.)
+
+ An implication of this is that if a client aborts out during setup, then
+ this might crash the client.
+
+\end{itemize}
+
+{\em Rationale:} These new operations will support reliable and
+efficient client-gtable communication during connect-time.
+
+\subsubsection*{Event and Message Processing}
+
+This section contains several miscellaneous assumptions concerning events
+and messages.
+
+\begin{itemize}
+  
+\item All clients (including the gagent) always provide their s*user*ID as
+  part of the message field when they invoke HBS operations.  
+  
+  {\em Rationale: } The identity of the client initiating an operation is
+  always known in a uniform manner using EGRET-level representations. This
+  is also needed since the user-name of the gagent or other agent might be
+  the same as a client (i.e. johnson, dat, etc.)
+  
+\item All clients (including the gagent) always ignore any event for which
+  they were responsible (as evidenced by their s*user*ID in the message
+  field.) 
+  
+  One implication of this is that clients are always responsible for
+  updating their own local gtables with the result of their own actions.
+  This also means that chronological ordering of events among clients
+  will not be preserved---I might update my own gtable before processing
+  an event from another client that represents an action that occurred
+  before mine. See Appendix \ref{app:synchronization} for an in-depth
+  discussion of this issue. In particular, this may have implications for
+  face-to-face mode.
+
+  {\em Rationale: } This establishes a uniform processing invariant that is
+  intended to simplify event processing algorithms. 
+
+\item The gagent is the only client that reacts to CONNECT or RECONNECT events.
+  
+  {\em Rationale: } This is intended to simplify the gagent implementation,
+  by allowing the gagent to be implemented as a ``normal'' EGRET client that
+  simply does some additional processing under certain circumstances.
+    
+\item All clients always ignore gagent-initiated events, except when they
+  are connecting.
+  
+  {\em Rationale: } This is intended to raise a ``firewall'' between the
+  clients and the gagent, and further ensure that the scope of their
+  interaction is limited to connect-time only.  It also allows the gagent
+  to periodically make changes to the gtable primary nodes without worrying
+  that clients will react to these events.
+
+\end{itemize}
+
+
+\subsection{Connect time processing}
+
+Now, let's look at the sequence of actions during connect time, first from
+the gagent's perspective, and next from the client's perspective.
+
+\subsubsection{The gagent perspective}
+
+Normally, the client is sitting around processing events just like
+everybody else.  However, something special happens when clients connect, 
+as described next.
+
+\begin{enumerate}
+
+\item One or more clients send a CONNECT request to the HBS.  
+  
+\item The HBS receives one or more CONNECT requests and
+  generates CONNECT events.
+  
+\item The gagent receives the first CONNECT event and sends a RESTRICT
+  command indicating the client to which processing should be restricted.  If
+  the RESTRICT command fails, then the gagent proceeds quietly.  
+  
+  If the RESTRICT command succeeds, then the gagent performs the following
+  two steps in sequence:
+  \begin{enumerate}
+    
+  \item It processes all pending events. 
+    
+    These events are typically updates to gtables that the connecting
+    client would have missed.  
+   
+    The gagent continues to process pending events until it receives and
+    processes the RESTRICT event, which is the last event that the HBS
+    sent out before queueing commands.
+    
+    Note that if the gagent encounters other CONNECT events while
+    performing this processing, it is free to send more RESTRICT
+    commands to the HBS.  Since the return value will be
+    non-successful, no "recursion" during this connection process will
+    occur.
+    
+  \item It writes out an {\em accurate} (as defined in Appendix
+    \ref{app:synchronization} version of each gtable to its primary
+    node.  (Each of these writes will generate an event that will be noticed
+    by the connecting client.)
+
+  \item The client now returns to normal mode.
+  \end{enumerate}
+\end{enumerate}
+
+First, to simplify the presentation, I have referred only to CONNECT events
+above. However, the gagent actually performs this sequence of actions 
+when it receives {\em either} a CONNECT or a RECONNECT command. 
+
+First, note that this single, special behavior, triggered by the receipt of
+a CONNECT event (that is always ignored by all other clients), is the {\em
+only} major difference between a gagent and a normal client in EGRET.
+Otherwise, gagents are exactly similar to normal clients: they maintain
+their own local copies of gtables, and update them in response to HBS
+events just like everyone else.
+
+
+Actually, there is one other (minor) difference: the connect sequence for
+gagents must be different since there will be no other gagent around for
+this client to connect with.
+
+\subsubsection{The client perspective}
+
+Now let's look at connect time protocol from the client's perspective:
+
+\begin{enumerate}
+
+\item The client sends a CONNECT command to the HBS.  
+  
+\item It downloads the boot node to obtain the information needed to
+  identify the gagent, primary nodes, and so forth.
+  
+\item The client begins processing events, ignoring all events except
+  RESTRICT events. Once a RESTRICT event is encountered:
+  
+  If the RESTRICT event has this client's ID, then:
+  \begin{enumerate}
+  \item It continues ignoring events except for writes to gtable primary
+    nodes. In reaction to these events, the client reads the primary node and
+    initializes its local version of the gtable.
+    
+  \item Once all gtables have been initialized, the client sets itself up
+    to listen to all events in a normal fashion.
+    
+  \item Once it is set up to listen to all events normally, it sends a
+    CONNECTED command and an UNRESTRICT command to the HBS.
+  \end{enumerate}
+
+  If the RESTRICT event is not associated with this client, then this
+  client sends a RECONNECT command to the HBS.
+
+\end{enumerate}
+
+Important: It is possible that a client could receive a RESTRICT event with
+its own client-ID even after it is connected.  This is because each client
+will send a RECONNECT command in response to each non-applicable RESTRICT
+event during its connect time.  Each client must do this since it can't
+know whether the gagent has thrown away its original connect/reconnect
+message.  
+
+In the event that N clients connect ``simultaneously'', then the last
+client might call RECONNECT a maximum of N-1 times before receiving its own
+RESTRICT command.
+
+Fortunately, this situation can be dealt with in a simple manner.  If a
+client receives a RESTRICT event naming itself during ``normal''
+processing, then all it has to do is immediately call UNRESTRICT. This will
+reopen processing from the HBS perspective.  The only undesirable effects
+of this ``extra'' RESTRICT call is the small amount of time that the HBS
+restricts access, and the fact that the gagent will write out the gtables
+to the primary nodes.
+
+\subsubsection{Concluding Design Rationale Commentary}
+
+\paragraph {The good news.}
+This connect time algorithm is perhaps more complicated than one would have
+hoped for.  Nevertheless, it is still a great simplification over the
+current implementation, for the following reasons. 
+
+First, gagents only support client connection.  This vastly simplifies the
+representation of gtables in HBS and the gagent's processing.  In fact,
+gagents can now be implemented as ``normal'' Egret clients, with only two
+differences: CONNECT/RECONNECT events processing is handled in a special
+way, and the connection of the gagent itself must be handled in a special
+way.
+
+Second, clients have a well-defined, and strictly delimited relationship
+with the gagent. After connect time, clients can function perfectly
+normally even if the gagent crashes. Locks are not even mentioned in this
+design, since they are essentially irrelevent.
+
+Third, the handshake between client and gagent is very simple: the client
+says, ``I'm connecting'', the gagent responds by writing out an accurate
+version of all the gtables, and the client responds to those writes by
+reading them in.
+
+In conclusion, a simple algorithm, will well-defined roles and strictly
+limited responsibilities, is typically easier to understand, easier to
+implement, and easier to make reliable.
+
+\paragraph {The bad news.}  
+This connect time algorithm may incur significant performance penalties 
+over our current (unreliable, and currently nonfunctional :-)
+implementation for the following three reasons.
+
+First, at connect time the entire contents of all gtables must be written
+to the HBS by the gagent.  In addition, the entire contents of all gtables
+must be read from the HBS by the connecting client. In general, the time to
+connect will be a minimum of the sum of times to both read and write each
+gtable. This is the {\em best case} scenario.
+
+Second, connect time may be much worse than the best case, in the event
+that multiple clients connect simultaneously.  In this case, the effective
+connect time is the best case time {\em multiplied} by the number of
+simultaneously connecting clients.  I refer to ``effective'' connect time
+since even after successful connection, the clients will be blocked from
+accomplishing any work until after the last client connects. 
+
+Three, clients will suffer momentary pauses during processing each time a
+new client connects. This pause will be equal at a minimum to the best case
+scenerio, or potentially worse if simultaneous connections occur.  
+
+The usability impact of this performance degradation is a function of (1)
+how long it takes to read and write the tables, which is itself a function
+of their size, and (2) the frequency of co-occuring connections.
+
+Fortunately, I believe that a simple change on the client side can
+substantially ameliorate this problem.  Remember that the client has two
+things to do to set up a gtable.  First, it must download the gtable node
+from the HBS.  Second, it must process the node contents, and build an
+internal hash table.  I believe that well over half of our current connect
+time processing involves the second activity, which is purely local
+processing.  Thus, consider client-side processing as follows:
+\begin{enumerate}
+\item Download {\em all} gtable nodes into separate buffers without any
+local table building.
+
+\item Send the UNRESTRICT command.
+
+\item Build the local tables. 
+
+\item Begin processing events. 
+\end{enumerate}
+
+In this case, other clients will not be waiting for a client to finish
+building its own local tables.  Just as a guess, I bet that it takes no
+more than a couple of seconds to read or write most gtables if no local
+post-processing is going on.  I would think that a half-dozen gtables could
+be processed in about 10 seconds. 
+
+\subsection{Non-connect time processing}
+
+As mentioned above, non-connect time gtable processing occurs through
+message passing.  The principle engineering problem here are: (1) how to
+specify in the s*gtable*define form what needs to go in a message, (2) to
+deal with the fact that different gtables may want to add their own
+messages to the same HBS event, and (3) to allow each gtable access to its
+own message once an event comes in.
+
+These issues aren't hard, but they do require some work. I leave it as an
+exercise to the reader. :-)
+

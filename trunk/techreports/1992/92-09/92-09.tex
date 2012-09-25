@@ -1,0 +1,157 @@
+\documentstyle[]{article}
+
+
+%%%%%%%%%%%%%%%magic definemargins command follows%%%%%%%%%%%%%
+\makeatletter
+
+\newlength{\@marpageheight}
+\newlength{\@marpagewidth}
+\newlength{\@computedmargin}
+
+%%
+%% 92-09.tex -- Defines the physical page size.
+%%
+
+\newcommand{\pagesize}[2]{%
+  \setlength{\@marpageheight}{#1}%
+  \setlength{\@marpagewidth}{#2}}
+
+%%
+%% \definemargins{topmargin}{bottommargin}{leftmargin}{rightmargin}
+%%               {headup}{footdown}
+%%
+%% Note: - parameters for marginal notes are not handled here;
+%%       - all dimensions will be stretched about 2 percent.
+%%
+
+\newcommand{\definemargins}[6]{%
+  \setlength{\textwidth}{\@marpagewidth}%  Determine \textwidth by
+  \addtolength{\textwidth}{-#3}%           subtracting each side
+  \addtolength{\textwidth}{-#4}%           margin.
+  \if@twoside %                            Values for two-sided printing:
+    \setlength{\@computedmargin}{\@marpagewidth}
+    \addtolength{\@computedmargin}{-#3}
+    \addtolength{\@computedmargin}{-\textwidth}
+    \oddsidemargin #3 %                    Left margin on odd-numbered pages.
+    \addtolength{\oddsidemargin}{-1.0in}
+    \evensidemargin \@computedmargin%      Left margin on even-numbered pages.
+    \addtolength{\evensidemargin}{-1.0in}
+  \else %                                  Values for one-sided printing:
+    \oddsidemargin #3 %                    \oddsidemargin = \evensidemargin.
+    \addtolength{\oddsidemargin}{-1.0in}
+    \evensidemargin #3
+    \addtolength{\evensidemargin}{-1.0in}
+  \fi
+  \topmargin #1 %                          Nominal distance from top of page
+                %                          to top of text.
+  \addtolength{\topmargin}{-#5}
+  \addtolength{\topmargin}{-1.0in}
+  \setlength{\textheight}{\@marpageheight}
+  \addtolength{\textheight}{-#1}
+  \addtolength{\textheight}{-#2}%          Determine \textheight from #1 and #2.
+  \headsep #5 %                            Space between running head and text.
+  \footskip #6 %                           Distance from top of box containing 
+               %                           foot to baseline of last line of text.
+  \addtolength{\footskip}{\footheight}
+}
+
+\pagesize{11in}{8.5in}
+\definemargins{0.75in}{0.75in}{0.75in}{0.75in}{0.3in}{0.3in}
+\makeatother
+
+\pagestyle{empty}
+\begin{document}
+\columnsep .2in
+\twocolumn
+\title{{\bf Architectural Concerns in EGRET}}
+\author{Philip Johnson\\
+             Department of Information and Computer Sciences\\
+             University of Hawaii, Honolulu, HI 96822\\
+             {\tt johnson@hawaii.edu}}
+
+\maketitle
+\sloppy
+
+
+EGRET \cite{Johnson92a} is an environment for exploratory
+collaboration: its basic purpose is to allow groups to dynamically
+explore the structural nature of collaborative artifacts.  This
+fundamental requirement has two immediate implications. First, EGRET
+must provide support for groups as they collaborate together upon a
+common task.  Second, EGRET must support a dynamic and extensible
+structure definition facility, along with supporting analysis and
+environment tools.  
+
+The requirements for EGRET motivate two specific architectural
+idiosyncracies--- ``heavy-weight'' clients and ``gtables.''  This
+position page briefly overviews these architectural decisions.
+Details about the EGRET architecture can be found in \cite{Johnson92b}.
+
+From an extremely abstract viewpoint, EGRET's architecture is a
+classic client-server database.  There is a central database process
+that stores the contents of the database, and client processes connect
+to it in order to obtain information from it or add information to it.
+Clients communicate with each other via changes to the database; no
+direct inter-client communication is currently supported.
+
+In classic client-server database architectures, most information
+processing capabilities are contained in the server, while the
+capabilities of the clients are rather simple.  For example, the
+server process will implement a highly structured database and a
+sophisticated query language, relieving the client of all information
+processing responsibilities except those needed to generate queries.
+
+In contrast, the trend in EGRET has been toward increasingly
+simplified information processing within the database server process
+and increasingly powerful client-side processing.  We call this the
+{\em heavy-weight client} orientation.  For example, we now have a
+mixture of human and non-human (autonomous) clients connecting to 
+our centralized server database process. The autonomous clients 
+give the appearance of a more powerful, expressive, and responsive
+database server to the human clients.   
+
+Second, a classic dynamic tension in hypertext systems exists between
+the requirements of hypertext applications for dynamic and relatively
+unpredictable structuring of information, and the performance
+requirements for fast access, retrieval, and querying.  Relational
+database models typically fulfill performance requirements, but at the
+cost of statically defined and rigidly constrained structuring of
+information.  Many hypertext systems, such as resolve this tension by
+implementing a hypertext model on top of an underlying relational
+database system.  Such systems must trade-off generality in their
+hypertext model in order to accomodate the constraints imposed by the
+underlying relational database mechanism.
+
+In contrast, in EGRET the underlying platform is a pure hypertext
+database system, supporting dynamic creation of arbitrarily-sized
+nodes with unconstrained relationships between them via links.  For
+performance and query processing, EGRET provides a mechanism called
+{\em gtables} to build application-specific, locally cached, high
+performance tables.  Thus, EGRET allows a developer to build in just
+those relational capabilities required for the particular application
+area, without suffering the restrictions imposed by the entire
+relational model. This architectural decision has its own set of
+trade-offs that we are just beginning to elucidate.
+
+\begin{thebibliography}{9}
+
+\bibitem{Johnson92a}
+Philip Johnson. {\em Supporting Exploratory CSCW with the EGRET
+Framework.} In Proceedings of the 1992 Conference on Computer
+Supported Cooperative Work, Toronto, Canada. November, 1992.
+
+\bibitem{Johnson92b}
+Philip Johnson and Dadong Wan and Danu Tjahjono. {\em 
+EGRET Version 2 Design Specification.} Collaborative
+Software Development Laboratory Technical Report 91-02, 
+University of Hawaii Department of Information and Computer Sciences,
+Honolulu, HI. Last revision: July, 1992.
+
+\end{thebibliography}
+
+{\it Support for this research was provided in part by the
+National Science Foundation Research Initiation Award CCR-9110861 and
+by the University of Hawaii Research Council Seed Money Award
+R-93-868-F-728-B-430}
+
+\end{document}

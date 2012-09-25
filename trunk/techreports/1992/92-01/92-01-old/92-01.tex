@@ -1,0 +1,234 @@
+\documentstyle [11pt,titlepage,
+                     /home/13/johnson/Tex/definemargins,
+                     /home/13/johnson/Tex/lmacros]{article}  
+
+\include{/home/13/johnson/Tex/figureholder}
+
+\begin{document}
+\begin{titlepage}
+
+\vspace*{1in}
+\begin{center}
+
+{\Large\bf Supporting Exploratory CSCW} \medskip\par
+{\Large\bf with the EGRET Framework}\bigskip\par
+
+{\large Philip Johnson\foot{Support for this research was provided in
+part by the National Science Foundation Research Initiation Award
+CCR-9110861 and the University of Hawaii Research Council Seed Money
+Award R-91-867-F-728-B-270.}}
+
+Department of Information and Computer Sciences\\ 
+University of Hawaii\\ 
+Honolulu, HI 96822 \medskip\par
+
+(808) 956-3489\medskip\par
+{\tt johnson@uhics.ics.hawaii.edu}\medskip\par
+\today \bigskip\par
+{\bf Submission Category:} Paper
+\end{center}
+\end{titlepage}
+
+\ls{1.0}
+\subsubsection*{Abstract}
+  
+Exploratory collaboration occurs in domains where the structure and process of group work evolves as an intrinsic part of the collaborative activity.  Traditional database and hypertext structural models do not provide explicit support for collaborative exploration.  The EGRET framework defines both a data and a process model along with supporting analysis techniques that provide novel support for exploratory collaboration.  To do so, the EGRET framework breaks with traditional notions of the relationship between schema and instance structure.  In EGRET, schema structure is viewed as a representation of the current state of consensus among collaborators, from which instance structure is allowed to depart in a controlled fashion.  This paper discusses the issues of exploratory collaboration, the EGRET approach to its support, and the current status of this research.
+
+\section{Introduction}
+
+Group work is unpredictable. It is unpredictable for a variety of reasons: the task may be ambiguous, the methods for accomplishing the task may be unclear, the backgrounds and motivations of the group members may lead to unforeseen events, individual group members and their relationships with other members may change, increasing understanding of the task and domain may change the group process, and so forth.  As a result, surprisingly little can be determined {\em a priori}\/ about the way some groups will perform their tasks, or even what tasks these groups will eventually perform.  Adapting terminology from software engineering, we call such group work {\em exploratory}\/ in nature.
+
+This paper concerns computer support for one of the fundamental characteristics of exploratory group work: the dynamic, emergent, and evolving nature of the structure of information and artifacts produced by exploratory collaborative activities.  To investigate this phenomena, we have designed a framework for collaborative systems that provides novel mechanisms for evolution of information and its structure as an integral part of the collaborative activities.  These mechanisms also provide a historical record of the collaboration, with interesting potential for process improvement and artifact preservation.
+
+This paper describes an implementation of this framework called EGRET\foot{\underline{E}xploratory \underline{Gr}oup Work \underline{E}nvironmen\underline{t}}.  The next section discusses the nature of exploratory group work, illustrating it via an example of collaborative software development.  The following section presents the EGRET data and process model for support of collaborative exploration and evolution. The remainder of the paper contrasts EGRET with other research and discusses the status and future directions of the project.
+
+\section{Exploratory Collaboration}
+
+In \cite{Giddings84}, exploratory domains are characterized as {\em experimental} and {\em embedded}. Experimental means that the appropriate structure and process for problem solving in the domain cannot be well determined except through experimentation with a variety of techniques.  Embedded means that the introduction of new support may impact upon the domain in unpredictable ways.  Exploration, which often arises in traditional collaborative activities such as software development, document generation, and so forth, implies that the group might not be able to precisely characterize in advance how they will accomplish their task, or even the ultimate result of their efforts.
+
+For these reasons, exploratory collaboration typically results in significant evolution in the structure, content, and process by which information is created and manipulated by the group.  As the group works, they acquire more knowledge about both the domain and the working styles and skills of the other group members.  Indeed, individual working styles and skill levels are typically changed by this collaboration.  This circularity further emphasizes the {\it emergent} nature of exploratory collaboration.
+
+As a concrete scenario, consider a group of software developers collaboratively producing a novel, object oriented application requiring high reliability.  Furthermore, assume that these developers have a mixture of backgrounds---some are experienced C programmers, others experienced Lisp programmers, while still others are programming novices. Members also differ in familiarity with object oriented concepts, and of those familiar with object orientation, their understanding of the paradigm differs significantly depending upon whether their background involved C++ (a C-based OO dialect) or CLOS (a Lisp-based OO dialect).
+
+The reliability demands on this application require good software engineering practices: for example, periodic reviews and inspections of the design and implementation during development.  As with all review and inspection activities, one major goal is to uncover errors, i.e. points of inconsistency between the specification and implementation of the system.  However, this group work scenario also involves significant exploratory activities:
+
+\begin{itemizenoindent}
+  
+\item {\em Discovery of variations in design/implementation structures and processes among members.} The diversity of member backgrounds will result in a diversity of approaches to design and implementation, regardless of the target language(s) for the application.  Most of these `prejudices', ranging from the simple (C idioms for iteration) to the complex (CLOS idioms for multiple inheritance) cannot be consciously specified by the developers {\em a priori}.  Instead, most of these techniques and idioms only reveal themselves during actual review of specific design or implementation fragments, usually by members not sharing their `mindset'.
+  
+\item {\em Formation of structure and process-level standards for development activities.} Following discovery of variations, the group must decide upon a consensual course of action.  Typical alternatives include: (a) the variation represents one among a number of acceptable alternative possibilities; (b) the variation represents a standard to be mandated for all members; or (c) the variation is unacceptable and requires correction.
+  
+\item {\em Adaptation of the review/inspection process to accomodate emergent design/implementation standards.} The standards for design and implementation emerging from the review and inspection process impact upon the process itself.  A major purpose of future reviews is to ensure conformance to previously defined standards.
+  
+\item {\em Adaptation of review/inspection artifacts to accomodate emergent design/implementation standards.} To support adherence, the structure and content of supporting artifacts used in review/inspection must evolve.  Such changes could involve simple additions or deletions to checklists, incremental generation of design guideline document complete with hypertext links to examples of correct or incorrect code, integration of automated tools to ensure conformance to a new guideline, and so forth.
+  
+\end{itemizenoindent}
+
+\emptyfigure{fig:setf}{Two Design Artifacts with Different Structures}{2in}
+
+Figure \ref{fig:setf} illustrates a simple but exemplary situation that arises in this scenario.  In the description of the {\tt s*node*name} object, the Lisp orientation of the designer is betrayed by the boolean {\bf setf-able} field implying that updates occur through overloading the {\tt setf} construct.  In a different member's design of the {\tt s*link*name} object, the attribute template conforms to a C++--oriented view of updating and encapsulation, using a {\bf set-operation} field that contains a link to the corresponding update operation.
+
+While the two alternatives are essentially equivalent in semantics, they differ significantly in structure.  In one case, a simple boolean value suffices to indicate an updatable attribute, while the other case requires a link rather than a boolean, as well as an additional node documenting the design of the update operation.
+
+While some might believe that such an issue can be easily resolved in advance, there is no obviously preferable alternative. In fact, allowing the group to explore alternative design structures can be useful. For example, if the group becomes polarized over the alternatives, it may be best to simply allow both and let each member use their favored version.  If the entire application will be implemented in C++, standardizing on the link version may be preferable. A CLOS implementation may dictate the opposite. If the application is a hybrid of C++ and CLOS, then mandating different structures for different design parts may be best.  Some other conclusion might be reached if the boundary between the CLOS and C++ components is not firm.
+
+This scenario of exploratory group work clearly exhibits both experimental and embedded properties. It is experimental because the most appropriate set of guidelines can only emerge through the process of development itself, and the incremental discovery of each member's techniques and preferences and their impact upon other members' work.  It is embedded because the incrementally emerging set of guidelines fundamentally affects the future form and course of collaboration.
+
+Computer support for the exploratory definition and evolution of artifacts such as the design template structure above requires addressing several fundamental issues. First, what is an appropriate structure and process model for defining such collaborative artifacts? Second, how can that model support changes in the appropriate structure of artifacts as the collaborative activity proceeds?  Finally, and perhaps most importantly, how can the exploratory definition and adaptation of artifacts be accomplished in a truly {\em collaborative}\/ fashion?
+
+The EGRET framework is our answer to these questions.  It defines a data model and a process model that facilitates a collaborative approach to evolution in the structure and content of exploratory artifacts.  To accomplish this, EGRET fundamentally redefines the meaning of structural schemas and instances and the relationship between them.  These issues are explored in detail in the next section.
+
+\section{The EGRET Data and Process Model}
+
+At core, EGRET implements a multi-user hypertext model of information, where typed nodes of information are related together via typed links.  The key issue explored in EGRET is the relationship between node and link types, their instances, and the changes in these relationships over time.  The next section begins this discussion through a conceptual overview of the fundamental entities in EGRET: nodes, schemas, fields, links, and layers. A more formal definition of the EGRET data model is found in \cite{csdl-91-02}.
+
+\subsection{The EGRET Data Model}
+
+\subsubsection{Nodes}
+
+EGRET {\em node instances}\/ are the basic repository for information.  Each node instance is a composite of an arbitrary number of {\em fields}.  Each node instance has associated with it a {\em node schema}.  A node schema provides a default specification of the internal structure--the set of fields---to be used when creating new node instances conforming to this schema.  Figure \ref{fig:node-schema} illustrates this relationship for the node instance {\tt s*link*name} shown previously in Figure \ref{fig:setf}.
+
+\emptyfigure{fig:node-schema}{Instance and schema for {\tt s*link*name}}{2in}
+
+A key difference between the EGRET data model and conventional database models is that node schemas provide only a default, rather than an absolute specification of node instance structure.  In fact, the actual structure of an EGRET node instance can depart arbitrarily from the structure specified by its node schema. This capability for (temporary) structural inconsistency forms the core of support for exploratory collaboration in EGRET.
+
+Node instances are created in two ways: by {\em instantiation}, where a node schema forms a template for the creation of a node instance, or by {\em cloning}, where another node instance, rather than a node schema, forms the template.
+
+Egret includes a simple structural inheritance mechanism to create hierarchies of node schemas.  One node schema can be defined as the subschema of one or more other node schemas, which means that the structure of those schemas are inherited directly into the new schema.
+
+\subsubsection{Fields}
+
+Following a hypertext orientation, fields can potentially contain arbitrary mixtures of text and links to other nodes, although field contents are typically constrained through the use of {\em field schemas}.  Defining a new field schema requires the implementor to supply a {\em validity function}: a function that is passed the field contents and returns a boolean indicating whether or not the field conforms to the schema.  Using this mechanism (and exploiting the power of Emacs), it is relatively straightforward to implement specialized textual fields for structured information such as `Bibtex-entry' or `C-function'.  It is similarly straightforward to constrain a field to hold only link instances of a single schema or set of schemas.
+
+In the node instance {\tt s*link*name} illustrated in Figure \ref{fig:setf}, there are six fields: Name, Class, Layers, Contents, Description, and Set-Operation.  Name, Contents, Layers, and Description are simply constrained to hold text.  The Set-Operation field is constrained to hold a single link instance with schema Operation.  The Class field is similarly constrained to hold a single link with schema Class.  The Contents field could easily be constrained to hold `structured text' conforming to a data description language.
+
+Fields can be incrementally added to either node schemas or node instances.  When a field is added to a node schema, it changes the default specification for the field-level structure of future node instances of that type. When a field is added to an existing node instance, its effect is to add that field structure to the single node instance. Fields can also be incrementally deleted from node instances or schemas.
+
+\subsubsection{Links}
+
+Links are typed pointers from fields to nodes. As with node instances, link instances are associated with a link schema. Unlike node schemas, however, the purpose of a link schema is to specify the valid domain and range of a link instance.  Both the domain and range of a link instance is specified through a link {\em constraint expression}, which operates over the set of node schemas.  (The constraint expressions combine with field validity functions to enforce the field-to-node semantics for links.)  The relationship between link instances and link schemas is analogous to that between node instances and node schemas: while the default structure for a link is specified by its associated schema, individual link instances may depart arbitrarily from this structure. EGRET provides functions to modify the constraint expressions associated with both link schemas and link instances.
+
+Referring again to the node instance {\tt s*link*name} in Figure \ref{fig:setf}, there are two links displayed, one from its Class field to the node instance {\tt s*link}, and another from its Set-Operation field to the node {\tt s*link*set-name}. These links are actually constrained only in their range---in other words, they can link arbitrary node instances to a node of type Class (or Operation).
+
+\subsubsection{Layers}
+
+EGRET provides the ability to partition the database into (potentially overlapping) sets of schemas, instances, fields, and links called {\em layers}. Conceptually, layers can be viewed as a namespace mechanism, or alternatively as a set of tags for EGRET entities that are orthogonal to the type system.  For example, both {\tt s*node*name} and {\tt s*link*name} are members of the {\tt *active*} layer.
+
+The fundamental purpose of layers is to support the process of exploratory collaboration.  Layers accomplish this by defining both focal points for current collaborative activity, and by delimiting archival instances that may be structurally inconsistent with their schemas but do not require maintenance activities to bring them into conformance.
+
+\subsection{Structural Inconsistency in EGRET}
+
+The single most important (and probably most contentious) result of the EGRET data model is the capability of instance structure to diverge from schema structure.  For example, Figure \ref{fig:setf} displays two instances of an Attribute node type with different internal field structure.  Figure \ref{fig:node-schema} reveals that neither node is strictly compliant with its schema, since both contain an additional field not present in the schema.  This typically occurs when the structure of an object is initially under-specified, and members of a group invent different solutions to filling in the missing structure.
+
+EGRET aids and abets this structural inconsistency through the instance cloning mechanism, which allows new instances to be created from old instances. This allows group members to avoid time-consuming re-derivations of useful divergent structures from their original schema structure.
+
+Left unchecked, instance divergence would inevitably lead to a `spaghetti-like' collaborative system lacking any structural uniformity, and of uncertain benefit to the group.  To counteract this tendency toward structural entropy, the EGRET framework embeds the structural flexibility of its data model within a process model that helps the group to exploit the utility of this flexibility, while preventing the system from becoming unwieldy.
+
+\subsection{The EGRET Process Model}
+
+Building upon experiences with exploratory software development and other process models, \cite{Sheil84,Partridge86,Boehm88,Balzer91}, EGRET implements a new process model for collaboration called Ex-Con (for ``exploration and consolidation.'')
+
+Ex-Con models collaboration as a cyclical process of individual experimentation and divergence from established group norms, followed by a period of consolidation, where the differing experiences of individuals are reviewed and collective, integrative action is taken.  The resulting consensual structures and policies form a platform for a new phase of individual experimentation.
+
+In the EGRET data model, schemas represent these consensually agreed upon group norms for the structure of artifacts.  In order to support experimentation, the EGRET data model allows individuals to modify the structure of individual instances, and to create whole populations of instances with deviant structures via instance cloning.  Fortunately, since the group consensus is explicitly represented by schemas, EGRET can provide analysis mechanisms to help the group (a) determine when consolidation activities should take place; and (b) what form of consolidation might be appropriate.
+
+The Ex-Con model consists of three basic states, or phases of collaborative activity, called the Consensual, Exploration, and Consolidation States.
+
+\subsubsection{The Consensual State}
+  
+Collaboration begins with some form of consensus (or near consensus) collaborative structure. For the currently active layer, this means that node and link instances are structurally consistent with their schemas.
+
+\subsubsection{The Exploration State}
+
+Collaboration proceeds, during which time individual members may modify individual instances by addition or subtraction of fields, and replication of these altered instances occurs via cloning rather than via schema instantiation.  For example, a C++ programmer may populate the database with dozens of node instances that illustrate her choice of instance-level structure in a variety of contexts.  A CLOS programmer might do the same. Metrics are used to monitor the level structural inconsistency in the collaborative database. When indicated by these metrics (perhaps in concert with other domain-specific activities), a period of consolidation begins.
+
+\subsubsection{The Consolidation State} 
+
+Consolidation begins by determining the differences between the consensual schema structures and their associated instances. EGRET provides a summarization function that generates a list of each schema and the number and type of instance deviations in terms of the set of fields.  Depending upon the nature of these differences, one or a combination of the following activities may occur:
+
+\begin{itemize}
+\item Instances are modified into structural conformance with their schemas.
+  
+\item Schemas are modified into structural conformance with their instances.
+  
+\item A new active layer is created, and selected EGRET entities are migrated into it.
+\end{itemize}
+
+The first two activities typically occur when differences between the schema and instance structure are relatively minor.  For example, in the case of the Attribute schema in Figure \ref{fig:node-schema}, consolidation might occur by adding the Set-Operation field to the Attribute schema, implicitly bringing many instances into structural conformance.  The remaining instances containing the Setf-able field would be brought into conformance by replacing that field with a Set-Operation field and a link.
+
+Consider, however, a situation in which consolidation activities lead to a major restructuring, in which entire sets of instances and their associated schema will no longer be a part of the new organizational strutcure.
+
+While such entities are inconsistent with the newly defined consensual schema structures, it would be wasted effort to bring them into conformance, since they are no longer relevent to the process.  On the other hand, they might be important for design rationale purposes, in that they document an alternative that was explored but not chosen.
+
+EGRET supports this situation by allowing developers to create a new active layer and then ``migrate'' the appropriate structures and instances to it. Migration occurs in two ways, depending upon whether the schema or instance is migrated with modifications or without modification. When migrated without modification, the schema or instance retains membership in the old layer while acquiring membership in the new layer.  When migrated with modification, the prior version of the schema or instance is retained within the old schema, and a new version of the schema or instance is created in the new schema.
+
+The result of consolidation processes is to move the collaborative database back into a consensual state, from which point new exploratory forays can take place.
+
+\subsection {Support Tools for the Ex-Con Process Model}
+
+In order to support effective transition between exploration and consolidation states, EGRET currently provides relatively simple analysis tools for assessment of structural inconsistency in the system. The two primary tools compute two metrics called {\em Schema Divergence}\/ and {\em Instance Convergence}.
+
+\subsubsection{Schema Divergence}
+
+Schema Divergence provides a quantitative measure of the degree of structural inconsistency between a schema and its instances.  The Schema Divergence metric for a single schema $S$ is computed as the simple sum of the {\em Diff}\/ of the schema with each of its instances.  The {\em Diff}\/ of a schema with an instance is simply the sum of number of fields that appear in the schema but not the instance, or vice versa. Aggregating all the individual measures of schema divergence provides a measure for the collaborative database as a whole.
+
+A low Schema Divergence value for a schema $S$ indicates that most of its instances are structurally conforming.  In addition, if various group members have created instances of this structure, then the schema $S$ may represent a consensual structure.  If most or all of the instances have been created by a single group member, then less can be inferred about the consensuality of $S$.
+
+A high Schema Divergence value for a schema $S$ indicates structural inconsistency, but this metric alone does not aid in choosing among any of several potential resolutions: (a) Change $S$ to better reflect its instance's structure; (b) Change $S$'s instances into better structural conformance with it; (c) Change both both instance and schema structure toward a common "middle" ground; or (d) migrate the instances, since they have evolved into better conformance with another schema.
+
+\subsubsection{Instance Convergence}
+
+Instance Convergence provides a quantitative measure of any instance-level structural clustering differing from the clustering that naturally occurs around their schema's structure.  The goal of this metric is to identify instances that should be migrated to another schema, or sets of instances with a common structure that should be elevated to the schema level.
+
+The Instance Convergence metric for an instance $I$ is zero if the instance conforms to its schema structure, and is otherwise the number of other instances with an identical field-level structure.
+
+A low Instance Convergence metric indicates that $I$ either conforms to its schema, or else $I$ is an ``oddball" instance with little conformance to other instances (even instances of other schemas).
+
+A high Instance Convergence metric indicates that $I$ conforms to a number of other instances structurally, but does not conform to its own schema structure.  There are two fundamental ways this can occur.  First, the instance might conform to a different schema structure (with a number of conforming instances)---this indicates the instance might require retyping.  Second, the instance might conform to other instances of its own type that all diverge in the same way.  This may indicate the need to modify the schema into greater conformance, or alternatively, to create a new schema with a structure conforming to these instances, and retype the instances appropriately.  This second alternative is especially justified when the instances were created by different members of the group, indicating some consensus on their validity and utility.
+
+\subsubsection{Parameterizing the Metrics}
+
+The Instance Convergence and Schema Divergence can be parameterized in two important ways. The first way is by allowing ``mismatches''---for the Schema Divergence metric, this means allowing a certain amount of divergence between schema and instance before returning a non-zero value.  For Instance Convergence, this means reporting a match between two instances even when their field structure differs by a specified amount.  Such coarsening of the metrics can help smooth out temporary anomolies in the database structure.
+
+The metrics can also be parameterized to operate only within a certain set of layers.  This provides a crucial feature in exploratory databases, where large numbers of inconsistent instances may be temporarily created but not found to be ultimately useful.  As noted before, while these instances have value as an ``audit trail'' of the design alternatives, they can also artificially inflate the Schema Divergence metrics.  By relegating these instances to an inactive layer and parameterizing the metric computations to only currently active layers, this problem can be avoided. Figure \ref{fig:param} illustrates this issue.
+
+\emptyfigure{fig:param}{The Aggregate Schema Divergence Metric with and without layer parameterization}{2in}
+
+\section{Related Work}
+
+While there is a great deal of research on appropriate data models for hypertext and hypermedia systems\foot{See \cite{Boone91} for a survey.}, we know of no other work with EGRET's explicit focus on collaborative structural evolution.  For example, other data modelling approaches explore the isomorphism between graphs and hypertext networks \cite{Anderegg90,Tompa89}, user interface issues \cite{Akscyn88}, or the application of formalisms such as Petri nets \cite{Stotts89}.
+
+Support for collaboration in traditional databases and hypertext systems typically involves traditional concurrency control, transaction management, and versioning facilities. EGRET simply ``passes on'' these facilities from its underlying database server mechanism to the user.  The ``contexts'' mechanism \cite{Delisle87} for providing logical workspaces comes close to our concerns, yet these workspaces do not allow {\em structural}\/ exploration of the form supported in EGRET.
+
+There has been some work on extensible CSCW systems, for example \cite{Mackay90Patterns,Shepherd90Strudel}. However, these systems do not attempt explicit data and process model support: in an important sense, the extensibility occurs ``outside'' of the system.
+
+The Object Lens system \cite{Lee90Partially} allows different sites build first class, yet inconsistent type-level structures.  To support communication between sites, mappings must be defined that transform instances of one structure at one site into their analogous form at other sites.  Object Lens is the only collaborative system we know of involving research on divergence structural elements.
+
+EGRET, however, takes an architectural and process-level stand against the approach taken in Object Lens.  In EGRET, structural diversity (within instances of the same types) is supported, but parallel versions of the same type-level structure are explicitly disallowed.  Stated more prosaicly, EGRET does not allow collaborators to ``agree not to agree".  Instead, while permitting temporary discord, the data and process model of EGRET tend to coerce progress toward consensual structures.
+
+Research in database systems is quite active in the area of schema evolution \cite{Skarra86,Lerner90,Banerjee87}.  However, schema evolution research in database systems is oriented toward definition of truth-preserving schema transformation rules that support automated updating of instances.  In other words, the goal of this research is to avoid the inconsistency between schema-level and instance-level structure that EGRET embraces.  This paradigmatic disagreement can be resolved by noting the difference between exploratory domains and the domains well supported by traditional databases.  In the former, the essential activity is defining what the task is, who the participants are, and how to achieve concensus on the structure and process for accomplishing the activity.  In the latter, these activities are assumed to have already been resolved, and the emphasis is on efficiency, reliability, and completeness in large-scale databases.  Like exploratory activities in general at this point in time, EGRET will not scale well to hundreds of workers manipulating millions of artifacts.
+
+Finally, support for EGRET can be inferred from a critical analysis of group support systems \cite{Weick91}.  This research argues that a fundamental problem with such systems is their emphasis on the downstream activities of judgement and choice, rather than the upstream activities of sensemaking:
+\begin{quotation}
+  {\em ... the effort to construct moderately consensual definitions which cohere long enough that people are able to infer some idea of what they have, what they want, why they can't get it, and why it may not be worth getting in the first place.}
+\end{quotation}
+We view sensemaking as fundamentally exploratory, and so hope that EGRET could find application to this problem.
+
+\section{Status and Future Directions}
+
+An alpha-level prototype of EGRET was implemented in the Fall of 1991 using Unix\foot{Unix is a trademark of AT\&T Bell Laboratories.}, X windows\foot{X Windows is a trademark of the Massachusetts Institute of Technology}, Epoch \cite{Love92}, and the HyperBase database server \cite{Wiil90}.  Much of the user interface-level features of EGRET, such as: multiple fonts, colors, and windows; read-only regions; multi-user support via client-server processing across ethernet; locking; and so forth are provided by this palette of platforms.
+
+While the alpha-level prototype is actively used by the EGRET development team (in fact, the code review scenario used in this paper is directly adapted from actual experiences in our group), it has proven too brittle for external release.  We have now re-implemented EGRET with improved functionality, reliability, and portability to different database and user interface platforms.  On top of this framework, domain-specific collaborative systems for research review \cite{csdl-92-03} and software inspection \cite{csdl-92-04} are under development.
+
+Our experiences with EGRET suggest several promising future directions. First, EGRET represents the structural history of an entity. This representation could provide useful answers such rationale-related questions as: How did an entity evolve into its current form? What intermediate structures did it go through?  How long has it been in its current form? What other evolution co-occurred?
+
+Second, we are interested in combining the EGRET paradigm with more traditional database evolution paradigms.  We believe that metrics similar to those for divergence and convergence can serve as a ``front-end'' to more formal methods for database re-organization---the EGRET mechanisms identifying what to reorganize, and the database re-structuring methods defining how to carry out this reorganization.
+
+Finally, one result of our twin design goals of extensibility and efficiency has been the design of EGRET ``agents'': event-triggered autonomous processes with full access to the contents and structure of the hypertext database that currently perform simple housekeeping functions.   We believe that the Egret architecture forms a powerful platform for the implementation of more sophisticated agents that can be used to explore coordination among human and non-human agents in semi-structured environemnts.  
+
+
+\bibliography{csdl-trs,91-03,92-01,TOIS,CSCW90,bibstack} 
+\bibliographystyle{plain}
+
+
+\end{document}
