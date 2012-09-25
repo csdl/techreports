@@ -1,0 +1,1045 @@
+<html>
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+
+<title>The Hackystat-JPL Configuration: Round 2 Results</title>
+
+</head>
+
+<body>
+
+<h2 align="center"><b>The Hackystat-JPL Configuration: Round 2 Results </b></h2>
+
+<p align="center"><br>
+
+  Aaron Kagawa<br>
+
+  Philip Johnson <br>
+
+  Collaborative Software Development Laboratory<br>
+
+  Department of Information and Computer Sciences<br>
+
+  University of Hawaii<br>
+
+  <a href="mailto:kagawaa@hawaii.edu">kagawaa@hawaii.edu</a><br>
+
+  <a href="mailto:johnson@hawaii.edu">johnson@hawaii.edu</a> </p>
+
+<p align="center">CSDL-03-14</p>
+
+<p align="center"><a href="http://csdl.ics.hawaii.edu/techreports/03-14/03-14.html">http://csdl.ics.hawaii.edu/techreports/03-14/03-14.html</a></p>
+
+<p align="center"><b>Last update: 
+
+  <!--webbot bot="Timestamp" S-Type="EDITED"
+
+
+
+S-Format="%m/%d/%Y %I:%M:%S %p" startspan -->05/12/2004 08:28:21 AM<!--webbot bot="Timestamp" i-CheckSum="30280" endspan -->
+
+  &nbsp;</b></p>
+
+<h2>Abstract</h2>
+
+<p>This report presents revised results from Hackystat-based descriptive 
+
+  analyses of Harvest workflow data gathered from the Mission Data System software 
+
+  development project from January, 2003 to December, 2003. The information provided 
+
+  in this report describes improvements and differences between the current
+
+results and those reported in &quot;The Hackystat-JPL Configuration: Overview and Initial
+
+Results&quot; (<a href="http://csdl.ics.hawaii.edu/techreports/03-07/03-07.html">http://csdl.ics.hawaii.edu/techreports/03-07/03-07.html</a>). 
+
+</p>
+
+<h2><a name="1.0">1.0</a> Sensor Data Validation</h2>
+
+<p>Much of this report discusses changes due to the increased accuracy of the Build and StateChange data
+
+that has been made available to us. Section 
+
+  1.1 discusses this progress.&nbsp; Sections 1.2 and 1.3 discuss remaining
+
+issues.&nbsp;</p>
+
+<h3>1.1 Sensor Data Summary</h3>
+
+<p>This section provides a summary of the progress that has been made in getting 
+
+  the sensor data to an acceptable quality.</p>
+
+<ul>
+
+  <li>StateChange Sensor Data 
+
+    <ul>
+
+      <li>The State Change command files now have perfect &quot;grammar&quot;.</li>
+
+      <li>There are 12,367 State Change entries in the command file. All are successfully 
+
+        sent and accounted for in the hackyJPLBuild system.</li>
+
+      <li>There are 337 different days of State Change data in the hackyJPLBuild 
+
+        system, ranging from January 2, 2003 to March 18, 2004.</li>
+
+      <li>The hackyJPLBuild system now supports &quot;Dev Waiting&quot; and &quot;Dev 
+
+        Null&quot; Harvest States.</li>
+
+      <li>There are only two work packages that have &quot;illegal&quot; State 
+
+        Changes. See Section 2.3 from more information.</li>
+
+    </ul>
+
+  </li>
+
+</ul>
+
+<ul>
+
+  <li>Build Sensor Data 
+
+    <ul>
+
+      <li>The Build command files generated now have perfect &quot;grammar&quot;.</li>
+
+      <li>There are 1,002 entries in the command files. All are successfully sent 
+
+        and accounted for in the hackyJPLBuild system.</li>
+
+      <li>There are 233 different days of Build data in the hackyJPLBuild system, 
+
+        ranging from January 2, 2003 to December 29, 2003.</li>
+
+    </ul>
+
+</ul>
+
+<h3>1.2 Build Sensor Data Problem</h3>
+
+<p>It was our understanding that CM Build State includes a compilation, linking 
+
+  and testing. The Build SDT provides a specification of what failed during the 
+
+  build, denoted by failureType. We have also have attributes for testPassed and 
+
+  testFailed which should represent the number of test that passed and the number 
+
+  of tests that failed, during the testing phase of the build. The following is 
+
+  an example of Build Sensor Data from January 1, 2003.</p>
+
+<pre>&lt;sensor&gt;
+     &lt;entry tstamp=&quot;1041949980009&quot; tool=&quot;Sensor Shell&quot; packageId=&quot;iar-01923,iar-01928,iar-01933&quot; testsPassed=&quot;0&quot; testsFailed=&quot;0&quot; failureType=&quot;compile&quot;/&gt; 
+     &lt;entry tstamp=&quot;1041962700010&quot; tool=&quot;Sensor Shell&quot; packageId=&quot;iar-01923,iar-01928,iar-01933&quot; testsPassed=&quot;0&quot; testsFailed=&quot;0&quot; failureType=&quot;compile&quot;/&gt; 
+     &lt;entry tstamp=&quot;1041967740011&quot; tool=&quot;Sensor Shell&quot; packageId=&quot;iar-01923,iar-01928,iar-01933&quot; testsPassed=&quot;0&quot; testsFailed=&quot;0&quot; failureType=&quot;runtime&quot;/&gt; 
+     &lt;entry tstamp=&quot;1041984840012&quot; tool=&quot;Sensor Shell&quot; packageId=&quot;iar-01923,iar-01928,iar-01933,iar-01936&quot; testsPassed=&quot;0&quot; testsFailed=&quot;0&quot; failureType=&quot;runtime&quot;/&gt; 
+   &lt;/sensor&gt;</pre>
+
+<p>As you can see the last two Builds contains a &quot;runtime&quot; failure. 
+
+  We believe that this represents a test failure. However, there is no indication 
+
+  of how many test failed or how many tests passed. Is this data obtainable?</p>
+
+<ul>
+  <li>[Q.1.2.a] <b>Are the number of test that pass and fail obtainable? </b></li>
+  <li>[Q.1.2.b] <b>Is there any other Build data that could be extracted that 
+    could provide use information? </b> 
+    <ul>
+      <li>[Rich Hug] Based on our initial desing, the build results are reported 
+        to Hackystat as Pass, Compile, error, or Runtime error. If all test run 
+        correctly, the build is reported as Passed. If one of the compile and 
+        build tests fail, a Compile error is reported. If any of the other tests 
+        fail, a Runtime error is reported.<br>
+        <br>
+        However, we do have the build results at a much more granular level. We 
+        can report for each build, which individual tests pass and fail. The number 
+        of tests that are run for each build varies. In addition, the same test 
+        may be run multiple times but with different parameters or against different 
+        binaries (e.g. ones built with different compilers or on different operating 
+        systems.)<br>
+        <br>
+        I think that useful metrics could be generated if were to further categorize 
+        the tests. I am not sure of the exact categories but examples might be 
+        compile, dependency, frame work tests, unit tests, subsystem tests, system 
+        tests, user interface tests, etc.<br>
+        <br>
+        It would not take too much effort (a day or two) to add this new information 
+        to the 2003 build results.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>&nbsp;</p>
+
+<h3>1.3 StateChange Sensor Data Problem</h3>
+
+<p>Not all of the attributes of the StateChange Sensor Data are in use. The following 
+
+  is an example Sensor Data Entry.</p>
+
+<pre> &lt;entry tstamp=&quot;1043462911371&quot; tool=&quot;Sensor Shell&quot; packageId=&quot;IAR-01959&quot; startState=&quot;dev&quot; endState=&quot;dev complete&quot; 
+    newFiles=&quot;MDS_Rep/source/Msl/Ma/Rovers/Position/PositionAndHeadingFullConstraint.cpp,
+                    MDS_Rep/source/Msl/Ma/Rovers/Position/PositionAndHeadingFullConstraint.h,
+                    MDS_Rep/source/Msl/Ma/Rovers/Position/WaypointConstraint.cpp,
+                    MDS_Rep/source/Msl/Ma/Rovers/Position/WaypointConstraint.h&quot;
+    modifiedFiles=&quot;&quot; deletedFiles=&quot;&quot; unchangedFiles=&quot;&quot; iar=&quot;&quot; developer=&quot;cxing&quot; /&gt; </pre>
+
+<p>The StateChange Sensor Data provides attributes that consider the files associated 
+
+  with the StateChange: newFiles, modifiedFiles, deletedFiles, and unchangedFiles. 
+
+  Other than newFiles the data shows that the other file attributes are not being 
+
+  utilized. There are 5 of the 1421 work packages that have modified files. And 
+
+  there are 5 of the 1242 work packages that have deleted files.</p>
+
+<p>If these file attributes provide the exact set of files associated with each 
+
+  work package, then the hackyJPLBuild system could potentially recognize possible dependency 
+
+  problems before they actually occur such as File Entanglement. Currently, the hackyJPLBuild 
+
+  analyses use the larger-grained work package information (i.e. not their associated 
+
+  files). Once the package-level analyses settle down we would like to look into 
+
+  issues of dependency and entanglement.</p>
+
+<ul>
+  <li>[Q.1.3.a] <b>What causes the low amount of modified and deleted files?</b></li>
+  <li>[Q.1.3.b] <b>Is it possible to obatin information about unchanged files?</b> 
+    Again, if we have the files associated with Work Package we can then recognize 
+    File Entanglement. 
+    <ul>
+      <li>[Rich Hug] the change information reported to Hackystat should include 
+        on each promotion from Dev to Dev Complete the files changed for the first 
+        time, chagned from a previous promotion to Dev Complete, deleted files, 
+        and files not changed since the previous promotion.<br>
+        <br>
+        There may be a problem in how this information is being reported. I will 
+        look at the scripts and the output to determine what is happening.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>&nbsp;</p>
+
+<h2><a name="2.0">2.0</a> Sample Analyses</h2>
+
+<p>The following subsections present examples of significant changes in the analysis
+
+  due to data quality. </p>
+
+<h3><a name="2.1">2.1 </a> Analysis Example: System Summary </h3>
+
+<p>This system summary page is intended to provide a high level overview of the 
+
+  numbers and kinds of entities under analysis. </p>
+
+<p>This analysis presents some overall statistics regarding the data currently
+
+  present in the system. </p>
+
+<p><img border="0" src="03-14.2.JPG"></p>
+
+<p>This system summary page is intended to provide a high level overview of the 
+
+  numbers and kinds of entities under analysis. In this case, the system summary 
+
+  generates the following question:</p>
+
+<ul>
+  <li>[Improvement.2.1.a] <b>There has been a significant improvement in the number 
+    of Builds that are accounted for.</b> The previous amount of builds were 78. 
+    Given the number of transitions to CM Build (1559) the number of Build Entries 
+    (1002) seems reasonable.</li>
+  <li>[Improvement.2.1.b] <b>The amount of files accounted for almost doubled.</b> 
+    However, hackyJPLBuild does not do any interesting analyses dealing with files.</li>
+  <li>[Q.2.1.a] <b>Where are the VPRs and VPs MDS package types? </b> 
+    <ul>
+      <li>[Rich Hug] VPRs and VPs package types were designed for use by the Verification 
+        and Validation group (V&amp;V). The intent is that the packages would 
+        be associated with the tests generated by the V&amp;V group. There currently 
+        is no independent V&amp;V activity (that I know of).<br>
+        <br>
+      </li>
+    </ul>
+  </li>
+  <li>[Q.2.1.b] <b>Just curious, how many files are in the MDS system?</b>
+    <ul>
+      <li>[Rich Hug] At this time there are 16,214 source files, 4,346 test related 
+        fiels, and 318 CM scripts (total of ~21K files) being controlled by in 
+        the CM system. This does not include any of the files created during the 
+        build process.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>&nbsp;</p>
+
+<h3><a name="2.2">2.2</a> Analysis Example: Transition Sequence </h3>
+
+<p>This analysis shows how the various MDS packages moved between workflow states 
+
+  over a given period of time.&nbsp; The first screen below provides two tables, 
+
+  one that displays the types and occurrences of &quot;forward&quot; transitions, 
+
+  and one that counts the types and occurrences of &quot;backward&quot; transitions:</p>
+
+<p><img border="0" src="03-14.3.JPG" ></p>
+
+<h4><b>2.2.1 Forward and Backward Transitions Table Discussion</b></h4>
+
+<p>There are a couple of things that we notice here:</p>
+
+<ul>
+  <li>The new Harvest workflow data provides two new Harvest states that are now 
+    integrated with the system. These are the &quot;dev waiting&quot; and &quot;dev 
+    null&quot; states.</li>
+  <li>Forward Transitions (aka Promotions) significantly out number Backward Transitions 
+    (AKA Demotions).</li>
+</ul>
+<ul>
+  <li>[Q.2.2.a] <b>What Backward Transitions &quot;cost&quot; the most? </b>This 
+    is an open question, basically we would like to know what backward transition 
+    causes the most delay. Or, what Backward Transition is considered to be the 
+    worst? 
+    <ul>
+      <li>[Rich Hug] let me answer this question by describing the promotion/demotion 
+        process in a little detail.<br>
+        <br>
+        When a developer completes a package, the package is promoted from Dev 
+        to Dev Complete. Any demotions from Dev Complete to Dev are usually done 
+        by the developer. These demotions are typically done for the one of the 
+        two reasons: 
+        <ul>
+          <li>another change needs to be done for the package, or</li>
+          <li>there is some dependency between this package and other package(s). 
+          </li>
+        </ul>
+        <br>
+        When CM is ready to include a package in a build, the package is promoted 
+        by CM to Build Queue and, in most cases, immediately to CM Build. If the 
+        tests passes all the designated tests, the packages just built are promoted 
+        to Integration Test.<br>
+        <br>
+        If the build does not pass all the specified tests, CM will perform one 
+        of the following demotion/promotion sequences: 
+        <ul>
+          <li>if CM feels that the package clearly was the cause of the build 
+            problem or is working closely with the associated developer, he will 
+            demote the package directly to Dev. To fix the problem, the developer 
+            will usually make additional changes or if there are dependency problems, 
+            re-associate changes made for other packages to this package or promote 
+            the other dependent packages to be built along with the current package.</li>
+          <li>if CM does not quite know what the source of the problem is, he 
+            will demote the package to Build Queue. Once more information is known, 
+            typically after interacting with the associated developer, the package 
+            may be demoted to Dev (23% of the time from your report) or re-promoted 
+            back to CM Build to try the build again. </li>
+        </ul>
+        <br>
+        The only other significant number of demotion is from Integration Test 
+        to CM Build. The few times this occurs is probably to rebuild and retest 
+        with a different set of parameters or to subsequently demote to Dev for 
+        additional work. You might want to look at the actual sequence of demotions/promotions 
+        for these packages.<br>
+        <br>
+      </li>
+    </ul>
+  </li>
+  <li>[Q.2.2.b] <b>Should an Integration Test be considered as a Build event? 
+    </b>And should we be collecting data about that event? Just by the very definition 
+    of the name &quot;Integration Test&quot; one would assume that we are actually 
+    testing how the code integrates into the Baseline code. If there is a failure 
+    packages that are testing should be demoted. Apparently, there have been 19 
+    packages that have been demoted (backward transition) from Integration Test 
+    to CM Build. 
+    <ul>
+      <li>[Rich Hug] Based on the current development process, Integration Test 
+        is something of a misnomer. Currently all the testing is occurring through 
+        automated test scripts during the build step at the CM Build state. With 
+        the few exceptions that you noted (19 demotions), Integration Test is 
+        the state where completed packages accumulate prior to a formal release 
+        of the MDS software.
+        <p>I believe that for metrics purposes, we should treat the promotion 
+          to Integration Test as the completion time for that package.<br>
+        </p>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3><a name="2.3">2.3</a> Analysis Example: Illegal Transition Sequence</h3>
+
+
+
+<p>As noted in the previous report, we discovered that the sequences of state 
+
+  transition data entries provided to us did not always appear to be &quot;legal&quot;, 
+
+  in that the end state of one transition is equal to the start state of the next 
+
+  transition in chronological order. The improvements to the data has drastically 
+
+  reduced the amount of illegal transitions.</p>
+
+
+
+<p><img src="03-14.illegal.JPG" width="823" height="354"></p>
+
+<p>Just as a reminder: an &quot;Illegal Transition&quot; is a transition where the 
+
+  start state of a transition does not equal the end state of the previous transition. 
+
+  In the case of CP-00966 the illegal transition occurs between the transitions 
+
+  CM-&gt;Integration Test and Test Complete-&gt;Release.</p>
+
+<p><img src="03-14.list-package-sensor-data.illegal.JPG" width="824" height="582"></p>
+<p>[Rich Hug] Your report shows that there is a missing promotion from Integr 
+  test to Test Complete for package CP-00966. This cannot happen in Harvest. Either 
+  there is a bug in the input data generated by my script or in your Hackystat 
+  analysis. I will check if there is a data problem.</p>
+
+<p>&nbsp;</p>
+
+<h3><a name="2.3">2.4</a> Analysis Example: Promotion vs Demotion</h3>
+
+<p>The Promotions vs. Demotions analysis provides a perspective on both development 
+
+  &quot;velocity&quot; (as represented by the number of promotions) and its &quot;friction&quot; 
+
+  (as represented by the number of demotions) over time. This analysis is a aggregation 
+
+  of Forward and Backward Transitions that are shown in Transition Sequence Analysis. 
+
+  For the following example, we display promotions and demotions in a monthly 
+
+  chart. </p>
+
+<p><img src="03-14.promotion.JPG" width="820" height="338"></p>
+
+<p><img src="03-14.promotion.graph.png" width="600" height="480"></p>
+
+<p>The following questions appeared in the previous report but weren't answered.</p>
+
+<ul>
+  <li>[Q.2.4.a] <b>Does the cyclical rise and fall of promotions represent a predictable 
+    pattern of development activity? </b>This chart shows that the number of promotions 
+    in a given month interval seems to cycle regularly between a low of around 
+    400 and a high of over 1300. What causes this cycle, and can this aid in project 
+    planning? 
+    <ul>
+      <li>[Rich Hug] The MDS project made a release every 3 months in 2003. Just 
+        prior to the actual release, the ITR, IT, CPR and RP packages were promoted 
+        from Dev where they exist through most of the release cycle. These packages 
+        do not have associated file changes. They are basically packages that 
+        are used as higher level entities to group other packages. Also since 
+        these packages do not have associated file changes, they are not really 
+        included in builds. CM will just promote them through to Integration Test.<br>
+        <br>
+        For purposes of metrics, I suggest that you also generate reports using 
+        just CPs, IARs, and IMs when trying to understand work, rework, and quality 
+        issues. For this report, I suspect that there would be significantly less 
+        month to month differences if you use only CP, IARs, and IMs. I would 
+        expect a small increase in promotions and demotions just prior to release 
+        as things are being wrapped up.<br>
+        <br>
+      </li>
+    </ul>
+  </li>
+  <li>[Q.2.4.b]<b> Does the relatively constant level of demotions represent a 
+    predictable pattern of development activity?</b> This chart also shows that 
+    the number of demotions in a two week interval does not appear to vary much 
+    at all. 
+    <ul>
+      <li>[Rich Hug] I believe that the fairly constant rate of demotions is directly 
+        tied to the early and often integration approach used by MDS. The identification 
+        and resolution of problems occurs throughout the development cycle. When 
+        release time approaches, there is no significant integration that needs 
+        to occur as in more traditional approaches. Any increase in promotions 
+        merely reflects the completion of functionality to be included in the 
+        release.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>Even though monthly intervals do not have much variation in Promotions Vs Demotions. 
+
+  I have found a greater variation at the day interval during April 2003.</p>
+
+<p><img src="03-14.promotion.daily.graph.april.png" width="775" height="480"></p>
+
+<p>For example, one could say that April 21, 2003 was a bad day, where 9 of the 
+
+  26 transitions where Demotions. This raises the question of what caused this
+
+disproportionate number of Demotions to arise. In addition, it appears that in this month
+
+(as well as in other months), once a Demotion occurs one of two things happen: (1) 
+
+  there are Demotions the next day as well and/or (2) the number of promotions 
+
+  are affected. This appears to make sense in that the developers should be in the Rework 
+
+  phase. Also, Demotions is caused by dependency the problem could cause a ripple 
+
+  affect causing other Demotions throughout the system.</p>
+
+  
+
+<ul>
+  <li>[Q.2.4.c] <b>Does a Demotion significantly change the work flow? </b>We 
+    have noticed that Demotions are &quot;grouped together&quot;. 
+    <ul>
+      <li>[Rich Hug] In general, CM tries to build with one new package added 
+        for that build. However at times during the cycle, builds are done with 
+        multiple packages. Usually multiple packages are built due to dependencies 
+        between the packages. (Sometimes this is done just to get many packages 
+        built in a short time.) When these builds fail, multiple demotions often 
+        happen. I believe these would account for most of the large blocks of 
+        demotes.
+        <p>I think that some interesting reports could be generated showing the 
+          number of packages built and associated failures and demotions and the 
+          effect of dependencies on the integration process.<br>
+        </p>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+
+
+<h3><a name="2.3">2.5</a> Analysis Example: Work vs. Rework</h3>
+
+<p>This analysis attempts to represent the proportional effort allocated to &quot;new&quot; 
+
+  work activities vs. &quot;rework&quot; activities. The approach used is to count 
+
+  the number of transitions from Dev to Dev Complete, and categorize them as a 
+
+  &quot;Work&quot; transition or a &quot;Rework&quot; transition. A &quot;Work&quot; 
+
+  transition is defined as a transition involving a Change Package without an 
+
+  associated IAR. A &quot;Rework&quot; transition is defined as a transition involving 
+
+  an IAR, an IM, or a Change Package with an associated IAR. In some sense, &quot;rework&quot; 
+
+  combines both defect repair and unscheduled work.</p>
+
+<p><img src="03-14.work.JPG" width="820" height="329"></p>
+
+<p><img src="03-14.work.graph.png" width="600" height="480"></p>
+
+<p>Obviously, this analysis shows that &quot;Rework&quot; is a significant source 
+
+  of effort. In fact, there are approximately 3 times more IARs and IMs than CPs. 
+
+  Furthermore, we claim that CPs that have been demoted back to Dev and then promoted 
+
+  to Dev Complete also qualifies as Rework. However, we do not count that towards 
+
+  Rework so in fact the number of Work could be reduced significantly.</p>
+
+<ul>
+  <li>[Q.2.5.a] <b>Are we accurately representing Rework? </b>An open question 
+    is the extent to which this representation of work and rework based upon state 
+    transitions accurately models the effort spent by the development group on 
+    work vs. rework.</li>
+  <li>[Q.2.5.b] <b>Does the decrease in Rework represent a process improvement? 
+    </b>Another open question is whether the decrease in percentage transitions 
+    allocated to rework during the October to December represents a process improvement. 
+    <ul>
+      <li>[Rich Hug] The Work vs Rework Report shows work as CPs and rework as 
+        IARs/IMs. CPs are created to perform tasks defined as part of a release. 
+        IARs are intended to be used to report and fix problems. IM's are for 
+        small unscheduled changes like code cleanup. Prior to October 2003, the 
+        IAR's and IM's were being used in many cases where CP's should have been. 
+        A change was made in the development process such that the CP's were created 
+        and scheduled when new work was to be performed. The percentage of CPs 
+        vs IARs/IMs in Oct/Nov/Dec reflects this change in methodology.<br>
+        <br>
+        One additional fact to consider when looking at this report is that the 
+        report shows number of packages not the actual implementation effort performed. 
+        One CP package may take 10 times as long to implement as a IAR or IM. 
+        Until we have a Hackystat sensor that can track actual time spent working 
+        on a package, this report needs to be placed in context. <br>
+        <br>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<p>Looking at the day interval, we see that most days are spent on Rework. Rarely, 
+
+  is there a day that Work dominates.</p>
+
+<p><img src="03-14.work.daily.graph.png" width="775" height="480"></p>
+
+<ul>
+  <li>[Q.2.5.c] <b>How are Demotions associated with Rework? </b>It appears that 
+    there are a relatively low number of Demotions, as evidence by Section 2.4, 
+    however there is apparently a lot of rework being done. Why is that? Does 
+    a single Demotion cause a significant amount of Rework? 
+    <ul>
+      <li>[Rich Hug] If a problem is encountered in the logic associated with 
+        a CP, files are changed and associated with that CP. If the problem was 
+        found while the CP was in CM Build, the CP would be demoted back to Dev.<br>
+        <br>
+        If a problem is found while testing a CP/IAR/IM but unrelated to that 
+        CP/IAR/IM, an IAR is created. I believe that this typically happens during 
+        unit testing by the developer before a package is promoted to Dev Complete.<br>
+        <br>
+      </li>
+    </ul>
+  </li>
+  <li>[Q.2.5.d] <b>Does the low level of Work indicate that the system is growing 
+    slowly? </b>Where as the amount of Rework to make the system function as it 
+    is supposed to dominates the development process. An open question is, if 
+    the amount of Rework is reduced, then would &quot;Throughput&quot;, the rate 
+    at which packages reach relase, increase significantly? 
+    <ul>
+      <li>[Rich Hug] I will repeat part of my response to [Q.2.5.b]. The Work 
+        vs Rework Report shows number of packages not the actual implementation 
+        effort performed. One CP package may take 10 times as long to implement 
+        as a IAR or IM. Until we have a Hackystat sensor that can track actual 
+        time spent working on a package, this report needs to be placed in context.<br>
+        <br>
+        I think that &quot;rework&quot; might be further divided into:<br>
+        <ol>
+          <li> the implementation activities performed on a package after it has 
+            been promoted from Dev and then demoted back to dev at some later 
+            time,</li>
+          <li> the implementation activities performed to implement an IAR or 
+            IM.<br>
+            <br>
+          </li>
+        </ol>
+      </li>
+    </ul>
+  </li>
+  <li>[Q.2.5.e] <b>Does the amount of Rework indicate that there is low software 
+    quality in the planed Work? </b>In other words, if we can improve planning 
+    and the quality spent on &quot;Work&quot; would this decrease the amount of 
+    Rework needed?</li>
+</ul>
+
+<p>&nbsp;</p>
+
+<h3><a name="2.6">2.6</a> Analysis Example: MDS Build Worksheet</h3>
+
+<p>We obtained a set of &quot;MDS Build Worksheets&quot; which provide 
+
+  detailed information about the Build events during that day. In the first section 
+
+  of the worksheet (the token expiry Section) the work packages that have been 
+
+  &quot;squared&quot; are packages that have entered and moved from the specified 
+
+  Harvest State. For example, CP-1224 started the day in the Build Queue. It was 
+
+  then built in CM Build and stopped its movement there. That means that CP-1224 
+
+  has either a compilation, linking, or testing failure. The second section, provides 
+
+  the results of a CM Build.</p>
+
+  
+
+<p><img src="03-14.build-worksheet-actual.jpg" width="700" height="730"></p>
+
+<p>We don't know exactly what this information is used for. More importantly, 
+
+  it would be really hard to extract statistics from this paper version. Therefore, 
+
+  we have built the corresponding Hackystat Analysis to this MDS Build 
+
+  Worksheet. It provides a summary of what happened 
+
+  on a specific day. The following is the Build Worksheet analysis.</p>
+
+<p><img src="03-14.build-worksheet.JPG" width="827" height="894"></p>
+
+<p>As you can see, it is quite obvious that that a compile error kept IAR-02059 
+
+  from being promoted to the Integration Test State. One glaring problem appears. 
+
+  Notice that the Results of the CM Build indicates that only one build occurred 
+
+  with a single package IAR-02059. What happened to the other packages that were 
+
+  in the Build Queue and made it to CM Build. Furthermore, how did the long list 
+
+  of packages get promoted to Integration Test without being built.</p>
+
+<ul>
+  <li>[Q.2.6.a] <b>Is the Build data complete? </b>There seems to be a mystery 
+    Promotion where supposedly a Build event should be the cause. Can CM Administrators 
+    by pass the a Build event and promote work packages to Integration Test with 
+    out them actually being built? 
+    <ul>
+      <li>[Rich Hug] Your report shows 22 packages being promoted to Integr Test 
+        on 5/1/03. The Build history input file shows these packages as being 
+        built successfully on 4/30/03 and presumably promoted to Integr Test on 
+        the same day . I will check the date stamp reported in the package input 
+        file.
+        <p>Since ITRs/ITs/CPRs/RPs do not have associated change files, CM will 
+          promote these to Integr Test without including them in a build.<br>
+        </p>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<h3><a name="2.7">2.7</a> Interlude: The Box-And-Whisker Chart representation</h3>
+
+<p>The next several analyses provide a Box-and-Whisker chart
+
+representation.&nbsp; This section documents the visual structure and
+
+interpretation of the box and whisker chart:</p>
+
+<table border="1" width="100%">
+
+  <tr>
+
+    <td width="23%"><b>Visual Representation</b></td>
+
+    <td width="77%"><b>Statistical Meaning</b></td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Horizontal line (inside box)</td>
+
+    <td width="77%">The median of the observations</td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Solid black dot</td>
+
+    <td width="77%">The mean of the observations</td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Solid colored box</td>
+
+    <td width="77%">The interquartile range (IQR).&nbsp; Divide the observations
+
+      into four equal groups. The box represents Q2 and Q3.</td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Upper whisker</td>
+
+    <td width="77%">Observations (if any) with values up to 1.5 times the
+
+      highest IQR value.</td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Lower whisker</td>
+
+    <td width="77%">Observations (if any) with values down to 1.5 times less
+
+      than the lowest IQR value.</td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Unfilled circle</td>
+
+    <td width="77%">Outliers: observations between 1.5 and 3 times greater than
+
+      (or less than) the highest (or lowest) IQR value.</td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Triangle</td>
+
+    <td width="77%">Extremes: observations beyond 3 times the IQR. Indicates
+
+      data points outside the chart.</td>
+
+  </tr>
+
+</table>
+
+
+
+<h3><a name="2.8">2.8</a> Analysis Example: MDS Released Package Age</h3>
+
+<p>This analysis generates box-and-whisker charts to illustrate the distribution 
+
+  of age values for the set of package types specified as a parameter to the analysis.&nbsp; 
+
+  Only those packages that made it to the Release state are included in this analysis, 
+
+  since that is required to compute their &quot;final&quot; age.</p>
+
+<p><img src="03-14.mds-released-package-age.JPG" width="829" height="317"></p>
+
+<p><img src="03-14.mds-released-package-age.graph.png" width="600" height="480"></p>
+
+<p>Running this analysis on the new set of data shows two differences from the 
+
+  old data we received; (1) there is less variability in Age for RP, CP, IAR, 
+
+  and IMs package types and (2) there is a greater variability in the ITR, IT, 
+
+  and CPR package types. You can see the previous Box and Whisker chart here, 
+
+  <a href="http://csdl.ics.hawaii.edu/techreports/03-07/03-07.html#3.8">http://csdl.ics.hawaii.edu/techreports/03-07/03-07.html#3.8</a>. 
+
+  Hopefully, as the data set grows there will be less variability in the Age of 
+
+  released packages.</p>
+
+<p>We are concerned that this analysis may be too coarse-grained.&nbsp; The Released Age of a package is an &quot;after-the-fact&quot; measurement 
+
+  and probably cannot provide any help with identifying potential problems during 
+
+  the &quot;life&quot; of the work package. However, we believe that this analysis 
+
+  can be useful if we can identify reasons, factors, or attributes that contribute 
+
+  to a Work Package's Released Age that lies outside of the Interquartile Range.</p>
+
+<p>For example, a future Hackystat analysis can be built to find the specific 
+
+  Work Packages' that have an abnormal Released Age and identify the factors 
+
+  such as amount of files, the degree of entanglement, the amount of rework, the 
+
+  number of demotions, etc that can contribute to an abnormal Released Age. Once 
+
+  these factors have been identified, then Hackystat could send &quot;Red Flags&quot; 
+
+  that notify the appropriate JPL personnel that a particular Work Package has 
+
+  attributes that could mean that the package will take a longer than usual amount 
+
+  of time to reach Release. NOTE: we should probably use Test Complete Harvest 
+
+  State due to due to the following statement by Rich Hug, </p>
+
+<blockquote> 
+
+  <p>&quot;The methodology is set up such that as each package passes the test 
+
+    suite, the package is moved to Test Complete. When a release is to be made, 
+
+    all packages in Test Complete are moved to Release. For purposes of metrics, 
+
+    I believe that we can interpret that a package is &quot;closed&quot; when 
+
+    it moves to Test Complete&quot;.</p>
+
+</blockquote>
+
+<p>Therefore, I believe that this analysis should actually be calculating the 
+  Test Complete Age to accurately reflect the time it takes for a Work Package 
+  to reach the Release State.<br>
+  <br>
+  [Rich Hug] I think we should use Integr Test as the state at which a package 
+  is &quot;closed&quot;.</p>
+
+<ul>
+
+  <li>[Q.2.8.a] <b>What factors influence the &quot;Age&quot; of a Work Package? 
+
+    </b>This is an open question, but it illustrates the level of analyses that 
+
+    we want to work toward.</li>
+
+</ul>
+
+<h3><a name="2.9">2.9</a> Analysis Example: State Days Distribution</h3>
+
+
+
+<p>This analysis takes the specified package type, and collects all of the
+
+instances of that package type that have a transition recorded for them between
+
+the specified start and end date and that have not reached the Release state. By
+
+excluding packages that have reached the Release state, the analysis provides a
+
+perspective on the packages currently in the &quot;pipeline&quot; during the
+
+specified period.&nbsp;</p>
+
+
+
+<p>For each of these active package instances, we find the number of days it
+
+spent in each of the Harvest states, and graph that distribution as a
+
+box-and-whisker chart.</p>
+
+
+
+<p><img src="03-14.state-days.cp.JPG" width="829" height="317"></p>
+
+<p><img src="03-14.state-days.cp.graph.png" width="600" height="480"></p>
+
+<p>The above analysis shows the amount and variability in time spent in the various 
+  states for Change Packages. This chart shows that Change Packages spend most 
+  of their time in Dev, Integration Test, or Test Complete. This analysis shows 
+  that there is less variability in the Dev Harvest State and more variability 
+  in the Integration Test Harvest State compared to the previous amount of data 
+  that we received. What is interesting is why is there a &quot;delay&quot; in 
+  the Integration Test Harvest State? The following screen shot shows an example 
+  Work Package that took about 3 months to move from Integration Test to Test 
+  Complete.</p>
+<p>[Rich Hug] This report should be parameterized to optionally exclude CP/IM/IAR 
+  to more accurately reflect the implement the change cycle.</p>
+
+<p><img src="03-14.list-package-sensor-data.long-integr-test.JPG" width="821" height="557"></p>
+
+<ul>
+  <li>[Q.2.9.a] <b>What causes the delay in the Integration Test Harvest State? 
+    </b>The previous screen shot shows that IAR-02258 spent almost 3 months in 
+    Integration Test. It is obvious that other Work Packages share a similar situation.
+    <ul>
+      <li>[Rich Hug] As state previously, this is the state that all completed 
+        packages accumulate in until a release is made.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>A re-running of this analysis specifying IAR as the package type reveals a 
+
+  different distribution, as illustrated next: </p>
+
+<p><img src="03-14.state-days.iar.graph.png" width="600" height="480"></p>
+
+<p>The IARs have considerably less amount of time spent in the Dev Harvest State 
+
+  compared to Change Packages (CP). Why is that? What would be interesting to 
+
+  determine is does the low amount of time spent in Dev influence the number of 
+
+  Demotions that a particular Work Package has?</p>
+
+<ul>
+  <li>[Q.2.9.b] <b>Why is the number of days spent on IARs in the Dev state significantly 
+    less than days spent on CPs in the Dev state?</b> One could guess that IARs 
+    are &quot;easier&quot; to develop because after all they are just fixes. Is 
+    that a correct assumption? However, one would hope that there would be less 
+    problems associated with IARs. 
+    <ul>
+      <li>[Rich Hug] IARs are fixes to problems with hopefully limited impact. 
+        CPs are new functionality. If an IAR is significantly effort, then the 
+        proposed work show be schedule and converted to a CP.<br>
+        <br>
+      </li>
+    </ul>
+  </li>
+  <li>[Q.2.9.c] <b>If CPs spend more time in the Dev State would that decrease 
+    the amount of IARs needed?</b> What causes an IAR to be formed? Are they born 
+    due to the lack of software quality in the CPs? If so, is it possible to focus 
+    more attention to the development of CPs thus reducing the amount of IARs 
+    needed? Or, are the amount of IARs something that cannot be improved?</li>
+</ul>
+
+<h2><a name="2.9">2.10</a> Analysis Example: MDS Package Summary</h2>
+
+<p>The MDS Package Summary analyses provides a tabular representation of the data 
+
+  available in the system between the chosen start and end days. The following 
+
+  screen shot shows the different selections that are possible with the analysis.<br>
+
+</p>
+
+<p><img src="03-14.mds-package-summary.iar-cpr.JPG" width="820" height="457"></p>
+
+<p>The first screen shot shows IARs that are associated with a CPR, sorted so 
+
+  that the IARs with CPR association are at the top of the page.</p>
+
+<p><img src="03-14.mds-package-summary.iar-cpr.data.JPG" width="821" height="550"></p>
+
+<p>As you can see there is a very low number of IARs that are associated with 
+
+  a CPR. Rich Hug said, &quot;IARs are associated only with CPRs.&quot; Should 
+
+  all IARs be associated with a CPR? Currently there are only 19 (out of 650) 
+
+  IARs assocaited with a CPR. In addition, there are only 10 (out of 126) unique 
+
+  CPRs that have an associated IAR. However, we are not sure what and how we would 
+
+  use this information.q</p>
+
+<ul>
+  <li>[Q.2.10.a] <b>Why are the number of IARs that are associated with a CPR 
+    so low?</b> Are we missing data? Or is it the case that not all IARs are associated 
+    with a CPR? If that is the case what does it mean for a IAR to be associated 
+    with a CPR? 
+    <ul>
+      <li>[Rich Hug] It is most often not readily apparent what CPR a problem 
+        is associated. It takes some analysis to identify this information. I 
+        suspect that this has not been a high priority with development management.<br>
+        <br>
+      </li>
+    </ul>
+  </li>
+  <li>[Q.2.10.b] <b>Are there any other Work Package associations that can be 
+    extracted from Harvest? </b>The previous problem suggests that maybe other 
+    Work Package association can be extracted from Harvest, for example can we 
+    obtain what CPs are associated with a CPR? However, we aren't sure what we 
+    would use this information for. 
+    <ul>
+      <li>[Rich Hug] The following associations are available: 
+        <ol>
+          <li> CPs to CPR</li>
+          <li> CPRs to IT</li>
+          <li> ITs to ITR</li>
+          <li>RPs to IT</li>
+          <li>packages to Common Model Package (subsystem)<br>
+          </li>
+        </ol>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<p>&nbsp;</p>
+
+
+
+
+
+</body>
+
+</html>

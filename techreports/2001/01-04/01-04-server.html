@@ -1,0 +1,517 @@
+
+
+<head>
+<title>An annotated overview of server extension </title>
+</head>
+
+<h2 align="center"><font size="3">Hackystat Design Notes Series<br>
+</font><br>
+An annotated overview of Hackystat server extension</h2>
+
+<p align="center"><a href="http://csdl.ics.hawaii.edu/~johnson/">Philip Johnson
+</a><br>
+<a href="http://csdl.ics.hawaii.edu/">Collaborative Software Development
+Laboratory</a><br>
+
+<a href="http://www.ics.hawaii.edu/">Department of Information and Computer 
+Sciences </a><br>
+
+
+<a href="http://www.hawaii.edu/">
+University of Hawaii</a></p>
+
+<p align="center">Last Update: August 30, 2001<br>
+</p>
+
+<h2>Motivation</h2>
+<p>Let's say you have designed or discovered a wonderful new tool that
+calculates the quality of your code (let's call it objectmetric complexity), and
+you want to hook it up to Hackystat.&nbsp; In other words, you want raw data for
+objectmetric
+complexity to be calculated, sent to a hackystat server,
+persistently stored in a log file, and subject to an analysis function that
+converts the raw data to something more useful. For example, trends in the value of objectmetric complexity over time for
+a given file.&nbsp; That would be cool, right?&nbsp; But how do you even
+start?&nbsp; This design note is intended to give you a quick sense for the way
+to proceed and the kinds of issues that arise when extending the server given
+its design as of the time of writing of this technical note. </p>
+<p>The following discussion does not refer to objectmetric complexity. For one
+thing, I just made that up.&nbsp; Instead, the following discussion is going to
+discuss the steps and issues that arose in the implementation of collection
+facilities for raw activity
+data.&nbsp; By referring to a real example, you can actually look at the code as
+you read along and get more details on where the rubber hit the road.</p>
+<h3>Step 1: Begin with the end in mind (and get some feedback)</h3>
+<p>The very first thing you should do is write an email.&nbsp; In this email,
+you try to describe at least one concrete, useful application of the raw data that
+you propose to collect and provide a <i>specific example </i>(with imaginary
+numbers) of an analysis output page, and what the user would do based upon the
+analysis presented.&nbsp; In the case of activity raw data, there's lots of abstract
+concepts (user modelling, collaborative process representations) that one could
+talk about in the abstract, but its unclear what their corresponding analysis output pages
+would look like.&nbsp; On the other hand, there is a simple, very useful
+application: idle time threshold analysis.&nbsp; The email sent out to propose
+this application of activity raw data served&nbsp; as the basis for the <a href="http://csdl.ics.hawaii.edu/techreports/01-04/01-04-idle.html">Validated
+Idle Time design note</a>. One thing that's important to note:&nbsp; by sending
+out the email, I received extremely useful feedback that improved my approach to
+activity logging.&nbsp; Don't start hacking without it.</p>
+<h3>Step 2:&nbsp; Make a table of the files and tests you need to create</h3>
+<p>For a completely new raw data item that requires &quot;end-to-end&quot;
+additions, it's going to help if you construct a table that details what needs
+to be added and for what purpose.&nbsp;&nbsp; Here's the table I constructed
+when I started implementation of activity.&nbsp; Files in italics are
+pre-existing files that I needed to modify.</p>
+<table border="1" width="100%">
+  <tr>
+    <td width="15%" valign="top"><b>Component</b></td>
+    <td width="51%" valign="top"><b>Files</b></td>
+    <td width="34%" valign="top"><b>Tests</b></td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top">Presentation</td>
+    <td width="51%" valign="top">webapps/xsl/ActivityLog.xsl</td>
+    <td width="34%" valign="top">log/activity/TestActivityLogXsl.java</td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top">Storage</td>
+    <td width="51%" valign="top">log/activity/ActivityLog.java<br>
+      log/activity/Activity.java<br>
+      log/activity/ActivityEntry.java<br>
+      log/activity/ActivityType.java</td>
+    <td width="34%" valign="top">log/activity/TestActivityLog.java</td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top">Notification</td>
+    <td width="51%" valign="top">notify/ActivityNotification.java<br>
+      descriptors/ActivityNotificationDescriptors.xml<br>
+      <i>sensor/cli/SendNotification.java</i></td>
+    <td width="34%" valign="top">notify/TestActivityNotification.java<br>
+      <i>sensor/cli/TestSendNotification.java</i></td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top">Analysis</td>
+    <td width="51%" valign="top">analysis/activity/IdleTimeThreshold.java</td>
+    <td width="34%" valign="top">analysis/activity/TestIdleTimeThreshold.java</td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top">Sensor</td>
+    <td width="51%" valign="top">sensor/emacs/activity.el<br>
+      sensor/jbuilder/JBuilderActivitySensor.java</td>
+    <td width="34%" valign="top">sensor/emacs/test-activity.el<br>
+      sensor/jbuilder/TestJBuilderActivitySensor.java</td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top">Build/<br>
+      Documentation</td>
+    <td width="51%" valign="top"><i>build.xml<br>
+      webapps/hackystat/doc/emacs/index.html<br>
+      webapps/hackystat/doc/jbuilder/index.html<br>
+      webapps/hackystat/tutorial/index.html</i></td>
+    <td width="34%" valign="top">&nbsp;</td>
+  </tr>
+</table>
+<p>OK, I'm lying.&nbsp; This isn't actually the table I constructed when I
+started implementation.&nbsp; I did construct a table like this, but it didn't
+have as many files in it as I'm including here, because at the time I didn't
+fully understand what needed to be done like I do now.&nbsp; So, this is the
+table that I should have constructed, but didn't. </p>
+<p>A second thing to note is that not all of the files listed here have been
+implemented as of the time of writing of this design note.&nbsp; That's OK, too: part of the benefit of the Hackystat
+architecture is that things can be incrementally implemented and deployed.&nbsp;
+But the above table is really useful in helping you establish a plan of action
+and making sure that you eventually get to everything.</p>
+<h3>Step 3: Design, implement, and test the storage mechanism</h3>
+<p>The table shows you what components to work on, but what component do you
+work on <i>first</i>? The answer is: storage.&nbsp; And the first thing you do
+when designing storage is to design the representation of the raw data as Java
+objects.&nbsp; Activity raw data requires four classes to represent it: </p>
+<ol>
+  <li><b>ActivityLog</b>:&nbsp; In most cases, a persistently stored raw data object is going to
+    be stored in a &quot;Log&quot; file, and this class defines how that
+    works.&nbsp; Read through the ActivityLog.java code to see the details of
+    what's going on.&nbsp; The basic idea is that there is a singleton
+    ActivityLog instance per user per month which is connected to a file stored
+    on disk. The methods of this class support three kinds of clients: (1) the
+    ActivityNotification client that wants to add new activity data to a log
+    file, (2) the Jato-based FileCache client that wants to write out
+    ActivityLog instances to disk (or construct an ActivityLog instance from its
+    XML representation on disk), and (3) an analysis client (such as
+    IdleTimeThreshold) that wants to iterate through the entries of an
+    ActivityLog in order to perform its analysis. <br>
+    &nbsp; <br>
+    At the bottom of the class definition, you'll see two static strings that
+    specify how Jato translates back and forth between the Java object and that
+    XML representations.&nbsp; It's likely you'll need to read a bit about Jato
+    in order to understand how to do this, and also it is helpful if you debug
+    your Java-to-XML and XML-to-Java mapping in a separate test program outside
+    of Hackystat.&nbsp; I wrote a simple throwaway program called <a href="http://csdl.ics.hawaii.edu/techreports/01-04/HackJato.java">HackJato.java</a>
+    to help me with this process, and feel free to copy and adapt it to your own
+    needs. <br>
+    &nbsp; </li>
+  <li><b>ActivityEntry</b>:&nbsp; An activitylog consists of an ordered set of
+    ActivityEntries.&nbsp; All logs are represented in the FileCache as
+    HashTrees, which means that you always want to specify both a (unique) key
+    for direct insertion/retrieval, as well as a way to compare two
+    ActivityEntries for the purposes of sorting.&nbsp; To do this correctly,
+    you're going to need to provide definitions for compareTo(), equals(), and
+    hashCode().&nbsp; To provide correct definitions for these methods, I
+    heartily recommend reading the relevant portions of &quot;Effective
+    Java&quot;.&nbsp; In this case, the start date is used both as the key and
+    as the index for sorting. <br>
+    &nbsp; <br>
+    Note that I implement a toString() method for activity entries. A readable
+    version really helps in debugging. There's also an isActivityList() method
+    that I provide for java clients (such as SendNotification) who want to check
+    the semantic legality of arguments they are passed.<br>
+    &nbsp; </li>
+  <li><b>Activity</b>:&nbsp; An activityEntry consists of a list of individual
+    activities. Nothing much of interest here.&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li><b>ActivityType</b>:&nbsp; I wanted a way to specify an enumeration of
+    Activities, (open file, close file, etc.). If I used strings, then maybe
+    different sensors would use different strings for the same activity, and the
+    analyses would get messed up.&nbsp; Effective Java came to the rescue again
+    with this &quot;Type Safe Enumeration&quot; pattern that is illustrated in
+    this class.&nbsp; I had to extend the pattern with a way to construct an
+    ActivityType from a string.&nbsp; This is kind of a no-no, but needed since
+    both the XML and the SOAP clients are going to be representing activity
+    types as strings. If you're writing in Java and have access to the class,
+    then of course you'll just use the static constants.&nbsp;</li>
+</ol>
+So, after reading the activity (and perhaps the session) log code for a while,
+and scratching your head a while longer, you finally come up with a set of
+classes that you think represents your raw data.&nbsp; At this point, (if not
+before) it is critically important that you write a JUnit test for this
+class.&nbsp; The TestActivityLog.java file illustrates one such test.&nbsp;
+There is one very important thing to note about this test: <i>it does not
+require SOAP or the web server to be running</i>.&nbsp; This is a huge time
+saver for several reasons.&nbsp; First, you can test and debug your storage
+mechanism immediately, without having to implement the notification mechanism
+and so forth.&nbsp; Second, you can run your single JUnit test alone, from
+within your IDE even, simply by invoking its public static void main
+method.&nbsp;&nbsp; Third,&nbsp; when you do go on to implement the notification
+mechanism, you will have already have a debugged and tested version of your
+storage mechanism, so bugs in that package are easier to track down.&nbsp;&nbsp;
+<p>Now this does lead to a little weirdness.&nbsp; But it's good weirdness,
+because it will help you understand at a deeper level how the system really
+works.&nbsp; What happens in TestActivityLog is that we build up an
+ActivityEntry by hand in the buildTestData() method.&nbsp; Next, we create an
+ActivityLog using a specially constructed &quot;test&quot; userEmail which
+consists of the testname as the username and the SysInfo.getTestDomain() as the
+host.&nbsp; Then we just call the ActivityLog's add() method.&nbsp; What happens
+then (if everything goes according to plan) is that the data will be added to
+the log file and immediately written out to disk.&nbsp; If you run this method
+again, that will start up a fresh JVM and it will need to read the data that it
+just wrote out to disk back in and reconstruct the log file.&nbsp;&nbsp; Calling
+the refresh() method is supposed to do the same thing, but I like to run this
+test method twice in a row initially just to convince myself.&nbsp;&nbsp;</p>
+<p>Where the weirdness starts is when, later on, you're running the full set of
+tests that actually requires the server to be running.&nbsp; At this point, you
+will have the JVM inside the server reading and writing raw data from disk when a
+test case uses the SOAP/notification mechanism for sending data, but you'll
+still have your TestActivityLog test case reading and writing from disk
+directly, without connecting with the Server. In other words, we have two
+processes reading and writing from disk.&nbsp; This seems like a recipe for
+disaster, but after much reflection on it during car rides back to Kailua, I
+have convinced myself that (at least for now), we're safe as long as no test
+case depends upon the results from any other test case.&nbsp; And that's the
+natural way to write these test cases anyway. We are also kept out of trouble by
+establishing a separate file space for each test case (i.e. the username
+associated with TestActivityLog is &quot;TestActivityLog&quot;).&nbsp; So, even
+though two JVMs are reading and writing files, they aren't writing the <i>same</i>
+files.&nbsp;</p>
+<p>All right.&nbsp; So, at this point, you've struggled along and come up with a
+storage mechanism for your new raw data . You've written some tests, and you've
+convinced yourself that you can save the raw data out to disk, read it back in from
+disk, insert data, and get it out in a sorted fashion. You've run your test case
+alone within your IDE, and it passes.&nbsp;&nbsp;</p>
+<p>The next step is to run it as part of the full Hackystat test suite.&nbsp; To
+do this, you're going to need to get very used to the following sequence of
+events:</p>
+<ol>
+  <li>Shut down tomcat.</li>
+  <li>build install (this compiles the entire system, creates hackystat.jar, and
+    copies that file (and any others) over to the Tomcat directory)</li>
+  <li>Start up tomcat (this time it will find the new version of hackystat.jar)</li>
+  <li>build test (to run all of the tests)</li>
+</ol>
+<p>Let's call that the &quot;4-step hackystat rebuild&quot;.</p>
+<p>A good thing to do at this point is to show your code to someone else and get
+some commentary.&nbsp; Then, add and commit it to CVS. You won't break the build
+and now others will know what you're doing (and will test your code along with
+theirs).</p>
+<h3><b>Step 4: Design and implement your notifier (but don't test yet).</b></h3>
+<p>After dealing with the storage part, you'll find the notification code to be
+relatively simple and straightforward.&nbsp; What you're going to do now is
+implement the mechanism that allows you to add raw data entries to your log via SOAP over
+http.&nbsp;&nbsp; This is pretty simple, and you can use
+ActivityNotification.java and SessionNotification.java as templates.&nbsp; There
+are several conventions to follow:</p>
+<ul>
+  <li>You need that no-arg constructor, as mentioned in the code.</li>
+  <li>The&nbsp; useful constructor for all notifications takes a host and
+    userEmail.</li>
+  <li>The send() method sends the data from the sensor to the host.&nbsp;&nbsp;
+    Although SOAP includes whizbang features for sending non-String data, do not
+    use them.&nbsp; Send everything as a string. </li>
+  <li>The receive() method gets all the data as strings, and then constructs the
+    entry and adds it to the appropriate log file for that userEmail.&nbsp; It's
+    nice to have a readable error message that shows why the call to the log
+    file might have crashed and burned. </li>
+  <li>The receive() method should always return &quot;OK&quot; as the standard
+    indication of success. </li>
+</ul>
+As you play with this, you'll realize that it is really quite important for the
+sensors to do a good job of validating the raw data before they send it, because
+it is really a drag to get the raw data to the server and then find that what is
+supposed to be a string-encoded long integer representing a date is actually the
+string &quot;Hi Mom&quot;.&nbsp;&nbsp;&nbsp;
+<h3>Step 5: Implement your SOAP descriptor and add it to the build deploy task.</h3>
+<p>Once you've written your notifier code, before you can test it, you have to
+write and deploy the corresponding SOAP descriptor.&nbsp; For activity data, the
+SOAP descriptor is in the file ActivityNotificationDescriptor.xml.&nbsp; Note
+that only two fields in this file are specific to activities: the &quot;id&quot;
+field and the &quot;class&quot; field.&nbsp; It is obvious how to specify them
+once you see the example.</p>
+<p>Once you've written the descriptor file, you next need to edit the build.xml
+file. First, find the deploy task.&nbsp; The contents of this task contains
+several calls to deploy all of the currently defined descriptors, followed by a
+call to the &quot;list&quot; task (so that when the task executes, it will end
+by listing out all of the currently deployed descriptors so you know things
+worked OK).&nbsp; Find the task that mentions ActivityNotificationDescriptor.xml
+as an arg and use that as a template for adding a new interior component to this
+task to deploy your new descriptor.&nbsp;&nbsp;</p>
+<p>Do the same thing for the undeploy task which comes right after the deploy
+task in the build.xml file.&nbsp; Once you're done,&nbsp; you should be able to
+run &quot;build deploy&quot; and see that your descriptor is now deployed on the
+test server, and &quot;build undeploy&quot; and see that it's been
+removed.&nbsp;</p>
+<p>So, do a build deploy, then a build undeploy, but end with another build
+deploy so that your descriptor (and all the other ones, of course) are now
+deployed on the server.&nbsp; That enables you to proceed to writing your test
+case.&nbsp;</p>
+<h3>Step 6: Now write the test case for your notifier, and run it.&nbsp;&nbsp;</h3>
+<p>See TestActivityNotification.java for an example.&nbsp; The idea is very
+simple: you create a new notifier using the constructor with your typical test
+case userEmail and host combination, then you call the send method with the
+appropriate arguments, and you hope like heck that no exception is generated. If
+not, the test passes!</p>
+<p>One interesting note: you might be wondering how in
+TestActivityNotification.java we can use SysInfo.getHackystatHost() to get the
+test server. The reason is to be found in the build.xml file. If you look at the
+task definition for &quot;test&quot;, you will find that we pass some JVM args
+each time we run JUnit, and one of these JVM args sets the value of the system
+property hackystat_host, which is used in SysInfo.getHackystatHost().&nbsp; So,
+this test case will not work right if you're not using Ant and our build.xml
+file to invoke it. (At least, it won't work right unless you pass the JVM arg
+yourself).</p>
+<p>To run this test successfully, you&nbsp; need to have your server running and
+have the notifier corresponding to your notification deployed on the server.
+That was the purpose of Step 5.&nbsp; Do the 4-Step Hackystat Rebuild to check.</p>
+<p>This is another good time to get someone to look at your code, then
+add/commit the whole thing to CVS</p>
+<h3>Step 7:&nbsp; Extend SendNotification to support your new notifier.&nbsp;</h3>
+<p>Now you've got storage working, you've got a notifier working, you're sending
+raw data back and forth from the client to the server, and you're feeling pretty
+confident. That's cool.&nbsp; The next step is to extend SendNotification.java
+to support your new raw data type.&nbsp; This is not a big deal at all; what you
+do is the following:</p>
+<ol>
+  <li>Modify the SendNotification constructor to test for the presence of your
+    new notification type and invoke a new process*() method. See the way
+    SessionNotification and ActivityNotification are handled.<br>
+    &nbsp;&nbsp;</li>
+  <li>Write a new process*() method to handle your new notification type.&nbsp;
+    Again, there are examples there.&nbsp; Each process*() method basically does
+    the same sequence of things: first it checks to make sure it has the right
+    number of parameters. Second, it checks to make sure the parameters are all
+    semantically valid.&nbsp; Third, and finally, it creates a new notification
+    instance and sends the bugger off.&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li>Extend TestSendNotification.java with a new testSend* method to verify
+    that SendNotification can now send your data type correctly.&nbsp; Use
+    testSendSession() and testSendActivity() as guidelines.&nbsp;</li>
+</ol>
+<p>You're probably so good by now that you can just commit your changes (they
+pass the tests, right?). Send an email about your changes and someone can check
+your code.&nbsp;</p>
+<h3>Step 8:&nbsp; Implement the XSL style sheet for the data.</h3>
+<p>Now that we can persistently store our raw data in XML files, and we can
+incrementally build our XML files using our remote sensors (of which
+SendNotification is a simple example), the next step is to provide a
+user-friendly way to view the resulting raw data.&nbsp; For activity data, this
+involved writing the webapps/xsl/ActivityLog.xsl file.&nbsp;</p>
+<p>I'm not going to write much about XSL file design here, because this is a
+place where we're in the middle of a lot of change. Try look at the other XSL
+files and use them as your guidelines.&nbsp;</p>
+<p>Once you're done, write a JUnit test using HttpUnit that retrieves a web page
+displayed using the XSL style sheet and checks some field values.&nbsp; An
+example test case that uses HttpUnit in this way is
+analysis.session.TestSessionMonthSummary.&nbsp; I haven't written the
+TestActivityLogXSL.java test case yet, but I will in the near future.&nbsp;</p>
+<h3>Step 9: Write one or more &quot;incremental&quot; analyses for your new data.&nbsp;</h3>
+<p>Raw data is of very limited use to developers for self-improvement. In
+virtually all cases, you'll want to &quot;process&quot; the raw data into a form
+that's more interesting and meaningful.&nbsp; For example, most developers don't
+want to look at 5 or 6 session data entries; they just want to know (for
+example) how much total time they spent hacking yesterday and how that compares
+to their average rates.&nbsp;</p>
+<p>Hackystat provides two approaches to analyzing raw data:
+&quot;incremental&quot; and &quot;periodic&quot;.&nbsp; Incremental data
+analyses are those that get run each time new raw data of a given type is
+received by the server via a notification.&nbsp; Periodic data analyses are
+those that get run once an hour, or once a day, etc.&nbsp; The results of
+incremental analyses typically show up in web pages.&nbsp; The results of
+periodic analyses typically show up in daily emails to users.&nbsp; This is by
+convention; there's nothing in the architecture that prevents you from writing a
+periodic analysis that generates a web page or an incremental analysis that
+generates an email.</p>
+<p>Since we are just in the process of writing our first analysis for activity
+data now, I will instead use the SessionMonthSummary analysis as an example of
+incremental analysis.
+Note that we put all of the analyses for a given raw data log type in a single
+directory, so SessionMonthSummary.java is in the package
+hackystat.analysis.session.&nbsp; Activity analyses will go in the package
+hackystat.analysis.activity.&nbsp; You will create a new subpackage in analysis
+for your new data type.&nbsp;</p>
+<p>What you'll notice when you start reading the SessionMonthSummary code is
+that we are making use of three interfaces: LogListener, Log, and LogEntry.&nbsp;
+Each incremental analysis (on Log data, anyway) should implement the LogListener interface.
+This means it needs to provide a single method called entryAdded, which is
+called each time the specified Log adds a new entry (surprise, surprise.)&nbsp;
+So, in the abstract, things are simple: you implement your incremental analysis as a
+LogListener, it gets its entryAdded method called each time something changes in
+the Log, and your entryAdded method will get called with a pointer to the Log
+and to the newest entry each time something happens.&nbsp;</p>
+<p>The devil is in the details, of course. For example, the
+SessionMonthSummary.java file wants to write out a file, and so it creates a
+FileCache instance.&nbsp; There are two interesting things here. First,
+FileCaches always contain TreeMaps as their data structure. However, a
+SessionMonthSummary object only has a single object to store.&nbsp; So, the
+put() method invocation uses a constant string (&quot;Summary&quot;) so that
+each time a SessionMonthSummary instance (for a given user and file) is
+retrieved, the summary data is overwritten.&nbsp;</p>
+<p>Second, SessionMonthSummary data is written out to a file as XML, but we
+never need to read the XML file back in from disk.&nbsp; This is because
+SessionMonthSummary data is always reconstructed from scratch, analyzing the
+entire contents of the Session, each time we invoke the entryAdded() method. As
+a result of this, we don't need to define a working xmlToJava Jato script,
+because we're never going to read the data back in.&nbsp;</p>
+<p>Reconstructing the entire SessionMonthSummary from scratch seems like a
+reasonable decision in this case because the incremental computations are simple, but we
+could have made different choices.&nbsp; If the computation was significant, we
+could store intermediate results in the XML file (that aren't displayed to the
+user when the XSL transformation is applied) and then read the XML file back
+in.&nbsp; Under this strategy, the entryAdded method would do an incremental
+computation, using basically just the newEntry data to update the intermediate
+data structures.&nbsp; We would then have to fill out the xmlToJava script so
+that we could get the data back in from disk when needed.</p>
+<p>Incremental analyses need to do sanity checking on the data.&nbsp; For example, with
+Session data, there is no guarantee that the start time is actually earlier than
+the end time.&nbsp; You need to perform these checks here.&nbsp; One technique
+that has not been implemented yet in the current analyses (but I encourage you
+to do so) is to create a &quot;Warnings&quot; section in the XML data that
+displays for the user the fact that a sanity check failed and what the system
+did about it.&nbsp; In the case of SessionMonthSummary, it would be nice if
+there was a Warnings section that indicated when an entry had a start time
+greater than end time and that as a result that entry was being discarded.</p>
+<p>The alert reader (if there are any by this point) might be wondering just how
+these LogListeners actually get attached to the appropriate log files.&nbsp; I
+couldn't think up a really elegant and obvious way to do this, so I went for the
+inelegant and arbitrary solution.&nbsp; In the middle of the SysInfo class
+definition, you'll find a static block that looks something similar to the
+following:</p>
+<p><font size="2" face="Courier New">  static {<br>
+&nbsp; //other stuff in the actual static block omitted.<br>
+&nbsp; SessionLog.addListener(new SessionMonthSummary());<br>
+  }</font></p>
+<p>So, for example, if you were going to implement an incremental analysis for
+computing IdleTimeThreshold values using ActivityLog data, you might call the
+resulting class IdleTimeThresholdSummary and change the static block as follows: </p>
+<p><font size="2" face="Courier New">  static {<br>
+&nbsp; //other stuff in the actual static block omitted.<br>
+&nbsp; SessionLog.addListener(new SessionMonthSummary());<br>
+&nbsp; ActivityLog.addListener(new IdleTimeThresholdSummary());<br>
+  }</font> </p>
+<p>This code illustrates how the LogListener (example: SessionMonthSummary) is added
+to a specific Log (i.e. SessionLog). Each Log class is going to have a static
+addListener() method that can be used to add analysis hooks. </p>
+<p>Either before or after&nbsp; you've written your analysis function, you need to write a test
+(example: TestSessionMonthSummary). So that the user can see the data file,
+you'll finally need to write an XSL file (example:&nbsp; SessionMonthSummary.xsl).&nbsp; </p>
+<h3>Step 10: Write one or more &quot;periodic&quot; analyses for your new data </h3>
+<p>Periodic analyses are timer-based analyses that run according to a
+schedule.&nbsp; Currently Hackystat contains infrastructure for running a
+periodic analysis once a day and attaching the results to an email that is sent
+to each user who sent data to the server during the previous day.&nbsp; Although
+other forms of periodic analysis can be implemented easily, let's look at one of
+these periodic analyses because they're the easiest to implement currently and
+probably the kind of periodic analysis most developers will want to
+provide.&nbsp; </p>
+<p>The example periodic analysis is called &quot;SessionDaySummary&quot;, which
+computes a summary of the total Elapsed Time and Idle time accumulated by the
+user during the previous day and generates a string to be included in the daily
+user email message. This analysis is implemented via two classes called
+SessionDaySummary and SessionDaySummaryListener in the
+hackystat.analysis.session package.&nbsp; Your periodic analyses should also be
+located in a similar subpackage of the analysis package. </p>
+<p>The approach is as follows.&nbsp; SessionDaySummary is a
+&quot;computation&quot; class, which takes a UserEmail and a Date in its
+constructor and generates an instance whose get* methods can be used to retrieve
+the computations of interest (in this case the total number of sessions, the
+total Elapsed Time and the total Idle Time for the supplied User and
+Date).&nbsp; You can check out the code to see how this is accomplished. </p>
+<p>SessionDaySummaryListener is the &quot;presentation&quot; class, and is
+responsible for presenting the results of the SessionDaySummary in the daily
+user email. It accomplishes this by implementing the DailyEmailListener
+interface, which specifies only one method: getEmailInfo(userEmail).&nbsp; So,
+what happens is that hackystat implements infrastructure that causes the
+getEmailInfo() method of any instances implementing DailyEmailListener to be
+invoked once a day (currently at 2am) and this method is invoked multiple times,
+once with each UserEmail that has sent data during the previous day.&nbsp; The
+responsibility of the getEmailInfo() method is to return a string that will be
+included in the email that is sent to that user.&nbsp; </p>
+<p>So, in the case of SessionDaySummaryListener, it provides a getEmailInfo()
+method that computes the Date corresponding to yesterday, then creates a new
+SessionDaySummary instance with the passed UserEmail and yesterday's date.&nbsp;
+It then calls the methods on that instance to retrieve session, Elapsed Time,
+and Idle Time values and generates a string that is returned to the
+caller.&nbsp; </p>
+<p>Next,&nbsp; you need to tell the daily email infrastructure about your
+SessionDaySummaryListener so that it can call it.&nbsp; To do that, we go back
+to our friend the static block in SysInfo and add the following line: </p>
+<p><font face="Courier New" size="2">  static {<br>
+&nbsp; // other stuff in the actual static block omitted.<br>
+&nbsp; DailyEmailTimer.getInstance().addListener(new SessionDaySummaryListener());<br>
+  }</font> </p>
+<p>So, for example, if you have a new periodic analysis whose presentation class
+is called &quot;TopFiveFilesThisWeekListener&quot;, you would change the static
+block to include this analysis in the daily email as well: </p>
+<p><font face="Courier New" size="2">  static {<br>
+&nbsp; // other stuff in the actual static block omitted.<br>
+&nbsp; DailyEmailTimer.getInstance().addListener(new SessionDaySummaryListener());<br>
+&nbsp; DailyEmailTimer.getInstance().addListener(new
+TopFiveFilesThisWeekListener());<br>
+  }</font> </p>
+<p>You can and should write JUnit tests for both your computation and
+presentation classes.&nbsp; TestSessionDaySummary.java&nbsp; provides an example
+of testing the computation class for this periodic analysis. </p>
+<p>If you want to write a periodic analysis that runs once a week, for example,
+then you also need to set up a new Timer.&nbsp; That's pretty simple but I won't
+go over it here.&nbsp; Check out the classes DailyEmailListener, DailyEmailTimer,
+and DailyEmailTimerTask in the hackystat.timer package for template code.&nbsp; </p>
+<h3>Step 11: Write the sensors</h3>
+<p>Last, but not least, we need to make the collection of the raw data
+automatic, and to do that, you need to write sensors.&nbsp; There's no general
+guidelines I can provide about this; you'll have to look at the sensors that
+have already been written and use them as a basis. The good news is that the
+amount of code that needs to be implemented is generally pretty small, since
+your goal is simply to invoke the notification. </p>
+<h2>Final Thoughts</h2>
+<p>Please view this document as just a way to get started.&nbsp; The best thing
+to do is read the code, and talk with others about it.&nbsp; Pick up the phone
+and call me and we can step through files together. </p>
+<p>And lastly, write the unit tests for each component as you finish it, and
+make sure the tests pass before you go on to the next step.&nbsp;&nbsp;&nbsp;&nbsp;
+</p>
+<p>&nbsp;</p>

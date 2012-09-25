@@ -1,0 +1,204 @@
+
+
+<head>
+<title>Validated Idle Time</title>
+</head>
+
+<h2 align="center"><font size="3">Hackystat Design Notes Series<br>
+</font><br>
+Validated Idle Time Detection</h2>
+
+<p align="center"><a href="http://csdl.ics.hawaii.edu/~cmoore/">Philip Johnson<br>
+Cam Moore</a><br>
+
+<a href="http://csdl.ics.hawaii.edu/">Collaborative Software Development
+Laboratory</a><br>
+
+<a href="http://www.ics.hawaii.edu/">Department of Information and Computer 
+Sciences </a><br>
+
+<a href="http://www.hawaii.edu/">
+University of Hawaii</a></p>
+
+<p align="center">June 09, 2001<br>
+</p>
+
+<p align="left">&quot;Validated idle time detection&quot; means two things:
+first, that we will detect idle time while working in the IDE, and second, that
+we will have a mechanism in place to allow users to validate that the sensor
+detects idle time effectively. </p>
+<p align="left">A method for detecting idle time that should work in most IDEs
+involves the following: </p>
+<ul>
+  <li>
+    <p align="left">Create a local variable called &quot;lastActivityTimeStamp&quot;
+    that holds a date object. </li>
+  <li>
+    <p align="left">Add hooks to one or more callbacks within the IDE that
+    invokes a &quot;processActivity()&quot; method. </li>
+  <li>
+    <p align="left">The processActivity() method makes a timestamp, and then
+    compares that value to the saved lastActivityTimestamp. If the interval is
+    less than some threshold value (say 5 minutes), then we assume the user is
+    active and we update lastActivityTimestamp with the more recent timestamp
+    value. If the interval is greater than the threshold value, then we assume
+    the user has been idle for that period of time and increment an idle time
+    counter by the number of seconds in that interval. Since the processActivity()
+    method is only called when the user is active by definition, we can now
+    update the lastActivityTimestamp. </li>
+</ul>
+<p align="left">This is a fine method as long as we know that when the user is
+actively working, the processActivity() method is called frequently enough that
+the intervals are below threshold and so the idle time calculation does not kick
+in. This is the &quot;validation&quot; issue. </p>
+<p align="left">We need to provide automated support for validation since it
+will be a recurrent issue for each IDE, and indeed for each user of each IDE. We
+cannot assume that individual user usage styles are similar enough that once the
+Session sensor is validated for one user it is valid for all users. </p>
+<p align="left">Thus, I propose an enhancement to the session sensor which can
+trigger a new notification type called &quot;Activity&quot;. When that
+enhancement is enabled, it results in the processActivity() method _saving_
+every timestamp it creates when it is invoked. When the session ends and the
+session notification is sent, the sensor will also send an ActivityNotification
+whose data is a list of all of the timestamps that it received during that
+Session. The analysis associated with the Activity notification is to produce a
+table of the relative frequency of intervals between successive timestamps. For
+example, </p>
+<table border="1" width="100%">
+  <tr>
+    <td width="33%">Minutes </td>
+    <td width="33%">Number Activity Intervals </td>
+    <td width="34%">% </td>
+  </tr>
+  <tr>
+    <td width="33%">0 - 1</td>
+    <td width="33%">20</td>
+    <td width="34%">40</td>
+  </tr>
+  <tr>
+    <td width="33%">1-3</td>
+    <td width="33%">10</td>
+    <td width="34%">20</td>
+  </tr>
+  <tr>
+    <td width="33%">3-5</td>
+    <td width="33%">19</td>
+    <td width="34%">35</td>
+  </tr>
+  <tr>
+    <td width="33%">5-10</td>
+    <td width="33%">1</td>
+    <td width="34%">5</td>
+  </tr>
+  <tr>
+    <td width="33%">&gt; 10</td>
+    <td width="33%">0</td>
+    <td width="34%">0</td>
+  </tr>
+</table>
+<p align="left">The user uses this table to validate session data by reflecting
+upon their actual use of the IDE during that session and seeing if the activity
+intervals jibe with their subjective sense of activity. The simplest way to
+validate is to use the IDE without any idle time, working at your normal pace,
+and seeing if the activity intervals occur frequently enough to prevent the idle
+time threshold from being reached. If idletime is kicking in for sessions in
+which you aren't idle, then there are two alternatives: </p>
+<ol>
+  <li>
+    <p align="left">increase the idle time threshold so that idle time doesn't
+    kick in, or </li>
+  <li>
+    <p align="left">attach the processActivity() method to more callbacks so
+    that it is invoked more frequently. </li>
+</ol>
+<p align="left">Since validation is potentially expensive, it should be
+something that the user enables only initially or intermittently. But it is key
+to making sure that the Session data reflects usage. </p>
+<p align="left">Cam further suggests that the Activity analysis not only show
+the table of intervals, but also a table indicating how much idle time the
+session would have under various values for the idle time threshold. Something
+like the following: </p>
+<table border="1" width="100%">
+  <tr>
+    <td width="33%">Session:</td>
+    <td width="33%">From: 6/1/2001 14:00:00</td>
+    <td width="34%">To: 6/1/2001 14:30:00</td>
+  </tr>
+  <tr>
+    <td width="33%">Idle Threshold<br>
+      (minutes)</td>
+    <td width="33%">Active Time<br>
+      (HH:MM:SS)</td>
+    <td width="34%">Idle Time<br>
+      (HH:MM:SS)</td>
+  </tr>
+  <tr>
+    <td width="33%">02</td>
+    <td width="33%">00:12:05</td>
+    <td width="34%">00:17:50</td>
+  </tr>
+  <tr>
+    <td width="33%">04</td>
+    <td width="33%">00:18:45</td>
+    <td width="34%">00:11:15</td>
+  </tr>
+  <tr>
+    <td width="33%">06</td>
+    <td width="33%">00:22:50</td>
+    <td width="34%">00:07:10</td>
+  </tr>
+  <tr>
+    <td width="33%">08 </td>
+    <td width="33%">00:25:30</td>
+    <td width="34%">00:04:30</td>
+  </tr>
+  <tr>
+    <td width="33%">10 </td>
+    <td width="33%">00:30:00</td>
+    <td width="34%">00:00:00</td>
+  </tr>
+  <tr>
+    <td width="33%">15 </td>
+    <td width="33%">00:30:00</td>
+    <td width="34%">00:00:00</td>
+  </tr>
+</table>
+<p align="left">This is an interesting example of a Hackystat &quot;what
+if&quot; analysis, which gives the user some guidance in figuring out what their
+idle time threshold should be set to. </p>
+<p align="left">Let's say that the user figured that in that 30 minute session,
+they were actually idle for about five minutes. In that case, setting the idle
+time threshold to 2, 4, 10, or 15 minutes would result in the wrong amount of
+active/idle time. Between 6 and 8 minutes is probably right. </p>
+<p align="left">Without a table like this, it would be hard for the user to
+actually figure out how to set the idle time. With the table, it's easy. And the
+Activity data allows this kind of post-hoc analysis to take place. </p>
+<p align="left">Another issue Cam brings up is how to split a single IDE
+invocation into multiple sessions. For example, if Cam brings up Emacs on Monday
+and brings it down on Friday, we don't want to have one humongous session for
+the entire week. Instead, we'd really rather have a number of smaller sessions,
+probably a few a day corresponding to logical &quot;chunks&quot; of hacking
+time. </p>
+<p align="left">Well, we can actually provide a new kind of
+&quot;threshold&quot; to do this as well. The idea is that when the user takes
+an action that leads to the invocation of the processActivity() method, that
+method will check for idle time as we discussed before, using some kind of small
+threshold interval like 5 or 10 minutes. But it can also check for a larger time
+interval, say one or two or more hours, and if the difference between the last
+timestamp and the current time stamp exceeds this &quot;session threshold&quot;
+value, then the system can assume that the last time stamp marks the end of the
+last session (and send the data off to the server), and that the current
+timestamp marks the beginning of a new session (and initialize things
+appropriately).</p>
+<p align="left">I love this idea and think we should definitely implement it.
+(For one thing, it virtually guarantees that we won't have sessions longer than
+99:59:59, which are now illegal anyway!) </p>
+<p align="left">Finally, Cam suggested that we extend the Activity log to
+contain not just a timestamp, but some kind of indication of what the user was
+doing at that moment (i.e. opening file foo.java, compiling bar.java, running
+JUnit test TestBaz.java, etc.) The Activity log becomes not just a mechanism for
+calibrating idle time, but now it's a potentially fine grained trace of user
+actions that the system could use to perform inferences about what the system
+has done and what the user needs to do next. Imagine that hackystat could start
+automatically running JUnit for you, or sending an email to another user to
+inform them of a change that could impact upon their code, etc.</p>

@@ -1,0 +1,2043 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>CourseApp: Architecture Specification</title>
+<meta name="Microsoft Theme" content="glacier 000, default">
+<meta name="Microsoft Border" content="t, default">
+</head>
+
+<body bgcolor="#FFFFFF" text="#000000" link="#006666" vlink="#999999" alink="#66CCCC" background><!--mstheme--><font face="Arial, Arial, Helvetica">
+
+<p align="center"><i>Last revision: <!--webbot bot="Timestamp" S-Type="EDITED"
+S-Format="%m/%d/%y %I:%M %p" startspan -->07/17/01 10:57 AM<!--webbot bot="Timestamp" endspan i-CheckSum="26305" --></i></p>
+
+<!--mstheme--></font>
+
+<h2><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Inca Software Requirements Specification<!--mstheme--></font></h2>
+<!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font>
+<h2><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Architectural Issues<!--mstheme--></font></h2>
+<!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Three Server-side Tiers &nbsp;<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>The first, fundamental architectural property of Inca is that it is
+designed with three server-side tiers. This means that server-side services and
+functions can be distributed across three distinct computers communicating with
+each other across a network, as illustrated in the following figure:</p>
+<p align="center"><img border="0" src="projec69.gif" width="481" height="396"></p>
+<p>The Web Tier contains one or more computers running a web server with an
+embedded Java process that can handle servlets and JSP pages. Examples include
+Apache, TomCat, or Resin. The Web Tier serves pages to the client by combining
+together formatting information in the JSP page with dynamic content provided to
+the page in the form of JavaBeans (here called JSP Beans, to indicate that they
+are JavaBeans specifically for use in JSP pages). The Web Tier also contains&nbsp;
+Java classes that implement the web tier components of the
+&quot;controller&quot; in the MVC design pattern.&nbsp;</p>
+<p> The Web Tier MVC controller has
+two basic tasks. First, the controller must process each user request, and if the request requires
+processing not possible at the Web Tier,&nbsp; then generating an &quot;event&quot; that can be
+sent to the EJB tier for further manipulation. The results of such processing
+are communicated by the EJB Tier back to the Web Tier through &quot;Info
+objects&quot;, which update the internal state of the JSP Beans.&nbsp; The
+second task of the Web Tier MVC controller is to decide which JSP page should be presented to the user next, based upon the
+last page presented and the current state of the JSP Beans after updating via
+the info objects.</p>
+<p>The EJB (Enterprise JavaBean) Tier contains an EJB container with stateless
+session, stateful session, and entity beans. These beans implement the business
+logic for the application and the interactions with the persistent storage in
+the EIS Tier. One of the session beans has a special purpose: it
+provides the EJB Tier components of the MVC controller, and is responsible for receiving the
+event generated from the Web Tier’s MVC controller, invoking other EJBs as
+necessary to accomplish the task specified by the event, and communicating the
+results back to the Web Tier so that the appropriate info objects can be sent
+to update the JSP Beans. When the actions of the Enterprise JavaBeans result in
+changes to the persistent store, then SQL queries are generated to communicate
+with the EIS Tier from the EJB Tier.&nbsp;&nbsp;</p>
+<p>The Enterprise Information System (EIS) Tier contains a relational database
+system such as Cloudscape, Oracle 8i, or mySQL. This system contains a set of
+tables that implement the persistent storage for the information in the Inca system. The EIS tier accepts SQL queries sent from the EJB Tier, and
+returns the SQL results.&nbsp;</p>
+<p>Two final comments may help avoid confusion. First, although Inca is
+designed as a server-side three tier system, it does not <i>require</i> each
+tier to reside on physically distinct computers. For example, the J2EE reference
+implementation provides an &quot;all-in-one&quot; solution, where the (Web Tier)
+web server, the (EJB Tier) EJB container, and the (EIS Tier) relational database
+system can all be run simultaneously on one computer. However, from an
+architectural standpoint, the software on each tier runs in its own process and
+requires network access to communicate with the other tiers.&nbsp;</p>
+<p>Second, the enterprise computing literature frequently refers to &quot;three
+tier&quot; systems. However, in this literature the three tiers are actually
+referring to a &quot;thin client tier&quot; (i.e. a web <i>browser</i>), which
+communicates via a network to the &quot;middle tier&quot; (some sort of
+middleware that implements the business logic), which communicates via a network
+to the &quot;database tier&quot; (that contains one or more relational database
+servers). In the description of the Inca architecture above, the
+&quot;client tier&quot; containing the web browser is omitted for clarity’s
+sake, although it is certainly part of the overall application structure. Thus,
+from the standpoint of the enterprise computing literature, the Inca architecture is a &quot;four tier&quot; system, which would normally be referred to in
+the literature as &quot;n-tier&quot;. When speaking to &quot;outsiders&quot;
+about the Inca system, therefore, it is most descriptive to refer to the Inca as an
+n-tier system. However, from the developer's standpoint, we only need concern
+ourselves with the three, server-side tiers.</p>
+<b>
+<!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">The user interaction cycle in detail<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+</b>
+<p>Now that the overall architectural structure of Inca is understood, it
+will be useful to go into a bit more detail about the way in which information
+flows through the tiers. The following diagram presents our three server-side
+tiers again, this time with more detail about their internal
+processing characteristics.</p>
+<p align="center"><img border="0" src="projec48.gif" width="525" height="525"></p>
+<p>Let's step through the sequence of events that occur when a user interacts
+with the system:</p>
+<ol>
+  <li>A JSP page is served to the user’s browser and displayed. The user fills
+    out a form or clicks on a link, resulting in an HTTP request being generated
+    and sent to the web tier’s web server. This request is handled by a single
+    servlet instance, which takes the request object containing information
+    about the user’s interaction and gives it to the RequestProcessor.<br>
+    &nbsp;&nbsp;</li>
+  <li>The RequestProcessor is a session-based property, and thus each user has
+    their own instance that can store user-specific state. It takes the request
+    object from the servlet, extracts the relevant information, and constructs
+    an event instance. The event instance provides a more convenient
+    representation for the intended user effect, and is also serializable so
+    that it can be sent over the network from the web tier to the EJB tier. The
+    RequestProcessor hands off the event to the Web Tier controller.<br>
+    &nbsp;&nbsp;</li>
+  <li>The Web Tier controller receives the event from the request processor
+    through its handleEvent method. It then invokes the handleEvent method of
+    the EJB Tier controller. This results in the event being transmitted over
+    the network to the EJB tier. Once there, the EJB controller inspects the
+    event to determine what should happen, and invokes the other EJB instances
+    as needed. For example, if the event is a login event, then other EJB
+    instances are invoked to validate the user’s account name and password,
+    which may require accessing the EIS tables. In any case, the results of
+    whatever processing occurs are ultimately reflected in changes to one or
+    more of the Model objects in the EJB layer. The EJB Tier controller creates
+    a list of the changed models and sends that back as the return value to the
+    Web Tier controller.<br>
+    &nbsp;&nbsp;</li>
+  <li>Once the Web Tier knows which EJB Tier models have changed, the next task
+    is to update the JSP Bean objects. There is a one-to-one correspondence
+    between Web Tier JSP Bean instances and EJB Tier model instances. So, the
+    Web Tier controller takes the list of updated models it received and passes
+    it off to the ModelUpdateNotifier. This notifier invokes the performUpdate
+    method of the JSP Beans which implements calls to the EJB Tier to
+    synchronize their state. They do this by receiving one or more&quot;Info&quot;
+    instances from the Models, which are serializable value objects containing
+    the new data.<br>
+    &nbsp;&nbsp;</li>
+  <li>Once the Web Tier JSP Beans are resynchronized with the EJB Tier models,
+    it is time to select the next JSP page to present to the user. The Web Tier
+    controller invokes the ScreenFlowManager, which determines the next page
+    based upon the current page and current state of the JSP Beans. The page is
+    served. Finally, the user fills out a form and presses submit, or clicks on
+    a link, which generates the next request object in the servlet, and the
+    cycle continues.</li>
+</ol>
+<p>The following sections provide a further level of detail in the description
+of the system, by presenting specifications for the JSP Pages, JSP Beans,
+models, Info objects, Events, EJBs, and their interrelationships.</p>
+<b>
+<!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">The Web Tier JSP Pages<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+</b>
+<p>The JSP pages define the look and feel of the Inca system to the user.
+Most of the JSP pages provided by Inca are illustrated in the Usage
+Scenarios section, and if you have not read this section recently, it is crucial
+that you read or reread that section right now before proceeding further in this
+document. You cannot understand the design of the Web Tier JSP Beans without a
+good sense for the JSP pages that must be served by the application.</p>
+<p>The following table specifies a selection of the JSP pages in the Inca system in terms of the JSP Beans they use, the kinds of user requests that can
+result from viewing the page, and the kinds of events that could be generated.</p>
+<!--mstheme--></font><table BORDER="1" CELLSPACING="1" CELLPADDING="7" width="627" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Page name</font></b><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">JSP Beans used</font></b><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Resulting requests</font></b><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Resulting events</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudentLogin.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">SiteStatusJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudentLogin<br>
+      GoToRegister</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudentLoginEvent</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">AdminLogin.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">SiteStatusJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">AdminLogin</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">AdminLoginEvent</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">AdminMain.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">SiteStatusJSPBean<br>
+      AdminStatusJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">GoToAdminMain<br>
+      GoToUploadFiles<br>
+      GoToEditSemester<br>
+      GoToSetAllocation<br>
+      GoToAllocateApprovals<br>
+      GoToToggleAllocate<br>
+      GoToAllocateSingle<br>
+      GoToEditStudent<br>
+      GoToCourseReport<br>
+      GoToStudentReport<br>
+      GoToRequestReport<br>
+      GoToApprovalReport<br>
+      GoToUpdateNews<br>
+      ToggleStudentLogins<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2"><br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+      </font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudentRegistration.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">none</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Registration</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">RegistrationEvent</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">ThanksForRegistering.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">none</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">GoToLogin</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudentMain.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudentStatusJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">GoToStudentStatus<br>
+      GoToCourseRequestQualified<br>
+      GoToCourseRequestAll<br>
+      GoToChangePassword<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2"><br>
+      <br>
+      <br>
+      </font>
+      </p>
+      <!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudentStatus.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudentStatusJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">GoToStudentMain<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2"><br>
+      </font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">CourseRequestQualified.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">QualificationTableJSPBean<br>
+      RequestTableJSPBean<br>
+      CourseTableJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">GoToCourseRequestAll<br>
+      Request<br>
+      GoToStudentStatus<br>
+      GoToPriorityExplanation<br>
+      GoToStudentMain<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2"><br>
+      RequestEvent<br>
+      <br>
+      </font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">CourseRequestConfirmation.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">StudentStatusJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">GoToStudentStatus<br>
+      GoToStudentMain<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2"><br>
+      <br>
+      </font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">DeleteRequestResult.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudentStatusJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">GoToStudentStatus<br>
+      GoToStudentMain<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><font FACE="TIMES" SIZE="2">
+      <p>&nbsp;</p>
+      </font>
+      <p>&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">DefineNewStudent.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">none</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">NewStudent<br>
+      GoToAdminMain<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">NewStudentEvent</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RetrieveStudent.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">none</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">GoToStudentList<br>
+      RetrieveStudent<br>
+      GoToAdminMain<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><br>
+      <font size="2">RetrieveStudentEvent</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">EditStudent.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminStatusJSPBean<br>
+      StudentStatusJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">GoToEditBasicStatus<br>
+      GoToEditCourseHistory<br>
+      GoToEditRequests<br>
+      GoToEditConsents<br>
+      GoToAdminMain<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><p>&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">EditStudentCourseHistory.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentStatusJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditCourseHistory<br>
+      GoToAdminMain<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditCourseHistoryEvent</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">CoursePriorityExplanation.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentStatusJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">GoToStudentMain<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p>&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseRequestAll.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalTableJSPBean<br>
+      RequestTableJSPBean<br>
+      CourseTableJSPBean<br>
+      QualificationTableJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">GoToStudentMain<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p>&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">SetAllocation.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseTableJSPBean<br>
+      RequestTableJSPBean<br>
+      ApprovalTableJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">GoToAllocateNewApprovals</font><br>
+      <font size="2">GoToAdminMain<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p>&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "196" VALIGN="TOP" width="166"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AllocateNewApprovals.jsp</font><!--mstheme--></font></td>
+    <td "165" VALIGN="TOP" width="143"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseTableJSPBean<br>
+      RequestTableJSPBean<br>
+      StudentListJSPBean<br>
+      QualificationTableJSPBean</font><!--mstheme--></font></td>
+    <td "212" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">GoToAdminMain<br>
+      Logout</font><!--mstheme--></font></td>
+    <td "207" VALIGN="TOP" width="181"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">AllocateApprovalsEvent</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>This table illustrates the following characteristics.&nbsp; First, naming conventions include the following: JSP pages are capitalized in
+a manner similar to Java class names; JSP Bean class names end with the suffix
+&quot;JSPBean&quot;; and events are named with the suffix &quot;Event&quot;.</p>
+<p>Second, the request generated by the user falls into two basic categories:
+GoTo requests and Event requests. The first category, &quot;GoTo&quot;, is
+simply a request to go to a different page without otherwise affecting the state
+of the application.&nbsp; GoTo requests can generally be processed using state
+information in the Web Tier, and thus do not generate events.&nbsp;&nbsp; This
+does not mean the request is automatically satisfied. For example, a request to
+GoToEditStudent would not be satisfied if the session does not include state
+information indicating that the user is an administrator who has successfully
+logged in. GoTo requests are
+represented here by the prefix &quot;GoTo&quot;.&nbsp;&nbsp;</p>
+<p>Event requests require communication with the EJB Tier to
+retrieve data, change data, or both.&nbsp; An Event request, as its name
+implies, results in the generation of an event object that is sent across the network
+from the Web Tier to the EJB Tier for processing. Most event objects contain additional
+state information required by the EJB Tier to process the request. Note that an
+Event request typically results in a new page being displayed, so in effect
+there's an implicit &quot;GoTo&quot; request within each Event
+request.&nbsp;&nbsp;</p>
+<p>To clarify the role and impact of events, the following table lists each
+event, a description of the state information sent with the event, and a general
+description of the processing triggered by receipt of the event on the EJB Tier.</p>
+<!--mstheme--></font><table border="1" width="89%" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><b><font size="2">Event Name</font></b><!--mstheme--></font></td>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><b><font size="2">State Information sent to EJB Tier in
+      event object</font></b><!--mstheme--></font></td>
+    <td width="34%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><b><font size="2">EJB Tier processing</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentLoginEvent</font><!--mstheme--></font></td>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentID (password cached in Web Tier)</font><!--mstheme--></font></td>
+    <td width="34%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Saves time of last login for
+      this student.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminLoginEvent</font><!--mstheme--></font></td>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminID, (password cached in Web
+      Tier)</font><!--mstheme--></font></td>
+    <td width="34%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Saves time of last login for
+      this administrator.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RegistrationEvent</font><!--mstheme--></font></td>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">FirstName, LastName, StudentID, ITS Account</font><!--mstheme--></font></td>
+    <td width="34%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Authenticates registration info,
+      saves new student info, updates models, sends mail to ITS account.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestEvent</font><!--mstheme--></font></td>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">List of: [CourseID, choice, studentID]</font><!--mstheme--></font></td>
+    <td width="34%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Saves request info, updates
+      models.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">NewStudentEvent</font><!--mstheme--></font></td>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Last Name, First Name, StudentID, ITS
+      Account, Tmp Account, Password, ICS Major, Major Name, Graduating Senior,
+      Honors, Continuing, Level</font><!--mstheme--></font></td>
+    <td width="34%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Saves student info, updates
+      models.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditCourseHistoryEvent</font><!--mstheme--></font></td>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">List of current courses to
+      delete, list of new courses and their info to be added.</font><!--mstheme--></font></td>
+    <td width="34%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Deletes courses and adds new
+      courses as indicated; updates models.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditRequestsEvent</font><!--mstheme--></font></td>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">List of current requests to
+      delete, list of new requests to add.</font><!--mstheme--></font></td>
+    <td width="34%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Deletes requests and adds new
+      requests as indicated, updates models.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditBasicStatusEvent</font><!--mstheme--></font></td>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">List of new basic student
+      info.&nbsp; Note: cannot change StudentID here.&nbsp;</font><!--mstheme--></font></td>
+    <td width="34%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Updates basic student info,
+      updates models.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditConsentsEvent</font><!--mstheme--></font></td>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">List of current consents to
+      delete, list of new consents to add.</font><!--mstheme--></font></td>
+    <td width="34%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Deletes consents and add news
+      consents as indicated, updates models.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AllocateApprovalsEvent</font><!--mstheme--></font></td>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">List of: [StudentID, CourseID,
+      SectionID]</font><!--mstheme--></font></td>
+    <td width="34%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Allocates a new approval code to
+      the student for the specified course, updates models, sends email to the
+      student with approval information.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RetrieveStudentEvent</font><!--mstheme--></font></td>
+    <td width="33%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentID</font><!--mstheme--></font></td>
+    <td width="34%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Retrieves data about student and
+      updates the Administration session-based StudentStatusModel.</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>In summary, the Web Tier JSP Pages present information to the user, and each
+supports a defined set of user actions.&nbsp; Some of these actions can be
+handled in the web tier exclusively, while others require interaction with the
+EJB tier.&nbsp;&nbsp; The basic object for communication &quot;downward&quot;
+from Web Tier to EJB Tier is the Event object.</p>
+<p>The next section takes a more detailed look at the structure of the JSP Beans
+in the Web Tier, which provide insight into how the state information in the
+system is organized for presentation to the user. The following section presents
+the &quot;Info&quot; objects, which are analogous to Event objects in that they
+are the basic object for communication &quot;upward&quot; from the EJB Tier to
+the Web Tier.</p>
+<b>
+<!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">The Web Tier JSP Beans<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+</b>
+<p>The Web Tier JSP Beans must be designed to provide all the dynamic information
+required by the JSP pages.&nbsp; The following table provides a high-level overview of the beans used by JSP
+pages to provide dynamic content to the user. There are a few general things to
+note about this table.&nbsp; First, every bean used
+by a JSP page has the suffix &quot;JSPBean&quot;. This is done to make the Bean API
+for JSP designers perfectly clear: any Java class with the suffix
+JSPBean is intended for use by JSP page designers, and no class without the
+JSPBean suffix is available for use by JSP page designers.</p>
+<p>Second, every JSP Bean has a corresponding class in the EJB Tier that
+contains the same state information.&nbsp; These classes always have the suffix
+&quot;Model&quot;.&nbsp; Thus, the ApprovalTableJSPBean in the Web Tier has a
+corresponding ApprovalTableModel class in the EJB Tier.&nbsp; An essential part
+of system processing involves keeping the state of these pairs of objects
+synchronized.&nbsp;&nbsp;</p>
+<p>Third, every JSP Bean has a specific scope. Those with
+&quot;application&quot; scope provide general state information available to all
+users, both student and administrator. These beans are stored in the
+ServletContext, and they are singletons. The remaining beans have
+&quot;session&quot; scope. These beans provide state information that is
+specific to an individual user (who may be an administrator or a student), and
+so a separate instance of the bean is created for each session. These beans are
+stored in the HTTPSession.</p>
+<!--mstheme--></font><table BORDER="1" CELLSPACING="1" CELLPADDING="7" "590" width="676" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td "25%" VALIGN="TOP" width="158"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">JSP Bean Name</font></b><!--mstheme--></font></td>
+    <td "14%" VALIGN="TOP" width="107"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Scope</font></b><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="43"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Type</font></b><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="292"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Internal State Information</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="158"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">ApprovalTableJSPBean</font><!--mstheme--></font></td>
+    <td "14%" VALIGN="TOP" width="107"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Application</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="43"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">table</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="292"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">courseID -&gt; list of ApprovalInfo</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="158"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">RequestTableJSPBean</font><!--mstheme--></font></td>
+    <td "14%" VALIGN="TOP" width="107"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Application</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="43"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">table</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="292"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">courseID -&gt; <i> sorted</i> list of RequestInfo</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="158"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">AdminStatusJSPBean</font><!--mstheme--></font></td>
+    <td "14%" VALIGN="TOP" width="107"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Session (Admin)</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="43"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">struct</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="292"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">[currStudentLogins, currAdminLogins, AdminInfo]</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="158"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">SiteStatusJSPBean</font><!--mstheme--></font></td>
+    <td "14%" VALIGN="TOP" width="107"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Application</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="43"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">struct</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="292"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">SiteInfo</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="158"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudentStatusJSPBean</font><!--mstheme--></font></td>
+    <td "14%" VALIGN="TOP" width="107"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Session (Student)<br>
+      Session (Admin)</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="43"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">struct</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="292"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">[StudentInfo, list of GradeInfo, list of ConsentInfo, list of
+      [StudReqInfo + TotalRequests + Ranking]</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="158"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">CourseTableJSPBean</font><!--mstheme--></font></td>
+    <td "14%" VALIGN="TOP" width="107"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Application</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="43"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">table</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="292"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">courseID -&gt; [CourseInfo + SectionInfo + RequisiteInfo]</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="158"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">QualificationTableJSPBean</font><!--mstheme--></font></td>
+    <td "14%" VALIGN="TOP" width="107"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Session (Student)</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="43"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">table</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="292"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">courseID -&gt; [QualificationInfo + Ranking]</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="158"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudentListJSPBean</font><!--mstheme--></font></td>
+    <td "14%" VALIGN="TOP" width="107"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Application</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="43"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">list</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="292"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">[BasicStudentInfo]*</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>The internal state information maintained by a JSP Bean is structured at the
+top level in one of three ways: as a table of information indexed by some
+sort of key, as a record structure, or as a list.&nbsp; Regardless, part or all
+of the internal state of a JSP Bean consists of one or more &quot;Info&quot; objects.
+This is because Info objects are the &quot;transport mechanism&quot; by which
+data is sent from the EJB Tier back to the Web Tier.&nbsp; Internal state in a
+JSP Bean that is not represented by an Info object is data that is created and
+maintained exclusively at the Web Tier and does not require any interaction with
+the EJB Tier.&nbsp;&nbsp;</p>
+<p>An example of information that is maintained only at the Web Tier is the
+&quot;Ranking&quot; data value.&nbsp; Ranking appears in both the
+StudentStatusJSPBean and the QualificationTableJSPBean.&nbsp; It indicates the
+position in the ordered list of requests occupied by that particular student's
+request.&nbsp; Since Ranking can be easily derived from the RequestTableJSPBean
+(which, for each course, maintains a list of requests sorted by Priority value),
+it is not a part of any Info object.&nbsp;&nbsp;</p>
+<p>Another example is &quot;currStudentLogins&quot; and &quot;currAdminLogins&quot;.&nbsp;
+It is interesting to note that maintaining these two variables at the web server
+tier works only because we assume a single web server process.&nbsp; If Inca grows to require multiple front-end web servers, then login state
+information will need to be moved into the EJB tier.</p>
+<p>The fact that StudentStatusJSPBean is listed with two scopes might be
+confusing and thus warrants further explanation.&nbsp; What this indicates is
+that each student will have their own session-scoped instance of a
+StudentStatusJSPBean which contains information about their status.&nbsp; In
+addition, administrators need access to the same information in order to carry
+out the Edit Student page.&nbsp; Thus, administrators have their own
+session-scoped instance which will hold an instance containining data about
+whatever student is being edited by the administrator.&nbsp;&nbsp;</p>
+<!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Info objects: Communicating between Web and EJB Tiers<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>As explained above, Info objects are fine-grained value objects that package
+together state information that must be sent (in serialized form) from the EJB
+tier to the Web tier. In Inca, Info objects are denoted by classes with the
+suffix &quot;Info&quot;.&nbsp; The internal structure of Info objects often, but
+not always, reflects the
+structure of a single row in one of the underlying relational tables in the EIS
+Tier. When this is the case, it is relatively straightforward to maintain their
+state via Entity Beans. The following table specifies the internal structure of these fine-grained
+value &quot;Info&quot; objects.</p>
+<!--mstheme--></font><table BORDER="1" CELLSPACING="1" CELLPADDING="7" "590" width="595" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2"><b>Info Name</b></font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2"><b>Internal state</b></font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">ApprovalInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalCode, CourseID,
+      StudentID, Section</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">RequestInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestID, StudentID,
+      CourseID, ExcludedSections, Choice, Priority</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">AdminInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminName, LastAdminLogin</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">SiteInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">News, StudentLoginsEnabled,
+      Semester, Year</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudentInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentID, LastName,
+      FirstName, ITSAccount, MajorName, ICSMajor, Senior, Honors, Continuing,
+      Level, LastLogin</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">GradeInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentID, CourseID,
+      Semester, Year</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">ConsentInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentID, CourseID</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">StudReqInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentID, Choice,
+      CourseID, ExcludedSections, Seats, Priority, ApprovalCode</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">CourseInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseID, Name, Semester,
+      Year, CreditHours</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">SectionInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">SectionID, CourseID,
+      Number, Meetings, Seats</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">RequisiteInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequisiteID, CourseID,
+      RequisiteCourseName, RequisiteType, minGrade</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">QualificationInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentID, CourseID,
+      Qualification</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "23%" VALIGN="TOP" width="61"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">BasicStudentInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="357"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentID, LastName,
+      FirstName, Password</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>It might be helpful at this point to pop up a level and review the
+relationship between JSP Pages, JSPBeans, Events, Info objects, and
+models.&nbsp; The following diagram might help make these relationships clear:</p>
+<p align="center"><img border="0" src="projec66.gif" width="525" height="362"></p>
+<p>The most important points are:</p>
+<!--mstheme--></font>
+<!--msthemelist--><table border="0" cellpadding="0" cellspacing="0" width="100%">
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">Each JSP Page can use one or more JSP Bean instances.<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">There is a one-to-one relationship between JSP Beans in the Web Tier and
+    Models in the EJB Tier.<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">A model updates its corresponding JSP Bean by sending one or more Info
+    objects from the EJB Tier to the Web Tier.<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">Models are maintained by EJBs.&nbsp; Some EJBs might maintain multiple
+    models, while other EJBs might not maintain any models. However, each model
+    is maintained by exactly one EJB.<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">The basic mechanism for communication from the Web Tier &quot;down&quot;
+    to the EJB Tier is through an event object, which usually contains internal
+    state.<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+<!--msthemelist--></table>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>This concludes the discussion of the architectural features of the Web Tier
+and its interface to the EJB Tier through events and info objects.&nbsp; We now
+turn to the architecture of the EJB Tier.</p>
+<!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">The EJB Tier Models and Session Beans<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>In a nutshell, the primary goal of the EJB Tier is to maintain the state of a
+set of model instances.&nbsp; This is accomplished through a set of session
+beans.&nbsp; The session beans, in turn, communicate with a set of lower level
+entity beans, which encapsulate access to the underlying persistent
+store.&nbsp;&nbsp; Let's start by listing the model objects in the EJB Tier,
+their internal structure and state,&nbsp; and the session beans that are
+responsible for maintaining this state.</p>
+<!--mstheme--></font><table BORDER="1" CELLSPACING="1" CELLPADDING="7" "590" width="644" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td "25%" VALIGN="TOP" width="85"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Model Name</font></b><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="40"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Type</font></b><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="236"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Internal State Information</font></b><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="95"><!--mstheme--><font face="Arial, Arial, Helvetica"><b><font size="2">Session Bean</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="85"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">ApprovalTableModel</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="40"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">table</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="236"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">courseID -&gt; list of ApprovalInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="95"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalMgr</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="85"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">RequestTableModel</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="40"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">table</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="236"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">courseID -&gt; <i> sorted</i> list of RequestInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="95"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestMgr</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="85"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">AdminStatusModel</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="40"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">struct</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="236"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">[currStudentLogins, currAdminLogins, AdminInfo]</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="95"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminMgr</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="85"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">SiteStatusModel</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="40"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">struct</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="236"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">SiteInfo</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="95"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminMgr</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="85"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">StudentStatusModel</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="40"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">struct</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="236"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">[StudentInfo, list of GradeInfo, list of ConsentInfo, list of
+      [StudReqInfo + TotalRequests + Ranking]</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="95"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentMgr</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="85"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">CourseTableModel</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="40"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">table</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="236"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">courseID -&gt; [CourseInfo + SectionInfo + RequisiteInfo]</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="95"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseMgr</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="85"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">QualificationTableModel</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="40"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">table</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="236"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">courseID -&gt; [QualificationInfo + Ranking]</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="95"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">QualificationMgr</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td "25%" VALIGN="TOP" width="85"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">StudentListModel</font><!--mstheme--></font></td>
+    <td "9%" VALIGN="TOP" width="40"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">list</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="236"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">[BasicStudentInfo]*</font><!--mstheme--></font></td>
+    <td "52%" VALIGN="TOP" width="95"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentMgr</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><p>There are a few things to note about this table.&nbsp; First, some of
+it should look suspiciously similar to the table of JSP Beans presented in a
+previous section. That's because the two middle columns are, in fact identical
+to the two middle columns in the JSP Bean table.&nbsp; The first column is
+almost identical to the JSP Bean table, except for the fact that
+&quot;Model&quot; appears where &quot;JSP Bean&quot; appeared in the other
+table. This is done to emphasize the fact that JSP Beans and Models are two
+sides of the same coin, the most important difference being that they physically
+reside on different Tiers of the system.&nbsp; Finally, note that all of the
+session beans have the suffix &quot;Mgr&quot; (for manager).&nbsp;&nbsp;</p>
+<p>Thus, there are six session beans needed to handle eight models.&nbsp; Let's
+now look at each of these session beans in more detail, listing for each session
+bean the events that they respond to, the resulting changes to the model they
+are responsible for, and underlying calls to entity beans to update the
+persistent storage.&nbsp; The session bean is stateless unless specified as
+&quot;stateful&quot;.&nbsp;</p>
+<!--mstheme--></font><table border="1" width="88%" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td width="15%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><b><font size="2">Session Bean</font></b><!--mstheme--></font></td>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><b><font size="2">Event</font></b><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><b><font size="2">Model Results</font></b><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><b><font size="2">Entity Bean results</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalMgr</font><!--mstheme--></font></td>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AllocateApprovalsEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalTableModel: Adds new
+      entries</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalCodes: Associates an
+      approval code with a given student and section.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top" rowspan="4"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestMgr</font><!--mstheme--></font></td>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestTableModel: Adds and/or
+      deletes entries</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Requests: Adds and/or deletes
+      entries.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditCourseHistoryEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestsTableModel: May require
+      recalculation of priority values</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Requests: Alter priority values</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditRequestsEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestsTableModel: Adds and/or
+      deletes entries</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Requests: Adds and/or deletes
+      entries</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditBasicStatusEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestsTableModel: May require
+      recalculation of priority values</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Requests: Alter priority values</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top" rowspan="2"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminMgr</font><!--mstheme--></font></td>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditNewsEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">SiteStatusModel: Updates news</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Site: Updates news</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminLoginEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminStatusModel: Updates last
+      login</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Administrators: Updates last
+      login</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top" rowspan="6"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentMgr<br>
+      (stateful)</font><!--mstheme--></font></td>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentLoginEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentStatusModel: Saves last
+      login</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Students: Saves last login</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RegistrationEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentListModel: Updated with
+      new student if registration authenticated</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Students: Saves new student info
+      if authentication successful.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">NewStudentEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentListModel: Updated with
+      new student information</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Students: Saves new student info</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditBasicStatusEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentStatusModel: Changed
+      if&nbsp; model instance for student exists</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Students: Updates student info</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditConsentsEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentStatusModel: Changed
+      if&nbsp; model instance for student exists</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Consents: Updates consent info</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RetrieveStudentEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentStatusModel: Creates new
+      instance and populates with data for administrator</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Students, Grades, Consents:
+      retrieves info</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top" rowspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseMgr</font><!--mstheme--></font></td>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditCourseEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseTableModel: Updates with
+      new seating or other information. Note: Changing requisites can have major
+      impact-should this be allowed?</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Courses, Sections, Requisites:
+      Updated as necessary.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">NewCourseEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseTableModel: Updates with
+      new course information</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Courses, Sections, Requisites:
+      Updated as necessary</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">DeleteCourseEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseTableModel: Removes course
+      information.</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Courses, Sections, Requisites:
+      Updated to reflect deletion.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="15%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">QualificationMgr<br>
+      (Stateful)</font><!--mstheme--></font></td>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">EditConsentsEvent</font><!--mstheme--></font></td>
+    <td width="28%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">QualificationTableModel: Updated
+      with new qualifications if instance for student exists</font><!--mstheme--></font></td>
+    <td width="36%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Qualifications: Updated</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">A conceptual specification of the data managed by
+Inca session beans<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>Next, let's describe at a conceptual level the data managed by each session
+bean.&nbsp; The conceptual entities can be categorized as follows: Course, Requisite, Section, Request, ApprovalCode, Student,
+Grade, and Consent.&nbsp;&nbsp;Here is the mapping from Session beans to the
+conceptual entity or entities they control:</p>
+<!--mstheme--></font><table border="1" width="89%" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td width="19%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2"><b>Session Bean</b></font><!--mstheme--></font></td>
+    <td width="81%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2"><b>Conceptual Entity(ies)</b></font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="19%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalMgr</font><!--mstheme--></font></td>
+    <td width="81%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalCode</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="19%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestMgr</font><!--mstheme--></font></td>
+    <td width="81%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Request</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="19%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminMgr</font><!--mstheme--></font></td>
+    <td width="81%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Admin, Site</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="19%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentMgr</font><!--mstheme--></font></td>
+    <td width="81%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Student, Grade, Consent</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="19%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseMgr</font><!--mstheme--></font></td>
+    <td width="81%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Course, Requisite, Section</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="19%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">QualificationMgr</font><!--mstheme--></font></td>
+    <td width="81%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">none (provides qualification information to
+      StudentMgr)</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>&nbsp;In the following description of the conceptual entities, every entity name is
+capitalized.&nbsp; An entity description includes a listing of both the
+attributes associated directly with each entity, and the abstract relationships
+that exist between this
+entity and other entities.&nbsp; You can distinguish an attribute from a
+relationship by way of the type field: a primitive type like &quot;string&quot;
+or &quot;int&quot; is lowercased and indicates an attribute, while a type that is the name of
+another entity is uppercased and indicates an abstract relationship.&nbsp; Each
+abstract relationship also specifies how many of each type of entity participate
+in the relationship.&nbsp;</p>
+<!--mstheme--></font><table BORDER="1" CELLSPACING="1" CELLPADDING="7" WIDTH="658" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="636" ><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Course</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="636" ><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">Specifies data related only to those courses for which registration is
+      occurring. (Not all courses ever offered by the department and for which
+      some student may have a grade have a corresponding Course object.)<br>
+      <br>
+      The course number, semester, and year forms the key to this object.&nbsp;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><i><font size="2">Attributes/<br>
+      Relationships</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Type</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><i><font size="2">Constraints</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Example</font></i><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">number</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">&quot;111&quot;, &quot;111L&quot;, &quot;491-2&quot;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">name</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">&quot;Introduction to Computer Science 1&quot;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">semester</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">int</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">1=Fall, 2=Spring, 3=Summer I, 4= Summer II, others can be defined.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">year</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">int</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">1999, 2000, etc.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">creditHours</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">int</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">1, 2, 3, etc.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">isUHCourse</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">boolean</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">True or False</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">True if this course was offered
+      at UH, false if this course was taken by a student someplace else</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Requisites</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Requisite</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+ (0..N)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">(Courses may or may not have Requisites)&nbsp;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Sections</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Section</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      (1..N)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">(Every Course has at least one Section)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Requests</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Request&nbsp;</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+ (0..N)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">(Courses may or may not have Requests)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">ApprovalCodes</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">ApprovalCode&nbsp;</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+ (0..N)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">(This represents all ApprovalCodes associated with this Course across all of its
+      Sections)</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><p>&nbsp;</p>
+<!--mstheme--></font><table BORDER="1" CELLSPACING="1" CELLPADDING="7" width="658" bordercolordark="#000000" bordercolorlight="#99CCCC" >
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="636" ><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Requisite</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="636" ><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Specifies a single prereq, coreq, or concurrent course requirement for
+      a single Course. Not all courses have a requisite attached to them, and
+      some Course objects may have multiple requisites.</font>
+      <p><font size="2">Requisite is a weak entity; the course is the owning entity.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><i><font size="2">Attributes/<br>
+      Relationships</font></i><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Type</font></i><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><i><font size="2">Constraints</font></i><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Example</font></i><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Course</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Course</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null, singleton</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">(the Course to which this Requisite data applies)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">RequisiteCourseName</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">string</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">null if requisiteType is 4, non-null
+      otherwise&nbsp;</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">&quot;111&quot;, &quot;211&quot;, etc. This is NOT a pointer to a
+      course object, because the requisite course might not be offered during
+      the current semester.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">requisiteType</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">int</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">1=prerequisite, 2=corequisite, 3=concurrent<br>
+      4=consent</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">minGrade</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">string</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">&quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><p>&nbsp;</p>
+<!--mstheme--></font><table BORDER="1" CELLSPACING="1" CELLPADDING="7" width="658" height="454" bordercolordark="#000000" bordercolorlight="#99CCCC" >
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="636" height="19" ><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Section</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="636" height="73" ><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Specifies a section associated with a Course. Every course must have at
+      least one Section, since this is where meetings and seat data are stored.</font>
+      <p><font size="2">Section is a weak entity; Course is the owning entity.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163" height="46"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><i><font size="2">Attributes/<br>
+      Relationships</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163" height="46"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Type</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164" height="46"><!--mstheme--><font face="Arial, Arial, Helvetica"><i><font size="2">Constraints</font></i><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP" height="46"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Example</font></i><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163" height="46"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Course</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163" height="46"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Course</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164" height="46"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null; singleton</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP" height="46"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">(The Course to which this Section data applies)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163" height="46"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">number</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163" height="46"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164" height="46"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP" height="46"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">&quot;01&quot;, &quot;02&quot;, etc</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">meetings</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">&quot;TTh 8:30-12:00&quot;, etc.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">seats</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">int</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">20, 40, etc</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">instructor</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">&quot;Philip
+      Johnson&quot;, &quot;Pat Gilbert&quot;, etc.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">ApprovalCodes</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">ApprovalCode</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      (0..N)</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP" height="47"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">(These are the ApprovalCodes actually allocated to this Section so far)</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><p>&nbsp;</p>
+<!--mstheme--></font><table BORDER="1" CELLSPACING="1" CELLPADDING="7" width="658" bordercolordark="#000000" bordercolorlight="#99CCCC" >
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="636" ><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Request</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="636" ><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Specifies a request made by a student for a specific course. Requests
+      may be made and withdrawn by students until an approval code is allocated
+      to this request, at which point the request cannot be withdrawn.</font>
+      <p><font size="2">Request is a weak entity; student and course are the owning entities.
+      You want to be able to retrieve requests by both student and course.&nbsp;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><i><font size="2">Attributes/<br>
+      Relationships</font></i><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Type</font></i><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><i><font size="2">Constraints</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Example</font></i><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Student</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Student</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null; singleton</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">(The Student making this Request.)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Course</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Course</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null; singleton</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">(The Course that this Student is making a
+      Request for.)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">ExcludedSections</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Section&nbsp;</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+ (0..N)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">null means all Sections acceptable</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">choice</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">int</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">&nbsp;<!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">[null,&nbsp; 1, 2,
+      3, 4]<br>
+      <br>
+      &nbsp;null means no priority needed (end of registration season)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">ApprovalCode</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">ApprovalCode&nbsp;</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+ (0..1)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">null indicates Request has not yet been
+      granted an ApprovalCode.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">fineGrainedPriority</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">int</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">The fine-grained priority value associated with
+      this student's request for this course.&nbsp;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">createDate</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">date</font><!--mstheme--></font></td>
+    <td WIDTH="164" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">The date/time at which this entity was
+      created.</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font><h4><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">&nbsp;<!--mstheme--></font></h4>
+<!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font><table BORDER="1" CELLSPACING="1" CELLPADDING="7" width="657" bordercolordark="#000000" bordercolorlight="#99CCCC" >
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="635" ><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">ApprovalCode</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="635" ><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">Represents a single approval
+      code.&nbsp; The ICS department typically requests 2-3 times as many
+      approval codes as there are seats in a course.&nbsp; Approval codes are
+      allocated to individual courses, but we further specify the approval code
+      as applying to a specific section within a course.&nbsp; Approval codes
+      cannot be reused.&nbsp; For example, if a student gets an approval code
+      for a course, registers using it, then drops the course, then decides that
+      the drop was a mistake and wants to re-register, the student must get a
+      new approval code to register the second time.&nbsp;</font><p><font size="2">Code value
+      constitutes the key for this entity.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><i><font size="2">Attributes/<br>
+      Relationships</font></i><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Type</font></i><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><i><font size="2">Constraints</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Example</font></i><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">codeValue</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">string</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      key</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">&quot;V3467&quot;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Course</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Course</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null; singleton</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">(The Course to which this ApprovalCode applies.)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Student</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Student&nbsp;</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+ (0..1)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">null until this ApprovalCode is actually allocated to a Student.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Section</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Section&nbsp;</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+ (0..1)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">also null until ApprovalCode is allocated to a
+      Student.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">createDate</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">date</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="164"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">The date/time at which this entity was
+      created.</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><p>&nbsp;</p>
+<!--mstheme--></font><table BORDER="1" CELLSPACING="1" CELLPADDING="7" width="656" bordercolordark="#000000" bordercolorlight="#99CCCC" >
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="634" ><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Student</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="634" ><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Represents all the information about a student.&nbsp;&nbsp;</font>
+      <p><font size="2">Student ID is the primary key.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><i><font size="2">Attributes/<br>
+      Relationships</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Type</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><i><font size="2">Constraints</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Example</font></i><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">lastName</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">&quot;Nakamura&quot;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">firstName</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">&quot;Charlene&quot;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">studentID</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">string(9)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">&quot;223404567&quot;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">itsAccount</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">&nbsp;<!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">&quot;cnakamura&quot;, or null if new student
+      with tempAccount</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">tmpAccount</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">&nbsp;<!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">&quot;<a href="mailto:foo@aloha.com">foo@aloha.com</a>&quot;,
+      or null if itsAccount is present.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">password</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">majorName</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">&nbsp;<!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">&quot;Information and Computer Sciences&quot;,
+      or null</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">icsMajor</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">boolean</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">t</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">gradSenior</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">boolean</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">f</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">honorsProgram</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">boolean</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">f</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">continuing</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">boolean</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">t</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">level</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">int</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">1=undergrad, 2=grad</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">icsGPA</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">float</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2"> derived</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">3.5, or null if no Grades.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Requests</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Request&nbsp;</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2"> (0..N)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">(The set of all Requests made by this student
+      so far.)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalCodes</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalCode&nbsp;</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2"> (0..N)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">(The set of all ApprovalCodes given to this
+      student so far.)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Consents</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Consent&nbsp;</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2"> (0..N)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Enables the Student to be qualified for a
+      Course even if Grade entities do not warrant qualification.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Grades</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Grade&nbsp;</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2"> (0..N)</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">(All Grade data for this Student.)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">QualifiedCourses</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Course&nbsp;</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2"> (0..N).&nbsp;derived</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">The set of Courses for which this student is
+      qualified to Request an Approval code.&nbsp;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">LastLogin</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">String</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">not null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">A string indicating the last date/time of
+      login&nbsp;</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><p>&nbsp;</p>
+<!--mstheme--></font><table BORDER="1" CELLSPACING="1" CELLPADDING="7" width="656" bordercolordark="#000000" bordercolorlight="#99CCCC" >
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" height="19" width="634"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><b>
+      <p><font size="2">Grade</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" height="19" width="634"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">Provides information about a course taken by a student previously or
+      currently.&nbsp; This course may or may not have been taken at UH.&nbsp;
+      If not taken at UH, then Course points to a course instance for which
+      isUHCourse is false.</font><p><font size="2">Grade is a weak
+      entity; student is the owning entity.&nbsp;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><i><font size="2">Attributes/<br>
+      Relationships</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Type</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><i><font size="2">Constraints</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Example</font></i><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Student</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Student</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      non-null; singleton</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">(The Student who received this
+      Grade)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">Course</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Course</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null;
+      singleton</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">&quot;111&quot;, &quot;211&quot;, etc.&nbsp;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><p><font size="2">gradeString</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">String</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">
+      null indicates that the student is currently enrolled in the course</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="41" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">null, &quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;,
+      &quot;F&quot;, &quot;W&quot;, &quot;CR&quot;, &quot;NC&quot;, etc.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" height="42" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">comment</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="42" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="42" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">null or non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" height="42" width="163"  ><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">null, or a string documenting
+      information about this course (such as where taken, if not UH)</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><p>&nbsp;</p>
+<!--mstheme--></font><table BORDER="1" CELLSPACING="1" CELLPADDING="7" width="656" bordercolordark="#000000" bordercolorlight="#99CCCC"  >
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="634" ><!--mstheme--><font face="Arial, Arial, Helvetica"><p><b><font size="2">Consent</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td VALIGN="TOP" COLSPAN="4" width="634" ><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">This entity allows the Inca administrator to enable a student to
+      be qualified to take a course even if they are not qualified to take it on
+      the basis of their prior courses.&nbsp; It is effectively an
+      override.&nbsp;</font>
+      <p><font size="2">Consent is a weak entity; student is the owning entity.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><i><font size="2">Attributes/<br>
+      Relationships</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Type</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><i><font size="2">Constraints</font></i><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>
+      <p><font size="2">Example</font></i><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Student</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Student</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null; singleton</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">(The student receiving this Consent.)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Course</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Course</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null; singleton</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">(The Course this Student received this Consent
+      for.)</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">comment</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">string</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica">&nbsp;<!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">null, or a string providing additional
+      information about the nature of this request.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">createDate</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">date</font><!--mstheme--></font></td>
+    <td WIDTH="163" VALIGN="TOP"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">non-null</font><!--mstheme--></font></td>
+    <td  VALIGN="TOP" width="163"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">The date/time at which this entity was
+      created.</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Additional EJB Tier components: AuthenticationMgr, MessageMgr, PriorityMgr<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>In addition to the session and entity beans, there are additional components
+required to provide auxiliary services in Inca.&nbsp; A top level
+description of their requirements follows:</p>
+<!--mstheme--></font><table border="1" width="88%" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><b><font size="2">Component</font></b><!--mstheme--></font></td>
+    <td width="79%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><b><font size="2">Requirements</font></b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AuthenticationMgr</font><!--mstheme--></font></td>
+    <td width="79%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Provides authentication services
+      for new student registrations.&nbsp; Uses the open source <a href="http://www.mud.de/se/jta/">Java
+      Telnet Application&nbsp;</a> to support connection to UHUnix to determine
+      if user names and accounts are valid.&nbsp;</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">MessageMgr</font><!--mstheme--></font></td>
+    <td width="79%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Provides log-oriented messaging
+      services to both the Web and EJB Tiers.&nbsp; Inca requires the
+      following kinds of logs and message services:&nbsp;&nbsp;</font>
+      <!--mstheme--></font>
+      <!--msthemelist--><table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <!--msthemelist--><tr>
+          <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+          <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Toggable console output messages to support debugging
+          and maintenance.</font><!--mstheme--></font><!--msthemelist--></td>
+        </tr>
+        <!--msthemelist--><tr>
+          <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+          <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">File-based messages to record system activity for
+          intrusion detection and other security activities</font><!--mstheme--></font><!--msthemelist--></td>
+        </tr>
+        <!--msthemelist--><tr>
+          <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+          <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Email messages to students to inform them of
+          registration success/failure and to provide them with approval codes.</font><!--mstheme--></font><!--msthemelist--></td>
+        </tr>
+        <!--msthemelist--><tr>
+          <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+          <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Email messages to the
+            Inca account to provide a
+          log of registration actions in case of catastrophic failure.</font><!--mstheme--></font><!--msthemelist--></td>
+        </tr>
+      <!--msthemelist--></table>
+      <!--mstheme--><font face="Arial, Arial, Helvetica">
+      <p><font size="2">Note that the same system event (i.e. a registration
+      attempt) could result in activity at several or all of these levels.&nbsp;
+      Therefore, the MessageMgr service consolidates all output-related services
+      within one API using the <a href="http://www.log4j.org/">Log4J</a> open
+      source utility in combination with the JavaMail package.</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">PriorityMgr</font><!--mstheme--></font></td>
+    <td width="79%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">Provides the fine-grained
+      priority values associated with a student's request for a given course,
+      given their course background.&nbsp;</font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">From Session Beans to the EIS Tier: An Entity Bean-based solution<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>Session beans must communicate in some fashion with the underlying persistent
+store in the EIS Tier.&nbsp; There are many different possible approaches, from
+hand-rolled JDBC, to JDO, to Entity Beans with Bean Managed Persistence (BMP),
+to Entity Beans with container managed persistence (CMP).&nbsp; These approaches
+compare and contrast mainly in terms of performance vs. ease of development and
+enhancement.</p>
+<p>In the initial implementation of Inca, the main goal is to validate the
+requirements, not performance.&nbsp; Thus, from an architectural perspective,
+the goal is to minimize the amount of developer time and energy devoted to
+persistence issues.&nbsp; This allows developers to devote more time to
+fulfilling high level functional requirements and bringing the system online as
+quickly as possible, and then modifying the system when the users inevitably
+discover shortcomings in its design.&nbsp;&nbsp;</p>
+<p>The clear winner among all alternative approaches with respect to speed of
+implementation and modification is Entity Beans with Container Managed
+Persistence.&nbsp; This is also clearly the worst approach with respect to
+performance.&nbsp; Therefore, once the requirements for the system have been
+validated and corrected through actual usage, we may discover that CMP-based
+entity beans result in unacceptable performance.&nbsp; If this turns out to be
+true, then we will revisit this layer of the architecture and redesign it using
+one of the other approaches in order to bring its performance up to suitable
+levels.&nbsp; Alternatively, we might discover that performance is adequate with
+CMP Entity Beans, or we might discover that the performance bottleneck is
+actually someplace else in the system.&nbsp;&nbsp; This is more likely than it
+might seem, because the session beans can and should create caches of frequently
+used information.&nbsp; For example, the course, requisite, and section
+information should probably be retrieved from the EIS Tier and cached in its
+entirety in the CourseMgr session instance in the EJB Tier upon system
+startup.&nbsp; This will eliminate almost all further access to the EIS Tier by
+the CourseMgr.&nbsp; Under these circumstances,&nbsp; there will be virtually no
+performance cost associated with CMP Entity beans for course information, and
+substantial development benefits.&nbsp;</p>
+<p>CMP Entity beans have a straightforward structure: there is one entity bean
+per table, and each entity bean instance is associated with a row in the table.
+Thus, the initial CMP Entity Bean architecture will directly reflect the
+underlying EIS relational table structure, which is presented in the next
+section.</p>
+<!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">The EIS Tier relational table specification<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>The relational table specification is provided in the form of an Access
+database file.&nbsp; A screen image providing the important details appears
+below:</p>
+<p align="center"><img border="0" src="projec70.gif" width="626" height="580"></p>
+<p align="center"><a href="http://csdl.ics.hawaii.edu/~johnson/613f00/AccessPrototype/CourseAppDB.mdb">Inca</a><a href="http://csdl.ics.hawaii.edu/~johnson/613f00/AccessPrototype/CourseAppDB.mdb">DB.mdb</a></p>
+<!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Package-level structure<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica"><p>The final architectural consideration is the organization of the components
+into a java package hierarchy. This hierarchy also corresponds to the
+subdirectory hierarchy.&nbsp; The package level structure has the following
+components. First, the &quot;root&quot; of all packages and subpackages is
+&quot;edu.hawaii.Inca&quot;.&nbsp; (Note that many of you are accustomed to
+adding your user name to packages from previous assignments, such as &quot;xml_johnson&quot;.
+Do NOT add your username to these packages--you are coding for real, now!)</p>
+<p>Beneath the root package is the &quot;component&quot; name, such as
+&quot;control&quot;, &quot;approval&quot;, etc.&nbsp; Each component is broken
+into one or more &quot;subcomponents&quot;, such as &quot;web&quot;, &quot;ejb&quot;,
+&quot;model&quot;, etc. Inside the subcomponents are the actual classes in the
+system, such as ApprovalTableModel.java, etc. </p>
+<p>The following table specifies the location for most of the class-level
+objects indicated in this architecture.&nbsp; The completed system will include
+many other classes not articulated in this specification. Hopefully, their
+location will be clear to you with this table as a guide. If not, please send me
+email.</p>
+<p>I used a shortcut when naming EJBs to preserve space and reduce typing. For
+an EJB named &quot;Foo&quot;, for example, instead of typing out the three
+classes Foo, FooHome, and FooEJB, I instead specified the EJB as Foo|Home|EJB.
+Think of this as expanding into three classes.</p>
+<!--mstheme--></font><table border="1" width="86%" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td width="20%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2"><b>Root</b></font><!--mstheme--></font></td>
+    <td width="13%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2"><b>Component</b></font><!--mstheme--></font></td>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2"><b>Subcomp.</b></font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2"><b>Classes</b></font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="20%" valign="top" rowspan="26"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">edu.hawaii.Inca</font><!--mstheme--></font></td>
+    <td width="13%" valign="top" rowspan="4"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">control</font><!--mstheme--></font></td>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">exception</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">GeneralFailureException</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">event</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentLoginEvent,
+      AdminLoginEvent, RegistrationEvent, RequestEvent, NewStudentEvent,
+      EditCourseHistoryEvent, EditRequestsEvent, EditBasicStatusEvent,
+      EditConsentsEvent, AllocateApprovalsEvent, RetrieveStudentEvent</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">web</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ModelUpdateListener,
+      RequestProcessor, ScreenFlowManager, ModelManager, ModelUpdateNotifier,
+      RequestToEventTranslator, StudentController, AdminController</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ejb</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentController|Home|EJB,
+      AdminController|Home|EJB, ModelUpdateManager, StateMachine</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="13%" valign="top" rowspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">approval</font><!--mstheme--></font></td>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">web</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalTableJSPBean</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">model</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalTableModel, ApprovalInfo</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ejb</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ApprovalMgr|Home|EJB,
+      ApprovalCodes|Home|EJB</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="13%" valign="top" rowspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">request</font><!--mstheme--></font></td>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">web</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestTableJSPBean</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">model</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestTableModel, RequestInfo</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ejb</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">RequestMgr|Home|EJB,
+      Requests|Home|EJB, ExcludedSections|Home|EJB</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="13%" valign="top" rowspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">admin</font><!--mstheme--></font></td>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">web</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminStatusJSPBean,
+      SiteStatusJSPBean</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">model</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminStatusModel, AdminInfo,
+      SiteStatusModel, SiteInfo</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ejb</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AdminMgr|Home|EJB</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="13%" valign="top" rowspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">student</font><!--mstheme--></font></td>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">web</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentStatusJSPBean,
+      StudentListJSPBean</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">model</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentStatusModel,
+      StudentListModel, StudentInfo, GradeInfo, ConsentInfo, StudReqInfo, </font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ejb</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">StudentMgr|Home|EJB,
+      Students|Home|EJB, Grades|Home|EJB, Consents|Home|EJB, </font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="13%" valign="top" rowspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">course</font><!--mstheme--></font></td>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">web</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseTableJSPBean</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">model</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseTableModel</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ejb</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">CourseMgr|Home|EJB,
+      Requisites|Home|EJB, Sections|Home|EJB,
+      Courses|Home|EJB</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="13%" valign="top" rowspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">qualification</font><!--mstheme--></font></td>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">web</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">QualificationTableJSPBean</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">model</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">QualificationTableModel</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ejb</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">QualificationMgr|Home|EJB,
+      Qualifications|Home|EJB, </font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="13%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">authentication</font><!--mstheme--></font></td>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">ejb</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">AuthenticationMgr</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="13%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">message</font><!--mstheme--></font></td>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">?</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">MessageMgr</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="13%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">priority</font><!--mstheme--></font></td>
+    <td width="12%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">?</font><!--mstheme--></font></td>
+    <td width="55%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">PriorityMgr</font><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="13%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">jsp</font><!--mstheme--></font></td>
+    <td width="67%" valign="top" colspan="2"><!--mstheme--><font face="Arial, Arial, Helvetica"><font size="2">no subcomponent, all
+      .jsp pages live here. </font><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>So, for example, the fully qualified package name for CourseTableModel is
+&quot;edu.hawaii.Inca.course.model.CourseTableModel&quot;.</p>
+<p>&nbsp;</p>
+<!--mstheme--></font></body>
+
+</html>

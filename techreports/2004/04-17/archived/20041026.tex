@@ -1,0 +1,319 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 04-17.tex -- Characterizing the Degree of Parallelism and Active Time 
+%%              in High Performance Source Code
+%% Author          : Michael Paulding
+%% Created On      : Wed Sep 22
+%% Last Modified By: 
+%% Last Modified On: Mon Sep 27
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 2004 Michael Paulding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\documentclass[11pt,twocolumn]{article} 
+\input{/export/home/csdl/tex/psfig/psfig}
+\usepackage{/export/home/csdl/tex/icse2003/latex8}
+\usepackage{times}
+%% A verbatim-like environment which allows font changes
+%%\usepackage{alltt}
+%% New LaTeX2e graphics support
+\usepackage[final]{graphicx}
+% uncomment the % away on next line to produce the final camera-ready version
+% and uncomment the \thispagestyle{empty} following \maketitle
+\pagestyle{empty}
+
+\begin{document}
+
+\title{Characterizing the Degree of Parallelism and Active Time \\
+in High Performance Source Code}
+
+
+\author{\protect\begin{tabular}{ccc}
+Michael Paulding \\
+\end{tabular}\\
+\em  Collaborative Software Development Laboratory \\
+\em  Department of Information and Computer Sciences \\
+\em  University of Hawai'i \\
+\em  Honolulu, HI 96822 \\
+\em  mpauldin@hawaii.edu}
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}  % 200 words
+
+High performance computing systems are being applied to an
+increasingly wide variety of domains and are also becoming radically
+less expensive.  However, the DARPA High Productivity Computing
+Systems Program notes that dramatic increases in low-level HPCS
+benchmarks of execution speed do not necessarily translate into
+increase development productivity.  In addition, traditional
+benchmarks do not address the workflow characteristics of HPCS
+development, such as active time spent developing sequential code and
+that of parallel code.
+
+This paper describes an implementation of a Purpose-Based Benchmark
+(PBB) to solve the Optimal Truss Problem with the intention of gaining
+further understanding of HPCS development from project inception
+through completion.  With the data gathered from and analysis of the
+Optimal Truss PBB implementation, a metric is proposed to measure the
+ratio between degree of parallelism and active time for source code
+files.
+
+\end{abstract}
+
+\Section{Introduction}
+\label{sec:intro}
+
+In 2002, the DARPA High Productivity Computing Systems Program began
+funding an initiative to build the next generation of supercomputers,
+increasing the performance and productivity of current HPCS
+architectures by a factor of 10.  The project is divided into 3
+phases, which include: Concept Formation (Phase 1), Risk Reduction
+(Phase 2), and Full Scale Development.
+
+DARPA intially awarded 5 vendors (Sun, IBM, Cray, SGI and HP) with
+funding for Phase 1 research to conceptualize and design a prototype
+of the next generation architecture.  Phase 1 was completed in 2003,
+and 3 out of the 5 vendors (Sun, IBM, Cray) were selected to progress to
+the next phase.  Phase 2, Risk Reduction, is slated to be completed by
+2006, with at most 2 vendors selected to participate in Phase 3, in
+which the architecture designed in earlier phases will be built in
+full scale production.
+
+One of the primary goals of the DARPA HPCS Program is to provide a
+definition of productivity to evaluate whether vendors have achieved a
+10x improvement\cite{Faulk04}.  Current benchmarking mechansims are
+performance, rather than productivity based.  For example,
+Activity-Based Benchmarks are used to measure system performance
+during runtime, typically in floating-point operations per second
+(FLOPS).  Unfortunately, this type of benchmark ignores the majority
+of effort invested in the development of the software before reaching
+the point at which it is ready for execution.
+
+To address the shortcomings of traditional Activity-Based Benchmarks,
+Gustafson \cite{Gustafson04} have proposed the idea of a Purpose-Based
+Benchmark (PBB).  A Purpose-Based Benchmark varies from an
+Activity-Based Benchmark in that it accounts for all project effort
+from its inception (design phase) through to its terminal phase,
+which is usually verification/validation and maintenance.  Another
+characteristic of PBBs is that each one must model a problem of ``direct
+interest to humans'' \cite{Gustafson04}.  For example, a PBB might be
+created to accurately predict the weather over the next 3 days or to
+simulate the events of an automobile collision.
+
+In this paper, results are presented from an implementation of the
+Optimal Truss PBB.  Simply stated, the Optimal Truss problem is
+defined as follows:  Given two attachment points on a vertical surface
+and a load-bearing point some distance from that surface, find a
+pin-connected, steel truss structure that uses as little mass as
+possible to bear the load with a safety factor of 50 percent.  An initial
+implementation of the Optimal Truss PBB was composed over the Spring of
+2004 and is used as a basis of data for results in this paper.  More
+details about the Optimal Truss PBB appear in Section 4.
+
+Concurrently with the development of the Optimal Truss PBB, I gathered
+software engineering data for each day of development on the PBB in
+the form of Hackystat diaries and journal entries.  Hackystat is a
+tool that provides software developers with automated support for
+collecting and analyzing useful measures of the process and products
+of software development.  The Hackystat diaries are automatically
+constructed from activities that take place within an editor
+(e.g. Emacs or Vim).  Hackystat sensors for these tools collect
+activity data and send it to a Hackystat server for storage and
+analysis.  The journal entries I compiled during PBB development were
+personal, handwritten entries reflecting on processes or products that
+I felt Hackystat did not capture.
+
+One of the primary reasons for maintaining the software engineering
+data related to the Optimal Truss PBB was to gain insight into time
+allocation of HPCS developers.  In order to realize productivity
+gains, one must first understand where the bottlenecks exist.
+Specifically, it is important to characterize active time between the
+``sequential'' aspects of development and those that are considered
+``parallel''.  For example, the workflow of an HPCS developer might be
+classified into the general categories:
+
+\begin{enumerate}
+  \item Developing the sequential workhorse - including the translation of
+algorithms and mathematics from model to source code.
+  \item Parallelizing the sequential workhorse - including the task
+distribution and communication handling for multiple nodes.
+\end{enumerate}
+
+One of the funtamental goals of this research is to produce a metric
+that classifies the ratio between ``sequential'' and ``parallel''
+active time, on a per file basis to isolate and identify bottlenecks,
+which can then be addressed and corrected to increase overall
+productivity in future projects.
+
+Therefore, from the experience of developing a PBB on a full scale HPCS
+architecture and the software engineering data gathered automatically
+by Hackystat diaries and manually through personal journals, I propose
+a two-part thesis claim that:
+\\
+\\
+1. The software engineering of HPCS systems can be improved by
+understanding the way programmers allocate their time between the
+``parallel'' and ``sequential'' aspects of a software implementation.
+\\
+\\
+2. A metric can be defined to measure the ratio between the degree of
+parallelism and active time of HPCS source code.  This metric will be
+defined through an analysis of developer workflow and the
+incorporation of automatic tool support.
+
+\Section{Methodology}
+\label{sec:methodology}
+
+To evaluate the thesis claims made in the previous section, I plan to
+perform an analysis of the software engineering data gathered during
+the implementation of the Optimal Truss PBB.  Specifically, I intend
+to characterize my own workflow between ``parallel'' and
+``sequential'' portions of development.  Using a combination of the
+active time data from Hackystat diaries and self reported time in the
+developer journals, I intend to create a time chart indicating the
+time spent on each portion, on a per file basis.  For example, if the
+file ``seq\_workhorse.cc'' contains no parallel constructs (in this
+case, MPI calls), I will credit the sequential portion with the active
+time reported in the Hackystat diaries and developer journals.
+
+Once I have performed this analysis on each file, I will be able to
+create an initial ratio of active time allocated between ``parallel''
+and ``sequential'' development.  I will also be able to identify
+potential productivity bottlenecks, by uncovering the files that
+required a disproportionate amount of active time.
+
+In parallel with the data analysis, I plan on building a tool to
+classify whether a file of source code is ``parallel'' or not.  As an
+initial pass, I will designate a ``parallel'' file as one that
+contains one or more MPI constructs.  This tool can be achieved by
+extending a C++ parser or tokenizer to gather the name and count of
+MPI constructs appearing in the source code.
+
+After the tool is built, I hope to integrate it with Hackystat to
+couple the degree of parallelism (e.g. whether file is parallel) with
+the Hackystat active time analysis.  This should produce a ratio
+similar in definition to the one produced manually, but this will be
+automatic with little overhead.
+
+With the tool support in place, I hope to apply it to future HPCS
+development of my own and in other student environments to
+characterize workflow and suggest productivity bottlenecks.
+
+\Section{Optimal Truss PBB Problem}
+\label{sec:trusspbb}
+
+As mentioned in Section 1, Introduction, the Optimal Truss PBB is
+defined as finding a pin-connected steel truss structure that uses as
+little mass as possible to support a load connected from three
+attachment points on a wall to the load-bearing point away from the
+wall.
+
+Before delving into the design details of the Optimal Truss PBB
+implementation, there are a few terms the reader should be familiar
+with.  These include:
+\\
+\\
+{\bf Topology} - the set of all trusses connecting the attachment points to
+the load bearing point.
+\\ \\
+{\bf Truss} - the set of joints and members connecting a single
+attachment point to the load bearing point.
+\\ \\
+{\bf Joint} - a cylindrical piece of metal
+connecting at least two members.  In the Optimal Truss PBB, all joints
+have the same dimensions, material and mass.  
+\\ \\
+{\bf Member} - a length of metal connecting two joints in a truss.  A member
+can either be a strut or a cable.
+\\ \\
+{\bf Strut} - a rigid piece of metal with measurable length and width.
+\\ \\
+{\bf Cable} - a flexible piece of metal with measurable length and
+cross-sectional area.
+\\ \\
+In the implementation I developed in the spring of 2003, I divided
+the problem into several components.  The first was designated as the
+sequential workhorse, which included the task of solving a truss once
+all its elements were defined.  Solving a truss includes the
+calculation of its mass, which is determined by summing the mass of each of its
+components (e.g. all steel joints and members).  In addition to mass
+calculation, solving a truss also includes verifying equilibrium and
+deformational constraints.  Equilibrium constraints require that all
+forces and moments within a truss net zero magnitude, thus ensuring
+that the truss is not accelerating.  Deformational constraints require
+that the length of members (strut or cable) used in the truss do not
+exceed construction safety limits.  These limits are well defined and
+are known prior to runtime.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.2\textwidth]{simple_truss.eps}
+  \caption{An unoptimized solution to the Truss PBB}
+  \label{fig:simple_truss}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.2\textwidth]{multijoint_truss.eps}
+  \caption{An optimized solution to the Truss PBB}
+  \label{fig:multijoint_truss}
+\end{figure}
+
+\pagebreak
+
+The next component of the Optimal Truss PBB was to permute all
+possible topologies of trusses within the domain space, ensuring that
+the configuration with minimal mass is a global minimum.  The domain
+space I dealt with was a 2-dimensional mesh of points, defining the
+rectangle formed between the attachment points and the load bearing
+point.  Exploring all possible configurations results in a
+combinatorial explosion as the mesh size is increased and this served
+as the first point of parallelism in the implementation.  The task of
+topology generation was equally divided among the available nodes.
+Each row of the mesh was assigned to a different processor to permute.
+
+Finally, the last component was to perform geometry assignment for all
+trusses.  After generation, a topology defines the path of each truss
+from the attachment points to the load bearing point, but it does not
+specify what type of member connects each joint.  In this stage, a
+strut and a cable is substituted for each member, flushing out all
+permutations.  Once the geometry has been assigned, it can be passed
+to a processor to compute the sequential workhorse and determine
+whether the topology is valid under the equilibrium and deformational
+constraints.
+
+\Section{Collecting Degree of Parallelism/Active Time Metric}
+\label{sec:dopatmetric}
+This section will describe how the metric for degree of
+parallelism/active time will be collected.  (Needs to be implemented)
+
+\Section{Identifying Productivity Bottlenecks}
+\label{prodbottle}
+This section will contain examples of how using the tool can identify
+files with potential productivity bottlenecks.
+
+\Section{Related Work}
+\label{sec:relwork}
+This section will contain related work.
+
+\Section{Contributions}
+\label{sec:contrib}
+This section will contain contributions made to the HPCS community as
+a result of this research.
+
+\bibliographystyle{/export/home/csdl/tex/icse2003/latex8}
+\bibliography{/export/home/csdl/bib/hpcs}
+\end{document}
+ 
+
+
+
+
+
+
+
+
+
+

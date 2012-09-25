@@ -1,0 +1,96 @@
+
+
+<head>
+<title>Release Procedures</title>
+</head>
+
+<h2 align="center"><font size="3">Hackystat Design Notes Series<br>
+</font><br>
+Hackystat Public Server Release Process</h2>
+
+<p align="center"><a href="http://csdl.ics.hawaii.edu/~cmoore/">Philip Johnson</a><br>
+
+<a href="http://csdl.ics.hawaii.edu/">Collaborative Software Development
+Laboratory</a><br>
+
+<a href="http://www.ics.hawaii.edu/">Department of Information and Computer 
+Sciences </a><br>
+
+<a href="http://www.hawaii.edu/">
+University of Hawaii</a></p>
+
+<p align="center">August 29, 2001<br>
+</p>
+
+<p align="left">CSDL maintains a &quot;public&quot; Hackystat server (currently
+located at http://bertha.ics.hawaii.edu:8080/).&nbsp; This server is subject to
+frequent updates to reflect the most recent (semi)-stable version of the
+system.&nbsp; This design note documents the best approach to upgrading the
+server with a minimum of problems:
+</p>
+
+<h3 align="left">1. Create a new binary release package</h3>
+<ul>
+  <li>
+This involves invoking &quot;<font face="Courier New">build distBin</font>&quot;
+    in your developer workspace. It creates a new zip file with a binary
+    distribution (i.e. source code is not included.)&nbsp; </li>
+  <li>Note that you should only create the binary distribution if your
+    environment is set up to correctly compile all of the Java-based sensor code
+    (at the current time, this means that the <font face="Courier New">compileJBuilder</font>
+    target succeeds).&nbsp; </li>
+</ul>
+<h3>2. Move the binary release to bertha</h3>
+<ul>
+  <li>Next, move the binary release zip file over to bertha.&nbsp; </li>
+  <li>You should be logged in as &quot;hacky&quot; and place the zip file in
+    hacky's home directory.&nbsp; </li>
+  <li>Unzip the file using the &quot;<font face="Courier New">unzip</font>&quot;
+    command.</li>
+  <li>Correct the directory permissions with: &quot;<font face="Courier New">chmod
+    -R a+x &lt;new hackystat dir&gt;</font>&quot;.&nbsp; (This is due to a bug
+    in the Java 1.3 zip implementation.)</li>
+</ul>
+<h3>3. Bring down the current Hackystat server</h3>
+<ul>
+  <li>Bring down the server using&nbsp; &quot;<font face="Courier New">~/jakarta-tomcat-3.2.3/bin/shutdown.sh</font>&quot;</li>
+</ul>
+<h3>4. Configure Tomcat with the new Hackystat release.</h3>
+<ul>
+  <li>cd into the new Hackystat binary distribution directory.</li>
+  <li>invoke &quot;<font face="Courier New">./build.sh configureTomcat</font>&quot;</li>
+</ul>
+<h3>5. Configure environment variables for testing</h3>
+<ul>
+  <li>For testing purposes, you must set the HACKYSTAT_SAVE_FILE_INTERVAL and
+    TOMCAT_OPTS environment variables so that the file save interval is 0,
+    otherwise certain tests won't pass.</li>
+  <li>First, edit ~/.tcshrc and change the values of these two environment
+    variables to specify 0 for the file save interval. </li>
+  <li>Save the .tcshrc file, then invoke &quot;<font face="Courier New">source
+    ~/.tcshrc</font>&quot; to have those changes take effect.</li>
+</ul>
+<h3>6. Bring up the Hackystat server </h3>
+<ul>
+  <li>Bring it back up with &quot;<font face="Courier New">~/jakarta-tomcat-3.2.3/bin/startup.sh</font>&quot;</li>
+</ul>
+<h3>7. Redeploy the SOAP services</h3>
+<ul>
+  <li>Invoke &quot;./build.sh deploy&quot;</li>
+</ul>
+<h3>8. Run the binary distribution test target</h3>
+<ul>
+  <li>Invoke &quot;<font face="Courier New">./build.sh testInstall</font>&quot;.&nbsp;
+    All of the tests should succeed.</li>
+</ul>
+<h3>9.&nbsp; Restart the server with a non-zero file save interval. </h3>
+<ul>
+  <li>Once the tests pass, you can restart the server for production use as
+    follows:</li>
+  <li>Bring down the server with &quot;<font face="Courier New">~/jakarta-tomcat-3.2.3/bin/shutdown.sh</font>&quot;</li>
+  <li>Edit ~/.tcshrc to provide the new file save interval values, then invoke
+    &quot;<font face="Courier New">source ~/.tcshrc</font>&quot; .</li>
+  <li>Bring it back up with &quot;<font face="Courier New">~/jakarta-tomcat-3.2.3/bin/startup.sh</font>&quot;</li>
+  <li>You can the save file interval value in the running server by displaying
+    the configuration page.&nbsp; </li>
+</ul>

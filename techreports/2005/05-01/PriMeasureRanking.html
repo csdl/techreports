@@ -1,0 +1,594 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+<head>
+<title>PRI Measure Ranking Calibration</title>
+</head>
+<body style="color: rgb(51, 0, 102);">
+<h1 align="center"><font size="3">Hackystat Developer Documentation</font> &nbsp;<br>
+  PRI Measure Ranking Calibration</h1>
+<p align="center"><a
+ href="http://csdl.ics.hawaii.edu/%7Ekagawaa/">Aaron A. Kagawa</a> <a href="http://csdl.ics.hawaii.edu/"><br>
+  Collaborative Software Development Laboratory</a> &nbsp; <a
+ href="http://www.hawaii.edu/"><br>
+  University of Hawaii&nbsp;</a></p>
+<p align="center">$Id: PriMeasureRanking.html,v 1.2 2005/03/21 10:55:03 kagawaa Exp $</p>
+<h2>1.0 Introduction</h2>
+The Priority Ranked Inspection process optimizes the selection of documents for 
+inspection by distinguising what documents are "more in need of inspection" (MINI) 
+from documents that are "less in need of inspection" (LINI). The Hackystat Priority 
+Ranked Inspection Extension (hackyPRI) provides this ranking by processing product 
+and process measures obtained automatically by Hackystat. To identify MINI and 
+LINI documents the hackyPRI Extension creates a weighted-ranking function. That 
+ranks the values of product and process measures and weights them according to 
+their significance in determining MINI and LINI. This weighted-ranking function 
+has four steps: 
+<ol>
+  <li>0 to 100 measure ranking - once a PRI measure has gathered and calculated 
+    data from the product and process measures obtainable from Hackystat, it returns 
+    a ranking with values from 0 to a 100. 0 indicates a bad ranking and 100 indicates 
+    the best possible ranking. Taking coverage as an example, one could imagine 
+    that 0 would indicate 0 percent coverage and a 100 ranking would be reserved 
+    for 100 percent coverage. To accomplish this, certain thresholds must be indentified 
+    that are specific for each PRI measure. This is hard for some measures and 
+    easy for others. For example, for the calculated coverage percentage PRI measure, 
+    with calculated values ranging from 0 percent to 100 percent, it is quite 
+    simple to identify a 0 to 100 measure ranking. On the other hand, the thresholds 
+    for the Lines of Code measure is less clear. The 0 to 100 measure rankings 
+    are hard coded into the hackyPRI system.</li>
+  <li>Weights are assigned to each measure - It is possible that each PRI measure 
+    affects the ranking differently. Therefore, each measure can be given a different 
+    weight to reflect that difference. For example, an organization may find that 
+    coverage is the leading indicator of MINI documents and can weight coverage 
+    higher than any other PRI measure. Weights can range from 0 to any integer. 
+    If a measure has a weighting of 0, then this measure will be ``disabled'' 
+    from the ranking function. However, the measure will still be calculated and 
+    presented within the ranking. These rankings are configurable through the 
+    hackyPRI interface for each project within Hackystat and all measures are 
+    defaulted to a weighting of 1 in the initial configuration of a Project PRI 
+    Ranking. </li>
+  <li>Compute aggregate ranking for all measures - Once the independent ranking 
+    and measure weights are in place the system will automatically compute an 
+    aggregate ranking per workspace. A very simple example is the following: workspace 
+    foo has these measure rankings \{92, 100, 30, 15\} and these respective measure 
+    weighting \{1, 1, 1, 2\}. The aggregate ranking of this workspace would be 
+    252 [OR SHOULD IT BE 50 (252/500)?]. </li>
+  <li>MINI and LINI threshold computed - the last step of the 4 step process is 
+    the declaration of MINI and LINI for each workspace based on the aggregate 
+    ranking. </li>
+</ol>
+<p>&nbsp;In this document, I propose the calibrations in the first step, the 0 
+  to 100 measure rankings.<br>
+</p>
+<h2>2.0 Proposed Measure Rankings</h2>
+In this section each PRI measure ranking (0-100) used in the PRI Project Ranking 
+is explained. A key point about the ranking of each PRI measure is that each measure 
+is ranked as if there are no other measures within the system. In other words, 
+all measures being equal, the ranking of a measure determines the ranking of the 
+workspace. <br>
+<br>
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Expert PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      if (this.formatCalculatedValue(workspace).indexOf("johnson") >= 0) {
+        return 100;
+      }
+      if (this.formatCalculatedValue(workspace).length() == 0) {
+        return 0;
+      }
+      return 50;</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> Dr. Johnson is an active Hackystat developer. He is the 
+        most experienced programmer in CSDL. In addition, a lot of his development 
+        are technical over passes of the code to ensure that the code is of high 
+        quality. Therefore, code that he develops is weighted higher than others. 
+        Also, there could be a notion of &quot;worrysome&quot; developers. However, 
+        I think I will leave that out of the ranking configuration.<br>
+        <br>
+        Problems: The string &quot;johnson&quot; is hard coded. There are a couple 
+        of ways to fix this: (1) add a configuration property that the owner of 
+        the project needs to set up to indicate the highest ranked expert. This 
+        option is a little bogus because no other measure ranking is configurable. 
+        (2) use active time to determine the highest ranked developer. This is 
+        also bogus because having the highest active time does not mean you are 
+        the highest ranked developer. (3) use the project owner as the highest 
+        ranked developer. One could assume that the project owner is the most 
+        knowledgeable about the project. This works in two cases that I know of; 
+        hacky2004-all and Clew2-UH.</td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Active Time PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // the percentage of the active time over the max value.
+      // this isn't great. probably should use some sort of statistics. 
+      return (int) ((activeTime.doubleValue() / maxActiveTime) * 100);
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> All other measures being equal, the workspace with the 
+        highest active time would seem to be the highest ranked workspace. Although, 
+        having an excesive amount of active time could indicate that, this particular 
+        workspace is default prone. This fact leads me to believe that some sort 
+        of statistics should be used in this ranking, to normalize the existence 
+        of a workspace with excessive amounts of active time (the outliers). I 
+        currently, have no idea what sort of statitics would be best for this. 
+        <br>
+        <br>
+        This measure is currently calculated against the maximum active time for 
+        all calculated workspaces. This is possible because the active time for 
+        all workspaces are calculated first, then the system calculates the ranking.</td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Last Active Time PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // hypothesis: stable code does not need to be actively worked on. 
+      // if the days between the last active time and today exceed or equals 100 then return a 100
+      // else return the days between. that means that 0 is returned for workspaces that have a 
+      // last active time day equal today.
+      try {
+        Day lastDay = Day.getInstance(lastActiveTime);
+        Day today = Day.getInstance();
+        int daysBetween = Day.daysBetween(lastDay, today);
+        if (daysBetween >= 100) {
+          return 100;
+        }
+        else {
+          return daysBetween;
+        }
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> All other measures being equal, if a workspace has recent 
+        active time, then that indicates new code being added to the workspace. 
+        In most cases, one would assume that new code, is more defect prone than 
+        old code. Of course there seems to be the notion that very old code can 
+        become default prone as well. </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Active Time Contribution PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // If the number of contributions matches the number of members the return 100
+      // else return the percentage of the number of members who contributed 
+      // over the total number of members 
+      int numberOfMembers = this.project.getMembers().size();
+      int contribution = activeTimeContribution.size();
+      if (contribution == numberOfMembers) {
+        return 100;
+      }
+      for (int i = 0; i < numberOfMembers; i++) {
+        if (contribution == i) {
+          return (int) (((double) contribution / numberOfMembers) * 100);
+        }
+      }
+      return 0;
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> All other measures being equal, the more eyes that look 
+        at the code and add to its code base, then the code's quality will improve. 
+        This ranking suggests that if one developer is only developer to work 
+        on the code, then it could be defect prone. Of course, this ranking also 
+        could cause problems. For example, what if 7 out of the 8 developers work 
+        on the code, then comes along a very inexperienced developer and adds 
+        some bogus code, the ranking ranking would actualy improve. </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Commit PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // the percentage of the active time over the max value.
+      // this isn't great. probably should use some sort of statistics. 
+      return (int) (((double) commit.intValue() / maxCommit) * 100);
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> All other measures being equal, the more commits to a 
+        workspace the higher its quality. No developer can implement perfect code 
+        the first time, therefore more than one commit is usually the norm. One 
+        would think that more commits either indicates more functionality, more 
+        bug fixes, more refactoring, etc, all of which are possitive steps forward 
+        in terms of quality. One problem could be a refactoring of a package name 
+        before a commit. This would wipe out all data associated with the previous 
+        workspace. Of course, this is a problem will all aggregate PRI measures 
+        (but, doesn't effect snapshot measures). A developer or developers could 
+        spend months of development for a workspace (accumulating hundreds of 
+        commits) then decide to refactor the name of the workspace and have a 
+        single commit. This calibration would return a low ranking (if there is 
+        one commit or something very low) for this workspace. <br>
+        <br>
+        This measure is currently calculated against the maximum number commits 
+        for all calculated workspaces. This is possible because the number of 
+        commits for all workspaces are calculated first, then the system calculates 
+        the ranking. </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">First Commit PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // hypothesis: stable code is code that has been in the system for a while
+      // if the days between the first commit day and today exceed or equals 100 then return a 100
+      // else return the days between. that means that 0 is returned for workspaces that have a 
+      // first commit day equal today.
+      try {
+        Day firstDay = Day.getInstance(firstCommit);
+        Day today = Day.getInstance();
+        int daysBetween = Day.daysBetween(firstDay, today);
+        if (daysBetween >= 100) {
+          return 100;
+        }
+        else {
+          return daysBetween;
+        }
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> All other measures being equal, if a workspace has just 
+        been committed to the system, then that would indicate potential problems. 
+        Code that has been in the system for a while probably has been placed 
+        on a public server and been running correctly. For example, if a developer 
+        just implemented a new package and commited it to the server, this package 
+        (workspace) would most likely be of less quality than a package that has 
+        been in the system for 2 years. </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Last Commit PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // hypothesis: stable code is code that has been in the system for a while. if some just
+      // changed something there could be problems with the changes.
+      // if the days between the last commit day and today exceed or equals 100 then return a 100
+      // else return the days between. that means that 0 is returned for workspaces that have a 
+      // last commit day equal today.
+      try {
+        Day lastDay = Day.getInstance(lastCommit);
+        Day today = Day.getInstance();
+        int daysBetween = Day.daysBetween(lastDay, today);
+        if (daysBetween >= 100) {
+          return 100;
+        }
+        else {
+          return daysBetween;
+        }
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> All other measures being equal, if a workspace has a recent 
+        commit, then that indicates new code being added to (or code removed from) 
+        the workspace. In most cases, one would assume that new changes, is more 
+        defect prone than old changes. Of course there seems to be the notion 
+        that very old code can become default prone as well. </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Commit Contributions PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // If the number of contributions matches the number of members the return 100
+      // else return the percentage of the number of members who contributed 
+      // over the total number of members 
+      int numberOfMembers = this.project.getMembers().size();
+      int contribution = commitContribution.size();
+      if (contribution == numberOfMembers) {
+        return 100;
+      }
+      for (int i = 0; i <= numberOfMembers; i++) {
+        if (contribution == i) {
+          return (int) (((double) contribution / numberOfMembers) * 100);
+        }
+      }
+      return 0;
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> All other measures being equal, the more eyes that look 
+        at the code and add to its code base, then the code's quality will improve. 
+        This ranking suggests that if one developer is only developer to work 
+        on the code, then it could be defect prone. Of course, this ranking also 
+        could cause problems. For example, what if 7 out of the 8 developers work 
+        on the code, then comes along a very inexperienced developer and adds 
+        some bogus code, the ranking ranking would actualy improve. This measure 
+        is very simmilar to the Active Time Contribution measure. </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Review PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // I don't have a good formula for this
+      if (reviewIssues.intValue() > 0) {
+        return 100;
+      }
+      return 0;
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> description here </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Last Review PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // hypothesis: code becomes more stable when reviewed. 
+      // if the days between the last review time and today exceed or equals 100 then return a 0
+      // else return the days between. that means that 109 is returned for workspaces that have a 
+      // last review time day equal today.
+      try {
+        Day lastDay = Day.getInstance(lastReview);
+        Day today = Day.getInstance();
+        int daysBetween = Day.daysBetween(lastDay, today);
+        if (daysBetween >= 100) {
+          return 0;
+        }
+        else {
+          return 100 - daysBetween;
+        }
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> description here </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Open Issue PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // I don't have a good formula for this
+      if (issues.intValue() > 0) {
+        return 0;
+      }
+      return 100;
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> description here </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Closed Issue PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // I don't have a good formula for this
+      if (issues.intValue() > 0) {
+        return 100;
+      }
+      return 0;
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> description here </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">File Metric PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      int rank = 0;
+      int locRank = 33 - (int) (((double) fileMetric.getLoc() / maxLoc) * 33);
+      int methodRank = 33 - (int) (((double) fileMetric.getNumOfMethods() / maxMethod) * 33);
+      int classRank = 33 - (int) (((double) fileMetric.getNumOfClasses() / maxClass) * 33);
+      rank += locRank + methodRank + classRank + 1;
+      return rank;
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> description here </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Test File Metric PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // I don't have a good formula for this. but if there are test classes then 
+      // that is a good thing
+      if (fileMetric.getNumOfClasses() > 0) {
+        return 100;
+      }
+      return 0;
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> description here </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Dependency PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      int rank = 0;
+      int inboundRank = (int) (((double) dependency.getInbound() / maxInbound) * 25);
+      int outboundRank = (int) (((double) dependency.getOutbound() / maxOutbound) * 25);
+      if (dependency.getInbound() > dependency.getOutbound()) {
+        rank += 50;
+      }
+      rank += inboundRank + outboundRank;
+      return rank;
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> All other measures being equal, </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Unit Test PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // I don't have a good formula for this. but if tests have been executed 
+      // then that is a good thing
+      if (unitTest > 0) {
+        return 100;
+      }
+      return 0;
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> description here </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Unit Test Result PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      if (data.getNumError() == 0 && data.getNumFailed() == 0) {
+        return 100;
+      }
+      return 0;
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> description here </td>
+    </tr>
+  </tbody>
+</table>
+<p> 
+<table border="1" cellpadding="2" cellspacing="2" width="100%">
+  <tbody>
+    <tr> 
+      <th colspan="2" align="center">Coverage PRI Measure</th>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Calibration</td>
+      <td valign="top"> <pre>
+      // coverage is already on a 0-100 scale. so just return the percentage as an integer
+      return (int) coverage;
+</pre></td>
+    </tr>
+    <tr> 
+      <td valign="top" width="250">Discussion</td>
+      <td valign="top"> All other measures being equal, if a coverage of a workspace 
+        is high, then it is ranked highly and vice versa. This measure is very 
+        simple to calculate because the coverage percentage is already on a scale 
+        from 0 to a 100. I simply return the integer form of the percentage (remove 
+        any decimal points). </td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>

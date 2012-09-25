@@ -1,0 +1,589 @@
+
+
+<head>
+<title>Release Procedures</title>
+</head>
+
+<h2 align="center"><font size="3">Hackystat Design Notes Series<br>
+</font><br>
+Sensor Data Analysis in Hackystat</h2>
+
+<p align="center"><a href="http://csdl.ics.hawaii.edu/~cmoore/">Philip Johnson</a><br>
+
+<a href="http://csdl.ics.hawaii.edu/">Collaborative Software Development
+Laboratory</a><br>
+
+<a href="http://www.ics.hawaii.edu/">Department of Information and Computer 
+Sciences </a><br>
+
+<a href="http://www.hawaii.edu/">
+University of Hawaii</a></p>
+
+<p align="center">October, 2001<br>
+</p>
+
+<p align="left">Hackystat is based upon three central requirements for both data
+collection and analysis:</p>
+
+<ol>
+  <li>
+    <p align="left"><b>Non-disruptive:</b>&nbsp; The developer must not need to
+    interrupt normal development activities in order to perform a data
+    collection activity, or&nbsp; search for analyses of interest.<br>
+    &nbsp;&nbsp;</li>
+  <li>
+    <p align="left"><b>Developer-centric.&nbsp;</b> Data is collected from
+    developers that results from their normal development activities.&nbsp;
+    Analyses are produced that are relevant to the needs of developers.&nbsp;
+    Data is not collected from developers by some other person, nor are the
+    analyses intended for people other than the developer whose data was used in
+    the analysis.<br>
+    &nbsp;&nbsp;</li>
+  <li>
+    <p align="left"><b>In-process.&nbsp;</b> Data is collected during the
+    process of development, not as part of some separate &quot;post-mortem&quot;
+    phase apart from development.&nbsp; Analyses are intended to support
+    developer activities during development, and will be made available
+    (non-disruptively) during development.&nbsp;&nbsp;</li>
+</ol>
+<p align="left">This document maps out the potential kinds of data that can be
+collected and the kinds of analyses that can be performed in a non-disruptive,
+developer-centric, in-process manner.&nbsp;</p>
+
+<h3 align="left">Sensor data types</h3>
+
+<p align="left">To fulfill the non-disruptive requirement, Hackystat provides
+sensors for attachment to development tools so that all in-process data
+collection occurs completely automatically without any developer
+interaction.&nbsp; Each sensor sends some atomic data to Hackystat, called a
+&quot;notification&quot;.&nbsp; Notification data is very low level, and it is
+more useful to refer to somewhat higher level abstractions called &quot;sensor
+data types&quot;.&nbsp; A given notification
+type might be involved in the collection of more than one sensor data type; for
+example, the &quot;activity&quot; notification type carries information on both
+activities and defects.&nbsp; Conversely, more than one notification type might
+be required to provide one sensor data type; for example, ToolTime is calculated
+from a combination of session and activity notification types.&nbsp;</p>
+<p align="left"> Some sensor data types are absolute measures, meaning we can collect the value
+accurately, and reliably.&nbsp;&nbsp; Others are approximate measures, meaning
+that we believe we can determine useful approximates to their true value.
+Approximate measures require special forms of validation.&nbsp; All measures, whether
+absolute or approximate, are partial: we can never assume that we have complete
+knowledge of the developer's time, size, defects, or activities.</p>
+<ul>
+  <li>
+    <p align="left"><b>ToolTime</b>  (approximate):&nbsp; The time the developer is
+    &quot;busy&quot; working in a specific development environment tool. ToolTime data is generally accurate only
+    to within 10 minutes or so for a given session, and does not provide an
+    accurate representation of the total time spent in development. However, we
+    conjecture that ToolTime will serve as a useful
+    &quot;proxy&quot; for overall development time, for example by observing
+    that 80% of all working weeks result in ToolTime between 10 and 12 hours
+    total.&nbsp; ToolTime is collected by the session sensor in conjunction with
+    the activity sensor.&nbsp;<br>
+    <br>
+    Note that developers using multiple development environment tools
+    simultaneously can accumulate aggregate ToolTime values greater than the
+    actual interval time. Hackystat must provide a pre-processor for analyses
+    that use ToolTime data to &quot;normalize&quot; such data.<br>
+    &nbsp;&nbsp;
+ </li>
+  <li>
+    <p align="left"><b>IdleTime&nbsp;</b>  (approximate): The time during which a
+    development environment tool is running but the user is not actively engaged
+    with it such that activities are being recorded.&nbsp; By subtracting
+    IdleTime from the start and end time of a session interval, ToolTime is
+    computed.&nbsp; IdleTime is determined relative to the value of
+    IdleTimeThreshold, which is the maximum allowable number of minutes between
+    successive activity occurrences before the user is assumed to be idle. (This
+    is a approximate measure that requires validation.)<br>
+    &nbsp;&nbsp; </li>
+  <li>
+    <p align="left"><b>Activity&nbsp;</b> (absolute):&nbsp; An event that occurs
+    while using a development environment tool.&nbsp; Activities are currently
+    used as a means to detect idle time.&nbsp; In future, activities could be
+    used for other purposes, such as determining when to recompute the size of a
+    file. Current activities collected by activity sensors include: Open File,
+    Save File, Close File, SubProgram invocation, and Compile File.<br>
+    &nbsp;&nbsp; </li>
+  <li>
+    <p align="left"><b>File Name&nbsp;</b> (absolute):&nbsp;The name of a file
+    that has been opened, saved, or compiled.&nbsp; Collected by Session and
+    Activity sensors.&nbsp; Includes full path. We can determine whether a file
+    has been visited but not edited, or visited and edited, during any
+    particular session. <br>
+    &nbsp; </li>
+  <li>
+    <p align="left"><b>Module </b>(approximate):&nbsp; An aggregation of
+    files.&nbsp; There are a variety of ways in Hackystat we can infer module
+    identities.&nbsp; (1) We could determine modules from development
+    environments with a representation of &quot;project&quot;, but this would
+    leave out Emacs, for example.&nbsp; (2) We could determine modules by
+    &quot;closeness in time&quot;; in other words, files that are worked on at
+    the same time are in the same module.&nbsp; (3) We could determine modules
+    by &quot;closeness in location&quot;; in other words, files that exist
+    within the same directory or directory hierarchy would be in the same
+    module.&nbsp; Hackystat will probably use a combination of (2) and (3) to
+    infer the identify of modules, so that a module consists of files in the
+    same directory (or directory hierarchy) that are worked on during the same
+    period of time (day, or week, etc.) by a developer.<br>
+    &nbsp; </li>
+  <li>
+    <p align="left"><b>TotalSize</b> (absolute):&nbsp; Hackystat will support a
+    variety of total size measures, from simple file size to LOCC-based structural
+    size.&nbsp; The central requirement is that the measure can be automatically
+    calculated, which may potentially exclude measures like function
+    points.&nbsp;&nbsp;&nbsp;&nbsp;<br>
+    &nbsp; </li>
+  <li>
+    <p align="left"><b>DifferentialSize</b>  (approximate):&nbsp; Hackystat will
+    also support the concept of a structural size difference measure, which
+    indicates the change in the number of classes, methods, and LOC from one
+    point to another.&nbsp; As was shown through the LOCC research, this is a approximate
+    measure.&nbsp;<br>
+    &nbsp;&nbsp; </li>
+  <li>
+    <p align="left"><b>OO Complexity</b> (absolute): Similar to size, Hackystat
+    will support a variety of complexity measures.&nbsp; Initially, we will
+    focus on the six Chidamber-Kemerer object-oriented metrics: Weighted Methods
+    per Class (WMC), Depth of Inheritance Tree (DIT), Number of Children (NOC),
+    Coupling Between Object classes (CBO), Response for a Class (RFC), and Lack
+    of Cohesion in Methods (LCM).&nbsp; We will compute these measures
+    automatically for Java (and perhaps for C++ as well) by extending the LOCC
+    system.&nbsp; We might extend this initial suite with the MOOD
+    object-oriented metrics (which provide quotients expressing the degree of
+    encapsulation, inheritance, polymorphism, and message passing).<br>
+    &nbsp;&nbsp; </li>
+  <li>
+    <p align="left"><b>Defect/Syntax</b> (absolute):&nbsp; The unsuccessful
+    compilation of a file due to a syntax error. Note that Hackystat cannot
+    automatically infer what the syntax error was, or how many syntax errors
+    were present in the file. (As we all know, one misplaced semi-colon can
+    generate a zillion compilation errors.)&nbsp; Collection of syntax defect
+    information allows Hackystat to determine attributes of the product (how
+    long a file spends in an uncompilable state) as well as longitudinal
+    information of use to the developer (how long it takes a developer to get to
+    a compilable program, what percentage of development time is spent fixing
+    compiler defects)&nbsp; A syntax defect is actually a special kind of
+    activity event.<br>
+    &nbsp; </li>
+  <li>
+    <p align="left"><b>Defect/Runtime </b>(absolute):&nbsp; The unsuccessful
+    termination of a program due to an error, such as &quot;Null pointer
+    exception.&quot;&nbsp; Hackystat can collect the occurrence of Runtime
+    errors and the &quot;top-level&quot; error message only.&nbsp; Runtime
+    defects are also a special kind of activity event that would normally be
+    collected within an IDE.&nbsp; Analysis of the frequency and type of
+    occurrence of run-time defects can help identify the level of brittleness of
+    the system and/or preventative actions. <br>
+    &nbsp; </li>
+  <li>
+    <p align="left"><b>Defect/Test Case </b>(absolute):&nbsp; The invocation of
+    a test case (defined explicitly through some mechanism such as JUnit) and its result (success or failure). While the
+    other kinds of defects provide only negative information about system state,
+    test case data can provide positive information (i.e. system passed all tests,
+    system is tested on average once a day). It is important to note that some
+    validation of unit testing quality must still be done; for example, by
+    combining unit tests with a code coverage tool, or looking at the percentage
+    of unit test classes relative to all classes, or looking at whether changes
+    to the code are normally accompanied by changes to the unit tests
+    (indicating that tests are updated when new code is added.)&nbsp; Note that
+    while in general there is no way to differentiate between unit test code and
+    regular system code, in practice one can do a one-time configuration of the
+    sensor to identify unit tests via a regularity in the name of the file,
+    which is a common technique used to identify JUnit test cases.<br>
+    &nbsp;&nbsp; </li>
+  <li>
+    <p align="left"><b>CMTag</b> (absolute):&nbsp; An attribute of a file
+    indicating that it has been specially &quot;tagged&quot; as part of a named
+    configuration by a configuration management system such as CVS. The most
+    common reason for named configurations is to indicate releases or milestones
+    of a product. Such files and modules should have higher quality attributes
+    associated with them.&nbsp; A CM sensor can identify these release
+    configurations in sequence and do separate analyses on them.&nbsp;<br>
+    &nbsp;&nbsp; </li>
+  <li>
+    <p align="left"><b>Group awareness </b>(absolute):&nbsp; This is not a
+    sensor data type, per se, but rather the (potential) ability of Hackystat to
+    perform analyses across sets of developers.&nbsp; In other words, if
+    multiple developers are all using Hackystat, and all working on the same
+    project, there are some interesting potential analyses that can result from
+    allowing Hackystat to be aware of this group entity.&nbsp; Such awareness
+    would need to be explicitly allowed by individuals, for example by a setting
+    in the Hackystat sensor properties file.&nbsp; In addition, no
+    &quot;comparative&quot; analyses would be performed, such as &quot;developer
+    X codes twice as fast as developer Y on this projectr&quot;, because (of
+    course) such measures are totally useless and counterproductive.<br>
+    &nbsp; </li>
+</ul>
+<h3 align="left">Potential analyses, anomalies, and implications </h3>
+<p align="left">The following table attempts to chart the &quot;potential
+analysis space&quot; of hackystat by listing how the basic sensor data types
+listed above can be combined to create derived measures.&nbsp; The chart lists
+the sensor data type(s) used, the derived measure from that type, whether or not
+historical average data over the preceding day, week, or month could be computed
+and would be relevant, whether or not statistical process control (SPC) techniques
+such as control charts could potentially provide insight into anomalous
+conditions, what kinds of&nbsp;<br>
+anomalous conditions in this derived data would indicate
+an &quot;interesting&quot; condition that would warrant feedback to the
+developer, and what actions the developer might take in response to such
+information (which indicates the utility of the feedback).<p align="left">Note that in the following table,
+&quot;out-of-control&quot; is used in a technical sense to indicate that the
+derived measure value is no longer in-control from the perspective of
+statistical process control techniques.&nbsp; In a nutshell, this means that the measure has exceeded the variation
+expected under naturally occurring conditions. &quot;UCL&quot; indicates the
+&quot;upper control limit&quot; of a control chart, and &quot;LCL&quot;
+indicates the &quot;lower control limit&quot; of a control chart.&nbsp; Note
+that &quot;out-of-control&quot; conditions are premised on the idea that the
+process causing the measured value was previously &quot;in-control&quot;. The
+detection of a presumably &quot;in-control&quot;&nbsp; process is itself cause
+for an email to the user, because it means that (a) there were a sufficient
+number of measurement values collected to assess control, and (b) the values of
+the measure appeared to fall within the range expected due to &quot;naturally
+occurring&quot; variation.<p align="left">&nbsp;
+<table border="1" width="100%">
+  <tr>
+    <td width="4%" valign="top"><b><font size="2">#</font></b></td>
+    <td width="4%" valign="top"><b><font size="2">Sensor<br>
+      Data<br>
+      Type(s)</font></b></td>
+    <td width="12%" valign="top"><b><font size="2">Derived<br>
+      Measure</font></b></td>
+    <td width="5%" valign="top"><b><font size="2">History?</font></b></td>
+    <td width="7%" valign="top"><b><font size="2">SPC?</font></b></td>
+    <td width="31%" valign="top"><b><font size="2">Anomalous<br>
+      Condition(s)</font></b></td>
+    <td width="37%" valign="top"><b><font size="2">Implication(s); potential
+      email &quot;feedback&quot; messages</font></b></td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">1</td>
+    <td width="4%" valign="top">ToolTime</td>
+    <td width="12%" valign="top">Total</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">Y</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Recent weekly tooltime out-of-control</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Exceeding UCL indicates that current level of effort cannot be
+          sustained, early warning of &quot;burnout&quot;.</li>
+        <li>Exceeding LCL indicates deterioration in work environment, early
+          warning of potential to miss deadlines.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">2</td>
+    <td width="4%" valign="top">IdleTime</td>
+    <td width="12%" valign="top">Total</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">Y</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Recent weekly idleTime out-of-control</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Exceeding UCL indicates deterioration in working conditions; too
+          many interruptions; less effective development may result.</li>
+        <li>Exceeding LCL indicates improvement in working conditions; should
+          try to maintain whatever the developer is doing.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">3</td>
+    <td width="4%" valign="top">ToolTime,<br>
+      Module</td>
+    <td width="12%" valign="top">ModuleTime</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Shift from ModuleTime in one area to another.</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Potential shift in &quot;project&quot;.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">4</td>
+    <td width="4%" valign="top">ToolTime,<br>
+      Module,<br>
+      Group</td>
+    <td width="12%" valign="top">ModuleTime:<br>
+      Group</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Sudden entry of a developer to a module</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Awareness that a developer is working in the same region that you
+          are in; possibly need to coordinate activities.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">5</td>
+    <td width="4%" valign="top">ToolTime,<br>
+      Module,<br>
+      Activity,<br>
+      Group</td>
+    <td width="12%" valign="top">Compile:<br>
+      Group</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Occurrence of a developer compiling the same file you recently
+          compiled</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Awareness that a developer is editing the same file you're editing;
+          urgent need for coordination.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">6</td>
+    <td width="4%" valign="top">DifferentialSize<br>
+      (i.e. LOC, or<br>
+      methods, or<br>
+      classes, or<br>
+      packages)</td>
+    <td width="12%" valign="top">Total</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">Y</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Recent weekly size differential out-of-control; indicating substantial
+          change in number of LOC, methods, classes, etc. being written.</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Exceeding UCL could indicate burn-out situation or else an invalid
+          approach to differential size.&nbsp;</li>
+        <li>Exceeding LCL indicates a potential reduction in progress.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">7</td>
+    <td width="4%" valign="top">TotalSize<br>
+      (i.e. LOC, or<br>
+      methods, or<br>
+      classes, or<br>
+      packages)</td>
+    <td width="12%" valign="top">Total</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">Y</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Recently developed method, class, package out-of-control</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Exceeding UCL or LCL may indicate need to review suspect classes,
+          methods, packages for redesign or refactoring.&nbsp;</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">8</td>
+    <td width="4%" valign="top">DifferentialSize,<br>
+      Module,<br>
+      ToolTime</td>
+    <td width="12%" valign="top">CodingRate</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">Y</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Recent rate of code production out-of-control</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Exceeding UCL indicates code being written significantly faster than
+          normal; could indicate pressure and need for additional quality
+          assurance.</li>
+        <li>Exceeding LCL indicates code being written significantly slower than
+          normal; could indicate unfamiliar application domain, need for quality
+          assurance.&nbsp;</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">9</td>
+    <td width="4%" valign="top">Defect/<br>
+      Syntax</td>
+    <td width="12%" valign="top">Compilation Interval</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">Y</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Recent compilation interval out-of-control.&nbsp;</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Exceeding UCL indicates that significant new overhead is occurring
+          with respect to compilation. Investigate causes and remove.</li>
+        <li>Exceeding LCL indicates that compilation process has been
+          streamlined. Identify and maintain changes.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">10</td>
+    <td width="4%" valign="top">Defect/<br>
+      Runtime,<br>
+      Module</td>
+    <td width="12%" valign="top">Ave. week</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">Y</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Recent weekly number of run-time defects out-of-control.</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Exceeding UCL indicates new brittleness in module under development;
+          potential need to write better test cases, and/or redesign system for better
+          data/control flow integrity.</li>
+        <li>Exceeding LCL indicates significant improvement in avoiding run-time
+          problems.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">11</td>
+    <td width="4%" valign="top">Defect/<br>
+      Test Case,<br>
+      Module</td>
+    <td width="12%" valign="top">Unit testing code coverage</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">Y</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Recent code coverage metric out-of-control.</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Exceeding UCL indicates new quality assurance gaps; may need to stop new development until more unit tests are written.</li>
+        <li>Exceeding LCL indicates higher than normal code coverage; may want
+          to &quot;lock in&quot; changes that produced this.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">12</td>
+    <td width="4%" valign="top">Defect/<br>
+      Test Case,<br>
+      Module</td>
+    <td width="12%" valign="top">Ave. failure</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">Y</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Recent average weekly failures out-of-control.</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Exceeding UCL indicates system is suddenly failing more than normal;
+          may indicate need for improved design.</li>
+        <li>Exceeding LCL indicates system seems more robust than usual
+          (although this a is very failure prone inference; could be simply due
+          to lack of good tests.)</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">13</td>
+    <td width="4%" valign="top">Defect/<br>
+      Test Case,<br>
+      Module,<br>
+      Group</td>
+    <td width="12%" valign="top">Ave. failure</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Recent JUnit test code you've implemented is now failing during unit
+          testing by another
+          developer</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>May indicate need for you to get involved with their efforts; they
+          are using your code in ways you did not anticipate, for example.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">14</td>
+    <td width="4%" valign="top">Defect/<br>
+      Test Case,<br>
+      Module<br>
+    </td>
+    <td width="12%" valign="top">Total</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">Y</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Recent total number of unit tests ran on module out-of-control</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Exceeding UCL indicates more testing than average going on,
+          indicating potential quality problems. </li>
+        <li>Exceeding LCL indicates not enough testing going on, which also
+          might indicate potential quality problems.</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td width="4%" valign="top">15</td>
+    <td width="4%" valign="top">Complexity,<br>
+      Module<br>
+    </td>
+    <td width="12%" valign="top">WMC</td>
+    <td width="5%" valign="top">Y</td>
+    <td width="7%" valign="top">Y</td>
+    <td width="31%" valign="top">
+      <ul>
+        <li>Recent edited class exhibits out-of-control WMC</li>
+      </ul>
+    </td>
+    <td width="37%" valign="top">
+      <ul>
+        <li>Exceeding UCL indicates class is significantly more complex than
+          typical, suggesting (a) a review of the design of this class may be
+          warranted to reduce its complexity, possibly by refactoring, and/or
+          (b) more test cases might be required for this class. </li>
+      </ul>
+    </td>
+  </tr>
+</table>
+<p align="left">&nbsp;</p>

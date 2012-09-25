@@ -1,0 +1,564 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>CourseApp: Miscellaneous Issues</title>
+<meta name="Microsoft Theme" content="glacier 000, default">
+<meta name="Microsoft Border" content="t, default">
+</head>
+
+<body bgcolor="#FFFFFF" text="#000000" link="#006666" vlink="#999999" alink="#66CCCC" background><!--mstheme--><font face="Arial, Arial, Helvetica">
+
+<p align="center"><i>Last revision: <!--webbot bot="Timestamp" S-Type="EDITED"
+S-Format="%m/%d/%y %I:%M %p" startspan -->07/17/01 11:05 AM<!--webbot bot="Timestamp" endspan i-CheckSum="26165" --></i></p>
+<!--mstheme--></font>
+<h2><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Inca Software Requirements Specification<!--mstheme--></font></h2>
+<!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font>
+<h2><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Miscellaneous issues<!--mstheme--></font></h2>
+<!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Authentication and other security concerns<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>The Inca website must somehow solve the problem of authentication: how
+to ensure that users (both administrative and student) are who they assert
+themselves to be.&nbsp; Some of the problems that must be averted include:</p>
+<ol>
+  <li>Non-UH students getting into the site just to play around and make course
+    requests to prevent others from getting courses.</li>
+  <li>ICS students &quot;spoofing&quot; other ICS students in order to gain
+    better registration priorities.</li>
+  <li>Students hacking in as administrators in order to change their records
+    (for the better) or their enemies records (for the worse).</li>
+</ol>
+<p>At the same time, the sheer numbers of students makes some sort of automated
+registration scheme (at least for the typical user) quite important.&nbsp;
+Remember, one of the prime requirements for this system is that it require less
+administrative overhead than the manual system.&nbsp;&nbsp;</p>
+<p>The current proposed automated authentication procedure (for student users) is as follows:</p>
+<!--mstheme--></font>
+<!--msthemelist--><table border="0" cellpadding="0" cellspacing="0" width="100%">
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">The student registers and supplies their first name, last name, student ID
+    (SSN), and uhunix account name.&nbsp;<br>
+    &nbsp;&nbsp;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">The system does a remote telnet to uhunix and fingers the ITS account
+    name. This validates that the ITS account exists and that the name
+    supplied with registration matches the name associated with the ITS account.<br>
+    &nbsp;&nbsp;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">If the telnet/finger succeeds in finding the account and matching the
+    name, then an email is sent confirming
+    registration and providing a password.&nbsp; If the telnet/finger finds the
+    account but the name doesn't match, an email is sent to the uhunix account
+    and to the Inca administrator explaining that registration did not
+    succeed due to a mismatch in the name and to try again.&nbsp; If the ITS account cannot be found, then email is sent to the
+      Inca administrator
+    detailing the failed registration request.&nbsp;&nbsp;&nbsp;<br>
+    &nbsp;&nbsp;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">To prevent denial-of-service attacks and to improve efficiency, registration requests to
+    the telnet/finger test process are buffered and done as a batch process once
+    per minute.&nbsp; If more than 100 requests are in the buffer, the
+    registration procedure shuts down and email is sent to the
+    administrator.&nbsp;&nbsp;<br>
+    &nbsp;&nbsp;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">The system then does a lookup in the internal student database (originally
+    obtained from ISIS) by SSN. If a match is found on the SSN, and if the first and last names
+    also match, then the registration data is
+    bound to that record automatically.&nbsp; If the first and last names don't
+    match, but the SSNs do, then the registration data is bound to that record
+    and an email is sent to the Inca administrator asking him or her&nbsp; to manually
+    validate this registration.&nbsp;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+<!--msthemelist--></table>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>Let's now look at how this approach addresses the three problems mentioned
+above.</p>
+<p>First,&nbsp; non-UH users are effectively excluded from using the system, since only previously authenticated UH students (or at least
+those with a UH ID who are thus accountable to their use of our system) can get
+a password to get into the site.&nbsp; Note that this criteria has a
+significant catch-22 associated with it: new students cannot get a uhunix ID
+until they show proof of registration, but the Inca registration system
+requires a uhunix ID in order to register.&nbsp; This means that new/transferring students cannot be
+automatically registered by the system, and instead must contact the Inca administrator, who must manually authenticate and add them to the system.&nbsp;&nbsp;The
+estimated new overhead associated with this is about 1 hour per semester (30
+new/transferring students per semester X 2 minutes per student to manually
+register them).&nbsp;&nbsp;</p>
+<p>Second, in order for one ICS student to spoof another student, they must
+somehow bind their registration data (containing their name, SSN, and ITS
+account) to the internal ISIS data (containing a name and SSN). The procedure
+guarantees that the only person reading the ITS account email gets a
+password, and that the ITS-supplied first and last name matches the first and
+last name from ISIS (or can be validated by the Inca administrator).&nbsp;
+This prevents but does not eliminate the ability of one student to spoof another.
+Spoofing can still occur if Jane Doe knows Joe Smith's name, ITS account, ITS
+password, and SSN, and is willing to use all of this information to impersonate
+Joe in order to get approval codes sent to Joe Smith's account which she then
+reads and uses.&nbsp; This kind of spoof is rather dangerous for Jane and Joe
+(and their relationship with each other).&nbsp;</p>
+<p>Third, the administrative SSN's and initial passwords are supplied as command
+line options when the system is started. They are not stored in any data file or
+in the source code, so access to the files associated with the Inca system
+will not compromise administrative privileges. There are two approaches a
+determined cracker could use to obtain administrative privileges.&nbsp; First,
+they could sniff the packets from the machine used by an administrator, and
+intercept the packets sent when an administrator logs in to the system. (This
+hole could be eliminated by moving from http to https for the login
+form.)&nbsp;&nbsp; The second approach is to break in to the Inca server
+account, obtain superuser privileges, connect to the underlying database server,
+determine the database table structure, and issue the SQL commands necessary to
+extract approval codes.&nbsp; This second approach requires a great deal of
+skill, and presumably any student capable of it would be a good enough student
+to warrant approval codes based upon this alone, but you never know.&nbsp; Note
+that with respect to this second approach, the current manual system is
+equivalently vulnerable; a student could hack the uhmics account, monitor the
+sent-email folder, and steal approval codes as they are sent out in response to
+legitimate student requests.&nbsp;</p>
+<!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Data file formats<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>Inca must be configured for initial use with the following information:</p>
+<!--mstheme--></font>
+<!--msthemelist--><table border="0" cellpadding="0" cellspacing="0" width="100%">
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">Student historical data on ICS courses taken and grades received (from the
+    ISIS system)<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">Data on the courses to be offered for a given semester<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">Data on course prerequisites<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">Approval codes<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+<!--msthemelist--></table>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>Each of these data are provided to the system in the form of an XML
+file.&nbsp; XML was chosen for all the obvious reasons: it is easy to generate
+and process programmatically, XML editors exist to support manual entry of
+information, and, of course, it's cool and fun to fool around with.&nbsp;</p>
+<p>Each XML file format includes the following forms of documentation: (1) a table providing an
+overview of the tags and internal structure; (2) a link to the DTD; and
+(3)&nbsp; a link to an example XML file containing sample data.</p>
+<!--mstheme--></font><table border="1" width="91%" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>StudentData</b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>Element Name</i><!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>Allowed Nested Elements</i><!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>Purpose/Example</i><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">StudentData<!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Student<!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Overall root element<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Student<!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ID,<br>
+      FirstName,<br>
+      LastName,<br>
+      Level,<br>
+      ProgramNumber,<br>
+      ProgramName,<br>
+      Course<!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Components of a student entry.&nbsp;
+      <p>Only &quot;Course&quot; can appear more than once.</p>
+      <p>All others must appear exactly once and in the order shown.<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ID<!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Student ID, i.e. &quot;234456532&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">FirstName<!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;Philip&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">LastName<!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;Johnson&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Level<!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">&quot;01&quot; means undergrad,&nbsp;<br>
+      &quot;02&quot; means grad<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ProgramNumber<!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;236&quot; means ICS, for ex.<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ProgramName<!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;Info &amp; Comp Sci&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Course<!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Number,<br>
+      Grade,<br>
+      SemesterCode<!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Components of the historical data concerning a
+      single course.<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Number<!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;111&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Grade<!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;A&quot;, &quot;W&quot;,
+      &quot;CR&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">SemesterCode<!--mstheme--></font></td>
+    <td width="29%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="49%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;981&quot;.&nbsp; The first two digits
+      indicate the year, the last digit encodes the semester (1=Fall, 2=Spring,
+      3=Summer I, 4=Summer II)<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica">&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><a href="http://csdl.ics.hawaii.edu/~johnson/613f00/xml/StudentData.dtd">StudentData DTD file</a><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><a href="http://csdl.ics.hawaii.edu/~johnson/613f00/xml/StudentDataSample.xml">StudentData XML Sample data file</a><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">&nbsp;<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font><table border="1" width="91%" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>CourseOfferings</b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>Element Name</i><!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>Allowed Nested Elements</i><!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>Purpose/Example</i><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">CourseOfferings<!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Course<!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Overall root element<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Course<!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">CourseNumber<br>
+      CourseName<br>
+      Semester<br>
+      Year<br>
+      CreditHours<br>
+      Section<!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Components of a course entry.&nbsp;
+      <p>Only &quot;Section&quot; can appear more than once.</p>
+      <p>All others must appear exactly once and in the order shown.<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">CourseNumber<!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;ICS 111&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">CourseName<!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;Introduction to Computer Science&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Semester<!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">integer: &quot;1&quot; is Fall, &quot;2&quot;
+      is Spring, &quot;3&quot; is summer I, &quot;4&quot; is summer II, others
+      can be defined.<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Year<!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">four digit. ex: &quot;2000&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">CreditHours<!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">integer, ex: &quot;3&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Section<!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">SectionNumber<br>
+      Meetings<br>
+      Seats<br>
+      Instructor<!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Information concerning a single section
+      associated with this course offering.&nbsp; There must be at least one
+      section associated with every course.<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">SectionNumber<!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Integer, such as &quot;001&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Meetings<!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">String, ex: &quot;MWF 10:00-11:00&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Seats<!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Integer, ex: &quot;35&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Instructor<!--mstheme--></font></td>
+    <td width="26%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="53%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">String, ex: &quot;Philip Johnson&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica">&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><a href="http://csdl.ics.hawaii.edu/~johnson/613f00/xml/CourseOfferings.dtd">CourseOfferings
+      DTD file</a><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><a href="http://csdl.ics.hawaii.edu/~johnson/613f00/xml/CourseOfferingsSample.xml">CourseOfferings
+      XML Sample data file</a><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">&nbsp;<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font><table border="1" width="91%" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>CourseRequisites</b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>Element Name</i><!--mstheme--></font></td>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>Allowed Nested Elements</i><!--mstheme--></font></td>
+    <td width="56%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>Purpose/Example</i><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">CourseRequisites<!--mstheme--></font></td>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Course<!--mstheme--></font></td>
+    <td width="56%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Overall root element<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Course<!--mstheme--></font></td>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">CourseNumber<br>
+      Requisite<!--mstheme--></font></td>
+    <td width="56%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Components of a Course entry.&nbsp;
+      <p>Requisite can appear multiple times.&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">CourseNumber<!--mstheme--></font></td>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="56%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;ICS 111&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Requisite<!--mstheme--></font></td>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">RequisiteCourseNumber<br>
+      RequisiteType<br>
+      MinGrade<!--mstheme--></font></td>
+    <td width="56%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Information concerning a single requisite
+      associated with its parent course.<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">RequisiteCourseNumber<!--mstheme--></font></td>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="56%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;ICS 101&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">RequisiteType<!--mstheme--></font></td>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="56%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Integer: &quot;1&quot; =prerequisite,
+      &quot;2&quot; = corequisite, &quot;3&quot; = concurrent, &quot;4&quot; =
+      consent.<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">MinGrade<!--mstheme--></font></td>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="56%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">If RequisiteType is prerequisite, then MinGrade
+      indicates the minimum grade required. ex: &quot;B&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica">&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><a href="http://csdl.ics.hawaii.edu/~johnson/613f00/xml/CourseRequisites.dtd">CourseRequisites
+      DTD file</a><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><a href="http://csdl.ics.hawaii.edu/~johnson/613f00/xml/CourseRequisitesSample.xml">CourseRequisites
+      XML Sample data file</a><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>&nbsp;</p>
+<!--mstheme--></font><table border="1" width="91%" bordercolordark="#000000" bordercolorlight="#99CCCC">
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><b>ApprovalCodes</b><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>Element Name</i><!--mstheme--></font></td>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>Allowed Nested Elements</i><!--mstheme--></font></td>
+    <td width="57%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica"><i>Purpose/Example</i><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ApprovalCodes<!--mstheme--></font></td>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Course<!--mstheme--></font></td>
+    <td width="57%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Overall root element<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Course<!--mstheme--></font></td>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">CourseNumber<br>
+      ApprovalCode<!--mstheme--></font></td>
+    <td width="57%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">Components of a Course entry.&nbsp;
+      <p>Approval Code can appear multiple times.&nbsp;&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">CourseNumber<!--mstheme--></font></td>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="57%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;ICS 111&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="22%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ApprovalCode<!--mstheme--></font></td>
+    <td width="21%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">none<!--mstheme--></font></td>
+    <td width="57%" valign="top"><!--mstheme--><font face="Arial, Arial, Helvetica">ex: &quot;S6758&quot;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica">&nbsp;<!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><a href="http://csdl.ics.hawaii.edu/~johnson/613f00/xml/ApprovalCodes.dtd">ApprovalCodes
+      DTD file</a><!--mstheme--></font></td>
+  </tr>
+  <tr>
+    <td width="100%" valign="top" colspan="3"><!--mstheme--><font face="Arial, Arial, Helvetica"><a href="http://csdl.ics.hawaii.edu/~johnson/613f00/xml/ApprovalCodesSample.xml">ApprovalCodes
+      XML Sample data file</a><!--mstheme--></font></td>
+  </tr>
+</table><!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>&nbsp;</p>
+<!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">The problem of special topics (x91) and independent study (x99)<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>ICS 491/691 and ICS 499/699 are different than&nbsp;other courses from a
+registration point of view.&nbsp; For all other courses, a student registers in
+one and only one section of the course, and it is legitimate for the Inca application to assign students to one and only one section
+arbitrarily.&nbsp;&nbsp; However, for the x91 and x99 courses, each section is
+conceptually an independent course.&nbsp; This leads to two differences. First, Inca
+cannot assign students to a section arbitrarily, since each section is
+a different course with a different instructor.&nbsp; Second, a student may well
+wish to enroll in two or more sections of one of these courses simultaneously,
+which is illegal for any other course.&nbsp;&nbsp;</p>
+<p>The solution to this problem in Inca is to effectively elevate each
+section of x91 and x99 courses to the level of a freestanding course by encoding
+the section number into the course name, and providing a single section for each
+of these courses.&nbsp; So, although Pa'e might represent things this way:</p>
+<p>ICS 491: Special Topics</p>
+<!--mstheme--></font>
+<!--msthemelist--><table border="0" cellpadding="0" cellspacing="0" width="100%">
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">Section 01: Distributed database systems<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">Section 02: Advanced hypermedia frameworks<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">Section 03: Agent-based programming&nbsp;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+<!--msthemelist--></table>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>The Inca system would represent and display things this way:</p>
+<p>ICS 491-1: Distributed database systems</p>
+<!--mstheme--></font>
+<!--msthemelist--><table border="0" cellpadding="0" cellspacing="0" width="100%">
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">Section 01<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+<!--msthemelist--></table>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>ICS 491-2: Advanced hypermedia frameworks</p>
+<!--mstheme--></font>
+<!--msthemelist--><table border="0" cellpadding="0" cellspacing="0" width="100%">
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">Section 02<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+<!--msthemelist--></table>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>ICS 491-3: Agent-based programming&nbsp;</p>
+<!--mstheme--></font>
+<!--msthemelist--><table border="0" cellpadding="0" cellspacing="0" width="100%">
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">Section 03<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+<!--msthemelist--></table>
+<!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Recent updates to this document<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>This section provides a listing of updates to this specification since
+November 9, 2000, when the specification was officially
+&quot;frozen&quot;.&nbsp; </p>
+<!--mstheme--></font>
+<!--msthemelist--><table border="0" cellpadding="0" cellspacing="0" width="100%">
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">11/10/00 (Architectural Issues, Package-level structure)<br>
+    Moved ExcludedSections|Home|EJB from course to request component.<br>
+    &nbsp;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">11/13/00 (Architectural Issues, Conceptual Specification of Data and EIS
+    Tier relational table spec)<br>
+    Removed semester and year from Grades, added isUHCourse to Courses, added
+    Instructor to Sections<br>
+    &nbsp;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">11/13/00 (Misc Issues, Data File Formats)<br>
+    Added DTD and sample XML files for ApprovalCodes, CourseRequisites, and
+    CourseOfferings<br>
+    &nbsp;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">11/14/00 (Fine Grained Priority Rules)<br>
+    Fixed typos in the inequalities.&nbsp; &quot;2.5 &gt; GPA &gt; 3.0&quot;
+    replaced by &quot;2.5 &lt; GPA &lt; 3.0&quot;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+<!--msthemelist--></table>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+&nbsp;<!--mstheme--></font></body>
+
+</html>

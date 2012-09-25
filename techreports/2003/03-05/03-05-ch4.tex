@@ -1,0 +1,210 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 03-05-ch4.tex --
+%% Author          : Robert Brewer
+%% Created On      : Fri Sep  5 13:50:18 1997
+%% Last Modified By: Aaron Kagawa
+%% Last Modified On: Tue Nov 18 18:06:26 2003
+%% RCS: $Id: thesis-body.tex,v 1.4 2000/03/17 21:28:10 rbrewer Exp $
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1998 Robert Brewer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+
+\chapter{Experimental Design}
+
+The experimental design of this research evaluates my thesis claims
+explained in Section 1.4.  I propose to accomplish this by conducting three 
+case struides in successive order. First, I will conduct a case study to
+understand and validate the hackyJPLBuild representation of the MDS CCC
+Harvest build process.  Second, I will conduct a statistical analysis of
+historical data in hopes of identifying factors that influence problems in
+the build system.  Third, I will conduct a case study to determine if the
+hackyJPLBuild sysem can predict problems in the build system.
+
+\section{Case Study 1 - Understanding and Validating}
+For the hackyJPLBuild system to be successful, it must be able to
+accurately represent the build process of the MDS CCC Harvest Tool.  Case
+Study 1 includes understanding and validating data from the MDS CCC Harvest 
+Tool.
+
+Prior to August 2003, Dr. Philip Johnson and I created the hackyJPLBuild
+system purely on assumptions we had on the data we would receive from the
+MDS CCC Harvest data.  In August 2003, I recieved the shell command file
+for both the Build Sensor Data and State Change Sensor Data.  These files
+represent MDS work from January 2003 to August 2003 (which I will call YTD, 
+Year-To-Data, from this point on).  The YTD data was then loaded into the
+hackyJPLBuild system.
+
+In this case study, I have conducted several mini studies on the data (1)
+to validate my understanding of the data, (2) validate how the
+hackyJPLBuild system represents this data, and (3) to validate the
+correctness of the data.  I have provided the initial findings of these
+mini-studies in the following sections.  Dr. Philip Johnson and I have
+gathered more detailed explanation of the findings for a White Paper which
+was presented for review by the MDS managers.
+
+It should be noted that these mini studies are not based on any specific
+hypotheses; rather it is a continual goal to further enhance my
+understanding of the MDS CCC Harvest Tool and MDS, enhance how
+hackyJPLBuild represents and analyzes the data, and to validate the actual
+data in the hackyJPLBuild system.  Therefore, when interesting
+opportunities arise to explore the data, I will analyze them under this
+case study.
+
+\subsection{Understanding the MDS Architectural Elements}
+MDS Architectural Elements are defined as the incremental development
+element.  For example, there are Implementation Task Rollup, Implementation 
+Tasks, Change Package Rollups, Verification Rollups, Requirement Package,
+Change Package, Internal Anomaly Report, etc.  The goal of this mini-study
+is to determine how the hackyJPLBuild system can represent these elements
+in the system.
+
+I conducted a simple visual analysis of the shell command data provided by
+Rich Hug's script which extracts data from the MDS CCC Harvest Tool.  I
+have found that there are three types of elements; MDS Packages, Rollup
+Packages, and Work Packages.  Rollup Package represents elements 
+that are generated ``top-down'' through planning and requirement
+specifications \cite{csdl2-02-03}.  This corresponds to the following
+Architectural Elemenets: Implementation Task Rollup, Implementation Task,
+Change Package Rollup, and Verification Package Rollup.  MDS Package
+represents both ``top-down'' and ``bottom-up,'' where ``bottom-up'' means
+that the elements are generated through defects and other problems.  This
+corresponds to the following Architectural Elements: Requirement Pacakge,
+Change Package, Internal Anomaly Report, Internal Modification, and
+Verification Package.  MDS Package is the unifying representation of both
+Rollup Packages and Work Packages.
+
+Furthermore, there is a releationship between Rollup Packages and MDS
+Packages.  Rollup Packages contain one or many Work Packages.  Work
+Packages are the packages that contain the actual implementation and Rollup 
+Packages are packages that contain Work Packages.
+
+This finding has allowed me to better represent all Architectural Elements
+in the hackyJPLBuild system as either Rollup Packages or Work Packages, see 
+MDS Packages, Work Packages, and Rollup Packages in Section 2.2 for a more
+detailed explanation of the internal representation of Architectural
+Elements in the hackyJPLBuild system.
+
+
+\subsection{Understanding the MDS CCC Harvest State Model}
+In the hackyJPLBuild sysem, I implemented an analyses which derives the MDS 
+CCC Havest State Model to understand how the different MDS Packages move
+through the Harvest tool.  This analysis calculates the number of
+occurrences of State Changes, in a specific time period, and for a given
+MDS Package type, ie one of the Architectural Elements.  The following
+figure provides an example of the MDS CCC Harvest State Model analysis.
+
+%% Figure of Harvest State Model
+
+Using the data provided by the previous analysis, I have created a
+graphical representation of the transitions.  The following figure shows
+this graphical representation.
+
+%% CP Harvest State Model.
+
+This figures shows several interesting results.  First, 44\% (76 of the
+173) of Change Packages that leave the Dev Harvest State revert back to Dev 
+at a later time.  This shows that there is a considerable amout of Rework
+or unscheduled work.  Second, 100\% of Change Packages in the Integration
+Test Harvest State move to the Release Harvest State without any problems.
+Further implications or hypotheses of what these values indicate have not
+been determined at this time.
+
+
+\subsection{Validating the Raw Data}
+While conducting my analysis of the MDS CCC Harvest State Model, explained
+in the previous section, an interesting problem arose.  The analysis shows
+a ``mysterious State'' Changes,  the State Changes were not occuring in
+successive chronological order. The following figures shows this anomaly.
+
+%% Figure of mysterious state changes.
+
+Based on this finding, I created a Hackystat analysis, whick finds all MDS
+Packages with the ``mysterious'' State Changes.  The following figure shows 
+an example of this analysis.
+
+%% Figure of Bad State Change Analsis
+
+This analysis shows that 20\% of all Change Packages have a'' mysterious''
+State Change at some point in time.  This indicates a major problem either
+two things; (1) the MDS CCC Harvest Tool or (2) the script which extracts
+data from the MDS CCC Harvest Tool.  In any case this problem must be
+addressed.
+
+
+\section{Case Study 2 - Statistical Analysis of YTD Data}
+Case Study 2 includes analyzing the YTD data to identify thresholds for
+factors that are associated with certain measurements of the MDS system.
+Proposed factors include: number of developers, number of entanglements,
+number of files in a MDS Package, and the number of build failures.
+Propsed measurements include: throughput and age.
+
+For example, I propose the creation of the ``Throughput Threshold''
+analysis.  This analysis will find the average throughput value for a
+certain type of a MDS Package.  For throughput valudes that are above the
+average, I will calculate the threshold values by finding the averages of
+the factors.  The following table shows an example of the threshold values.
+
+Measurement: Throughput 7 Months
+Thresholds: Number of Developers = 2, Number of Entanglements = 6, Number
+of Files = 25, and Number of Build Failures = 4.
+
+The previous example data shows the thresholds for several factors that
+influence throughput.  For example, MDS Packages with 6 or more
+entanglements will have an above average throughput measurement, MDS
+Packages with 25 or more files will have an above average throughput
+measurement, and so on.
+
+If analyses can identify threshold attributes of the MDS system then,
+predicting problems in the Harvest System should be relatively easy.  The
+next section explains Case Study 3 - Predicting Problems.
+
+
+\section{Case Study 3 - Predicting Problems}
+If the previous case study can provide thresholds that indicate above
+average measurements, then Case Study 3 can investigate if these
+thresholds can predict future above average measurements.  This case study
+will analyze real time data provided by Harvest.
+
+The methodology for this case study is the following.  For two months the
+threshold values for above average measurements will be stored in the
+hackyJPLBuild system.  When a MDS Package contains a value beyond the
+threshold value, the system will record the package's unique identifier and
+other information about the package's current state.  At the end of two
+months, I will conduct a study of the MDS Packages that were stored in the
+system to analyze if the threshold values predicted about average
+measurements.
+
+If analyses can accurately predict above average measurements of the MDS
+system then, preventing problems is the next logical step.  The next
+section explains how hackyJPLBuild could be used to prevent problems.
+
+
+\section{Preventing Problems}
+The next logical step, assuming that the three previous case studies are
+successful, is to apply the predictions in a prevention case study.
+Preventing porblems means that we must intervene with the build and
+developement process of MDS however, I feel that intervention is not an
+obtainable goal for the duration of this thesis project.
+
+When the time becomes appropriate for hackyJPLBuild to intervene with MDS,
+hackyJPLBuild will have collected a significant amount of raw data and have 
+created a significant amount of thresholds and predictions.  At this time,
+the hackyJPLBuild system can alert developers of potential problems that
+have been predicted.  Developers can then, attempt to ``bring the threshold 
+value down,'' or pay special attention to the potentially problematic MDS
+Package.
+
+
+
+
+
+
+
+
+
+
+
+
+
+

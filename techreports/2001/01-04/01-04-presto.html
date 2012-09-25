@@ -1,0 +1,225 @@
+
+
+<head>
+<title>Insights from Presto</title>
+</head>
+
+<h2 align="center"><font size="3">Hackystat Design Notes Series<br>
+</font><br>
+Insights from the Presto Development Project:<br>
+Requirements from the IDE for Automated Data Collection</h2>
+
+<p align="center"><a href="http://csdl.ics.hawaii.edu/~jitender/">Jitender
+Miglani</a><br>
+<a href="http://csdl.ics.hawaii.edu/">Collaborative Software Development
+Laboratory</a><br>
+
+<a href="http://www.ics.hawaii.edu/">Department of Information and Computer 
+Sciences </a><br>
+
+<a href="http://www.hawaii.edu/">
+University of Hawaii</a>
+</p>
+
+<p align="center">May, 2001<br>
+</p>
+
+<p>In order to automate the size, time and defect data collection process,
+presto needs to listen to the events which are fired by the IDE. The events may
+be application level events, project level events or file level events. So, One
+may think of following classes being provided by the IDE : <code>IDEApplicationEvent,
+IDEProjectEvent, IDEFileEvent, IDEEditorEvent and IDEDebuggerEvent. </code>Whenever
+an event is fired by the IDE, presto should be able to listen to that event.
+Then, it should be able to determine to which class of events the fired event
+belongs to. After knowing that, presto can know the exact event and take
+appropriate action. The following code illustrates this point for the case of
+project opening event. This code may be placed in an IDE events listening class
+of presto.</p>
+<p>&nbsp; <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (event instanceof
+IDEProjectEvent) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+IDEProjectEvent projectEvent = (IDEProjectEvent)event;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (projectEvent.getID() ==
+IDEProjectEvent.PROJECT_OPENED) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+this.projectOpened();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</code><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p>&nbsp;&nbsp;&nbsp; Apart from these event classes, presto also needs the
+classes which provide it the information about projects and files. So, following
+classes will be needed by presto : <code>IDEApplication, IDEProject, IDEFile,
+IDEEditor and IDEDebugger</code>. Whenever presto needs the information like
+what is the current project, what are the files in the current project, which
+file is currently being worked on etc., presto should be able to inquire this
+information from these classes. The following code illustrates how one can get
+the information about the name of the project being currently worked on :</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<code>IDEProject project = (IDEProject)IDEApplication.getCurrentProject();<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; String projectName = project.getName();</code></p>
+<p>Now, after listing the classes required, we can go into the specific details
+of the classes that would be needed by presto.<br>
+</p>
+<h3>Application level requirements</h3>
+<p>&nbsp;&nbsp;&nbsp; Even though we are concerned with collecting project size,
+time and defect data, presto do needs application level information like when
+the IDE is opened or closed, what is the current project, what is the file being
+worked on in the editor etc. This information&nbsp; is useful for presto and can
+be provided by application level classes. A brief description of application
+level classes and their method signatures is as follows :</p>
+<p>&nbsp;&nbsp; <code><strong>IDEApplication</strong></code> : This class
+represents the entire IDE application. Information related to all the projects
+can be obtained from here. Its method signatures are as follows :</p>
+<table height="130" width="100%" border="1">
+  <tbody>
+    <tr>
+      <td width="100%" height="36"><code><strong>void&nbsp;
+        addListener(IDEEventListener newListener);</strong></code><br>
+        adds a IDE event listener to the list of current listener.</td>
+    </tr>
+    <tr>
+      <td width="100%" height="38"><code><strong>IDEProject getCurrentProject();</strong></code><br>
+        returns the currently opened project.</td>
+    </tr>
+    <tr>
+      <td width="100%" height="38"><code><strong>IDEEditor getCurrentEditor();</strong></code><br>
+        returns the file currently opened in the editor.</td>
+    </tr>
+  </tbody>
+</table>
+<p>&nbsp;&nbsp;&nbsp; <code><strong>IDEApplicationEvent</strong></code> : This
+class is responsible for getting information about all application level events
+like application opening events, application closing events etc. Its method and
+field signatures are as follows :</p>
+<table width="100%" border="1">
+  <tbody>
+    <tr>
+      <td width="100%"><code><strong>static int APPLICATION_CLOSING</strong></code><br>
+        Indicates that IDE application is closing</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>static int APPLICATION_OPENED</code></strong><br>
+        Indicates that IDE application has just been opened</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>int getID()</code></strong><br>
+        returns the event ID of the event</td>
+    </tr>
+  </tbody>
+</table>
+<p>&nbsp;</p>
+<h3>Project level requirements</h3>
+<p>&nbsp;&nbsp;&nbsp; Even though IDEs allow users to work on several projects,
+only one project can be opened at a time. Presto can obtain the information
+about the currently opened project from application level classes which return
+an project level object. Once presto has project level object, it can aquire
+details specific to a project like name of the project, path to the project
+file, the files in the project etc. This information is used by the presto to
+record the time data related to a project. This may also provide presto with
+size information from a bigger perspective. However, In order to obtain the
+detailed size information, one needs to make use of file level objects. A brief
+description of project level classes and their method signatures is as follows :</p>
+<p>&nbsp;&nbsp;&nbsp; <strong><code>IDEProject</code></strong> : This class
+represents an IDE project. The information specific to a project can be obtained
+from here. Its method signatures are as follows :</p>
+<table width="100%" border="1">
+  <tbody>
+    <tr>
+      <td width="100%"><code><strong>void&nbsp; addListener(IDEProjectListener
+        newListener);</strong></code><br>
+        adds a IDE event listener to the list of current listeners.</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>String getName();</code></strong><br>
+        returns the name of the project.</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>String getPath();</code></strong><br>
+        returns the path of the project.</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>Collection getAllFiles();</code></strong><br>
+        returns all the files in the current project.</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>boolean isOpen()</code></strong>;<br>
+        determines whether a project is opened or not.</td>
+    </tr>
+  </tbody>
+</table>
+<p>&nbsp;&nbsp; <strong><code>IDEProjectEvent</code></strong> : This class is
+responsible for getting information about all project level events like project
+opening events, project closing events etc. Its method and field signatures are
+as follows :</p>
+<table width="100%" border="1">
+  <tbody>
+    <tr>
+      <td width="100%"><code><strong>static int PROJECT_OPENED</strong></code><br>
+        Indicates that a project has opened</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>static int PROJECT_CLOSED</code></strong><br>
+        Indicates that a project has been closed</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>static int PROJECT_NEW</code></strong><br>
+        Indicates that a new project has been made</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>int getID()</code></strong><br>
+        returns the event ID of the event</td>
+    </tr>
+  </tbody>
+</table>
+<p>&nbsp;</p>
+<h3>File level requirements</h3>
+<p>&nbsp;&nbsp;&nbsp; Size information in detail can be obtained using file
+level objects. We can obtain size information like LOC, number of methods,
+number of classes, number of interfaces etc. either from IDE file objects or
+using some external size measuring tools. Presto uses external size measuring
+tools in order to reduce the requirements from the file level objects. Presto
+doesn't uses file level objects to obtain the time data related to a project.
+Time data is collected only at the project level. A brief description of project
+level classes and their method signatures is as follows :</p>
+<p>&nbsp;&nbsp;&nbsp; <strong><code>IDEFile</code></strong> : This class
+represents an IDE file. The information specific to a file can be obtained from
+here. Its method signatures are as follows :</p>
+<table width="100%" border="1">
+  <tbody>
+    <tr>
+      <td width="100%"><code><strong>void&nbsp; addListener(IDEFileListener
+        newListener);</strong></code><br>
+        adds a IDE event listener to the list of current listeners.</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>String getName();</code></strong><br>
+        returns the name of the file.</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>String getPath();</code></strong><br>
+        returns the path of the file.</td>
+    </tr>
+  </tbody>
+</table>
+<p><strong><code>&nbsp; IDEFileEvent</code></strong> : This class is responsible
+for getting information about all file level events like file opening events,
+file closing events etc. Its method and field signatures are as follows :</p>
+<table width="100%" border="1">
+  <tbody>
+    <tr>
+      <td width="100%"><code><strong>static int FILE_OPENED</strong></code><br>
+        Indicates that a file has opened</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>static int FILE_CLOSED</code></strong><br>
+        Indicates that a file has been closed</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>static int FILE_SAVED</code></strong><br>
+        Indicates that a file has been saved</td>
+    </tr>
+    <tr>
+      <td width="100%"><strong><code>int getID()</code></strong><br>
+        returns the event ID of the event</td>
+    </tr>
+  </tbody>
+</table>

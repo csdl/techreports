@@ -1,0 +1,399 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<!-- saved from url=(0058)http://csdl.ics.hawaii.edu/~johnson/jpl/HarvestSensor.html -->
+<HTML><HEAD><TITLE>JPL Hackystat Build Sensor Design</TITLE>
+<META http-equiv=Content-Language content=en-us>
+<META http-equiv=Content-Type content="text/html; charset=windows-1252">
+<META content="Microsoft FrontPage 4.0" name=GENERATOR>
+<META content=FrontPage.Editor.Document name=ProgId></HEAD>
+<BODY>
+<H2 align=center><B>Hackystat Metric Collection and 
+Analysis for the MDS Harvest CM System:<br>
+A Design Specification</B></H2>
+<P align=center>Philip Johnson<BR>Collaborative Software Development 
+Laboratory<br>
+Department of Information and Computer Sciences<BR>University of Hawaii<br>
+<a href="mailto:johnson@hawaii.edu">johnson@hawaii.edu</a></P>
+<P align=center>CSDL-03-06</P>
+<P align=center><a href="http://csdl.ics.hawaii.edu/techreports/03-06/03-06.html">http://csdl.ics.hawaii.edu/techreports/03-06/03-06.html</a></P>
+<P align=center><B>Last update: August 13, 2003&nbsp;</B></P>
+<H3>1. Major Goals</H3>
+<P>This proposal describes the requirements and top-level design for a 
+Hackystat-based system that automatically monitors and analyzes the MDS 
+development process using data collected from the Harvest CM system. The major 
+goals for this development project include:</P>
+<UL>
+  <LI><B>A useful approach to representing the "dynamics" of the MDS development 
+  and build process.&nbsp; </B>Such an approach includes: (a) the specification 
+  of the subset of Harvest CM data sent to the Hackystat server, (b) the 
+  analyses that the server performs on this data either automatically or via 
+  manual invocation at the web interface, and&nbsp; (c) the&nbsp; potential 
+  insights into and improvements to the development process that may result. 
+  <LI><B>A process that can be adapted to collection and analysis of defect data.</B>&nbsp;
+    Once we have developed a process for extracting build data from Harvest,
+    sending it to Hackystat, and performing analyses on it there, we can extend
+    this to other forms of data, such as defects. This will 
+  build on work by Dan Port and Ray Madachy as part of the HDCP effort.&nbsp; 
+  <LI><B>Increased visibility into the MDS development and build process for 
+  developers and managers. </B>The data collected and analyses produced should 
+  provide both developers and managers with simplified access to the current 
+  state of development, improving communication within the development 
+  organization. 
+  <LI><B>Support for exploratory analyses beyond those provided by the 
+  server.&nbsp; </B>The data automatically collected by Hackystat will most 
+  likely be amenable to a variety of analyses beyond those initially supported 
+  by the server. To facilitate exploratory analyses, it should be possible to 
+  download various kinds of data sets in CSV format for post-processing in 
+  Excel. 
+  <LI><B>Establish communication and coordination mechanisms for development, 
+  deployment, and evaluation of metrics collection and analysis between CSDL and 
+  MDS. </B>This project should help us learn how to collaborate effectively 
+  together, and iron out the procedural and technical issues involved with 
+  distributed development and deployment. 
+  <LI><B>Require no IDE sensors for developers. </B>For this initial project, 
+  all data will be collected from the Harvest CM and build systems. We will not 
+  require any developers to attach sensors to their environments.&nbsp; However, 
+  the proposed approach suggests additional useful analyses that could be 
+  performed if activity data from developers was also available.&nbsp; </LI></UL>
+<H3>2. Overview of the system</H3>
+<P>The components of the system include:</P>
+<UL>
+  <LI>A hackystat server, running on mds1.jpl.nasa.gov, with custom sensors and 
+  analyses. 
+  <LI>A set of Harvest scripts that run once a day (more or less) as a cron job, 
+  extract data regarding recent Harvest promotion/demotion and build events, and 
+  send this off to the Hackystat server. 
+  <LI>Another set of Harvest scripts that are run once and which populate the 
+  Hackystat server with historical data. </LI></UL>
+<P>The fundamental unit of analysis for this system is a "Work Package", which 
+can be one of Change Package (CP), IAR (Internal Anomaly Report), or IM 
+(Internal Modification).&nbsp; Only work packages that go through the Harvest 
+work flow will be tracked at this time, which excludes higher level entities 
+like ITRs and CPRs.&nbsp; In essence, we will track a work package as it enters 
+the Development state, proceeds through intermediate states to Build,&nbsp; and 
+then finally into its final resting place in the&nbsp; Release state.&nbsp; We 
+will represent this data through two formats, known in Hackystat terminology as 
+"Sensor Data Types" (SDT).&nbsp;&nbsp; </P>
+<H3>3. Sensor Data Type Definitions </H3>
+<H4>3.1 The "StateChange" Sensor Data Type</H4>
+<P>Each StateChange SDT instance represents the event of promotion or demotion 
+of a work package and aspects of its state at this point in time.&nbsp; It 
+contains the following fields:</P>
+<UL>
+  <LI><I>tstamp:</I>&nbsp; A UTC timestamp (i.e. the number of milliseconds 
+  since 9/1/1970).&nbsp; Example: "1050710895265" (which is roughly 4/18/2003 
+  2:08pm). <B></B>Every StateChange instance must have a unique tstamp, and this 
+  tstamp should represent the time at which the promotion or demotion took 
+  place.&nbsp; Note that the currently proposed analyses regarding time 
+  intervals have the precision of a day, so it is probably not necessary to 
+  represent the time of a WP promotion/demotion with millisecond accuracy.&nbsp; 
+  On the other hand, it is important to avoid giving two distinct StateChange 
+  instances the exact same tstamp, since that will result in the second instance 
+  overwriting the first. 
+  <LI><I>work-package: </I>The unique identifier for the WP that is being 
+  promoted or demoted. Example: "CP-00971". 
+  <LI><I>start-state:</I> The Harvest CM state this WP was in just before the 
+  promotion/demotion. Example: "Dev". 
+  <LI><I>end-state: </I>The Harvest CM state this WP is now in as a result of 
+  the promotion/demotion. Example: "Dev-Complete" 
+  <LI><I>new-files: </I>a comma delimited list of file names that have been 
+  added since the last state change. 
+  <LI><I>modified files:</I> a comma delimited list of file names that have been 
+  changed since the last state change 
+  <LI><I>deleted-files: </I>a comma delimited list of file names that have been 
+  deleted since the last state change. 
+  <LI><I>unchanged-files:</I> a comma delimited list of file names that have not 
+  been changed since the last state change. 
+  <LI><I>IAR</I>:&nbsp; If this WP (such as a CP) associated with an IAR, its ID 
+  is provided here. Example: "IAR-02068" 
+  <LI><I>developer</I>: The username of the developer responsible for this WP. 
+  Example: "cxing". </LI></UL>
+<H4>3.2 The "Build" Sensor Data Type</H4>
+<P>The Build SDT represents an occurrence of an attempt to build the system with 
+a given Work Package. It contains the following fields:</P>
+<UL>
+  <LI><I>tstamp</I>: A UTC timestamp representing the time at which the build 
+  took place.&nbsp; Example: "1050710895265". As with the StateChange tstamp 
+  field, precision only to the level of a day is required for currently 
+  anticipated analyses. 
+  <LI><I>work-package: </I>The ID of the Work Package being built. Example: 
+  "CP-00971". 
+  <LI><I>tests-passed: </I>A number indicating the total passed tests. Example: 
+  "27" 
+  <LI><I>tests-failed: </I>A number indicating the total failed tests. Example: 
+  "0".&nbsp; 
+  <LI><I>failure-type: </I>One of: none, compile, link, run-time. (Are there 
+  others?) </LI></UL>
+<H3>4. Collecting and sending the data to the server</H3>
+<P>When Hackystat is built, it generates a client-side tool called "SensorShell" 
+to facilitate transmission of SDT data from clients to the server. The 
+SensorShell, when invoked, provides a kind of command shell designed for sending 
+Sensor Data Type (SDT) data to a server from the client. Here's a transcript of 
+an interactive&nbsp; SensorShell session to give you an idea of how this 
+works.&nbsp; </P><PRE>C:\cvs\hackystat2&gt;<B>java -jar sensorshell.jar</B>
+Hackystat Release: 2.0801 (August 1 2002 09:37:57)
+SensorShell started at: 08/01/2002 10:54:00
+Type 'help' for a list of commands.
+Host: http://mds1.jpl.nasa.gov:8080/ is available.
+AutoSend enabled every 10 minutes.
+Checking for offline data to recover.
+No offline data found.
+&gt;&gt; <B>Build#add#1050710895265#CP-00971#25#0#none</B>
+Build add OK (1 total)
+&gt;&gt; <B>quit</B>
+Sending sensor data (08/01 10:54:08)
+&nbsp; AutoSend: AutoSend OK ('send' command ignored)
+&nbsp; Build: Build send OK (1 activities)
+&nbsp; Ping: Ping OK (contacted server http://mds1.jpl.nasa.gov:8080/)
+&nbsp; Harvest: Harvest send OK (No activities to send.)
+&gt;&gt;
+C:\cvs\hackystat2&gt;</PRE>
+<P>The user brings up the sensor shell, which prints out some status information 
+and then starts a command loop for reading commands. In this case, the "add" 
+command of the Build SDT shell command class is invoked, along with arguments 
+for each of the SDT fields (tstamp, change package, passed tests, and failed 
+tests). Since this is the only data to be sent during this session, the "quit" 
+command is entered, which automatically sends off the data before exiting. </P>
+<H4>Batch mode invocation of the sensor shell </H4>
+<P>The sensorshell can also be invoked in "batch" mode. In this mode, a file 
+containing a sequence of commands, one per line, can be supplied to the 
+sensorshell on the command line. The invocation looks like this: </P><PRE>% java -jar sensorshell.jar Harvest sensor.properties t commands.txt</PRE>
+<P>An abbreviated version of the commands.txt file looks like this: </P><PRE>StateChange#add#1050710890000#CP-00971#Dev#Dev-Complete#MDS_Rep/source/Mds/Ra/Mars/Rovers/Rocky7/Flight/Motor/WheelPositionController.cpp,MDS_Rep/source/Mds/Ra/Mars/Rovers/Rocky7/Flight/Motor/OpModeController.cpp###IAR-00456#cxing
+StateChange#add#1050711000000#CP-00971#Dev-Complete#Build-Queue#MDS_Rep/source/Mds/Ra/Mars/Rovers/Rocky7/Flight/Motor/WheelPositionController.cpp,MDS_Rep/source/Mds/Ra/Mars/Rovers/Rocky7/Flight/Motor/OpModeController.cpp###IAR-00456#cxing
+Build#add#1050711891000#CP-00971#25#0#none
+Quit</PRE>
+<P>This example file illustrates the following: </P>
+<UL>
+  <LI>Each command is on a single line. 
+  <LI>The fields associated with each command are delimted with a "#". 
+  <LI>There are three commands of interest: "StateChange", "Build", and 
+  "Quit".&nbsp;&nbsp; 
+  <LI>The first parameter to StateChange and Build must be "add". 
+  <LI>The UTC timestamp for each command is unique. 
+  <LI>All fields must be supplied in the correct order (see the SDT 
+  specification) 
+  <LI>The last command in the file must be "Quit". This no-arg command instructs 
+  the sensorshell to send the accumulated data to the server and then quit. 
+</LI></UL>
+<H4>MDS Scripts and Sensor Shell</H4>
+<P>The SensorShell program serves as the "start point" for CSDL-based 
+processing.&nbsp; In other words, I propose that someone on the MDS side (for 
+example, Rich Hug) be responsible for generating the scripts that connect to 
+Harvest once a day, extract information regarding the Harvest and Build events 
+during the previous day, and then invoke SensorShell and pass the data to it. My 
+preliminary conversations with folks seemed to indicate that this was a 
+reasonable way to go. </P>
+<P>Under "normal" operations, we would presumably run a script once a day that 
+sends off data regarding events during the previous day.&nbsp; The analyses 
+would then be accurate up to the prior day, which seems reasonable. </P>
+<P>There is one other script, a "startup" script, which we would run a single 
+time to initialize the server with historical data.&nbsp; This could populate 
+the server with StateChange and Build data going back as far as we think would 
+be useful.&nbsp;&nbsp; </P>
+<P>For initial development, we propose that Rich generate the commands.txt file 
+and provide it to us to test with SensorShell. Once we have established that the 
+data is formatted correctly (or that we need to change the format) and that it 
+can be sent to the server without problems, we can institute automatic 
+generation of the batch file and sending to the server on a daily basis. </P>
+<H3>5. The Work Package abstract data type </H3>
+<P>The server side will collect together all of the sensor data related to a 
+single work package into a "Work Package" abstraction. This abstraction 
+encapsulates together information from the sensor data type instances, and 
+serves as the basis for all analyses.&nbsp; Some of the operations on a Work 
+Package instance include: </P>
+<UL>
+  <LI>Age of the CP in days (a package stops "aging" once it reaches the Release 
+  state). 
+  <LI>Current Harvest CM state (Dev, Dev-Complete, ...., Release) 
+  <LI>Total days spent in &lt;state&gt; 
+  <LI>Total number of [promotions | demotions] 
+  <LI>Total number of files [added | deleted | modified] 
+  <LI>Total number of other CPs with which this CP is entangled (i.e. shares 
+  files) 
+  <LI>Degree of entanglement (i.e. number of distinct files shared with other 
+  CPs) 
+  <LI>Number of build [attempts | passes | failures] 
+  <LI>Total number of build failures of type [compile | link | run-time] 
+  <LI>IARs against this package 
+  <LI>Developer(s) associated with this package 
+  <LI>Aliveness: Some CPs are "inactive" and not currently worked on, and simply 
+  exist in the Dev state.&nbsp; Others have reached the Test-Complete or Release 
+  state and are "completed".&nbsp; The remainder are under "active" 
+  development.&nbsp; We will need some heuristic manner to distinguish "active" 
+  from "inactive" CPs. One possibility: any CP that is older than 2 months and 
+  that has never reached Dev-Complete is inactive. </LI></UL>
+<H3>6. Analysis Questions </H3>
+<P>So far, we've discussed the kind of data that we would like to collect from 
+the Harvest CM system and the build process, and how it will be sent to the 
+Hackystat server, and how it will be represented once on the server side. Now 
+let's turn to the questions that we would like the analyses to answer.&nbsp; 
+</P>
+<H4>6.1 Development efficiency: CP Age and CP Throughput </H4>
+<P>My first set of questions involve the measurement of "CP-Age" and 
+"CP-Throughput". CP-Age is simply the interval in days between the day a CP is 
+created (i.e. enters "Dev" state) and either the day it reaches the 
+Test-Complete or Release state, or the current day (if it has not yet reached 
+Test-Complete/Release).&nbsp;&nbsp; </P>
+<P>CP-Throughput is a measure that is calculated over a set of CPs.&nbsp; Two 
+possible ways to measure CP-throughput are:&nbsp; </P>
+<UL>
+  <LI><B>Average CP Releases:</B>&nbsp; This measure is calculated by taking a 
+  time interval, such as a week, month, or quarter, adding up the number of CPs 
+  reaching the Release state, then dividing by the number of days in that 
+  interval. This gives the average number of CPs being pushed out the end of the 
+  system per day over the given interval.&nbsp; This measure is sensitive to the 
+  number of developers working on the system, and might be skewed upward by the 
+  presence of a bunch of "easy" CPs entering the system.&nbsp;&nbsp; 
+  <LI><B>Average CP Age:&nbsp;</B> This measure is calculated by computing the 
+  average age of the current "active" CPs in the system at any point in 
+  time.&nbsp;&nbsp; This is less sensitive to the number of developers (with 
+  less developers, presumably less CPs enter the system). This measure, however, 
+  can be skewed downward by the presence of a small number of "ancient" CPs that 
+  are worked on but take a long time to progress through the system.&nbsp; One 
+  issue with this measure is whether it is possible without data on developer 
+  activity to accurately determine the set of "active" CPs in the system 
+  automatically. </LI></UL>
+<P>Here are some initial questions to address through our analyses related to 
+CP-Age and average CP-throughput: </P>
+<OL>
+  <LI>What is the current CP-throughput? 
+  <LI>What is the observed variation in CP-age? 
+  <LI>What is the observed variation in CP-throughput over time? 
+  <LI>What factors appear to influence CP-age and CP-throughput? </LI></OL>
+<P>The first question is straightforward to answer, given a suitable operational 
+definition of CP-throughput. Whether or not it can be made useful to MDS, 
+however, depends upon the answers to the remaining questions. </P>
+<P>The answer to the second question provides a kind of sanity check.&nbsp; For 
+CP-age to be meaningful for our purposes, there should be differences between 
+CPs with respect to their age.&nbsp; The&nbsp; answer to the second question 
+also yields information such as the minimum and maximum age values, and the 
+shape of the distribution (bell-shaped, well-shaped, bimodal, etc.) We may want 
+to compare the distributions generated from different subsets of CPs. For 
+example, the distribution of "completed" CPs vs the distribution of "active" 
+CPs. Another interesting comparison might be the distribution of active CPs for 
+a given quarter vs. other quarters.&nbsp; </P>
+<P>The answer to the third question provides a sense for whether CP throughput 
+provides a useful aggregate measure of development "efficiency". If there is 
+significant variation, then MDS can potentially put alert mechanisms in place 
+that monitor this value and signal when the bounds associated with normal 
+variation are exceeded.&nbsp; </P>
+<P>The final question is probably the most interesting and important one.&nbsp; 
+Successfully addressing it would yield two important benefits to MDS: (a) the 
+ability to identify and remove certain obstacles to completing CPs faster, and 
+(b) the ability to predict how CP-age and CP-throughput will be affected by 
+changes to the build environment and processes, and verify these predictions. 
+</P>
+<P>Some preliminary hypotheses concerning the (potentially interdependent) 
+factors that may impact on CP-age and CP-throughput include:: </P>
+<OL>
+  <LI><B>Number of developers.</B> Up to a point, the presence of more 
+  developers should positively influence CP-throughput, perhaps in a linear 
+  fashion. Beyond this point, coordination and interdependencies might 
+  negatively influence CP-throughput.&nbsp; By comparing CP-throughput during 
+  periods when MDS has different developer staffing levels (measured by the 
+  number of unique developers promoting CPs), we can see if CP-throughput 
+  appears to be influenced by the number of developers.&nbsp; Since the MDS 
+  project is intended to ramp up in development staff in the coming years, it 
+  will be useful to have mechanisms in place to monitor and understand their 
+  impact on CP-throughput. 
+  <LI><B>Change package complexity. </B>A more complex CP should take more 
+  effort to get to the Release state, almost by definition. More effort should 
+  (but might not always) correspond to a large value of CP-age. (The counter 
+  examples are a complex, high priority CP that a developer works 80 hours a 
+  week to push through in a short number of days, and a non-complex, low 
+  priority CP that a developer works part time for a long time&nbsp; to 
+  complete. Note that if a sensor was in place to gather developer effort on a 
+  CP so that we could calculate CP-effort,&nbsp; these counter-examples would go 
+  away.)&nbsp; At any rate, by computing various measures of CP complexity (such 
+  as the number of files in the CP) and comparing them to CP-age,&nbsp; we can 
+  see if a relationship exists. 
+  <LI><B>Build failure. </B>The occurrence (and type) of build failures would 
+  presumably have a negative impact on both CP-age (for the CP that fails the 
+  build) and CP-throughput (the more build failures present during a given time 
+  period, the lower the throughput). A simple analysis could chart the age 
+  distribution of CPs without build failures against the age distribution of CPs 
+  with build failures, and see if observable differences exist and the level of 
+  impact on these measures.&nbsp; Various subsets of CPs could be selected as 
+  well, such as the subset of completed CPs, the subset of active CPs, the 
+  subset of CPs with a given range of complexity, etc. 
+  <LI><B>Entanglement.</B>&nbsp; Similar to the occurrence of build failure, the 
+  existence of entanglement would presumably have a negative impact on both 
+  CP-age and CP-throughput. We can develop analyses that compare the age of 
+  entangled CPs to non-entangled CPs, along with the ability to select subsets 
+  of CPs (completed vs. active, complexity, etc.)&nbsp; 
+  <LI><B>Time in &lt;State&gt;. </B>It is possible that the amount of time a CP 
+  spends in a particular state influences CP-Age and/or CP-throughput.&nbsp; For 
+  example, perhaps the amount of time spent by an active CP in the "Dev" state 
+  (or "Build" state) is correlated with its final CP-Age.&nbsp; Future 
+  CP-throughput might be correlated with the aggregate time of all CPs in a 
+  given state. </LI></OL>
+<H4>6.2 Defect Analysis: Work vs. Rework </H4>
+<P>A second set of questions involve the representation of "new" work vs. 
+"rework".&nbsp; New work is work not associated with an IAR. Rework is work that 
+results from the generation of an IAR.&nbsp; A first-cut analysis can provide 
+the percentage of work packages in the system that are rework, and whether that 
+percentage is increasing or decreasing over time.&nbsp; </P>
+<P>With a reasonably accurate representation of the "active" work packages, we 
+can determine, for example, the proportion of team effort devoted to rework, and 
+whether that proportion is increasing or decreasing. The quality and utility of 
+this analysis would be improved by attachment of sensors to developer IDEs so 
+that accurate effort data can be collected. </P>
+<P>A certain amount of rework is unavoidable.&nbsp; An initial goal is to 
+establish a baseline:&nbsp; the normal bounds on the proportion of work vs. 
+rework.&nbsp; Once the baseline is established, we can provide continuous 
+monitoring of this metric and alert developers when rework exceeds normal 
+operating conditions.&nbsp; By understanding what constitutes normal levels of 
+rework, one can assess the impact of process changes (for example, a process 
+change that substantially increases the percentage of rework might not be a good 
+one.)&nbsp; Second, if no process changes are occurring, but rework is 
+increasing substantially, then that indicates that the requirements have changed 
+(i.e. become more difficult).&nbsp; This might indicate the need to replan or 
+reschedule.&nbsp; </P>
+<H4>6.3 Defect Analysis: Scheduled vs. Unscheduled Work </H4>
+<P>In general, scheduled work is work associated with a Change Package. Work 
+associated with an IM is unscheduled.&nbsp; Finally, when an IAR is reported, 
+but it appears that it can be fixed in less than a day, then the IAR is not 
+attached to a new CP and this also becomes unscheduled work.&nbsp;&nbsp; </P>
+<P>Analysis of scheduled vs. unscheduled work follows a similar pattern to work 
+vs. rework.&nbsp; Initially, the focus is on establishing a baseline for a 
+normal percentage of unscheduled work.&nbsp; Following this, we can attempt to 
+trace back changes in the proportion of unscheduled work to changes in 
+requirements or changes in process.&nbsp; </P>
+<H3>7. Anticipated Contributions</H3>
+<P>The first contribution of this project is to put in place a continuous, 
+completely automated mechanism for gathering data concerning the MDS 
+promotion/demotion and build process.&nbsp; The goal is to eliminate recurrent 
+overhead of "process" level analyses, which enables effort to be allocated to 
+more interesting issues.</P>
+<P>The second contribution is to explore a set of initial analyses that focus on 
+development efficiency as represented by "Change Package Age" and "Change 
+Package Throughput". These analyses are designed to determine if variations in 
+these measures provide useful insight into the overall efficiency of 
+development, and if so, what other factors in development might influence their 
+values.&nbsp;&nbsp; If these initial explorations are successful, then the next 
+step is to develop automated mechanisms that track these measures and 
+relationships, and inform MDS personnel when "interesting" values and 
+relationships occur.&nbsp; This enables MDS to effectively forget about this 
+infrastructure entirely as long as things are proceeding "normally". </P>
+<P>The third contribution is to explore analyses related to Defects, as 
+manifested through Rework and Unscheduled Work.&nbsp;&nbsp; </P>
+<P>The fourth contribution is to create a repository of process and product data 
+that can be easily accessed by MDS developers or other organizations (such as 
+Fraunhofer).&nbsp; To facilitate data analysis, the hackystat server will 
+provide data export mechanisms in comma separated value (CSV) format.&nbsp; This 
+simplifies external analysis using programs like Excel.&nbsp;&nbsp; </P>
+<P>The fifth contribution is to develop an effective style of collaboration 
+between MDS and CSDL, with appropriate lines of communication, and appropriate 
+technical and support infrastructure.&nbsp; This will pave the way toward the 
+more complex forms of analysis required to achieve the goals of the HDCP 
+program.</P>
+<P> </P>
+<P> </P>
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P>&nbsp;</P>
+<P>&nbsp;</P></BODY></HTML>

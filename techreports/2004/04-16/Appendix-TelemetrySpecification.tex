@@ -1,0 +1,380 @@
+\chapter{Software Project Telemetry Language Specification\\(Version 1.2)}  
+\label{Chapter:TelemetryLanguageSpecification}
+
+
+
+This document describes the syntax, semantics, and design of Software Project Telemetry Language. The language is neutral, and independent of any particular implementation.
+
+
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                       %
+%                   S E C T I O N                       %
+%                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}  \label{TelemetryLanguageSpecification:Introduction}
+
+Software Project Telemetry Language is a language that allows user to specify rules to:
+\begin{itemize}
+  \setlength{\itemsep}{0pt}
+  \setlength{\parskip}{0pt}
+	\item define telemetry streams from software metrics,
+  \item define telemetry chart from telemetry streams,
+  \item and define telemetry report from telemetry charts.
+\end{itemize}
+    
+Correspondingly, three primitive types are supported by the language: \textit{streams}, \textit{chart}, and \textit{report}. The building blocks of telemetry \textit{streams} are telemetry reducers, which are responsible for synthesizing and aggregating software metrics. Reducer returns a collection of telemetry streams, which is denoted as \textit{streams} object in this specification. It is possible that the collection contains only one single stream. \textit{streams} object can participate in mathematical operations. For example, you can add two \textit{streams}, and the result is a new \textit{streams} object. Telemetry \textit{chart} defines the grouping of multiple telemetry \textit{streams} into one single chart, while telemetry \textit{report} specifies the grouping of multiple charts. The language supports parameterization. 
+
+This specification does not prescribe any reducers. The set of available reducers depends on particular implementation of the language. A reducer invocation looks like:
+\begin{verbatim}
+    ReducerName(parameter1, parameter2, ..., parameterN)
+\end{verbatim}
+The language interpreter simply packs the parameters in an array, and passes them to the invocation of the reducer. It is reducer's responsibly to determine whether the parameters are valid or not, as well as the meaning of the parameters. The relationship between the language and telemetry reducers is like that of C language and its library functions. The difference is that you can write new functions in C but you cannot write new reducers using software project telemetry language. In other word, the reducers have to be supplied by the language implementation.
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                       %
+%                   S E C T I O N                       %
+%                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Getting Started}   \label{TelemetryLanguageSpecification:GettingStarted}
+
+
+This section uses several examples to illustrate the essential features of the language, while later sections describe rules and exceptions in a detail-oriented and sometimes mathematical manner. This section strives for clarity and brevity at the expense of completeness. The intent is to provide the reader with an introduction to the language. Note that the examples in this section uses several reducers, which may or may not be available in the particular implementation you are using.
+
+
+\subsection{Telemetry \textit{Streams} Definition}
+
+The following statement defines a telemetry \textit{steams}:
+\begin{verbatim}
+  streams ActiveTime() = {
+    "Active Time", "Hours", ActiveTime("**", "true")
+  };
+\end{verbatim}
+\begin{itemize}
+  \setlength{\itemsep}{0pt}
+  \setlength{\parskip}{0pt}
+	\item ``streams'' is the key word of the language.
+  \item ``ActiveTime'' is the name of the telemetry \textit{streams} defined by this statement.
+  \item The contents in the curly braces is the body of the definition.
+  \item The first part is the description.
+  \item The second part is the invocation of a reducer called ``ActiveTime''. Don't confuse  this with the name of the telemetry \textit{streams} being defined.
+\end{itemize}
+            
+
+A more complicated telemetry \textit{streams} definition is presented below:
+\begin{verbatim}
+  streams CodeChurn() = { 
+    "Lines addes plus deleted", "Lines",
+    CodeChurn("LinesAdded") + CodeChurn("LinesDeleted")
+  };
+\end{verbatim}
+``CodeCode'' reducer returns either lines added or lines deleted. The two telemetry streams are added together to get a new telemetry stream about total code churn.
+
+
+        
+                
+\subsection{Telemetry \textit{Chart} Definition}
+
+Suppose that we have "streams" \textit{A}, \textit{B}, and \textit{C} defined, then
+\begin{verbatim}
+  chart mychart() = {
+    "Chart Title", A, B, C
+  };
+\end{verbatim}
+defines a chart containing \textit{A}, \textit{B}, and \textit{C}. Note that there is no need to specify the label for x axis of the chart, since it is always the intervals represented by the telemetry streams.
+
+
+                 
+ 
+\subsection{Telemetry \textit{Report} Definition}
+
+Suppose that we have ``chart'' \textit{X}, \textit{Y}, and \textit{Z} defined, then
+\begin{verbatim}
+  report myreport() = {
+    "Report Name", X, Y, Z
+  };
+\end{verbatim}      
+defines a report containing charts \textit{X}, \textit{Y}, and \textit{Z}.
+
+         
+
+ 
+\subsection{Parameterization Support}
+
+The language supports position based parameters. An example is provided below:
+\begin{verbatim}
+  streams MyStreams(member, filePattern1) = {
+    "project member active time", "Hours",
+    MemberActiveTime(filePattern1, "true", member)
+  };
+  
+  chart  MyChart(filePattern2) = {
+    "my own active time chart",
+    MyStreams("me", filePattern2)
+  };
+  
+  report MyReport(filePattern3) = {
+    "my own report",
+    MyChart(filePattern3)
+  };
+  
+  draw R("**");
+\end{verbatim}
+\textit{member}, \textit{filePattern1}, \textit{filePattern2}, \textit{filePattern3} are parameters. The definition of ``MyChart'' is interesting. It only instantiates one of the parameters. The final reducer invoked is:
+\begin{verbatim}
+    MemberCodeChurn("**", "true", "me")
+\end{verbatim}
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                       %
+%                   S E C T I O N                       %
+%                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+\section{Grammar}  \label{TelemetryLanguageSpecification:Grammar}
+
+This chapter defines the lexical and syntactic structure of Software Project Telemetry Language. The grammars are presented using productions. Each grammar production defines a non-terminal symbol and the possible expansions of that non-terminal symbol into sequences of non-terminal or terminal symbols. The first line of a grammar production is the name of the non-terminal symbol being defined, followed by a colon. Each successive indented lines contain a possible expansion of the non-terminal given as a sequence of non-terminal or terminal symbols. When there is more than one possible expansion, the alternatives are listed on separate lines preceded by ``$|$''. When there are many alternatives, the phrase \textit{one of} may precede a list of expansions given on a single line. This is simply shorthand for listing each of the alternatives on a separate line.
+
+
+\subsection{Lexical Grammar}
+
+The lexical grammar is presented in this section. The terminal symbols of the lexical grammar are the characters in the Unicode character set, and the lexical grammar specifies how characters are combined into tokens and white space. The basic elements that make up the lexical structure are \textit{line terminators}, \textit{white space}, and \textit{tokens}. Of these basic elements, only tokens are significant in the syntactic grammar. Comments are not supported in this version of the language specification. The lexical processing consists of reducing telemetry language instances into a sequence of tokens which become the input to the syntactic analysis. Line terminators and white space  have no impact on the syntactic structure, they only serve to separate tokens. When several lexical grammar productions match a sequence of characters, the lexical processing always forms the longest possible lexical element.
+
+
+\subsubsection{Line Terminators}
+Line terminators divide the characters into lines.
+\begin{verbatim}
+  new-line:
+      Carriage return character (U+000D)
+    | Line feed character (U+000A)
+    | Carriage return character followed by line feed character
+    | Line separator character (U+2028)
+    | Paragraph separator character (U+2029)
+\end{verbatim}
+
+
+\subsubsection{White Space}
+White space is defined as any character with Unicode class Zs which includes the space character, plus the horizontal tab character, the vertical tab character, and the form feed character.
+\begin{verbatim}
+  whitespace:
+      Any character with Unicode class Zs
+    | Horizontal tab character (U+0009)
+    | Vertical tab character (U+000B)
+    | Form feed character (U+000C)
+\end{verbatim}
+
+
+\subsubsection{Tokens}
+There are several kinds of tokens: keywords, operators, punctuators, identifiers, and literals.
+\begin{verbatim}    
+  keywords: one of
+    streams chart report draw
+
+  operator: one of
+    = + - * /  
+    
+  punctuator: one of
+    , ; ( ) { } "
+    
+  identifier:
+    [letter][letter|digit|-|_]*
+
+  string-literal:
+    anything enclosed in double quotes
+    
+  constant-literal:
+    [1-9][digit]*  
+    
+  letter:
+    [a-zA-Z]
+    
+  digit:
+    [0-9]
+\end{verbatim}
+
+
+ 
+     
+     
+     
+
+\subsection{Syntactic Grammar}
+
+The syntactic grammar is presented in this section. The terminal symbols of the syntactic grammar are the tokens defined by the lexical grammar, and the syntactic grammar specifies how tokens are combined. Two special tokens are used: \textit{\textless EOF\textgreater} denotes the end of input, and \textit{\textless NULL\textgreater} means nothing is required.
+
+
+\begin{verbatim}
+  input:
+      statements <EOF>
+      
+  statements:
+      statement
+    | statements statement
+    
+  statement: 
+      streams-statement ;
+    | chart-statement ;
+    | report-statement ;
+    | draw-command ;
+   
+
+  streams-statement:
+      streams identifier ( function-declaration-parameter-list )
+      = { streams-description , streams-unit-label , streams-definition }
+  
+  streams-description:
+      string-literal
+      
+  streams-unit-label:
+      string-literal
+  
+  streams-definition:
+      expression
+
+
+  chart-statement:
+      chart identifier ( function-declaration-parameter-list ) 
+      = { chart-title , chart-definition }
+
+  chart-title:
+      string-literal
+    
+  chart-definition:
+      streams-reference 
+    | chart-definition , streams-reference
+
+  streams-reference:
+      identifier ( function-reference-parameter-list  )
+
+
+  report-statement:
+      report identifier ( function-declaration-parameter-list ) 
+      = { report-title , report-definition }
+
+  report-title:
+      string-literal
+
+  report-definition:
+      chart-reference 
+    | report-definition , chart-reference
+
+  chart-reference:
+      identifier ( function-reference-parameter-list  )
+    
+    
+  draw-command:
+      draw identifier ( function-invocation-parameter-list )
+      
+  
+  expression:
+      additive-expression
+
+  additive-expression:
+      multiplicative-expression
+    | additive-expression + multiplicative-expression
+    | additive-expression - multiplicative-expression
+
+  multiplicative-expression:
+      unary-expression
+    | multiplicative-expression * unary-expression
+    | multiplicative-expression / unary-expression
+
+  unary-expression:
+      primary-expression
+    | + unary-expression
+    | - unary-expression
+
+  primary-expression:
+      constant-literal
+    | reduction-function
+    | ( expression )
+
+  reduction-function:
+      identifier ( function-reference-parameter-list )
+    
+   
+  function-declaration-parameter-list:
+      <NULL>
+    | template-parameter
+    | function-declaration-parameter-list , template-parameter
+    
+  function-invocation-parameter-list:
+      <NULL>
+    | resolved-parameter
+    | function-invocation-parameter-list , resolved-parameter
+   
+  function-reference-parameter-list:
+      <NULL>
+    | template-parameter
+    | resolved-parameter
+    | function-reference-parameter-list , template-parameter
+    | function-reference-parameter-list , resolved-parameter
+   
+  template-parameter:
+      identifier
+      
+  resolved-parameter:
+      constant-literal
+    | string-literal    
+\end{verbatim}
+
+
+ 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                       %
+%                   S E C T I O N                       %
+%                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+\section{Arithmetic Operations}
+
+Arithmetic operations involving telemetry "streams" objects are valid in the following situations:
+
+\begin{itemize}
+	\item Between two \textit{streams} objects
+
+Arithmetic operations are valid so long as two "streams" objects have the same number of telemetry streams, and the data points in those telemetry streams are all derived from the same intervals. Arithmetic operations are carried out between the individual data points in the corresponding interval. Note that it is up to the language implementation to determine how to match the telemetry streams in one "streams" object to the telemetry streams in the other "streams" object. For example, a particular implementation can attach tag to individual telemetry stream, and only allow streams with the same tag to be matched. If the implementation determines that a mapping cannot be found, the implementation is free to raise exceptions.
+
+  \item Between one \textit{streams} object and one constant
+
+The arithmetic operations in this situation are always valid. Each data point in the \textit{streams} object participate in the operation with the constant individually, and the result is a new \textit{streams} object.
+
+\end{itemize}
+ 
+ 
+ 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                       %
+%                   S E C T I O N                       %
+%                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Reducer}
+
+Reducer returns a collection of telemetry streams, and each stream represents one perspective on development process for a specific project during some specific time periods. Therefore, reducer invocation request is never complete without project and time interval information. However, this language specification does not prescribe how those information should be passed to reducers. The language implementation can pass the information as reducer parameters, or it can use some out-of-band mechanism to pass such information, such as storing the information in the context of user interaction.
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                       %
+%                   S E C T I O N                       %
+%                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Version History}
+
+\textbf{Version 1.0} --- The initial release of the software project telemetry language specification. June 2004.
+
+\textbf{Version 1.1} --- Add parameterization support. March 2005.
+
+\textbf{Version 1.2} --- Add multi-axis chart support. June 2005.

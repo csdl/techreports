@@ -1,0 +1,604 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>UH/JPL/USC White Paper</title>
+</head>
+
+<body>
+
+<p align="center">White Paper</p>
+<h3 align="center">Improving the dependability and predictability of JPL/MDS
+software&nbsp;<br>
+through low-overhead validation of software process and
+product metrics</h3>
+<p align="center">Philip Johnson<br>
+Collaborative Software Development Laboratory<br>
+Department of Information and Computer Sciences<br>
+University of Hawaii</p>
+<p align="center">Last Update: <!--webbot bot="Timestamp" S-Type="EDITED"
+S-Format="%m/%d/%Y %I:%M %p" startspan -->05/21/2002 09:00 AM<!--webbot bot="Timestamp" i-CheckSum="25488" endspan -->
+</p>
+<p align="left">&nbsp;</p>
+<h3 align="left">1. Introduction</h3>
+<p align="left">The goals of this white paper are to:</p>
+<ol>
+  <li>
+    <p align="left">Provide background information useful for determining
+    approaches to collaboration between JPL/MDS,
+    USC/CSE, and UH/CSDL. <br>
+    &nbsp; </li>
+  <li>
+    <p align="left">Outline a research project direction compatible with
+    the joint NSF/NASA <a href="http://www.nsf.gov/pubsys/ods/getpub.cfm?nsf02114">Highly
+    Dependable Computing and Communication Systems Research (HDCCSR) program
+    solicitation</a>;<br>
+    &nbsp; </li>
+  <li>
+    <p align="left">Provide a strawman document to facilitate further discussion
+    between the three organizations. </li>
+</ol>
+<p align="left">Section 2 provides a high level overview of the goals of the
+HDCCSR program, selected because HDCCSR appears to be the funding opportunity with the most immediate deadline (July 4, 2002).&nbsp; The HDCCSR
+program goals appear to be quite congruent with the proposed approach to collaboration, but to
+exploit this opportunity, we will need to begin work on the proposal very
+soon.&nbsp;&nbsp; Section 3 presents a brief overview of several aspects of MDS
+software development that appear relevant to this collaboration.&nbsp; Section 4
+presents a brief overview of several aspects of the Hackystat research project that
+appear relevant to this collaboration.&nbsp; Section 5 presents a possible
+direction for
+joint research that appears compatible with the HDCCSR program, MDS software development,
+UH/CSDL, and USC/CSE.&nbsp; Finally,
+Section 6 lists some issues for future discussion.&nbsp; </p>
+<h3 align="left">2. Overview of the NSF/NASA HDCCSR Program</h3>
+<p align="left">Here are some relevant excerpts from the program solicitation:</p>
+<ul>
+  <li>
+    <p align="left"><font color="#000000">NSF and NASA will cooperate to fund
+    projects that will promote the ability to design, test, implement, evolve,
+    and certify highly dependable software-based systems. A significant feature
+    of this solicitation is the use of a new NASA test-bed facility that will
+    allow researchers to experimentally evaluate their research products on
+    significant real hardware/software artifacts.&nbsp;<br>
+    &nbsp;&nbsp;</font></li>
+  <li>
+    <p align="left">The overall goal of this solicitation is to develop a
+    scientific basis for measurable and predictable dependability in
+    software-based computing and communication systems, and a scientific basis -
+    comparable to those in physics-based engineering disciplines - for
+    technologies or methodologies to improve dependability in these systems.<font color="#000000"><br>
+    &nbsp;&nbsp;</font></li>
+  <li>
+    <p align="left">A successful scientific demonstration would show that
+    objective, dependability attributes that are measurable before deployment
+    can be used to predict measurable, dependability attributes of deployed
+    systems; similarly, a successful technology or methodology demonstration
+    would show that a technology or methodology has a measurable impact on the
+    dependability of deployed systems, and this impact can be predicted before
+    deployment.&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li>
+    <p align="left">Proposals funded under this solicitation must meet four
+    requirements. They must:
+    <ol>
+    <li>
+    address fundamental research issues in dependable software-based computing
+    and communication systems,
+    <li>
+    develop research products in the form of prototype tools or methodologies,
+    <li>
+    provide dependability attributes that are suitable for measuring the impact
+    of the research products, and
+    <li>
+    include a plan for the empirical evaluation/validation of the proposed
+    research products.<br>
+    &nbsp;&nbsp;
+    </ol>
+    <li>
+  <font color="#000000">Proposals of up to $160,000 per year
+    for up to 4 years are sought from eligible institutions, as described in the
+    NSF Grant Proposal Guide. Proposal evaluation will be done by a standard NSF
+    peer review process followed by a NASA evaluation for appropriateness and
+    relevance to NASA objectives.</font>
+  </li>
+</ul>
+<h3>3. A brief overview of MDS Software Development</h3>
+<p>MDS uses a high quality incremental development process with excellent tool
+support for configuration management, system build, and automated testing.&nbsp;
+The current level of automation creates many opportunities for the sensor-based
+approach utilized by Hackystat.&nbsp; To gain a sense for collaboration, it is
+helpful to understand the representation of work packages, the MDS CCC-Harvest
+state model for work package workflow management, and some ideas regarding
+dependability in MDS software development and how it might be improved.</p>
+<p>The illustrations in this section are taken from the PowerPoint presentations
+&quot;Introduction to MDS Process&quot;, by Kenny Meyer and Carl Puckett and
+&quot;MDS Build Process Metrics&quot;, by Carl Puckett. </p>
+<p><b>3.1 The work package model</b></p>
+<p>At MDS, each mission scenario or incremental development of an Architectural
+Element corresponds to an &quot;Implementation Task Rollup (ITR)&quot;.&nbsp;
+Each ITR consists of a set of &quot;Implementation Tasks (ITs)&quot;. Each IT
+consists of a set of &quot;Change Package Rollups (CPRs)&quot;.&nbsp; A CPR is
+the top-level unit of schedulable work. A CPR consists of a set of Change
+Packages (CPs) and their corresponding Verification Packages (VPs). </p>
+<p>The preceding work packages represent work that is generated
+&quot;top-down&quot; through planning and requirements specification
+processes.&nbsp; To represent work that is generated &quot;bottom-up&quot;
+through defects and other unexpected problems, MDS provides &quot;Internal
+Anomaly Reports (IARs)&quot; and &quot;Internal Modifications (IMs)&quot;. </p>
+<p>Here is an illustration of the components of the work package model and their
+relationships:</p>
+<p align="center"><img border="0" src="white_1.gif"></p>
+<p><b>3.2 The MDS CCC/Harvest State Model</b></p>
+<p>Implementation Task Rollups and their associated Implementation Tasks, as
+well and Change/Verification Package Rollups are tracked manually using MS
+Project.&nbsp; Automated support for managing and tracking&nbsp; the progress of
+development begins at the level of Change Packages, where physical files and
+resources are bound to the Change Package representation.&nbsp;&nbsp; MDS
+uses&nbsp; <a href="http://www.cai.com/products/ccm/index2.htm">CCC/Harvest</a>
+to support development.&nbsp; This tool provides integrated support for
+configuration management, system building, and testing (think CVS + Make), along
+with a workflow management tool that supports tracking of change packages as
+they proceed through the modification, build, and test process.&nbsp;&nbsp; The
+following illustration shows the MDS workflow:</p>
+<p align="center"><img border="0" src="white_2.gif"></p>
+<p>&nbsp;</p>
+<p>As you can see, Change Packages are defined in the &quot;Dev Waiting&quot;
+state. Actual development on a Change Package occurs in &quot;Dev&quot;. Once
+completed, the Change Package moves into the &quot;Build Queue&quot;, where an
+attempt is made to build the system using the Change Package and the most recent
+baseline version of the system.&nbsp; If that is successful, then the newly
+built system moves to the &quot;Build Test&quot; state where it is tested
+against the tests in the Verification Package corresponding to this Change
+Package. If that is successful, then the newly built system is tested against
+the entire test suite in the &quot;Integration Test&quot; state.&nbsp; If that
+is successful, then the newly built system becomes the new baseline into which
+future Change Packages are built.&nbsp; The following summarizes each of these
+states:</p>
+<p align="center"><img border="0" src="white_3.gif"></p>
+<p align="left">Of course, things don't always work that smoothly.&nbsp; Some of
+the potential breakdowns in the process include:</p>
+<ul>
+  <li>
+    <p align="left"><b>Entanglement</b>: the need by two Change Packages in the
+    Dev state to modify the same file at the same time. </li>
+  <li>
+    <p align="left"><b>Build failure</b>: the inability to compile or link the
+    Change Package files against the most recent baseline build.</li>
+  <li>
+    <p align="left"><b>Build Test failure:</b>&nbsp; the inability of the newly
+    built system to pass the Verification tests associated with the current
+    Change Package.</li>
+  <li>
+    <p align="left"><b>Integration Test failure:</b> the inability of the newly
+    built system to pass the full suite of test cases. </li>
+</ul>
+<p align="left">Resolving entanglement requires either sequentializing
+development of the two Change Packages (which may slow down development) or else
+incurring additional coordination costs on development. </p>
+<p align="left">Resolving any of the three types of failures requires rework,
+which is managed through the generation of either an Internal Modification or&nbsp; Internal Anomaly
+Report.&nbsp; The impact of a failed build on overall development can be mild or severe.&nbsp; Carl
+told me that the development group refers to particularly problematic builds as
+&quot;Pain Packages&quot;, and that they can bring the normal Change Package
+throughput to a complete halt for extended periods of time.&nbsp; Carl referred
+me to the following chart, which reveals one such Pain Package during the week
+of 3/17 to 3/24.&nbsp; Note that the number of newly completed Change Packages
+during that week dropped to zero.&nbsp; </p>
+<p align="center"><img border="0" src="white_4.jpg"></p>
+<p align="left">What makes a package painful is not simply that it takes a long
+time to push from Build Queue state to the Release state.&nbsp; In addition, (a)
+pain packages are not recognized before the pain
+is actually being inflicted, and (b) the length of time that the pain is
+inflicted is unpredictable. In this case, productivity (in the sense of Change
+Package throughput) came to a complete and unanticipated halt for a week. </p>
+<p><b>3.3 Improving dependability in MDS</b></p>
+<p>It is important to note that without any changes to their current
+procedures, MDS appears already able to achieve arbitrarily high levels of dependability in
+their software.&nbsp; The problem is that developing such software might take
+MDS an arbitrarily long time to finish, and it might cost an arbitrarily large
+amount of money. A possible goal of this research collaboration is to help MDS develop highly dependable
+software more quickly, more cheaply, and more predictably. </p>
+<p>Given the above development procedures, success in some combination of the
+following areas would be likely to yield improved dependability:</p>
+<ul>
+  <li>Increased Change Package throughput.&nbsp; </li>
+  <li>Improved predictability of Change Package throughput.</li>
+  <li>Decrease in the rate of failure during Build Queue, Build Test, and
+    Integration Test.</li>
+  <li>Decrease in the average time required for &quot;recovery&quot; from a
+    failure during Build Queue, Build Test, and Integration Test.</li>
+  <li>Increased Implementation Task Rollup throughput</li>
+  <li>Improved predictability of Implementation Task Rollups</li>
+</ul>
+<p>These can be viewed as a first pass at measurable goals for a dependability
+improvement initiative. Note that it is probably possible to improve in any one
+area without actually improving dependability. For example, one can increase
+Change Package throughput by simply reducing the size and scope of Change
+Packages, but simply reducing the size and scope of Change Packages probably
+will not by itself improve dependability.</p>
+<p>If we believe that these goals, rationally pursued, would lead to improved
+dependability, then we could pose the following research question:&nbsp; how can
+MDS make progress toward these
+goals without incurring additional cost on development and/or increasing the
+time required for development?&nbsp; Indeed, might there even be a way to improve
+dependability while simultaneously <i> decreasing</i> the cost and time required to
+develop MDS software?</p>
+<p>I propose that these goals and the questions of time and cost surrounding
+their achievement might form the basis of a fundable proposal to the HDCCSR
+program. Furthermore, I would like to propose the&nbsp; following research
+strategy for achieving these goals:</p>
+<ol>
+  <li>Develop instrumentation for the MDS software development procedures that
+    automatically captures these metrics. Before we can begin any improvements,
+    we need baseline measures and the ability to determine the impact of change
+    on the measures.<br>
+    &nbsp; </li>
+  <li>Develop additional instrumentation for the MDS software development
+    procedures that supports the process of root cause analysis. In other words,
+    we need to go further than simply determining the average time required for
+    to recover from a Build Test failure, which is what (1) provides.&nbsp; We
+    need additional information about the events leading up to each of the Build
+    Test failures that helps developers determine why some Build Test failures
+    require a small amount of recovery time while others require a large amount
+    of recovery time, and what developers need to do differently&nbsp; in order
+    to avoid large recovery times in future. <br>
+    &nbsp; </li>
+  <li>Once the root cause analysis of a problem has taken place, automate (when
+    possible and appropriate) the detection of the kinds of events and event
+    sequences that tend to co-occur with the later occurrence of a
+    problem.&nbsp;&nbsp; In other words, develop a kind of &quot;early warning
+    system&quot; that makes developers aware of the possibility of problems
+    early on when relatively cheap preventative measures might be possible and
+    when schedule adjustments can be made more easily.<br>
+    &nbsp;&nbsp;</li>
+  <li>Use the data collected through the instrumentation as additional input to
+    a Cocomo-style cost modelling tool to provide more accurate predictions of
+    the cost in time and resources to develop dependable software in this
+    environment.&nbsp;</li>
+</ol>
+<p>Before describing additional instrumentation, let's look at the
+instrumentation that is already available for automated metrics collection and
+analysis.&nbsp; Current instrumentation basically consists of the log files
+produced by CCC/Harvest that indicate when each Change Package enters and
+exits each state, along with a high-level indication of why that state
+transition occurred. This log provides useful but relatively
+&quot;coarse-grained&quot; measures of development, as illustrated below:</p>
+<p align="center"><img border="0" src="white_5.gif"></p>
+<p>To pursue the research strategy that would result in support for both root
+cause analysis and eventual automated detection of abnormal conditions, I
+believe that these useful but &quot;coarse grained&quot; measures provided by CCC/Harvest
+should be augmented with
+&quot;fine grained&quot; measures. Furthermore, I believe that these fine grained measures
+must be automatically collected and analyzed, otherwise they won't
+be.&nbsp;&nbsp;Finally, I would like to propose Hackystat as useful
+infrastructure for the development of these fine grained measures.&nbsp; </p>
+<h3>4. A brief overview of the Hackystat Project</h3>
+<p>Hackystat is an approach to low-cost collection and analysis of fine-grained
+software project and product data. The design of Hackystat arises from our prior
+research, in which we observed (among other things) that:</p>
+<ul>
+  <li><b>Fine-grained project and process data can provide significant insight to
+    developers.</b> For example, with data concerning the size of the work products
+    a developer creates, the time it takes the developer to create them, and the
+    defects that result, a developer can improve the quality of their work
+    products (by better understanding the sources of defects) and the
+    predictability of development (by better understanding how long development
+    takes). <br>
+    &nbsp; </li>
+  <li><b>It is difficult to lower the overhead of fine-grained project and
+    process data collection and analysis to an acceptable level, regardless of
+    the ensuing benefits to developers.</b>&nbsp; For example, in 1996, I taught
+    a version of the Personal Software Process in which all data collection and
+    analysis was manual (using spreadsheets). Despite substantial and
+    demonstrable achievements in size estimation, time estimation, and defect
+    reduction,&nbsp; no students continued to use the method after the semester
+    ended.&nbsp; In 1999, I taught a new version of the course, in which we
+    employed a kind of &quot;Process Dashboard&quot; (called <a href="http://csdl.ics.hawaii.edu/Research/LEAP/">Leap</a>)
+    which substantially reduced the overhead of time, size, and defect data collection and
+    analyses while preserving the benefits.&nbsp;&nbsp; However, developers
+    still needed to manually invoke the collection and analysis tools, and we
+    found that even a seemingly minimal level of in-process overhead was
+    still enough to undermine adoption of the tool by all but a few of the most
+    &quot;disciplined&quot;.&nbsp;</li>
+</ul>
+<p>As a result of these experiences, in summer 2001 we began the design of a new approach to
+fine-grained data collection and analysis called Hackystat. The first
+fundamental design principle of Hackystat is that developers should incur no overhead for
+in-process data collection and analysis.&nbsp; To use Hackystat, developers
+install &quot;sensors&quot; into their development tools, such as Emacs,
+JBuilder, Visual Studio, CVS, JUnit, and so forth.&nbsp; These tools silently
+and automatically watch developer activity and send information off to a
+centralized web service.&nbsp; Analyses are periodically and automatically
+invoked on the developer data by the web service, and when &quot;things of
+interest&quot; are observed, the web service sends an email to the developer
+informing them of the presence of some form of anomaly or unexpected condition
+in their data, and providing them with a link into the web service where they
+can learn more about the data that caused the anomaly as a first step toward
+taking any required corrective action.&nbsp;&nbsp;</p>
+<p>The following sections briefly overview the current status of the system.</p>
+<p><b>4.1 Registration and installation</b></p>
+<p>The first screen image below shows the server home page.&nbsp; A developer
+goes here to register with the service and provide an email address to which the
+server sends notifications when it observes events of interest.&nbsp; The
+developer also downloads any sensors they choose to install from the web server.
+So far, we have implemented sensors for Emacs, JBuilder and JUnit (a Java-based
+unit testing tool).&nbsp; We intend to implement additional sensors to track CVS
+activity and the size of software artifacts this summer, with additional sensors
+scheduled for the Fall and beyond.&nbsp;</p>
+<p><img border="0" src="white_1.jpg" width="657" height="472"></p>
+<p>Although we maintain a public web server that anyone can use, we expect that
+MDS will prefer to run their own Hackystat server behind their firewall.&nbsp;</p>
+<p>Once registered, each user is sent a 12 character key via email that they can
+use to access their home page. One such home page is illustrated below:</p>
+<p><br>
+<img border="0" src="white_2.jpg" width="659" height="697"></p>
+<p><b>4.2 Sensor-based process and product data collection</b></p>
+<p>Once the sensors have been downloaded and installed, the developers can
+return to real work.&nbsp;
+The only difference developers will notice in their tools is a message informing
+them when data is sent to a server.&nbsp; Data transmission typically takes two
+to three seconds, and is generally timed to occur when the tool is otherwise
+idle. Here is a screen image displaying this notification message in the Emacs minibuffer:</p>
+<p><img src="EmacsSensor.gif" border="0" width="744" height="430"></p>
+<p>&nbsp;The events tracked by editor sensors such as those for Emacs and
+JBuilder include file opening and closing, invocation of the compiler, and so
+forth. The JUnit sensor sends data regarding the set of test cases invoked and
+their result (pass, fail, error).&nbsp; A CVS sensor (not yet implemented) could
+track the files that were checked out, committed, tagged, etc. by a
+developer.&nbsp; A CCC/Harvest sensor (not yet implemented) could make the data
+in the log file available for subsequent analysis.&nbsp;&nbsp; Over the course of a
+day's work by a single developer, data on dozens to hundreds of development events might be
+collected by different sensors.&nbsp;</p>
+<p><b>4.3 Server-based sensor data analysis</b></p>
+<p>One basic analysis task is to
+distill out from the sensor event stream an understandable and reasonably
+accurate high-level record of what
+the developer was doing during the day.&nbsp; Our current approach is to break
+up each day into five minute intervals, and then assign to each five minute
+interval a single file which appears to represent the primary focus of attention
+of the developer during that interval.&nbsp;(The actual algorithm is described
+elsewhere and will be the subject of validation studies this summer.) The result is what we call the
+&quot;Most Active File&quot; which can be displayed by viewing the &quot;Daily
+Diary&quot; page.&nbsp; Here is an excerpt of a Daily Diary page for a short
+period of time that shows the &quot;Most Active File&quot;, the
+&quot;Locale&quot; in which that file exists (its directory path), as well as
+another column indicating the receipt of JUnit sensor data during that same
+period of time:</p>
+<p><img border="0" src="white_3.jpg" width="820" height="643"></p>
+<p>This Daily Diary page illustrates several important design decisions in the
+current implementation of Hackystat:&nbsp;</p>
+<ol>
+  <li>The approach of assigning a most active file to each five minute period
+    provides an effort metric for work on single files and collections of files
+    within the same subdirectory tree.&nbsp;&nbsp;This effort metric is
+    different from &quot;billable hours&quot;, in that it does not track time
+    spent in meetings or other tasks outside of the use of sensor-enabled
+    development tools.&nbsp;&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li>We need to validate our approach to determining the Most Active File. We
+    intend to perform an initial validation study this summer, in which we will
+    videotape developers for hour long periods as they work and compare the
+    video record to the Most Active File values computed by Hackystat.&nbsp;&nbsp;</li>
+</ol>
+<p>In the short term, we will be extending our sensors and analysis mechanisms
+to produce a relatively simple size measurement &quot;snapshot&quot; taken
+concurrently with the other activity logging. This will enable us to produce a
+new column in the Daily Diary that provides a size metric for the most active
+file during the five minute interval.&nbsp; The combination of size, effort, and
+JUnit test result data taken over time provides a number of opportunities for
+interesting derived measures of productivity and how that impacts on quality as
+measured by testing. Also in the short term, we plan to integrate a tool for
+test case coverage that we have developed, which will enable us to correlate
+effort and productivity to the quality of test cases and the resulting impact on
+overall system quality.&nbsp;</p>
+<p>In the longer term, this Daily Diary page illustrates the possibilities for
+inference via &quot;sensor
+data fusion&quot;.&nbsp; The page shows that between 10:45am and 11:50am, the developer ran 50
+JUnit tests, all of which passed.&nbsp; The developer began working on two
+files, JUnitState, and TestJUnitEntry, which lead to the running of 51 tests
+between 11:10am and 11:15am---one of which failed.&nbsp; After a few more minutes of
+work, all 51 tests now pass.&nbsp; By combining the two streams of data
+together, it might be possible to infer that the developer was writing
+developing new code and a single associated unit test for that code during this
+time. (In fact, this is exactly what I was doing that morning :-)</p>
+<p><b>4.4 Automated notification of &quot;interesting&quot; analyses</b></p>
+<p>While analyses and abstractions such as the Daily Diary page will sometimes
+provide useful insight to developers, more often they will not.&nbsp; The second
+fundamental design principle of Hackystat is that developers must be
+automatically informed by the system when analyses result in information of
+potential interest.&nbsp; Our approach is to attempt to detect
+&quot;anomalies&quot; in the event stream (usually via analyses performed once
+per day) and then send the developer an email with an indication that an anomaly
+occurred and a link to a page that provides more detail.&nbsp; We are just
+starting the exploration of anomaly detection,&nbsp; but the infrastructure is
+already available and in use to provide developers with a daily email whenever
+they sent data to Hackystat on the previous day:</p>
+<p><img src="DailyEmail.gif" border="0" width="611" height="451"></p>
+<p>&nbsp;</p>
+<p><b>4.5 Display and presentation of the raw sensor data stream</b></p>
+<p>The Daily Diary page is the most usable interface to the data for a
+particular day, but it is also possible to see the &quot;raw&quot; event
+data.&nbsp; Here is a screen image of a portion of the data in a single sensor
+log:</p>
+<p><img border="0" src="white_5.jpg" width="752" height="539"></p>
+<p><b>4.6 Interoperability with other tools and data publication</b></p>
+<p>While Hackystat is intended to serve as a centralized repository for certain
+types of software engineering data, it can also &quot;publish&quot;&nbsp; its
+data and analyses to other tools and repositories through its HTTP interface.&nbsp; For example, a
+tool can issue the following HTTP request to obtain raw sensor data from a
+Hackystat server for a particular sensor type, day, and user in XML
+format:</p>
+<pre>
+http://katrina.ics.hawaii.edu/hackystat/controller?CommandName=ListSensorLogDate&amp;Key=56HDFUI432LP&amp;Day=16&amp;Month=05&amp;Year=2002&amp;SensorLogType=ActivityLog&amp;FileType=xml
+</pre>
+<p>Here is a screen image illustrating the XML data that would be returned by
+the above request if my user key had been supplied:&nbsp;</p>
+<p><img border="0" src="white_5.jpg" width="752" height="539"></p>
+<p><b>4.7 Graphical analyses</b></p>
+<p>Finally, we have done some initial work on generating graphical
+representations of data. We have recently integrated an open source charting package into
+Hackystat and can now easily build and present charts.&nbsp; Here's an example
+chart that shows the trend in daily active and idle time:&nbsp;</p>
+<p><img border="0" src="white_6.jpg" width="697" height="660"></p>
+<h3>5. A possible direction for joint research and development</h3>
+    <p align="left">The optimal joint research project would lead to a
+    &quot;win-win-win-win&quot;: improved software development at JPL/MDS,
+    funded by HDCCSR (or some other program), and advancing the research
+    missions of USC/CSE and UH/CSDL.&nbsp; The following subsections re-iterate
+    the four requirements of the HDCCSR program and suggest ways in which we
+    could meet them:&nbsp;
+<p><b>5.1 Address fundamental research issues in dependable software-based computing
+    and communication systems,</b>
+<p>One potential way to frame the research collaboration is in terms of
+addressing &quot;cost&quot; of dependable software development.&nbsp; There are
+actually two interpretations of &quot;cost&quot; that we could simultaneously
+address: (1) &quot;cost&quot; in terms of the cost of collecting metrics that
+are useful in developing dependable systems.&nbsp; Under this interpretation,
+what we would explore is the space of metrics that are amenable to automated
+collection and analysis (and thus are very low cost); (2) &quot;cost&quot; in
+terms of better prediction of the time/resources required for dependable
+software development.&nbsp; Under this interpretation, what we would explore is
+how to exploit the low-cost metrics we will collect to improve the calibration
+of Cocomo-style cost prediction model.&nbsp;</p>
+<b>5.2 Develop research products in the form of prototype tools or methodologies,</b>
+<p>Some of the research products we can produce include:</p>
+<ul>
+  <li>A set of sensors for the JPL/MDS software development environment.&nbsp;
+    In addition to the activity sensor illustrated above, my initial discussions
+    with Carl indicate to me that the
+    following additional sensors would be useful: (1) a &quot;CCC/Harvest&quot; sensor, which
+    provides information about the set of Change Packages and their state; (2) A
+    &quot;Change Package&quot; sensor, which provides the mapping between Change
+    Package IDs and the files that are attached to them; and (3) A
+    &quot;Build&quot; sensor, which provides detailed information about the
+    build failures and the files/Change Packages that were involved, and (4) an
+    IAR/IM sensor, which provides information on unscheduled work and the files
+    affected.&nbsp;</li>
+  <li>A set of analyses that extract and present the basic dependability metrics
+    from the sensor data,</li>
+  <li>A set of analyses coupled with a methodology that facilitates &quot;root
+    cause analysis&quot; when dependability metrics are particularly bad (or
+    good).</li>
+  <li>A set of analyses coupled with a methodology for developing an &quot;early
+    warning system&quot; that enables developers/managers to take corrective
+    action regarding dependability earlier in development.</li>
+  <li>A customized version of Cocomo that enables better cost prediction for
+    dependable software</li>
+</ul>
+<b>5.3 Provide dependability attributes that are suitable for measuring the impact
+    of the research products,&nbsp;</b>
+<p>I provided an initial pass at some dependability attributes above: (a) Increased Change Package
+throughput; (b) Improved predictability of Change Package throughput; (c) Decrease in the rate of failure during Build Queue, Build Test, and
+    Integration Test; (d) Decrease in the average time required for &quot;recovery&quot; from a
+    failure during Build Queue, Build Test, and Integration Test; (e) Increased Implementation Task Rollup
+throughput; and (f) Improved predictability of Implementation Task Rollups.&nbsp;&nbsp;</p>
+<b>5.4 Include a plan for the empirical evaluation/validation of the proposed
+    research products.</b>
+<p>The empirical evaluation and validation plan might include at least the
+following components, each of which results in a research contribution.</p>
+<ul>
+  <li><b>Validation of the automatically collected metrics.</b>&nbsp; As
+    illustrated above, the raw sensor data stream needs to be massaged to
+    produce interpretations such as the &quot;Most Active File&quot;, upon which
+    higher-level analyses are built.&nbsp; Our plan must include validation
+    studies to assess the accuracy of our sensors, such as the videotape study
+    we will perform this summer.&nbsp; The resulting research contribution
+    includes increased understanding of how to develop and validate metric
+    sensors, as well as the design and implementation of a set of validated
+    sensors.&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li><b>Validation of the dependability attributes.</b>&nbsp; I have proposed 6
+    dependability attributes above.&nbsp; Are they the right ones?&nbsp; Are
+    some missing? Are some redundant? The resulting research contribution
+    includes better insight into the appropriate set of automatically collected
+    metrics that yield insight into dependable software development;<br>
+    &nbsp;&nbsp;</li>
+  <li><b>Validation of the Cocomo-based cost prediction model.</b>&nbsp; I will
+    leave it to the USC/CSE folks to flesh this one out.&nbsp;&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li><b>Validation of the &quot;root cause analysis&quot; methodology.&nbsp;</b>
+    This would involve qualitative research, in which we determine through
+    developer interviews and surveys the extent to which the metrics data
+    actually supported defect prevention.&nbsp; The resulting contribution is
+    improved insight into the ability of these metrics to support root cause
+    analysis and insight into future productive research directions.<br>
+    &nbsp;&nbsp;</li>
+  <li><b>Validation of the &quot;early warning system&quot;.&nbsp; </b>This can
+    involve an empirical study in which we build a developer feedback form into
+    the emails generated by the early warning system and deploy it for a limited
+    time.&nbsp; During this time, the developers would provide feedback through
+    clicking on one of two links in the email to inform us of whether the early
+    warning provided was either helpful or unhelpful (i.e. &quot;false
+    positive&quot;).&nbsp; The resulting research contribution includes a better
+    understanding of the kinds of dependability issues that are amenable to
+    automated early warning.</li>
+</ul>
+<p>In the real proposal, we'll need to organize these activities across the
+four-year time frame of the research project.</p>
+<h3>6. Issues and topics for further discussion</h3>
+<p>To conclude, here are some of the issues I've thought of while developing
+this white paper that I'd like to throw out for broader discussion:</p>
+<ul>
+  <li><b>Big Brother, developers vs. managers, and individual vs. group
+    analyses.&nbsp;</b> So far in the design and implementation of Hackystat, we
+    have been quite concerned with issues related to &quot;Big
+    Brother&quot;.&nbsp; For example, I have been concerned that developers in
+    some organizations might not adopt the tool for fear that Dilbert-style
+    managers will access their fine-grained data and use it against them.
+    (&quot;Jones, your unit test failure exceeded 50% this week. Get it under
+    25% next week or we'll have to fire you.&quot;) To minimize that issue,
+    we've focused on representing only individual data collection and analysis
+    and on working toward the goal of providing helpful analyses back to
+    developers based upon the data they provided.&nbsp; In other words, we have
+    not so far developed explicit interfaces and mechanisms for
+    &quot;managers&quot; or for &quot;groups of developers&quot;.&nbsp; I
+    believe that the system must provide appropriate support for managers as
+    well as developers, and for groups as well as individuals.&nbsp; An
+    interesting aspect of this project will be negotiating these differing
+    requirements and needs successfully.<br>
+    &nbsp;&nbsp;</li>
+  <li><b>A detailed history of a pain package.</b>&nbsp; So far, I've not
+    provided any detail on specific kinds of &quot;root cause analyses&quot; or
+    &quot;early warning systems&quot; that can be provided by automated
+    collection and analysis of sensor data for JPL/MDS.&nbsp; One way to flesh
+    out the details is to obtain a better understanding of one or more
+    &quot;pain packages&quot; (PP).&nbsp; By getting enough information about
+    what occurred during the development of a CP that later evolved into a PP,
+    and the kinds of activities that occurred to get the PP through the build
+    and testing states, I believe we will be able to articulate the kinds of
+    sensor data that, had it been present at the time, would have provided
+    support for some form of root cause analysis and/or early warning
+    system.&nbsp; This understanding will both strengthen the proposal and give
+    us an initial design target for these capabilities in the system.&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li><b>More details on the USC/CSE component of this collaboration.</b>&nbsp;
+    An important issue is the specific kinds of fine-grained metrics that could
+    be useful for Cocomo-style cost prediction.&nbsp;&nbsp;&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li><b>Other funding.</b> Spencer Rugaber (the NSF Software Engineering Program Officer) mentioned
+    to me that he heard that there are other program solicitations at NASA with
+    a software engineering orientation.&nbsp; How do we find out more about
+    these opportunities?<br>
+    &nbsp;&nbsp;</li>
+  <li><b>The testbed issue.&nbsp;</b> One potential problem with the HDCCSR program
+    is that it talks about the need to use a &quot;software testbed&quot; at NASA
+    Ames.&nbsp; Is it possible to include MDS software as part of this testbed?
+    Alternatively, can we take the results of the MDS research and apply it to
+    the NASA Ames center? Finally, I wonder if the testbed approach is even set up to accomodate the kind
+    of in-process data collection that is being proposed in this research?.<br>
+    &nbsp;&nbsp;</li>
+  <li><b>Next steps for the proposal.&nbsp;</b> If we can reach agreement that a
+    proposal seems feasible and worthwhile, I'd like us to develop a timeline for development of the proposal, and tentatively
+    allocate roles and responsibilities.</li>
+</ul>
+<p>&nbsp;</p>
+<p align="left">&nbsp;</p>
+<p>&nbsp;</p>
+<p align="left">&nbsp;</p>
+
+</body>
+
+</html>
