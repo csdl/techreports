@@ -1,0 +1,632 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>Leap File Format Specification</title>
+  </head>
+
+  <body>
+
+<center>
+<h4>Reflective Software Engineering with the Leap toolkit</h4>
+<h1>Leap File Format Specification</h1>
+<p>
+<!-- Created: Tue Jan 19 10:52:57 HST 1999 -->
+<!-- hhmts start -->
+Last modified: Fri Jul 16 11:30:21 HST 1999
+<!-- hhmts end -->
+<p>
+</center>
+
+<p><hr>
+<h2>Table of Contents</h2>
+<ul>
+<li> <A HREF="leap-file-format.html#Motivation">Motivation for the Leap
+file format</A>
+<li> <A HREF="leap-file-format.html#CommonSyntax">Generic Leap file format
+syntax</A>
+<ul>
+<li> <A HREF="leap-file-format.html#SyntaxRestrictions">Syntax restrictions</A>
+<li> <A HREF="leap-file-format.html#TableVersions">Table version numbers</A>
+</ul>
+<li> <A HREF="leap-file-format.html#FormatSpecs">Table format
+specifications</A>
+  <ul>
+  <li> <A HREF="leap-file-format.html#DRL">DRL (defects)</A>
+  <li> <A HREF="leap-file-format.html#TRL">TRL (time)</A>
+  <li> <A HREF="leap-file-format.html#PRJ">PRJ (projects)</A>
+  <li> <A HREF="leap-file-format.html#DCT">DCT (doctypes)</A>
+  <li> <A HREF="leap-file-format.html#DFT">DFT (defect types)</A>
+  <li> <A HREF="leap-file-format.html#SEV">SEV (severities)</A>
+  <li> <A HREF="leap-file-format.html#DID">DID (document IDs)</A>
+  <li> <A HREF="leap-file-format.html#PHS">PHS (phases)</A>
+  <li> <A HREF="leap-file-format.html#SDT">SDT (size definitions)</A>
+  <li> <A HREF="leap-file-format.html#SIZ">SIZ (size entries)</A>
+  </ul>
+</ul>
+<p>
+
+<p>
+
+<p><hr><p><h2><A NAME = "Motivation">Motivation for the Leap file format</a></h2>
+
+Early versions of the LEAP toolkit wrote out data to files in binary format (as
+serialized Java objects.)  We chose this simplistic design because it was
+trivial to implement at a time when quickly obtaining a running prototype
+for preliminary user evaluation was paramount.  However, this design has a
+number of severe shortcomings, including:
+
+<ul>
+
+<li> Java binary format is difficult to generate by non-Java tools.  It
+prevents us from expanding the LEAP toolkit to include tools based upon
+Visual Basic, Emacs, etc.
+
+<li> The binary data files became invalid as soon as we upgraded our
+internal tools, such as JClass Livetable.
+
+<li> Binary data files require encoding for sending via email.
+
+<li> Binary data files are not human readable.  Concerns about exactly what
+is being saved in the files could lead to measurement dysfunction.
+</ul>
+
+<p>
+
+The LEAP toolkit now uses a <b>restricted</b> form of the HTML table format 
+to store its data. This design has the following strengths:
+<ul>
+
+<li> A non-binary format for primary LEAP data files is important for
+portability and minimization of measurement dysfunction. 
+
+<li> Use of HTML for formatting allows the file to be human readable and
+viewed in a browser easily.
+
+<li> The HTML table environment can collect individual data
+records together into a dataset.
+
+<li> The HTML table environment allows us to write parsers for input of data
+collected from other sources, such as Excel or Word files written as HTML.
+
+<li> The HTML table environment allows  LEAP tools to store
+multiple datasets within individual files.
+</ul>
+
+<p>
+An obvious alternative to these two approaches is to use a back-end
+database system to store persistant LEAP information.  Use of a database
+system has many significant advantages, including performance, reliability,
+scalability, and functionality.  LEAP does provide an API that could
+be used to write to a database, if this is desired in future. However,
+we decided against using a database immediately for the
+following reasons:
+<ul>
+<li> Databases tend to be platform specific.
+<li> Databases tend to cost money and/or have restrictive licensing.
+<li> Databases tend to centralize data and store it in binary format, raising measurement dysfunction
+fears.
+<li> The database binary file format necessitates the implementation
+of a parallel ASCII data format for interoperability with other
+tools. Rather than maintain two formats, it seems more simple to begin
+with the single most critical one (ASCII). 
+</ul>
+
+For users storing a large amount of data in LEAP, a back-end database
+may be required.  Should this become an issue, we will certainly 
+extend the current mechanism with such an interface.
+
+
+<p><hr><p><h2><A NAME = "CommonSyntax">Generic Leap file format syntax</a></h2>
+
+In order to read and write LEAP data from a number of tools implemented
+in a variety of languages on different platforms, we must
+specify the acceptable syntax for the LEAP-compliant HTML tables.  LEAP
+currently parses only a restricted form of the HTML table syntax.  In this
+section, we define this restricted syntax, called the "Plain" HTML table
+format. This format is adhered to by all of the specific LEAP table data
+types (drl, trl, etc.) documented in subsequent sections.
+
+
+<p>
+
+Tools such as Microsoft Excel and Netscape Composer do not generate HTML
+files in the "Plain" HTML table format.  However, it would be relatively
+straightforward to write a post-processor to produce the "Plain" format
+from the more highly decorated tables generated by such external tools.
+
+<p>
+
+<h3><A NAME = "SyntaxRestrictions">Syntax restrictions</a></h3>
+
+The syntactic restrictions common to every "Plain" HTML Table 
+are as follows:
+
+<ul>
+<p><li> The only table formatting tags permitted are
+&lt;table&gt;, &lt;tr&gt;, &lt;td&gt;, &lt;th&gt;, and &lt;/table&gt;.
+Thus, &lt;/th&gt;, &lt;font&gt;,  etc. are excluded.
+
+<p><li> Each table formatting tag begins on a new line.
+
+<p><li> Each table formatting tag must be lowercase.
+
+<p><li> Table formatting tags can have optional parameters. For
+example, the &lt;table&gt; tag can include the 'border' parameter,
+and the &lt;td&gt; tags can include a 'type=' parameter.
+
+
+<p><li> The table begins with two lines which specify the 
+first row of the table and which are formatted as follows:
+<pre>
+&lt;tr&gt;
+&lt;td&gt;XXX YYYYY Z.Z.Z
+</pre>
+<p>
+"XXX" specifies the data type of the table and must be one of "DRL", "TRL",
+"PRJ", "DCT", "DFT", "DID", "SEV", "PHS", "SDT", or "SIZ".
+<p>
+
+"YYYYY" specifies the format type of the table.  Currently, only
+"Plain" is directly supported, but other types (such as "Excel", 
+"Word", and so forth) might be implemented in future.
+
+<p>
+
+"Z.Z.Z" specifies the version of the table data type.
+Each "Z" in the version must be an integer.  This version enables the
+parser to distinguish between an early version of the DRL, for example,
+from a later version which might include additional fields or reorder
+previous ones. 
+
+
+<p><li> The second row of the table (i.e. everything starting with the
+second occurrence of &lt;tr&gt; and up to the third occurrence of
+&lt;tr&gt;) is ignored.  This row is presumed to contain column header
+labels for use in viewing the table within a browser.
+
+<p><li> Each entry consists of a number of fields. For example, each DRL
+entry consists of fields such as "CreateDate", "DocID", "FixTime",
+etc.). Each field begins with the format tag "&lt;td&gt;".  The characters
+following the &lt;td&gt; format tag up to the next occurrence of a newline
+followed by a "&lt;td&gt;" format tag represent the contents of the field.
+(Note: this requires multi-line fields (such as the defect description
+field) to ensure that a newline followed by a "&lt;td&gt;" does not occur.)
+
+<p><li> The ordering of fields (i.e. columns) is fixed. The 
+table type and version determine which fields must be present
+and in what order.
+
+<p><li> Fields can be empty.
+
+<p><li> A table can contain additional
+fields beyond those specified <em>following</em> the required fields
+in the required order.
+
+<p><li> A file can contain multiple tables.
+
+<p><li> Any data prior to or between tables is ignored. 
+
+</ul>
+
+<h3><A NAME = "TableVersions">Table version numbers</a></h3>
+
+
+Each of the tables specified below has a version number associated
+with it, and this version number must be included in the table
+itself.  Version numbers allow the LEAP file processor to 
+interpret the contents of tables correctly as we add, subtract, 
+or re-order the data fields over time.  
+<p>
+
+While the LEAP toolkit is designed to allow backward <em>read</em>
+compatibility, it does not allow backward <em>write</em> compatibility.  In
+other words, current and future releases of the LEAP toolkit are guaranteed
+to be able to read files containing data written with older versions of
+tables.  However, any LEAP release can only save out data formatted
+according to the most recent version of each table type.  In most cases,
+such table version "upgrades" should be completely transparent, and this
+restriction simplifies the design and implementation of the system.
+
+<p>
+
+<p><hr><p><h2><A NAME = "FormatSpecs">Table format specifications</a></h2>
+
+The format specifications for the most releases of each of the LEAP table
+types follows.
+
+<h3><A NAME = "DRL">DRL (defects)</a></h3>
+
+
+Each entry in a DRL Plain 2.0.0 table begins with the following fields:
+<p>
+
+<table border>
+<tr><th>Field Name <th>Syntax
+<tr><td>CreateDate <td>hh:mm DD/MM/YYYY
+<tr><td>DocID      <td>single line string
+<tr><td>Project    <td>single line string
+<tr><td>FixTime    <td>integer
+<tr><td>Location   <td>single line string
+<tr><td>Occurrences<td>integer
+<tr><td>DefectType <td>single line string
+<tr><td>Severity   <td>single line string
+<tr><td>Description<td>(potentially) multi-line string
+<tr><td>Valid      <td>[T|F]
+<tr><td>UserCreated<td> [T|F]
+<tr><td>UserFound <td>[T|F]
+<tr><td>Injected <td>single line string
+<tr><td>Removed <td>single line string
+<tr><td>Checklist <td>single line string
+</table>
+
+
+<p>
+Here is an example of a DRL Plain 2.0.0 table. 
+
+<p>
+<pre>
+&lt;table border&gt;
+&lt;tr&gt;
+&lt;td&gt;DRL Plain 2.0.0
+&lt;tr&gt;
+&lt;th&gt;CreateDate&lt;th&gt;DocID&lt;th&gt;Project&lt;th&gt;FixTime&lt;th&gt;Location&lt;th&gt;Occurrences&lt;th&gt;DefectType&lt;th&gt;Severity&lt;th&gt;Description&lt;th&gt;Valid&lt;th&gt;UserCreated&lt;th&gt;UserFound&lt;th&gt;Injected&lt;th&gt;Removed&lt;th&gt;Checklist
+&lt;tr&gt;
+&lt;td type=CreateDate&gt;18:10 10/17/1998
+&lt;td type=DocID&gt;Foo.html
+&lt;td type=Project&gt;Rev-foo
+&lt;td type=FixTime&gt;
+&lt;td type=Location&gt;
+&lt;td type=Occurrences&gt;1
+&lt;td type=DefectType&gt;10:Usability
+&lt;td type=Severity&gt;High,0
+&lt;td type=Description&gt;The checklist field should be itemized.
+&lt;td type=Valid&gt;
+&lt;td type=UserCreated&gt;
+&lt;td type=UserFound&gt;
+&lt;td type=Injected&gt;
+&lt;td type=Removed&gt;
+&lt;td type=Checklist&gt;
+&lt;/table&gt;
+</pre>
+
+<h3><A NAME = "TRL">TRL (time)</a></h3>
+
+
+Each entry in a TRL Plain 2.0.0 table begins with the following fields:
+<p>
+
+<table border>
+<tr><th>Field Name <th>Syntax
+<tr><td>Project    <td>single line string
+<tr><td>Phase      <td>single line string
+<tr><td>DocType      <td>single line string
+<tr><td>Start      <td>hh:mm MM/DD/YYYY
+<tr><td>Stop       <td>hh:mm MM/DD/YYYY
+<tr><td>Interrupt  <td>integer
+<tr><td>Delta    <td>integer
+<tr><td>Description<td>multi-line string
+</table>
+
+
+<p>
+Here is an example of a TRL Plain 2.0.0 table.
+
+<p>
+<pre>
+&lt;table border&gt;
+&lt;tr&gt;
+&lt;td&gt;TRL Plain 2.0.0
+&lt;tr&gt;
+&lt;th&gt;Project&lt;th&gt;Phase&lt;th&gt;DocType&lt;th&gt;Start&lt;th&gt;Stop&lt;th&gt;Interrupt&lt;th&gt;Delta&lt;th&gt;Description
+&lt;tr&gt;
+&lt;td type=Project&gt;Rev-Dade
+&lt;td type=Phase&gt;Reviewing,1
+&lt;td type=DocType&gt;LitReview
+&lt;td type=Start&gt;18:10 10/17/1998
+&lt;td type=Stop&gt;21:10 10/17/1998
+&lt;td type=Interrupt&gt;0
+&lt;td type=Delta&gt;180
+&lt;td type=Description&gt;
+&lt;/table&gt;
+</pre>
+
+<h3><A NAME = "PRJ">PRJ (projects)</a></h3>
+
+
+Each entry in a PRJ (project) Plain 3.0.0 table begins with the following fields:
+<p>
+
+<table border>
+<tr><th>Field Name <th>Syntax
+<tr><td>Name    <td>single line string
+<tr><td>Description<td>multi-line string
+<tr><td>FileList<td>single line string
+<tr><td>PhaseSet<td>single line string
+<tr><td>Start<td>hh:mm MM/DD/YYYY
+<tr><td>Stop<td>hh:mm MM/DD/YYYY
+<tr><td>Summary<td>single line string
+</table>
+
+
+<p>
+Here is an example of a PRJ Plain table. 
+
+<p>
+<pre>
+&lt;table border&gt;
+&lt;tr&gt;
+&lt;td&gt;PRJ Plain 3.0.0
+&lt;tr&gt;
+&lt;th&gt;Name&lt;th&gt;Description&lt;th&gt;FileList&lt;th&gt;PhaseSet&lt;th&gt;Start&lt;th&gt;Stop&lt;th&gt;Summary
+&lt;tr&gt;
+&lt;td type=Name&gt;Rev-Brem
+&lt;td type=Description&gt;Literature review of Bob Brem's paper.
+&lt;td type=FileList&gt;Foo.html
+&lt;td type=PhaseSet&gt;SimpleReview
+&lt;td type=Start&gt;10:30 09/24/1998
+&lt;td type=Stop&gt;11:30 09/24/1998
+&lt;td type=Summary&gt;32:44:80:162:201:232:247:267:((15:DefectsInjected 7:((0: 35)))(5:Times ())(8:PhaseSet SimpleReview:Reviewing:)(10:DefectType 18:26:35:43:49:((11:30: Content 6)(2:20 5)(2:10 17)(2:30 6)(0: 1)))(4:Size 25:((5:Words 1794:1:1:1:1:1:)))(14:DefectsRemoved 7:((0: 35)))(9:TotalTime 60)(12:TotalDefects 35))
+&lt;/table&gt;
+</pre>
+
+<h3><A NAME = "DCT">DCT (doctypes)</a></h3>
+
+Each entry in a DCT (DocType) Plain table begins with the following fields:
+<p>
+
+<table border>
+<tr><th>Field Name <th>Syntax
+<tr><td>Name       <td>single line string
+<tr><td>Description<td>multi-line string
+</table>
+
+
+<p>
+Here is an example of a DCT Plain table. 
+
+<p>
+<pre>
+&lt;table border&gt;
+&lt;tr&gt;
+&lt;td&gt;DCT Plain 1.0.0
+&lt;tr&gt;
+&lt;th&gt;Name&lt;th&gt;Description
+&lt;tr&gt;
+&lt;td type=Name&gt;LitReview
+&lt;td type=Description&gt;Literature review paper.
+&lt;tr&gt;
+&lt;td type=Name&gt;Software
+&lt;td type=Description&gt;Any software system
+&lt;/table&gt;
+</pre>
+<p>
+
+<h3><A NAME = "DFT">DFT (defect types)</a></h3>
+
+Each entry in a DFT (DefType) Plain table begins with the following fields:
+
+<p>
+
+<table border>
+<tr><th>Field Name <th>Syntax
+<tr><td>Name       <td>single line string
+<tr><td>Description<td>multi-line string
+<tr><td>DocType    <td>single line string
+</table>
+
+
+<p>
+
+Here is an example of a DFT Plain table. 
+
+<p>
+<pre>
+&lt;table border&gt;
+&lt;tr&gt;
+&lt;td&gt;DFT Plain 1.0.0
+&lt;tr&gt;
+&lt;th&gt;Name&lt;th&gt;Description&lt;th&gt;DocType
+&lt;tr&gt;
+&lt;td type=Name&gt;10:Syntax
+&lt;td type=Description&gt;An issue with the syntactic-level structure.
+&lt;td type=DocType&gt;LitReview
+&lt;/table&gt;
+</pre>
+<p>
+
+<h3><A NAME = "SEV">SEV (severities)</a></h3>
+
+
+Each entry in a SEV (Severity) Plain table begins with the following fields:
+<p>
+
+<table border>
+<tr><th>Field Name  <th>Syntax
+<tr><td>Name        <td>single line string
+<tr><td>Level       <td>integer
+<tr><td>Description <td>multi-line string
+</table>
+
+
+<p>
+Here is an example of a SEV Plain table. 
+
+<p>
+<pre>
+&lt;table border&gt;
+&lt;tr&gt;
+&lt;td&gt;SEV Plain 1.0.0
+&lt;tr&gt;
+&lt;th&gt;Name&lt;th&gt;Level&lt;th&gt;Description
+&lt;tr&gt;
+&lt;td type=Name&gt;High
+&lt;td type=Level&gt;0
+&lt;td type=Description&gt;
+&lt;/table&gt;
+</pre>
+<p>
+
+<h3><A NAME = "DID">DID (document IDs)</a></h3>
+
+
+Each entry in a DID (DocumentID) Plain table begins with the following fields:
+<p>
+
+<table border>
+<tr><th>Field Name <th>Syntax
+<tr><td>Name       <td>single line string
+<tr><td>Description <td>multi-line string
+<tr><td>DocType    <td>single line string
+<tr><td>Path       <td>single line string
+<tr><td>File       <td>single line string
+</table>
+
+
+<p>
+Here is an example of a DID Plain table. 
+
+<p>
+<pre>
+&lt;table border&gt;
+&lt;tr&gt;
+&lt;td&gt;DID Plain 2.0.0
+&lt;tr&gt;
+&lt;th&gt;Name&lt;th&gt;Description&lt;th&gt;DocType&lt;th&gt;Path&lt;th&gt;File
+&lt;tr&gt;
+&lt;td type=Name&gt;Foo.html
+&lt;td type=Description&gt;
+&lt;td type=DocType&gt;LitReview
+&lt;td type=Path&gt;
+&lt;td type=File&gt;Foo.html
+&lt;/table&gt;
+</pre>
+<p>
+
+<h3><A NAME = "PHS">PHS (phases)</a></h3>
+
+Each entry in a PHS (PhaseSet) Plain table begins with the following fields:
+<p>
+
+<table border>
+<tr><th>Field Name <th>Syntax
+<tr><td>Name       <td>single line string
+<tr><td>Level       <td>integer
+<tr><td>PhaseSet    <td>single line string
+<tr><td>Description       <td>multi-line string
+</table>
+
+
+<p>
+Here is an example of a PHS Plain table. 
+
+<p>
+<pre>
+&lt;table border&gt;
+&lt;tr&gt;
+&lt;td&gt;PHS Plain 1.5.0
+&lt;tr&gt;
+&lt;th&gt;Name&lt;th&gt;Level&lt;th&gt;PhaseSet&lt;th&gt;Description
+&lt;tr&gt;
+&lt;td type=Name&gt;Reviewing
+&lt;td type=Level&gt;1
+&lt;td type=PhaseSet&gt;SimpleReview
+&lt;td type=Description&gt;A simple one-phase review process.
+&lt;/table&gt;
+</pre>
+<p>
+
+
+<h3><A NAME = "SDT">SDT (size definitions)</a></h3>
+
+Each entry in a SDT (Size Definition) Plain table begins with the following
+fields:
+
+<p>
+
+<table border>
+<tr><th>Field Name <th>Syntax
+<tr><td>Size Type  <td>single line string
+<tr><td>DocType    <td>single line string
+<tr><td>FirstLevel <td>single line string
+<tr><td>SecondLevel <td>single line string
+<tr><td>ThirdLevel <td>single line string
+<tr><td>FourthLevel <td>single line string
+<tr><td>FifthLevel <td>single line string
+<tr><td>SixthLevel <td>single line string
+</table>
+
+
+<p>
+Here is an example of a SDT (Size Type) Plain table. 
+
+<p>
+<pre>
+&lt;table border&gt;
+&lt;tr&gt;
+&lt;td&gt;SDT Plain 1.0.0
+&lt;tr&gt;
+&lt;th&gt;Name&lt;th&gt;DocType&lt;th&gt;1st&lt;th&gt;2nd&lt;th&gt;3rd&lt;th&gt;4th&lt;th&gt;5th&lt;th&gt;6th
+&lt;tr&gt;
+&lt;td type=Name&gt;Words
+&lt;td type=DocType&gt;LitReview
+&lt;td type=1st&gt;Words
+&lt;td type=2nd&gt;
+&lt;td type=3rd&gt;
+&lt;td type=4th&gt;
+&lt;td type=5th&gt;
+&lt;td type=6th&gt;
+&lt;/table&gt;
+</pre>
+<p>
+
+<h3><A NAME = "SIZ">SIZ (size entries)</a></h3>
+
+Each entry in a SIZ (Size Entry) Plain table begins with the following fields:
+<p>
+
+<table border>
+<tr><th>Field Name <th>Syntax
+<tr><td>DocID       <td>single line string
+<tr><td>CreateDate<td>hh:mm MM/DD/YYYY
+<tr><td>SizeType    <td>single line string
+<tr><td>Path       <td>single line string
+<tr><td>File    <td>single line string
+<tr><td>FirstVal <td>integer
+<tr><td>SecondVal <td>single line string
+<tr><td>ThirdVal <td>single line string
+<tr><td>FourthVal <td>single line string
+<tr><td>FifthVal <td>single line string
+<tr><td>SixthVal <td>single line string
+</table>
+
+
+<p>
+Here is an example of a SIZ Plain table. 
+
+<p>
+<pre>
+&lt;table border&gt;
+&lt;tr&gt;
+&lt;td&gt;SIZ Plain 1.0.0
+&lt;tr&gt;
+&lt;th&gt;DocID&lt;th&gt;CreateDate&lt;th&gt;SizeType&lt;th&gt;Path&lt;th&gt;File&lt;th&gt;1st&lt;th&gt;2nd&lt;th&gt;3rd&lt;th&gt;4th&lt;th&gt;5th&lt;th&gt;6th
+&lt;tr&gt;
+&lt;td type=DocID&gt;Foo.html
+&lt;td type=CreateDate&gt;10:47 09/24/1998
+&lt;td type=SizeType&gt;Words
+&lt;td type=Path&gt;
+&lt;td type=File&gt;Foo.html
+&lt;td type=1st&gt;1794
+&lt;td type=2nd&gt;
+&lt;td type=3rd&gt;
+&lt;td type=4th&gt;
+&lt;td type=5th&gt;
+&lt;td type=6th&gt;
+&lt;/table&gt;
+</pre>
+<p>
+    <hr>
+    <address><a href="mailto:johnson@natasha.ics.Hawaii.Edu">Philip Johnson</a></address>
+  </body>
+</html>
+ 

@@ -1,0 +1,243 @@
+head	1.1;
+access;
+symbols;
+locks
+	johnson:1.1; strict;
+comment	@% @;
+
+
+1.1
+date	96.03.10.18.19.25;	author johnson;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@\documentstyle[nftimes,/group/csdl/tex/CHI95]{article}
+
+\begin{document}
+
+\title{State as an Organizing Principle for CSCW Architectures}
+
+\author{
+Philip Johnson\\
+Collaborative Software Development Laboratory\\
+Department of Information and Computer Sciences\\
+University of Hawaii\\
+Honolulu, Hawaii 96822\\
+(808) 956-3489\\
+johnson@@hawaii.edu}
+
+\maketitle
+
+\abstract 
+
+A useful way to gain insight into collaborative architectures is to analyze
+the way in which they collect, represent, store, modify, analyze, and
+distribute state information.  This paper presents state as an
+organizing principle for collaborative architectures, and illustrates
+this perspective in the context of four systems: Egret, WWW, Lotus 
+Notes, and GroupKit. This discussion yields two conjectures: that
+no collaborative architecture can fully support both
+collaboration-in-the-small and collaboration-in-the-large, and that
+flexible and efficient support for state management requires architectural
+support for agents as first-class users. 
+
+
+
+\paragraph{KEYWORDS:} Architectures for collaboration, case studies.
+
+\section{INTRODUCTION}
+
+Over the past five years, the Collaborative Software Development Laboratory
+at the University of Hawaii has designed, implemented, and evaluated a
+variety of multi-user, interactive, textual collaborative systems.  This
+work includes CLARE, a collaborative learning environment
+\cite{csdl-93-21}; CSRS, a collaborative software review environment
+\cite{csdl-92-07}; AEN, a collaborative hypertext authoring environment
+\cite{csdl-94-20}, HI-TIME, a collaborative system for telecommunications
+policy planning \cite{csdl-95-14}; Shemacs, a collaborative editor
+\cite{csdl-95-16}; and Flashmail, a collaborative messaging facility
+\cite{csdl-95-21}.  All of these environments were built using Egret
+\cite{csdl-93-09}, a framework for implementing CSCW applications.
+
+While all of these systems were built using Egret, Egret also directly
+reflects the results of our experiences from collecting requirements for
+collaboration from these various domains.  Egret's current design and
+implementation is the result of three complete redesigns and over a hundred
+separate releases during its five years of active development to date.  The
+current architecture of Egret embodies much of what we view as the
+essential services for computer-mediated collaboration across our chosen
+application domains.
+
+Although the specifics differ, we find that there are general classes of
+questions that must be answered by our collaborative applications.  For
+example: Who are the other users?  What artifacts are involved in this
+collaborative activity?  What has changed since yesterday?  What is
+important for me to focus on right now?  Who should be informed about this
+change?  Is the information in the system up to date?  Does user X know
+about event Y yet? What is user Z doing right now?  We also find that the
+usability of our applications often depends upon the efficiency with which
+it answers certain of these questions, although which questions are
+time-critical vary from application to application.
+
+In general, the answers to these questions require the application to
+collect, represent, store, modify, analyze, and distribute state
+information.  In fact, Egret's development history can be profitably viewed
+as an exploration of the services that must be provided by an architecture
+in order for collaborative applications to manage state information
+appropriately.  In Egret, state is an organizing principle. 
+
+This paper presents state as an organizing principle for collaborative
+architectures, and uses it to gain insight into four such systems: Egret,
+the World Wide Web, GroupLens, and Lotus Notes.  The next section presents
+an overview of how state can be viewed as an organizing principle.
+Subsequent sections apply this perspective to the chosen architectures. The
+paper concludes by discussing several conjectures supported by this
+viewpoint.  First, that the requirements for architectures supporting
+``collaboration-in-the-small'', such as Egret, are fundamentally different
+from those supporting ``collaboration-in-the-large'', such as WWW. Thus, a
+single system can provide effective support for one but not both of these
+extremes.  Second, that collaborative architectures must support autonomous
+agents as ``first class'' users if both flexible and efficient support for
+state management is desired.
+
+
+\section{STATE AS AN ORGANIZING PRINCIPLE}
+
+If a system is to effectively support answers to a question like ``Who
+should be informed about this change?'', it must potentially represent
+information about users, artifacts, types of changes, the state of
+collaboration, and communication mechanisms.  To aid in understanding
+the various aspects of state management, we have identified a set 
+of characteristics, or dimensions of state management to be useful. 
+The following table summarizes them:  
+
+\begin{center}
+\begin{tabular} {|p{1in}|p{2in}|} \hline   
+{\em Dimension} & {\em Exemplary Attributes} \\ \hline
+Target & Artifacts,  Individuals,  Process, Environment     \\ \hline
+Trigger & User actions, Artifact content, External events   \\ \hline
+Representation & Forms, Text, Arbitrary data structures      \\ \hline
+Persistance & Non-persistant, In-session, Between-session    \\ \hline
+Location & Local, Central, Distributed, Replicated           \\ \hline
+Distribution & Queries, Signals                              \\ \hline
+Time         & Current, Past, Future                         \\ \hline
+\end{tabular}
+\end{center}
+
+\subsection{Target}
+
+The target dimension focusses on what classes of objects in the
+collaborative system have state information collected about them.
+
+One target of state information collection is the artifacts, or work
+products of the collaborative system. For example, state information could
+be represented about the structure of artifacts or their relationship to
+each other, or the manner in which the artifact evolved to its current
+state.
+
+Another target is the individuals collaborating together. State information
+can be collected that models each individual's capabilities, their prior
+involvement in the collaboration, or their future commitments.
+
+The collaborative process itself can be the target of state information
+collection.  For example, the system might represent a plan for
+collaboration, and collect state information concerning where in the plan
+the collaboration has reached, any exceptions or problems with the plan,
+and so forth.
+
+Finally, the context surrounding the use of the system can be the target of
+state information collection. For example, a system might collect data on
+the organizational environment in which the group works which effects the
+productivity and quality of collaboration. As another example, it might
+collect network statistics on message transmission latency and its effects
+on collaboration.
+
+\subsection{Trigger}
+
+The trigger dimension focusses on what events or constructs in the system 
+trigger the collection of state information.  
+
+The most obvious trigger is a user action. Examples of user actions
+that could trigger the collection of state information include mouse
+clicks, artifact retrieval, artifact creation, interaction with another
+user, and so forth. 
+
+Another potential trigger is the structure and/or content of artifacts.
+For example, the system could react to the creation of an artifact of type
+``e-mail'' by creating state information concerning when, where, and by who
+this e-mail was created, and what it's intent was. (Such state information
+would be useful to a system implementing a ``speech act'' paradigm, in
+which the state of the system must include a representation of e-mail
+between users and the state of the conversation, though not the actual
+e-mail itself.)
+
+External events can also serve as triggers to state information collection.
+For example, a process may ``wake up'' each day at midnight to perform
+certain supportive analyses on the state of collaboration. 
+
+\subsection{Representation}
+
+The representation dimension provides perspective on how the state
+information, once collected, is represented.  Certain collaborative
+systems, for example, have no mechanisms to represent state 
+explicitly: state is represented and manipulated implicitly (such
+as when the artifacts under collaboration themselves are the 
+only representation of the state of the system).  
+
+Other systems may support construction of state information
+separate from the artifacts themselves.  Depending upon the 
+paradigm for collaboration and the underlying infrastructure,
+these representations may be restricted to text, or structured
+forms, or other data structures. 
+
+\subsection{Persistance}
+
+The persistance dimension specifies whether and for what period
+of time state information is preserved in the system.  A 
+CSCW system which is totally non-persistant with respect
+to state might collect a great deal of state information,
+but the information must be used immediately or discarded. 
+
+Other systems differ with respect to persistance of state information
+across sessions.  Some systems collect state only within a 
+session: when a user logs out of the system, any state information
+collected about that user is lost. Others preserve state 
+information across sessions. 
+
+\subsection{Location}
+
+The location dimension 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Conjectures}
+\section{Acknowledgements}
+
+\newpage
+\bibliography{/group/csdl/bib/csdl-trs}
+\bibliographystyle{plain}
+
+\end{document}
+
+@

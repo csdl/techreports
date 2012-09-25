@@ -1,0 +1,472 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% hbs-blocks.tex -- 
+%% Author          : Carleton Moore
+%% Created On      : Fri Jan 20 17:15:19 1995
+%% Last Modified By: Carleton Moore
+%% Last Modified On: Thu Jul 20 14:50:12 1995
+%% Status          : Unknown
+%% RCS: $Id: hbs-blocks.tex,v 1.3 1995/07/21 01:11:36 cmoore Exp $
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1995 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\section{Blocks}
+\label{sec:blocks}
+
+In the previous section we briefly introduced the four blocks or layers of
+HBS.  This section explores each of the blocks in turn, discussing the
+requirements, classes, global variables and any other important design issues.
+
+\subsection{Block1: File Operations}
+
+Block 1 provides an interface between the Unix file system and the
+rest of HBS.  It provides a set of low level functions that operate on
+the basic entities of data-nodes and link-nodes \footnote{See \cite{Wiil90a} for a
+detailed description of data-nodes and link-nodes}.  It handles all of the conversions
+between the node and link entities and the actual storage on the Unix file
+system.  
+
+% Figure \ref{fig:block1} shows the
+%internal structure of both the DataFileHandler and the LinkFileHandler.
+%
+%\begin{figure}[htb]
+%  \centerline{\psfig{figure=block1.eps}}
+%  \caption{{\bf DataFileHandler and LinkFileHandler}}
+%  \label{fig:block1}
+%\end{figure}
+
+There are two main classes in this block: DataFileHandler and
+LinkFileHandler.  These two classes manage five different files, one for
+data-nodes {\em datanodes.hb}, one for link-nodes {\em linknodes.hb}, one
+for data blocks {\em datablocks.hb}, one for the last
+data-node number {\em maxNode.hb} and one for the last link-node number
+{\em maxLink.hb}.  The last data-node
+and last link-node files are kept so that the HBS does not reuse data-node
+and link-node IDs.  Both classes manage their respective nodes in the same
+manner. Both classes have similar in memory data structures.
+
+\begin{itemize}
+
+\item{A balanced binary tree holds the node number and the file address for
+  valid entities.  When a node is opened the binary tree is searched to find
+  the file address of the entity.  The file is then read to get the
+  information.  A balanced binary tree is used to reduce the search time for
+  large databases.}
+
+\item{A linked list holds the free file addresses.  When an entity is
+  deleted its file address is added to the linked list.  When a new entity
+  is created the linked list is checked to reuse disk addresses.}
+
+\item{Bitmaps store the used data-node, and link-node IDs.  In HBS once the
+  bit is set for the data-node or link-node ID it is never reset.  This stops
+  the reuse of data-node or link-node IDs.}
+
+\item{A Bitmap keeps track of the used data blocks.  When a data-node is
+  deleted the bit for each of its data blocks is reset.}
+
+\item{Flags to keep track if there is an entity stored in memory.}
+
+\end{itemize}
+
+We will now discuss each of the classes in Block1.
+
+\subsubsection*{Classes}
+\begin{itemize}
+
+\item The TreeEntity class represents a file address that will be stored in
+  the balanced binary tree.  This class encapsulates the file address so the
+  user does not have to worry about the internal representation.  This class
+  provides two accessor functions to get and set the file address.
+
+\item The UseList class represents a linked list that holds the file
+  addresses.  It is used to hold the free file addresses. It provides the
+  standard linked list operations.  UseList is used by the LinkFileHandler and
+  the DataFileHandler classes to store free file addresses.
+%
+%
+% The following
+%  operations are provided by  UseList:\begin{itemize}
+%    \item{\em  removeFront} removes and returns head element of the list.
+%    \item{\em  append} appends element at tail of the list.
+%    \item{\em  count} returns number of elements in the list.
+%    \item{\em  clear} deletes all elements in the list.
+%    \item{\em  useListCopy} copy function.
+%    \item{\em  useListPrint} prints the contents of the list.
+%    \end{itemize}
+
+
+\item The DataFileHandler class is one of the two main classes in block1.  It
+provides the data-node interface to block2.  The following operations are
+defined in DataFileHandler: 
+
+\begin{itemize}
+  \item{\em openEntity} retrieves data-node from file.
+  \item{\em closeEntity} writes data-node fields to file.
+  \item{\em openNewEntity} creates a data-node.
+  \item{\em deleteEntity} deletes a data-node.
+  \item{\em openData} opens datablock area.
+  \item{\em closeData} writes to datablock area.
+  \item{\em openLink} opens departing links.
+  \item{\em closeLink} writes to departing links.
+  \item{\em browse} returns list of data-nodes.
+  \item{\em isAvailable} returns 1 if the node exists.
+\end{itemize}
+
+\item The LinkFileHandler class is the other main class in block1.  It
+provides the link-node interface to block2.  The following operations are
+defined in LinkFileHandler:
+
+\begin{itemize}
+
+  \item{\em openEntity} retrieves link-node from file.
+  \item{\em closeEntity} writes link-node fields to file.
+  \item{\em openNewEntity} creates a link-node.
+  \item{\em deleteEntity} deletes a link-node.
+  \item{\em browse} returns list of link-nodes.
+  \item{\em isAvailable} returns 1 if the node exists.
+  \end{itemize}
+
+\item The File class represents the basic Unix file.  It provides the basic
+  file operation of open, close, and setting the read point.  It does not
+  support any reading and writing operations.
+
+\item The NodeFile class represents the file that hold the data-nodes.  It
+is publicly inherited from the File class.  It adds the readEntity and
+writeEntity operations that read and write a data-node to the file.  NodeFile
+directly stores and retrieves the data-nodes.
+
+\item The LinkFile class represents the file that hold the link-nodes.  It
+is publicly inherited from the File class.  It adds the readEntity and
+writeEntity operations that read and write a link-node to the file.  LinkFile
+directly stores and retrieves the link-nodes.
+
+\item The DataFile class represents the file that hold the data.  It
+is publicly inherited from the File class.  It adds the readEntity,
+writeEntity, readLong, and writeLong operations that read and write
+characters or long integers to the file. DataFile directly stores and retrieves
+all of the data stored in the HBS.
+
+\end{itemize}
+
+\subsubsection*{Global Variables}
+
+There are no global variables in block1.  However, the files created by HBS
+are hard coded into the system. 
+
+\subsubsection*{Issues}
+\label{sec:block1Issues}
+
+Since the names of the files are hard coded there can only be one instance
+of DataFileHandler and LinkFileHandler.  Creating more than one instance
+can corrupt the files.  
+
+\subsection{Block2: Basic HyperText Operations}
+
+Block 2 handles the basic hypertext operations.  It ensures that all of the
+internal linknodes and datanodes are kept consistent.  Block2 acts as a
+buffer between block3 and the low level file operations.  
+
+Requests from block3 are passed on to a single instance of the Operations
+class which has a single instace of both the Link and Data classes.  The
+operations class provides the interface to block3.  When it receives a
+request to perform, the operations class decides what combination of link
+and node operations must be performed to fulfill the request.  It then
+requests Link and Data to perform those individual operations in the
+correct order.  Link and Data both have a single instance of the respective
+FileHandler class.  Link and Data make requests of the FileHandlers to
+handle file operations.  Link and Data are able to hold one link or node in
+memory, this way they may be able to service the request without accessing
+the disk.  All writes are automatically sent to disk.
+
+\subsubsection*{Classes}
+\begin{itemize}
+\item The Operations class represents the interface between block 2 and
+  3.  It provides all of the Hypertext operations in HBS. \begin{itemize}
+    \item{\em entityDelete} deletes a link or node.
+    \item{\em createNode} creates a new node.
+    \item{\em link} creates links or connects nodes to links.
+    \item{\em moveLink} moves a link.
+    \item{\em removeLink} removes the connection from a node to a link.
+    \item{\em read} reads a key value.
+    \item{\em write} writes a key value.
+    \item{\em entityRead} reads an entire entity.
+    \item{\em entityWrite} writes an entire entity.
+    \item{\em browse} returns a list of nodes or links.
+    \item{\em appendToData} appends information to nodes.
+    \item{\em appendToLink} appends information to links.
+    \item{\em isAvailable} returns 1 if the entity exists.
+\end{itemize}
+
+\item The Data class represents the nodes in the hypertext database.  It
+  interacts with block 1 to perform its operations.  It receives the
+  requests from the Operations class that deal with nodes. The Data class
+  caches data-node in memory.  This is a write through cache. The Data
+  class calls the DataFileHandler operations to fulfill requests that the
+  cache cannot.
+
+%
+%It provides the
+%  following operations:  \begin{itemize}
+%    \item{\em createData} creates a new node.
+%    \item{\em deleteData} deletes a node.
+%    \item{\em openData} retrieves info from file.
+%    \item{\em closeData} writes node info to file.
+%    \item{\em incrementLinksToMe} increments the number of links pointing to the node.
+%    \item{\em decrementLinksToMe} decrements the number of links pointing to the node.
+%    \item{\em dataNumber} accessor function.
+%    \item{\em size} accessor function.
+%    \item{\em linksToMe} accessor function.
+%    \item{\em readOneUserDefinedKey} reads key value.
+%    \item{\em writeOneUserDefinedKey} writes key value.
+%    \item{\em readDataNode} reads entire node info.
+%    \item{\em writeAllUserDefinedKeys} writes user defined keys to node
+%    \item{\em browse} returns list of nodes.
+%    \item{\em readDataBlockArea} reads the data associated with this node.
+%    \item{\em writeDataBlockArea} writes the data associated with this node. 
+%    \item{\em openDepartingLinks} opens departing links for retrieval.
+%    \item{\em closeDepartingLinks} updates departing links.
+%    \item{\em readDepartingLinks} returns link array.
+%    \item{\em isAvailable} returns 1 if the node exists.
+%
+%\end{itemize}
+
+\item The Link class represents the links in the hypertext database.  It also
+  interacts with block1 to perform its operations.  Like the Data class the
+  Link class caches one link-node.  File operations are made though the
+  LinkFileHandler class. 
+%
+%
+% It provides the following
+%  operations: \begin{itemize}
+%    \item{\em createLink} creates a new linknode.
+%    \item{\em deleteLink} deletes a linknode.
+%    \item{\em openLink} retrieves link from file.
+%    \item{\em closeLink} writes link to file.
+%    \item{\em setDataNodeNum} sets the target of the link. 
+%    \item{\em incrementUseCount} increments the number of nodes pointing to the link.
+%    \item{\em decrementUseCount} decrements the number of nodes pointing to the link.
+%    \item{\em linkNumber} accessor function.
+%    \item{\em useCount} accessor function.
+%    \item{\em toDataNodeNo} accessor function.
+%    \item{\em readOneUserDefinedKey} reads key value.
+%    \item{\em writeOneUserDefinedKey} writes key value.
+%    \item{\em readLinkNode} reads entire linknode info.
+%    \item{\em writeAllUserDefinedKeys} writes user defined keys to link.
+%    \item{\em browse} returns list of links.
+%    \item{\em isAvailable} returns 1 if the link exists.
+%\end{itemize}
+
+\end{itemize}
+\subsubsection*{Global Variables}
+There are no global variables in this block.  Each instance of Operations
+has a single instance of the Link and Data classes.
+
+\subsubsection*{Issues}
+
+There can only be one instance of the Operations class since it will create
+an instance of both Link and Data.  Link and Data will create a single
+instance of their FileHandlers.  See section \ref{sec:block1Issues} for issues with
+multiple FileHandlers.
+
+\subsection{Block3}
+
+Block3 is responsible for ensuring that locks and events occur.  It
+``listens'' to all of the operations that the user requests and performs
+the appropriate locking and eventing mechanisms.  In order to perform
+locking and events there are several data structures maintained in
+memory. 
+
+\begin{itemize} 
+
+\item A balanced binary tree which stores LockEntities.  Each node in this
+  tree is indexed based upon it entity ID in the HBS.  When a lock is
+  acquired the tree is searched to see if there is a LockEntity for the node
+  being locked.  If not a new LockEntity is created and inserted into the
+  binary tree.  The LockEntity has an array of integers.  Each element of
+  this array represents a key of the entity\footnote{See \cite{Wiil90a} for a
+  description of the keys.}.  The value of each element is the userID of the
+  owner of the lock. 
+
+  When a lock is released the LockEntity's array is updated.  If there are
+  no more locks for that node then the LockEntity is removed from the
+  binary tree.
+
+\item An array of EventEntities, one for each operation in the HBS.  This
+  array is used to allow users to subscribe to all events on an operation.
+  When a user want to know about all createNode operations their bit will be
+  set in the EventEntity for the createNode operation.  Each time an
+  operation is successful this array is accessed and the users that have
+  subscribed to the operation are informed.
+
+\item An array of binary balanced trees, one for each operation in the HBS,
+  store EventEntities.  Each tree in the array is indexed by the entity ID.
+  When a user subscribes to an operation for a particular entity ID and key the
+  appropriate tree is searched for that entity ID.  If no EventEntity is
+  found a new one is created and inserted into the tree.  The bit for the
+  user and key is set.  When an operation is successful, the appropriate tree is
+  searched to see if any user has subscribed to the operation, entity ID
+  and key.  If there are any users subscribed they are informed of the operation.
+
+\end{itemize}
+
+These data structures are stored in memory so if the HBS crashes all event
+and lock information is lost. When a user logs out all of their locks and
+events are cleared.
+
+\subsubsection*{Classes}
+
+\begin{itemize}
+
+  \item The BalanceTree class is a template class that represents a
+  generic balanced binary tree.  There are several instantiations of
+  the balanced binary tree.  LinkFileHandler and DataFileHandler both
+  have balanced binary trees to store file addresses.  There are two
+  balanced binary trees in this block to hold the Event and Lock
+  information. 
+
+  \item The EventLock class represents all of the operations that a user is
+  able to perform in HBS.  It provides the following operation to the user:
+  \begin {itemize}
+    \item {\em write} writes data to entity.
+    \item {\em read} read from entity.
+    \item {\em entityWrite} write whole entity structure.
+    \item {\em entityRead} read whole entity structure.
+    \item {\em createNode} create a node.
+    \item {\em deleteNode} delete a node.
+    \item {\em link} creates links or connects nodes to links.
+    \item {\em moveLink} 
+    \item {\em removeLink} 
+    \item {\em event} subscribe to an event.
+    \item {\em unEvent} unsubscribe to an event.
+    \item {\em showEvent} show users subscribed to event.
+    \item {\em lock} lock an entity.
+    \item {\em unLock} unlock an entity.
+    \item {\em showLock} show who owns the lock.
+    \item {\em showUsers} show all the users connected to HBS.
+    \item {\em connect} used to inform other users that a new user has connected.
+    \item {\em disconnect} disconnect from the HBS.
+    \item {\em browse} get a list of nodes or links.
+    \item {\em append} append data to a node.
+    \item {\em createWithName} create a new node with the supplied name.
+    \item {\em goodLink} create a link between the supplied nodes.
+    \item {\em message} send a message to all users.
+    \item {\em connected} tell the HBS to start listening to other users.
+    \item {\em createWithNameData} create a new node with supplied name and data.
+    \item {\em createWithNameDataLock} create a new node with supplied name,
+    data and lock. 
+    \item {\em linkNewNode} create a link to a new node with supplied name
+    and data.
+    \item {\em linkNewLockNode} create a link to a new node with supplied
+    name, data and lock.
+    \item {\em writeUnlock} write data to entity and unlock.
+    \item {\em abnormalDisconnect} used to inform other user when a
+    connection is broken.
+    \item {\em deleteLink} delete the supplied link.
+    \item {\em pointToPoint} send a message to a particular user.
+    \item {\em changePassword} change the user's password.
+\end{itemize}
+
+\item The EventEntity class provides an encapsulated array of BitSets one
+  for each user in HBS.  The BitSet represents a key defined in HBS.
+  When a user subscribes to an operation on an entity ID and key, the key
+  bit is set in the EventEntity for the entity ID in the binary tree for
+  the operation. event the appropriate bit is set for that user.
+
+%  Figure
+%  \ref{fig:eventEntity} shows the structure of an instance of Evententity.
+%
+%\begin{figure}[htb]
+%  \centerline{\psfig{figure=eventEntity.eps}}
+%  \caption{{\bf Structure of an EventEntity}}
+%  \label{fig:eventEntity}
+%\end{figure}
+
+  
+\item The LockEntity class provides an encapsulated array of integers,
+  each element of the array represents a key defined in HBS.  When a user
+  locks a key of an entity the element of the array is set to the user's
+  ID.  When the user unlocks the key the element is set to -1.
+
+\item The TreeLink class is a template class used as the nodes of the
+  BalanceTree class.  Since it is a template it can be instantiated to hold
+  any type necessary.  In HBS it is instantiated with LockEntities,
+  EventEntities, and TreeEntities from block1.
+
+\end{itemize}
+
+\subsubsection*{Global Variables}
+
+There is an array of balanced binary trees called Tree.  The index into
+this array is the operation number.  There is an array of EventEntities
+called AllNodes that stores event subscriptions for all nodes.  There is an
+array of integers called ShowEventVar that holds a list of users who
+are subscribed to the event.  The array of integer SendEventVar is used to
+hold a list of users that are going to receive the event.
+
+\subsubsection*{Issues}
+
+Locks and Events are not persistent.  When a user disconnects from the HBS
+all of their lock and event information is cleared.  Applications that want
+persistent locks and events must use some other mechanism to ensure that
+that information is maintained.
+
+\subsection{Block4}
+
+Block4 is responsible for communicating with multiple users.  It handles
+all of the socket based communications and handling multiple users.  Block4
+makes HBS a multiuser database.  To do this block4 has two major data
+structures: \begin{itemize}
+
+\item An instance of the EventLock class to handle all requests from the
+  users.
+
+\item An array of hb\_client instances.  Each instance represents a
+  potential user.  Each user has 3 TCP/IP sockets associated with them.  This
+  is how the HBS communicates with the users.
+
+\end{itemize}
+The server goes to sleep until there is a request from a connected user or
+a new user requesting a connection.  When a new user want to connect to the
+HBS they connect to a unique socket determined from the command line when
+HBS is started.  When Block4 detects a connection on this unique socket it
+creates 3 new sockets and assigns them to the next available hb\_client
+instance.  When Block4 detects a request from a connected user it reads in
+the operation number and then the parameters for the operation.  It then
+passes on the request to Block3.  When Block3 returns Block4 passes on the
+results to the user.
+
+\subsubsection*{Classes}
+\begin{itemize}
+  \item The hb\_client class represents the users in HBS.  Each instance of
+  hb\_client has three socket to communicate with the HBS, a string for the
+  user's name, and some other administrative variable.
+
+\end{itemize}
+
+\subsubsection*{Global Variables}
+
+One instance of EventLock class, called block3, to handle all of the
+requests.  An array of hb\_client, called client, instances to represent the users.
+
+\subsubsection*{Issues}
+
+The maximum number of users that can connect to is fixed by a global
+constant.  Currently this number is 32.  To change the maximum number of
+users HBS must be recompiled.
+
+\subsection{Config}
+
+The Config block contains the definitions of the error codes, the operation
+numbers, the maximum number of users, the node structure and the link
+structure.  This block is included in all other blocks.  There are no class
+declarations just basic structures and values.
+
+\subsection{Intra Block Issues}
+
+There are several intra block issues.  The first is the flow of control is
+complicated since each block can detect an error and return an error
+result.  Also block3 uses block4 to send out the events before it returns
+the result to block4.  Another issue is often data structures are
+created in block1 and have to be destroyed in block4.  This can lead to
+memory leaks.

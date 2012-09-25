@@ -1,0 +1,170 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% hbs-architecture.tex -- 
+%% Author          : Carleton Moore
+%% Created On      : Fri Jan 20 17:15:29 1995
+%% Last Modified By: Carleton Moore
+%% Last Modified On: Thu Jul 20 14:37:59 1995
+%% Status          : Unknown
+%% RCS: $Id: hbs-architecture.tex,v 1.3 1995/07/21 01:11:55 cmoore Exp $
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1995 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\section{HBS Architecture}
+\label{sec:architecture}
+\subsection{Overview}
+
+HBS is a Hypertext server.  It's architecture consists, at the highest
+level of abstraction, of four more-or-less
+layered ``blocks'': file operations, basic hypertext operations, event
+and lock operations, and client-server operations.  Each block will be
+described below.  Figure \ref{fig:Overall} shows the way these blocks
+are layered in HBS.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=overall.eps}}
+  \caption{{\bf Overall Architecture of HBS}}
+  \label{fig:Overall}
+\end{figure}
+
+Block 1, the file operations layer, is responsible for the file control and
+operations.  This layer contains the classes that represent the different
+types of files, the file handler classes that provide a clean interface to
+the higher layers, and some basic list and tree entities.
+
+Block 2, the basic hypertext layer, is responsible for the basic operations
+on nodes and links.  This layer contains all of the low level hypertext
+operations provided by HBS.  It contains the operations class which
+provides all of the basic hypertext operations, the data class which
+represents a generic data node in the hypertext database, and the link
+class which represents a generic link in the hypertext database.
+
+Block 3, the event and lock layer, provides the locking and event mechanism
+that allow multiple users to use HBS.  This layer has the eventlock
+class which provides all the operations for HBS, the EventEntity and
+LockEntity represent the event and lock records to keep track of lock and
+event information.  
+
+Block 4, the client server operations layer, provides all of the
+multi-client connection handling routines.  There is only one class in this
+layer, the hb\_client.  Each instance of this class represents one of the
+ECS clients connected to HBS.  Each client is assigned three TCP/IP sockets
+to communicate with HBS.  This layer handles all requests by the clients
+and passes them to the lower layers.
+
+\subsection{Canonical Operation Processing Process}
+
+Almost every operation request is satisfied by HBS according to the
+following stereotypical sequence of interactions between the various
+blocks:
+
+
+\begin{enumerate}
+\item The client/server layer polls each client to see if they have made a
+  request.  When the client has made a request the client/server level
+  decides what the request was and then reads in the appropriate parameters
+  for the request.  The client/server layer then passes the request on to the
+  Event/Lock layer.
+
+\item The Event/Lock layer determines if the user is able to perform the
+  operations based upon the lock constraints of the database.  If the
+  user is able to perform the operation the Event/Lock layer passes the
+  request to the Basic Hypertext layer.
+
+\item The Basic Hypertext layer decides what basic hypertext operations
+  must be performed on links and nodes and then requests that those
+  operations are performed from the node and link classes.  The node and link
+  classes make requests of the File Operations layer to save or retrieve the
+  information needed.
+
+\item The File Operations layer passes up the results of the request to
+  the Basic Hypertext layer which passes up the results to the Event/Lock
+  layer.  If the operation was successful the Event/Lock layer sends out
+  an event to all of the clients that have subscribed to events of the
+  operation requested.
+
+\item The Event/Lock layer passes the results of the operation back up
+  the the Client/Server layer which passes the results back to the
+  client.
+\end{enumerate}
+ 
+Figure \ref{fig:Canonical} shows the flow of requests and results in the
+canonical operation processing.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=canonical.eps}}
+  \caption{{\bf Canonical Operation Processing}}
+  \label{fig:Canonical}
+\end{figure}
+
+\subsection{Differences between HBS and Hyperbase}
+
+We have made several major changes in HBS.  It no longer is compatible with
+the Hyperbase.  The most significant difference is the addition of a
+distinguished client, the Gagent.  We have also changed the connection
+protocol to allow the HBS to ensure the client is connecting to the correct
+database.  We have also extended the basic set of operations the Hyperbase
+provided.  We discuss each of these changes in turn.
+
+\subsubsection{Gagent}
+
+Since the HBS is only used as a part of Egret \cite{csdl-92-01,csdl-93-09}
+we have added in the knowledge of the Gagent.  The Gagent is treated as a
+special client.  The HBS remembers which client is the Gagent and during
+client connection the HBS listens to the Gagent.
+
+\subsubsection{Client Connection}
+
+The connection protocol has been changed to allow the Gagent to update the
+global tables and ensure that the connecting client gets the correct global
+state.  When a client connects to the HBS, the HBS will stop polling all
+clients except the Gagent.  The other connected clients will still be able
+to make requests but the HBS will temporally ignore their requests until
+the connecting client tells the HBS that they are done connecting.  Once
+the connecting client is finished reading in the global state they must
+inform the HBS that they are done so the HBS can start servicing the other
+clients. 
+
+
+\subsubsection{Security}
+
+HBS version 4.0.0 introduced security.  Now, when a client connects their
+name must appear in the list of authorized users.  They must also supply a
+password.  This password is checked before they are allowd to proceed.  the
+security mechanism helps guarantee that only authorized users use the have
+access to the HBS database.
+
+
+\subsubsection{New Operations}
+
+We have added several new operations to the HBS.  Many of these new
+operations encapsulate several old operations.  Some of the operation are
+new.
+
+\begin{itemizenoindent}
+\item{\em Shut Down:} brings down the HBS gracefully.
+\item{\em Show Users:} shows all of the users connected to the HBS.
+\item{\em Append:} appends the data to the end of the node.
+\item{\em Create Node With Name:} creates a new node with the supplied name.
+\item{\em Good Link:} creates a link between the two supplied nodes.
+\item{\em Message:} sends a message to all connected users.
+\item{\em Connected:} tells the HBS to start listening to the other users.
+\item{\em Create Node with Name and Data:} creates a new node with the supplied
+name and data.
+\item{\em Create Node with Name, Data, and Lock:} creates a new node with
+the supplied name and data.  It also locks the node.
+\item{\em Abnormal Disconnect:} tells the other users that the client
+abnormally disconnected.
+\item{\em Delete Link:} deletes the supplied link.
+\item{\em Create Link to New Node:} creates a new link with the supplied
+name to the new node with the supplied name and data.
+\item{\em Create Link to New Locked Node:} creates a new link with the
+supplied name to the new node with the supplied name and data and locks the node.
+\item{\em Write and Unlock:} writes the supplied data to the node and
+unlocks the node.
+\item{\em Point to Point Message:} sends the message to the supplied user.
+\item{\em Change Password:} changes the user's password.
+\end{itemizenoindent}
+
+

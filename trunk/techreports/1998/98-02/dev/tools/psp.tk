@@ -1,0 +1,1596 @@
+# library of basic common routines for psptool
+# set a global variable from the given string definition
+
+# Copyright 1995, 1996 Andrew Worsley
+# May only be redistributed for free and with this copyright
+
+# initialise globals
+set tmr_update 0
+set pspversion ".5"
+
+proc setglobal { line } {
+
+    global debug
+
+    if {[regexp {^([_a-zA-Z.0-9]+): +(.*)$} $line x name val]} {
+	global $name
+	set $name $val
+	if {$debug} { puts "Setting $name to $val" }
+	return 1
+    }
+    if {[regexp {^([_a-zA-Z.0-9]+)\(([_a-zA-Z.0-9,]+)\): +(.*)$} \
+		$line x arr name val]} {
+	global $arr
+	set ${arr}($name) $val
+	if {$debug} { puts "Setting ${arr}($name) to $val" }
+	return 1
+    }
+    if {[regexp {^([_a-zA-Z.0-9]+):= +(.*)$} $line x name val]} {
+	global $name
+	eval set xxxx $val
+	set $name $xxxx
+	if {$debug} { puts "Setting $name to $val = $xxxx" }
+	return 1
+    }
+    if {[regexp {^([_a-zA-Z.0-9]+)\(([_a-zA-Z.0-9,]+)\):= +(.*)$} \
+		$line x arr name val]} {
+	global $arr
+	eval set xxxx $val
+	eval set ${arr}($name) $xxxx
+	if {$debug} { puts "Setting ${arr}($name) to $val = $xxxx" }
+	return 1
+    }
+    return 0
+}
+
+# Read in the configuration file to find where everything is
+proc init_globals { cnfile } {
+    
+    global debug
+    # Initialise a default configuration file if it doesn't exist
+    if {[file isfile $cnfile] == 0} { init_cnfile $cnfile }
+
+    if {[sopen $cnfile r fd] < 0} \
+	{ die "Unable to read configuration file: $cnfile" }
+
+    while {[rd_line $fd line]} {
+	if {[setglobal $line]} continue
+
+	puts stderr "Ignoring unknown configuration line: $line"
+    }
+
+    close $fd
+
+    global statefile pspdir pspdefile
+    set pspdir [rel2absfname $pspdir]
+    set statefile [rel2gblfname $statefile]
+    set pspdefile [rel2gblfname $pspdefile]
+
+    # check and create psp directory if it doesn't exist
+    if {![file isdirectory $pspdir]} {
+	puts "Creating PSP directory $pspdir..."
+
+	if {[smkdir $pspdir]} {
+	    die "Unable to create PSP directory: $pspdir" [geterr]
+	}
+    }
+}
+
+# generate name of configuration file
+proc getcnfile cnfile {
+    global env
+
+    if {[info exist env(PSPCNF)]} {
+	set cnfile $env(PSPCNF)
+	return $cnfile
+    }
+
+    if {[regexp {^/} $cnfile] == 0} {
+	if {[info exist env(HOME)] == 0} \
+	    { die "Can't find HOME environment variable" }
+
+	set cnfile "$env(HOME)/$cnfile"
+    }
+
+    return $cnfile
+}
+# print a message to standard error and terminate program abruptly
+proc die msg {
+    puts stderr $msg
+    global savestate statefile
+    if {$savestate} { wr_state $statefile}
+    exit 1
+}
+
+# read in a file from a file using the standard rules for 
+# comments and continuation lines
+proc rd_line { fid var } {
+    upvar $var res
+    set res ""
+
+    while {[gets $fid val] >= 0} {
+
+	# skip blank lines
+	if {[regexp "^\[ \t\]*\$" $val]} continue
+
+	# skip '#' comments
+	if {[regexp "^\[ \t\]*#" $val]} continue
+
+	# continuation line
+	if {[regexp {^(.*)\\$} $val x $val]} {
+	    set res "$res$val"
+	    continue
+	}
+	set res "$res$val"
+	return 1
+    }
+
+    return 0
+}
+
+# safely open a file. return -1 on failure 0 on success
+proc sopen { file mode desvar } {
+    upvar $desvar dvar
+
+    if {[catch {set dvar [open $file $mode]} ]} { return -1 }
+
+    return 0
+}
+
+# read in state info
+proc rd_state statefile {
+    
+    if { ![file isfile $statefile]} { init_stfile $statefile }
+
+    if {[sopen $statefile r fd] < 0} \
+	{ die "Can't open state file $statefile\n" }
+
+    while {[rd_line $fd line]} {
+
+	if {$line == "bdata@"} {
+	    rd_bdata $fd
+	    continue
+	}
+	if {[setglobal $line]} continue
+
+	puts stderr "Ignoring Unknown state info line: $line"
+    }
+
+    close $fd
+}
+
+# read in an initialisation file
+proc rd_initfile { f } {
+    if { ![file isfile $f]} {
+	return 1
+    }
+
+    if {[sopen $f r fd] < 0} {
+	return 2
+    }
+
+    while {[rd_line $fd line]} {
+
+	if {[setglobal $line]} continue
+
+	puts stderr "rd_initfile: Ignoring unknown initialisation line: $line"
+    }
+
+    close $fd
+    return 0
+    
+}
+
+# Initialise a configuration file
+proc init_cnfile fname {
+    puts -nonewline stderr "Creating configuration '$fname'..."
+    flush stderr
+    if {[sopen $fname w fd] < 0} \
+	{ die "Can't create configuration file $fname" }
+
+    puts $fd \
+"# Default configuration file
+pspdir: .psp
+
+# name of file holding current project
+statefile: pspstate
+
+# increment in seconds timers are updated in
+timer_updates: 1
+
+# PSP definitions file 
+pspdefile: pspdefs
+
+# use long descriptions for bug types
+buglabel: 1
+# Number of bugs per bug type level
+nbt: 10
+
+# Name of Plan window
+plan_win: .pl
+"
+
+    # Default strings
+
+    puts $fd "
+# Label for New Project button
+word(np): New Project
+
+# Prompt for project name
+word(name_pr): Project Name:
+
+# label for Okay button
+word(okay): Okay
+
+# label for Cancel button
+word(cancel): Cancel
+
+# bad project name message
+word(bad_proj_name): Bad Project Name: 
+
+# Label for phases menu
+word(phase): phases
+
+# label for pause button
+word(pause): pause
+
+# label for go button
+word(go): Run
+
+# colour for paused button
+col(pause): red
+
+# colour for go button
+col(go): green
+
+# Bug button label
+word(bug): Bug
+
+# sympton prompt
+word(sympton): sympton
+
+# cause prompt
+word(cause): cause
+# type button label
+word(type): select type
+
+# fixed button label
+word(fixed): fixed
+
+# Unknown word
+word(unknown): unknown
+
+# Name to use for phase outside of PSP cycle
+word(external): external
+
+# bug type no. prompt
+word(bugtype): Bug type no.
+
+# Name of the bug prompt
+word(bugname): Name of Bug type
+
+# Prompt for new bug type
+word(newbug): Add new bug type
+
+# title of iconified Dialogs
+word(dialog): Dialog
+
+# default width of an entry field
+e_width: 10
+
+# default length of an entry line
+e_linewidth: 30
+
+# Description prompt
+word(description): Description
+
+# Bad
+word(bad): Bad
+
+# Report icons name
+word(report): Report
+
+# Plan Summary Header
+word(plan_summary): Plan Summary
+
+# Recalculate button
+word(recalc): Recalculate
+
+# Close button
+word(close): Close
+
+# Exit menu
+word(exit): Exit
+
+# Exit menu
+word(quit): Quit
+
+# minutes prompt
+word(mins): mins:
+
+# seconds prompt
+
+word(secs): secs:
+
+# Edit Time pop-up heading
+word(EditTime): Edit Time
+
+# Phases:
+# Name of Plan phase
+word(plan): plan
+
+# Name of design review phase
+word(DR): design-review
+
+# Name of code review phase
+word(CR): code-review
+
+# Name of compile phase
+word(compile): compile
+
+# Name of test phase
+word(test): test
+
+# Name of Postmortem phase
+word(pm): postmortem
+
+"
+    close $fd
+    puts stderr "Done"
+}
+
+# Initialise a default state file
+proc init_stfile fname {
+    puts -nonewline stderr "Creating statefile '$fname'..."
+    flush stderr
+    if {[sopen $fname w fd] < 0} \
+	{ die "Can't create default state file $fname\n" }
+
+    puts $fd "#Default State information"
+    puts $fd "project: "
+    puts $fd "psp: PSP0"
+    puts $fd "phase: "
+    puts $fd "bugtypes: bugtypes-psp0"
+    puts $fd "bugno: 0"
+    close $fd
+    puts stderr "Done"
+}
+
+# translate a relative name to an absolute name
+# using the psp directory name if it exists otherwise use absolute name
+proc rel2gblfname fname {
+    global pspdir
+    if {[regexp {^/} $fname]} {
+	return $fname
+    }
+    if {$pspdir != ""} {
+	return "$pspdir/$fname"
+    }
+    return [rel2absfname $fname]
+}
+# translate a relative name to an absolute name
+proc rel2absfname fname {
+    if {[regexp {^/} $fname] == 0} {
+	global env
+	return "$env(HOME)/$fname"
+    }
+    return $fname
+}
+
+# write out the current state to the given file
+proc wr_state fname {
+    global debug
+    #set ostatefile "${fname}_orig"
+
+    #if {[file exists $ostatefile]} { exec rm $ostatefile }
+
+    #if {[file exists $fname]} { exec mv $fname $ostatefile }
+
+    save_ofile $fname
+
+    if {[sopen $fname w fd] < 0} \
+	{ die "Unable to write to state file $fname\n" }
+
+    puts $fd "# State information"
+
+    global project psp phase bugno bugtypes
+    puts $fd "project: $project"
+    puts $fd "psp: $psp"
+    puts $fd "phase: $phase"
+    puts $fd "bugno: $bugno"
+    puts $fd "bugtypes: $bugtypes"
+
+    if {$phase != ""} {
+	wr_bdata $fd
+    }
+
+    if {$debug} { puts "Wrote State info to $fname" }
+
+    close $fd
+}
+
+# create a new project button 
+proc newprojbut { } {
+    global word
+
+    wm deiconify .
+    button .new -text $word(np) -command \
+	{ destroy .new; wm withdraw .; newproj }
+    pack .new
+
+    return .new
+}
+
+# Create phase/state button
+proc mkphase { n } {
+    global phase
+    button $n -text $phase \
+	-command "exit_cphase $n; next_phase $n"
+
+    return $n
+}
+
+# create pause button
+proc mkpause { n } {
+    
+    global word word col
+    button $n -text $word(go) -bg $col(pause) -activebackground $col(pause) \
+	-command "go $n"
+
+    return $n
+}
+
+# restart activities
+proc go { but } {
+    global word col timers timer_updates
+
+    $but configure -bg $col(go) -activebackground $col(go) -text $word(pause) \
+	-command "pause $but"
+    
+    start_updates $timer_updates
+    
+#    foreach t $timers {
+#	rtimer $t
+#    }
+}
+
+# pause all activities
+proc pause { but } {
+    global word col timers tmr_update
+
+    $but configure -bg $col(pause) -activebackground $col(pause) -text $word(go) \
+	-command "go $but"
+
+    stop_updates
+    set tmr_update 0
+#    foreach t $timers {
+#	ptimer $t
+#    }
+}
+
+# enter the next phase over the current phase
+proc next_phase { but } {
+    global nxtphase phase timer tdfile
+
+    set np $nxtphase($phase)
+    nphasetimer $timer
+    if {$np == ""} {
+	wr_tdfile $tdfile
+	pspclean
+	newproj
+    } else {
+	$but configure -text $np -command "exit_cphase $but; next_phase $but"
+    }
+    resume_phase $np
+}
+
+# Create a new project window
+# interact with the user to define all the parameters of a new project
+proc newproj { } {
+    global word project e_width
+
+    toplevel .np -class np
+    wm title .np "New Project"
+
+    label .np.title -text $word(np)
+    pack .np.title -fill x -side top
+
+    label .np.msg -text ""
+    pack .np.msg -fill x -side top
+
+    frame .np.params
+    pack .np.params -fill x -side top
+
+    frame .np.params.proj
+    label .np.params.proj.lab -text $word(name_pr)
+    entry .np.params.proj.ent -textvariable project -width $e_width
+    pack .np.params.proj.lab -side left
+    pack .np.params.proj.ent -side right
+    pack .np.params.proj -side top
+
+    frame .np.btns
+    pack .np.btns -fill x -side bottom
+
+    button .np.btns.okay -text $word(okay) -command { trysetup .np .np.msg }
+    button .np.btns.cancel -text $word(cancel) \
+	-command { destroy .np; newprojbut }
+
+    button .np.btns.quit -text $word(quit) -command "save_phase; destroy ."
+    
+    bind .np.params.proj.ent <Key-Return> { trysetup .np .np.msg }
+
+    pack .np.btns.okay -side left
+    pack .np.btns.quit -side left
+    pack .np.btns.cancel -side right
+
+}
+
+# try to set up a new project - if it fails return.
+# Otherwise destroy the newproject dialog window and start up the process
+proc trysetup { win lab } {
+    global project psp phase word bugs
+
+    # must be non empty and not have space, tab or . in it's name
+    if {$project == "" || [string match {[ 	.]} $project]} {
+	$lab configure -text "$word(bad_proj_name) '$project'"
+	return
+    }
+
+    set psp PSP0
+    set phase ""
+
+    setupsp $project $psp $phase
+    global bugno
+    set bugno 0
+    destroy $win
+}
+
+# set up the given project in the given phase
+proc setupsp { proj apsp ph } {
+
+    # get the psp's parameters
+    rdpsp $apsp
+
+    # read the bugtypes for this project
+    rdbugtypes
+
+    global project psp phase nxtphase timer timer_updates bugs tdfile
+    set project $proj
+    set psp $apsp
+    set tdfile [rel2gblfname "${psp}.tdl"]
+    # brand new project
+    if {$ph == ""} {
+	set ph $nxtphase($ph)
+	init_data
+	init_tdfile $tdfile
+    }
+    set phase $ph
+    set bugs {}
+
+    initlog "$project.log"
+
+    # map top level window
+    wm deiconify .
+
+    # make the standard objects - project menu, phase button, pause button 
+    global prmenu phbtn pbtn
+
+    # row 1
+    frame .r1
+
+    set prmenu [mkprojname $proj .r1.pn]
+    pack $prmenu -side left
+
+    set phbtn [mkphase .r1.phase]
+    pack $phbtn -side left
+
+    global word
+    button .r1.bug -text $word(bug) -command mkbuglogger
+    pack .r1.bug -side right
+
+    pack .r1 -side top
+
+    # row 2
+    frame .r2
+
+    set pbtn [mkpause .r2.pause]
+    pack $pbtn -side left
+
+    set timer [mktimer .r2.timer 1 time]
+    pack $timer -side left
+
+    pack .r2 -side top
+
+    resume_phase $ph
+}
+
+# enter a phase - does nothing at the moment
+proc resume_phase { nphase } {
+    global plan_win word phase
+    set phase $nphase
+    if {($nphase == $word(plan) || $nphase == $word(pm)) } {
+	plan_summary $plan_win
+    }
+
+}
+
+# exit the current phase - nothing at the moment
+proc exit_cphase { but } { 
+    global plan_win phase word
+    if {($phase == $word(plan) || $phase == $word(pm)) \
+	&& [winfo exists $plan_win]} {
+	destroy $plan_win
+    }
+}
+
+# save the current phase to disk
+proc save_phase { } {
+    global statefile
+
+    wr_state $statefile
+}
+
+# make the project name menu
+proc mkprojname { proj n } {
+    
+    global word plan_win
+    menubutton $n -text $proj -relief raised
+    menu $n.m
+    $n configure -menu $n.m
+
+    set swp [mkswphase $n.m.swproj]
+    $n.m add cascade -menu $swp -label $word(phase)
+
+    $n.m add command  -label $word(plan_summary) \
+	-command "plan_summary $plan_win"
+
+    $n.m add separator
+
+    $n.m add command -label $word(quit) -command \
+	{nphasetimer $timer; save_phase; destroy .}
+
+    return $n
+
+}
+
+# make a switch phase menu
+proc mkswphase { n } {
+    global phase_list
+
+    menu $n
+    foreach i $phase_list {
+	$n add command -label $i -command "jump_phase $i"
+    }
+
+    return $n
+}
+
+# jump to another phase
+proc jump_phase { nphase } {
+    global phase phbtn phase_list timer
+
+    # check it's a legal phase
+    set x [lsearch -exact $phase_list $nphase]
+
+    if { $x < 0 } "die \"Jump_phase: Unknown phase '$nphase'\""
+
+    $phbtn configure  -text $nphase -command \
+	"exit_cphase $phbtn; next_phase $phbtn"
+    
+    nphasetimer $timer
+
+    exit_cphase $phbtn
+    resume_phase $nphase
+
+
+}
+
+# clean up current project
+proc pspclean { } {
+    global timer
+
+    deltimer $timer
+    stop_updates
+    destroy .r1 .r2
+    wm withdraw .
+}
+
+# read in the definition of the given process psp
+proc rdpsp { npsp } {
+    
+    global phase_list nxtphase psp word tdfile pspdefile debug
+
+    if {![ file isfile $pspdefile]} {
+	die "rdpsp: Unable to find the psp definition file : $pspdefile"
+    }
+
+    if {[sopen $pspdefile r fd] < 0} {
+	die "rdpsp: Unable to read psp definition file : $pspdefile"
+    }
+
+    set proc_lines 0
+    set found 0
+
+    while {[rd_line $fd line]} {
+	if {[regexp {^pspdef= *([A-Za-z0-9_.]+)} $line x pn]} {
+	    if {$pn == $psp} {
+		set proc_lines 1
+		set found 1
+	    } else {
+		set proc_lines 0
+	    }
+	    continue
+	}
+	if {$proc_lines == 0} continue
+
+	# process definitions
+	if {[regexp {^block= *([a-zA-Z0-9]+)} $line x name]} {
+	    rdblk $name $fd
+	    continue
+	}
+
+	if {$line == "commands="} {
+	    if $debug { puts "reading commands..." }
+	    rdcmds $fd
+	    continue
+	}
+
+	if {[setglobal $line]} continue
+
+	puts stderr "rdpsp: Ignored Unknown syntax : $line"
+    }
+    close $fd
+
+    if {$found == 0} {
+	die "rdpsp: Couldn't find definition of $psp in psp definition file :\
+ $pspdefile"
+    }
+    if {$npsp != "PSP0"} {
+	die "rdpsp: Unknown process '$npsp'"
+    }
+
+    # Read in the data for this psp level
+    set tdfile [rel2gblfname "${npsp}.tdl"]
+    
+    #set phase_list { plan design code compile test }
+    if {[lindex $phase_list 0] != "$word(plan)"} {
+	set phase_list "$word(plan) $phase_list $word(pm)"
+    }
+
+    set x ""
+    foreach i $phase_list {
+	set nxtphase($x) $i
+	set x $i
+    }
+    set nxtphase($x) ""
+
+}
+# reads in a block definition - block name has been already read in
+proc rdblk { n fd } {
+    global block phase_list word debug
+
+    set c -1
+    while {[rd_line $fd ln]} {
+	if {[regexp {^.$} $ln]} return
+	if {[regexp {^f= (.*)$} $ln X format]} continue
+	if {[regexp {^l=phases$} $ln]} {
+	    setblock $n c $format "$word(plan) $phase_list $word(pm)"
+	    continue;
+	}
+	if {[regexp {^l=cphases$} $ln]} {
+	    setblock $n c $format "$word(plan) $phase_list"
+	    continue;
+	}
+	if {[regexp {^l= (.*)$} $ln X labs]} {
+	    setblock $n c $format $labs
+	    continue
+	}
+	if {$c == -1} {
+	    set block($n,hdr) $ln
+	    if $debug {puts stderr "set: block($n,hdr) $ln"}
+	} else {
+	    set block($n,row,$c) $ln
+	    if $debug {puts stderr "set: block($n,row,$c) $ln"}
+	}
+	incr c
+	set block($n,rsz) $c
+    }
+    die "rdblock:Unexpected eof $fd"
+}
+
+# add nsecs to all timers
+proc update_timers nsec {
+    global timers tmr
+
+    foreach t $timers {
+	if { $tmr($t,state) } {
+	    incr tmr($t,atime) $nsec
+	    $t configure -text [prnt_time $tmr($t,atime)]
+	} else {
+	    incr tmr($t,ptime) $nsec
+	}
+    }
+}
+
+# start updating timers if not already updating every nsecs
+proc start_updates nsecs {
+    global tmr_update debug
+
+    if { $tmr_update == 0} {
+	# start off the call back
+	after "${nsecs}000" timer_callback
+    }
+    set tmr_update $nsecs
+}
+
+# stop timers being updated
+proc stop_updates { } {
+    global tmr_update
+
+    set tmr_update 0
+    # could pause here to wait for call back to be cleared
+}
+
+# return a string for display the time interval
+proc prnt_time nsec {
+    
+    if {$nsec == ""} {
+	return ""
+    }
+    if {$nsec < 0} {
+	set nsec [expr -$nsec]
+	set sg "-"
+    } else {
+	set sg ""
+    }
+
+    if { $nsec < 60 } {
+	return "$sg$nsec secs"
+    }
+
+    set sec [expr $nsec%60]
+    set min [expr $nsec/60]
+
+    if { $min < 60 } {
+	return "$sg${min}min ${sec}s"
+    }
+
+    set hr [expr $min/60]
+    set min [expr $min%60]
+
+    if { $hr < 24 } {
+	return "$sg${hr}hr $min:$sec"
+    }
+
+    set days [expr $hr/24]
+    set hr [expr $hr%24]
+
+    if { $days < 365 } {
+	return "$sg$days days $hr:$min:$sec"
+    }
+
+    set yr [expr $days/365]
+    set days [expr $days%365]
+
+    return "$sg${yr} years $days days $hr:$min:$sec"
+}
+
+# clear timer
+proc clrtimer but {
+    global tmr
+
+    set tmr($but,ptime) 0
+    set tmr($but,atime) 0
+    set tmr($but,date) [gdate]
+    $but configure -text [prnt_time $tmr($but,atime)]
+}
+
+# pause timer
+proc ptimer but {
+    global tmr
+
+    set tmr($but,state) 0
+}
+
+# resume timer
+proc rtimer but {
+    global tmr
+
+    set tmr($but,state) 1
+}
+
+# start timer a new phase log old value and reset it
+proc nphasetimer but {
+    global tmr phase
+
+    set l [list $tmr($but,atime) $phase $tmr($but,ptime) $tmr($but,date)]
+    lappend l [prnt_time $tmr($but,atime)]
+    log $tmr($but,log) $l
+    clrtimer $but
+}
+
+# delete the timer 
+proc deltimer but {
+    global tmr timers
+    set li [lsearch $timers $but]
+    if { $li >= 0 } {
+	set timers [lreplace $timers $li $li]
+    }
+    foreach f {state ptime atime log date} {
+	unset tmr($but,$f)
+    }
+    destroy $but
+}
+
+# create a timer widget with given name and details
+proc mktimer { name state logtype } {
+    global tmr timers
+
+    lappend timers $name
+    set tmr($name,state) $state
+    set tmr($name,ptime) 0
+    set tmr($name,atime) 0
+    set tmr($name,log) $logtype
+    set tmr($name,date) [gdate]
+    button $name -text [prnt_time $tmr($name,atime)] -command "enter_time $name"
+}
+
+# Initialise details of the projects logging file
+proc initlog name {
+    global projlog pspdir debug project psp
+
+    set projlog "$pspdir/$name"
+
+    if {[file isfile $projlog]} return
+
+    if {$debug} {
+	puts "Creating project log $projlog ..."
+    }
+
+    if {[sopen $projlog w fd] < 0} {
+	die "Can't open log file $projlog " [geterr]
+    }
+    puts $fd "# project $project log file"
+    puts $fd "# process $psp"
+    puts $fd "# [gdate]"
+
+    close $fd
+
+}
+
+# close off anything to do with logging - nothing to do at the moment
+proc cllog {} {}
+
+# write a log entry to a log file
+proc log { type entry } {
+    global projlog
+
+    if {[sopen $projlog a fd] < 0} {
+	die "Unable to append entry to log file $projlog"
+    }
+    # how do we handle write failure
+
+    puts $fd "$type $entry"
+
+    close $fd
+
+    add_log $type $entry
+    calc_plan_sum
+}
+
+# do timer updates if tmr_update is nonzero
+proc timer_callback {} {
+    global tmr_update
+    if {$tmr_update} {
+	update_timers $tmr_update
+	after "${tmr_update}000" timer_callback
+    }
+}
+
+# create a bug looging window
+proc mkbuglogger { } {
+    global bugno bugs phase tmr timer word bug
+
+    set bno [incr bugno]
+    set bw ".bug$bno"
+
+    set i [llength $bugs]
+    if {[incr i -1] >= 0} {
+	# pause previous bug
+	set oldbno [lindex $bugs $i]
+	ptimer $bug($oldbno,timer)
+    }
+    lappend bugs $bno
+    toplevel $bw -class bug
+    wm title $bw "Bug No. $bno"
+
+    # row 1 => r1.a r1.b
+    set br1 [frame $bw.r1]
+    set bw1b [frame $br1.b]
+    set bw1 [frame $br1.a]
+
+    label $bw1.bn -text $bno
+    set bug($bno,timer) [mktimer $bw1.time 1 Bug]
+    mkbugtypes $bw1.types $bno
+    bind $bw1.types <3> "split_bugt $bno"
+    button $bw1b.cancel -text $word(cancel) -command "clsbug $bno 0"
+
+    pack $br1 -side top
+    pack $bw1 $bw1b -side left
+    pack $bw1b.cancel
+    pack $bw1.bn $bw1.time $bw1.types -side left
+
+    # row 2
+    set bw2 [frame $bw.r2]
+    label $bw2.prompt -text $word(sympton)
+    set bug($bno,symp) ""
+    entry $bw2.ev -textvariable bug($bno,symp) -width 40
+
+    pack $bw2 -side bottom
+    pack $bw2.prompt $bw2.ev -side left
+
+    set bug($bno,removed) $phase
+    set bug($bno,type) 0
+    set bug($bno,find) 0
+}
+
+# recursively construct a defect menu
+proc mkdefectmenu { n dn bno } {
+    global bugdivision bugname bug word
+
+    menu $n
+    $n add command -label [getbuglabel $dn] -command "bugfound $bno $dn"
+
+    foreach f $bugdivision($dn) {
+	if {[info exists bugdivision($f)]} {
+	    $n add cascade -label [getbuglabel $f] \
+		-menu [mkdefectmenu $n.$bugname($f) $f $bno]
+	} else {
+	    $n add command -label [getbuglabel $f] -command "bugfound $bno $f"
+	}
+    }
+
+    set l [llength $bugdivision($dn)]
+    global nbt
+    if {[incr l] < $nbt} {
+	$n add separator
+	set bt [expr $dn*$nbt + $l]
+	$n add command -label $word(newbug) -command \
+	    "mkDialog .addbt \"$word(bugtype) $bt\" mknbug $bt $bno"
+    }
+
+    return $n
+}
+
+proc mkbugtypes { name bno } {
+    global word bugdivision bug
+
+    menubutton $name -textvariable bug($bno,tname) -relief raised
+    $name configure -menu [mkdefectmenu $name.m 0 $bno]
+    set bug($bno,tname) $word(type)
+
+}
+
+# read in the file of bug types
+proc rdbugtypes { } {
+    global bugtypes bugname bugdivision bugdescription debug nbt word
+
+    set bugtypes [rel2gblfname $bugtypes]
+
+    if {[file exists $bugtypes] == 0} {
+	init_bugtypes
+    }
+    if {[sopen $bugtypes r fd] < 0} {
+	die "Unable to read the bug types file $bugtypes"
+    }
+
+    if {[info exists bugname]} {
+    # clear last definitions
+	unset bugname bugdescription nbt bugdivision
+    }
+    set level -1
+    set bugname(0) $word(unknown)
+    set bugdescription(0) $word(type)
+
+    set lastbnt 0
+    set parent 0
+    set nbugs 0
+
+    while {[rd_line $fd line]} {
+	# parameter settings
+	if {[regexp {^([_a-zA-Z.0-9]+)= *(.*)$} $line x name val]} {
+	    global $name
+	    set $name $val
+	    if {$debug} { puts "$bugtypes: Setting $name to $val" }
+	    continue
+	}
+	# type definition
+	if {[regexp {^(\.*)([-_a-zA-Z0-9]+): *(.*)$} \
+		$line x prefix name val]} {
+	    set nlevel [string length $prefix]
+
+	    if {$nlevel > $level} {
+		if {$nlevel > [expr $level + 1]} {
+		    puts stderr "Ignoring bug type with no parent : '$line'"
+		    continue
+		}
+		set bnt [expr $lastbnt*$nbt + 1]
+		set parent $lastbnt
+		set lastbnt $bnt
+		set nthlevel($nlevel) 1
+		set level $nlevel
+	    } else {
+		if {[incr nthlevel($level)] >= $nbt} {
+		    puts stderr "Too many bug types defined at the level $level"
+		    puts stderr "Ignoring line : '$line'"
+		    continue
+		}
+		if {$nlevel == $level} {
+		    set bnt [expr $lastbnt + 1]
+		    set lastbnt $bnt
+		} else {
+		    set bnt \
+			[expr 1 + \ int($lastbnt/pow($nbt, $level - $nlevel))]
+		    set level $nlevel
+		    set lastbnt $bnt
+		    set parent [expr int($bnt/$nbt)]
+		}
+	    }
+	    set bugname($bnt) [string tolower $name]
+	    set bugdescription($bnt) $val
+	    lappend bugdivision($parent) $bnt
+	    incr nbugs
+	    continue
+	}
+    }
+
+    if {$debug} {
+	puts stderr "Read in $nbugs bug type definitions"
+    }
+
+    if {$nbugs <= 1} {
+	die "Not enough bug definitions in the bug definition file $bugtypes"
+    }
+}
+
+# create a bug injection phase menu of phases prior to given phase
+proc mkbuginj { name ph var } {
+    global phase_list $var word
+
+    set phaselist $word(external)
+
+    foreach f $phase_list {
+	lappend phaselist $f
+	if {$f == $ph} break
+    }
+
+    menubutton $name -textvariable $var -relief raised
+    menu $name.m
+    $name configure -menu $name.m
+
+    set lastf $word(external)
+    foreach f $phaselist {
+	$name.m add command -label $f -command "set $var $f"
+	set prev $lastf
+	set lastf $f
+    }
+    # when the menu is pack'ed it clears the variable!
+    # set $var $lastf
+
+    return $prev
+}
+
+# have found the given bug - set up bug window for logging its cause and
+# closing up when it is fixed
+proc bugfound { bno bt } {
+
+    global tmr bug word phase
+
+    set bug($bno,type) $bt
+    set bug($bno,tname) [getbuglabel $bt]
+
+    set t $bug($bno,timer)
+    set bug($bno,find) $tmr($t,atime)
+
+    set phbut ".bug$bno.r1.a.phinj"
+
+    if {[info commands $phbut] != ""} return
+
+    set bi [mkbuginj $phbut $phase bug($bno,injected)]
+
+    pack $phbut -side left
+    set bug($bno,injected) $bi
+
+    set b [button ".bug$bno.r1.a.fix" -text $word(fixed) \
+	-command "clsbug $bno 1" -borderwidth 5]
+    pack $b -side left
+
+    .bug$bno.r2.prompt configure -text $word(cause)
+    set bug($bno,cause) ""
+    .bug$bno.r2.ev configure -textvariable bug($bno,cause)
+}
+
+# close the bug window and log the details of the bug
+proc clsbug { bno dolog } {
+    global bug tmr bugs
+
+    set t $bug($bno,timer)
+    set bug($bno,fix) [expr $tmr($t,atime) - $bug($bno,find)]
+
+    deltimer $t
+
+    set li [lsearch $bugs $bno]
+
+    if {$li >= 0} {
+	set bugs [lreplace $bugs $li $li]
+	if {([llength $bugs] == $li) && ($li > 0)} {
+	    # restart previous bug
+	    set oldbno [lindex $bugs [incr li -1]]
+	    rtimer $bug($oldbno,timer)
+	}
+    }
+
+    if {$dolog} {
+	set line "$bno $bug($bno,type) $bug($bno,removed) $bug($bno,injected)"
+	lappend line $bug($bno,find) $bug($bno,fix) $bug($bno,cause)
+	lappend line $bug($bno,symp)
+
+	log Bug $line
+    } else {
+       # cancel ? so we try to reclaim the bug no.
+       global bugno
+       if {$bno == $bugno} {
+	  incr bugno -1
+       }
+    }
+
+    # unset things if desired
+
+    destroy .bug$bno
+}
+
+# write out default bugtypes file
+proc init_bugtypes { } {
+
+    global bugtypes
+    puts stderr "Creating Default bug definitions in $bugtypes..."
+
+    if {[sopen $bugtypes w fd] < 0} {
+	die "Can't open $bugtypes for writing"
+    }
+    puts stderr "Writing out bug types into $bugtypes"
+    puts $fd "#Default Bug types"
+    puts $fd "nbt= 10"
+    puts $fd "
+Documentation: comments, messages
+.missing: missing mandatory comment
+.wrong: comment is wrong
+Syntax: spelling punctuation, typos, i/o formats
+.ident: Identifier problems
+..misspelled: misspelled
+..wrong: wrong identifier
+.bracket: missing or extra parenthesis ()
+.braces: missing or extra brace {}
+.quotes: missing or extra quote 
+.statement: missing else
+Assignment: declaration, scope, limits, duplicate names
+.declaration: Wrong declaration of variable
+.scope: scoping error
+.limits: assiging variable outside its limits
+.initialise: variable object not initialised
+.memory: memory allocation
+..allocated: freed but wasn't allocated by new/free
+..free: wasn't freed
+..bad: reference to memory after it was free
+Interface: function calls, references, I/O statements, user formats
+.function: incorrect call
+..type: argument type
+..return: Expected return type wrong
+..defn: Incorrect definition of function
+.reference: miss use of reference
+.io-statement: input/output is wrong
+..input: reading error
+..output: writing error
+Checking: error handling, inadequate results checking
+.error: Unhandled error
+Data: structure, content
+Function: logic, pointer, loops, recursion, computation
+.expression: Incorrect expression
+.loop: Incorrect loop
+.unhandled: Unhandled case
+System: configuration, timing, memory
+"
+
+   close $fd
+}
+
+# return the string to use for describing a bug
+proc getbuglabel no {
+    global buglabel bugname bugdescription nbt
+
+    if {$buglabel} {
+	return "$bugname($no) - $bugdescription($no)"
+    }
+
+    set n $bugname($no)
+    set no [expr int($no/$nbt)]
+
+    while {$no > 0} {
+	set n $bugname($no).$n
+	set no [expr int($no/$nbt)]
+    }
+    return $n
+}
+
+# adapted from the tk book
+# uses a command that defines the frame's content
+proc mkDialog { w title cmd args } {
+    global tmr_update word debug
+
+    toplevel $w -class Dialog
+    wm title $w $title
+    wm iconname $w $word(dialog)
+    wm deiconify $w
+    tkwait visibility $w
+
+    if {$debug} { puts stderr "mkDiaglog wm $w" }
+
+    set old_update $tmr_update
+    if {$tmr_update} stop_updates
+    set oldFocus [focus]
+    grab $w
+    focus $w
+
+    eval $cmd $w $args
+
+    tkwait window $w
+    focus $oldFocus
+
+    if {$old_update} {
+	start_updates $old_update
+    }
+}
+
+# fill in a dialog for defining a new type of bug
+proc mknbug { w bt bno } {
+    global word bugname bugdescription bugdivision e_linewidth e_width
+    global new_bt new_description
+
+    # bug type no.
+    frame $w.bt
+    label $w.bt.lab -text "$word(bugtype): $bt"
+    pack configure $w.bt -side top 
+    pack $w.bt.lab -expand 1
+
+    # bug type name
+    frame $w.n
+    set new_bt ""
+    label $w.n.lab -text "$word(bugname):"
+    entry $w.n.e -textvariable new_bt -width $e_width
+    pack configure $w.n -side top 
+    pack configure $w.n.lab $w.n.e -side left
+
+    # description
+    set new_description ""
+    frame $w.d
+    label $w.d.lab -text "$word(description):"
+    entry $w.d.e -width $e_linewidth -textvariable new_description
+    bind $w.n.e <Key-Return> "focus $w.d.e"
+    bind $w.d.e <Key-Return> \
+	"chk_newbugtype $w $w.m $bt new_bt new_description $bno"
+    pack configure $w.d 
+    pack configure $w.d.lab $w.d.e -expand 1 -side left 
+
+    # message line for errors
+    message $w.m -text "" -aspect 1000
+    pack $w.m -anchor w -fill x
+
+    # buttons okay and cancel
+    frame $w.b
+    button $w.b.ok -text $word(okay) -command \
+	"chk_newbugtype $w $w.m $bt new_bt new_description $bno"
+    
+    button $w.b.cancel -text $word(cancel) -command "destroy $w"
+    pack $w.b -expand 1
+    pack $w.b.ok -side left
+    pack $w.b.cancel -side right
+
+    focus $w.n.e
+
+}
+
+# check the validty of the new bug type and add it to the type list if
+# its okay otherwise write out a message
+proc chk_newbugtype { w m bt bname bdescript bno } {
+    global word $bname $bdescript bugdivision bugdescription bugname nbt bug
+    global bugs debug
+    if {[chkname [set $bname]] == 0} {
+	$m configure -text "$word(bad) $word(bugname)"
+	return
+    }
+
+    #good name so let's update the bugnames
+    set parent [expr $bt/$nbt]
+    if {$debug} { puts  stderr "adding bug type $bt" }
+    append bugdivision($parent) " $bt"
+    if {$debug} { puts  stderr "bugdivision($parent) = $bugdivision($parent)" }
+    set bugdescription($bt) [set $bdescript]
+    if {$debug} { puts  stderr "bugdescription($bt) = $bugdescription($bt)" }
+    set bugname($bt) [set $bname]
+    if {$debug} { puts  stderr "bugname($bt) = $bugname($bt)" }
+    wr_bugtypes
+
+    # update any existing bug logging windows
+    foreach b $bugs {
+	set bw ".bug${b}.r1.a.types"
+	destroy $bw.m
+	$bw configure -menu [mkdefectmenu $bw.m 0 $b]
+    }
+
+    if {$bno > 0} {
+	bugfound $bno $bt
+    }
+    destroy $w
+}
+
+# write out the new version of the bug types file
+proc wr_bugtypes { } {
+    global debug nbt bugtypes
+
+    save_ofile $bugtypes
+    if {[sopen $bugtypes w fd] < 0} {
+	warn "Unable to write out the bug types file"
+	return;
+    }
+
+    puts $fd "# Bug types
+nbt= $nbt"
+
+    wr_bugdivision $fd 0 0
+
+    puts stderr "Wrote bug types file $bugtypes"
+    close $fd
+}
+
+# split the currently selected bugtype into bug subtypes
+proc split_bugt { bn } {
+    global bugdivision bugname nbt bug word
+    set bt $bug($bn,type)
+
+    if {[info exists bugname($bt)] == 0} {
+	warn "split_bugt: Unknown type $bt ignored"
+	return
+    }
+
+    set newbt [expr $bt*$nbt]
+    set l 1
+    if {[info exists bugdivision($bt)]} {
+	set l [llength $bugdivision($bt)]
+	if {[incr l] > $nbt} {
+	    warn "split_bugt: No room for more bugs at this level"
+	    return
+	}
+    }
+    incr newbt $l
+    mkDialog .newbt $word(newbug) mknbug $newbt $bn
+}
+
+# write out all bug types for given subdivision recursively
+proc wr_bugdivision { fd d l } {
+    global bugdivision bugname bugdescription
+
+    #calculate the number of dots == level
+    set p ""
+    for {set i 0} {$i < $l} {incr i} {
+	set p ".$p"
+    }
+
+    incr l
+    foreach f $bugdivision($d) {
+	puts $fd "$p$bugname($f): $bugdescription($f)"
+	if {[info exists bugdivision($f)]} {
+	    wr_bugdivision $fd $f $l
+	}
+    }
+}
+
+#pop up a simple Okay dialog box to warn the user
+proc warn { m } {
+    mkDialog .warn warning mkbtn $m
+}
+
+# create a message and a button
+proc mkbtn { w args } {
+    global word e_linewidth
+
+    message $w.m -width $e_linewidth -text $args
+    pack $w.m -side top -expand 1 -padx 5m -pady 5m
+
+    button $w.okay -text $word(okay) -command "destroy $w"
+    pack $w.okay -side bottom -expand 1
+}
+proc chkname { n } {
+    if {$n == "" || [regexp {[ 	.]} $n]} {
+	return 0
+    }
+    return 1
+}
+# set a whole section of a block with similar lines
+proc setblock { n c f lab} {
+    upvar $c cnt
+    global block debug
+
+    foreach l $lab {
+	if {[regsub {@} $f $l x] == 0} {
+	    die "setblock couldn't understand line $lab"
+	}
+	if $debug {puts stderr "setblock: block($n,row,$cnt) $x"}
+	set block($n,row,$cnt) $x
+	incr cnt
+    }
+}
+
+# Create a pop-up window to Adjust the time stored in the given field
+proc enter_time { name } {
+    global word
+    mkDialog .adjtim $word(EditTime) edit_time tmr($name,atime) 
+}
+
+# Invoked by mkDialog to create the time editing widgets
+proc edit_time { w var } {
+    global word [var2name $var]
+    set m ""
+    catch {set m [expr [set $var]/60]}
+    set s ""
+    catch {set s [expr [set $var]%60]}
+    frame $w.r1
+    frame $w.r2
+    label $w.r1.mlab -text $word(mins)
+    entry $w.r1.mins
+    label $w.r1.slab -text $word(secs)
+    entry $w.r1.secs
+    pack $w.r1.mlab $w.r1.mins -side left
+    pack $w.r1.slab $w.r1.secs -side right
+    $w.r1.mins insert 0 $m
+    focus $w.r1.mins
+    bind $w.r1.mins <Key-Return> "focus $w.r1.secs"
+    $w.r1.secs insert 0 $s
+    bind $w.r1.secs <Key-Return> "adjtime $w $var"
+    button $w.r2.ok -text $word(okay) -command "adjtime $w $var"
+    button $w.r2.cancel -text $word(cancel) -command "destroy $w"
+    pack $w.r2.ok $w.r2.cancel -side left
+    pack $w.r1 -side top
+    pack $w.r2 -side bottom
+}
+
+# called by Okay button from time editing window. Calculates the
+# new time and sets it and then updates all the timers. If there is
+# an error ignores the setting printing out a message. If it's successful
+# it destroy the diaglog window
+proc adjtime { w var } {
+    global [var2name $var]
+    set s 0
+    set ok 1
+    if [catch {incr s [$w.r1.secs get]}] {
+	set ok 0
+    }
+    if [catch {incr s [expr [$w.r1.mins get]*60]}] {
+	set ok 0
+    }
+
+    if {$ok == 0} {
+	puts stderr "Error in time values - ignored"
+	return
+    }
+    set $var $s
+    destroy $w
+    update_timers 0
+}
+
+# translate a variable reference to a name suitable for a global call
+# e.g. handle arrays - strip off the () stuff
+proc var2name { var } {
+    set n $var
+    regexp {[^() ]+} $var n
+    return $n
+}

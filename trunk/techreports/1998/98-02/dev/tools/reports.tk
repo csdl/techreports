@@ -1,0 +1,729 @@
+# report generating and displaying routines
+
+# generate a project plan summary report top level window
+proc plan_summary { n } {
+    global word support laentry le_action
+
+    if [winfo exists $n] return
+    puts stderr "Please wait ... building plan summary window..."
+    set laentry ""
+    set hmax 600
+    set wmax 950
+    toplevel $n -class report -height $hmax -width $wmax
+    wm title $n $word(plan_summary)
+    wm iconname $n $word(report)
+    wm minsize $n $wmax $hmax 
+    wm maxsize $n $wmax $hmax 
+
+    calc_plan_sum
+    set hdr [frame $n.r]
+    rep_mkhdr $hdr
+
+    # close button
+    set close [button $hdr.close -text $word(close) -command "destroy $n"]
+    # recalc button
+    set calc [button $hdr.calc -text $word(recalc) -command calc_plan_sum]
+
+    pack $close -in $hdr -side left
+    pack $calc -in $hdr -side right
+    
+    pack $hdr -side top
+
+    frame $n.f -height [expr $hmax-[winfo reqheight $hdr]] -width $wmax
+    pack propagate $n.f 0
+    pack $n.f -side bottom
+    # body of data
+    set bdy [frame $n.f.bd]
+    place $bdy -in $n.f -x 0 -y 0
+
+    scrollbar $n.sb -command "sbc $bdy $n.sb $n.f"
+    pack $n.sb -in $n.f -side right -fill y
+
+    set s [frame $bdy.s]
+    pack $s -side top
+
+    # summary
+    if {$support(sum)} {
+	mkblock $s.sum sum
+	pack $s.sum -in $s -side left
+    }
+
+    # Defect Removal Leverages
+    if {$support(dre)} {
+	mkblock $s.dre dre
+	pack $s.dre -in $s -side right
+    }
+
+    # size data - loc and time
+    set sz [frame $bdy.sz]
+    pack $sz -side top
+
+    if {$support(loc)} {
+	mkblock $sz.loc loc
+	pack $sz.loc -side left
+    }
+
+    if {$support(time)} {
+	mkblock $sz.time time
+	pack $sz.time -side right
+    }
+
+    # defect data - Injection and Removal
+    set defs [frame $bdy.d]
+    pack $defs -side top
+
+    if {$support(DefIn)} {
+	mkblock $defs.di DefIn
+	pack $defs.di -side right
+    }
+
+    if {$support(DefOut)} {
+	mkblock $defs.do DefOut
+	pack $defs.do -side left
+    }
+
+    bind $laentry <Key-Return> "${le_action}calc_plan_sum"
+
+    tkwait visibility $n.sb
+    set totalUnits [winfo reqheight $bdy]
+    set wsize [winfo reqheight $n.f]
+    $n.sb set $totalUnits $wsize 0 [expr $wsize-1]
+}
+
+# update all parameters - do nothing at the moment
+proc calc_plan_sum { } {
+    global support block blocks
+
+    foreach b $blocks {
+	if [info exists block($b,calc)] {
+	    eval $block($b,calc)
+	}
+    }
+}
+
+# make a report header
+proc rep_mkhdr { w } {
+    global word
+    set r [label $w.t -text $word(plan_summary)]
+    pack $r -side top
+}
+
+# set i[ a header for a st of rows - one for each argument
+proc mkhdr { w args } {
+    global cols cur_row cur_block docnvt outfn infn block
+
+    set docnvt 0
+    if {[info exists cur_block] && [info exists block($cur_block,out)]} {
+	set docnvt 1
+	set outfn $block($cur_block,out)
+	set infn $block($cur_block,in)
+    }
+
+    set cur_row 0
+    frame $w
+    set col 0
+    foreach f $args {
+	set cols($col) [string length $f]
+	if {$cols($col) < 5} {
+	    set cols($col) 5
+	}
+	label $w.$col -text $f -width $cols($col)
+	pack $w.$col -side left
+	incr col
+    }
+}
+
+# make a row using the column widths in cols
+# R means if no todate values exist - let user enter values
+proc mkrow { w n args } {
+    global cols laentry le_action cur_row cur_block pd vd docnvt outfn infn
+    global word phase td
+
+    frame $w
+    set c 0
+    label $w.l -width $cols($c) -text $n
+    pack $w.l -side left -anchor w
+    incr c
+    set l [llength $args]
+    set i 0
+
+    while {$i < $l} {
+	set v [lindex $args $i]
+	incr i
+	set m [lindex $args $i]
+	incr i
+	set f [string index $m 0]
+	switch $f {
+	    b {
+		set s disabled
+		set r flat
+	    }
+	    r {
+		set s disabled
+		set r raised
+	    }
+	    R {
+		if {[info exists td($cur_block)] || $phase != $word(plan)} {
+		    set s disabled
+		    set r raised
+		} else {
+		    set s normal
+		    set r sunken
+		}
+	    }
+	    n -
+	    default {
+		set s normal
+		set r sunken
+		if {$f == "d" && $phase != $word(pm) \
+		  || $f == "D" && $phase != $word(plan)} {
+		    set s disabled
+		    set r raised
+		}
+	    }
+	}
+	if {$r == "sunken"} {
+	    if {$laentry != ""} {
+		bind $laentry <Key-Return> "${le_action}focus $w.$c"
+	    }
+	    if {$docnvt} {
+		set rr $cur_row
+		set nb $cur_block
+		set cc [expr $c-1]
+		set le_action \
+	    "set pd($nb,$rr,$cc) \[$infn \$vd($nb,$rr,$cc)];calc_block $nb;"
+	    } else {
+		set le_action ""
+	    }
+	    set laentry $w.$c
+	}
+
+	set vp [string index $m 1]
+	switch $vp {
+	    b {
+		set t "-text"
+		set val ""
+	    }
+	    default {
+		set t "-textvariable"
+		set val $v
+	    }
+	}
+
+	entry $w.$c -width $cols($c) $t $val -state $s -relief $r
+	pack $w.$c -side left
+	incr c
+    }
+    incr cur_row
+}
+
+# create the Report Block n as a window
+proc mkblock { w n } {
+    global block pd cur_block vd
+
+    set f [frame $w]
+    set cur_block $n
+
+    eval mkhdr $f.h $block($n,hdr)
+    pack $f.h
+
+    if {[info exists block($n,out)]} {
+	set darr vd
+    } else {
+	set darr pd
+    }
+
+    for { set r 0} {$r < $block($n,rsz)} {incr r} {
+	set a mkrow
+	lappend a $f.r$r [lindex $block($n,row,$r) 0]
+
+	set c 0
+	foreach b [lrange $block($n,row,$r) 1 end] {
+	    lappend a ${darr}($n,$r,$c) $b
+	    incr c
+	}
+
+	eval $a
+	pack $f.r$r
+    }
+
+    unset cur_block
+    calc_block $n
+
+}
+# read in a block's data
+# format of a line is ^pd=$n$r data1 ...
+proc rd_bdata { fd } {
+    global pd blocks block debug
+
+    if {$debug} {
+	puts stderr "Reading in block data"
+    }
+
+    while {[rd_line $fd ln]} {
+	if {$ln == "."} return
+
+	if {[regexp {^pd=([a-zA-Z0-9]+),([a-zA-Z0-9]+) (.*)$} $ln x n r dat]} {
+
+	    set ind $n,$r
+	    set c 0
+	    foreach d $dat {
+		set pd($ind,$c) $d
+		incr c
+	    }
+	    continue
+	}
+	puts stderr "rd_bdata: Unknown entry ignored $ln"
+	return
+    }
+    puts stderr "rd_bdata: Unexpected eof"
+}
+
+# write out a block's data
+proc wr_bdata { fd } {
+    global block blocks pd debug
+
+    if {$debug} {
+	puts stderr "Writing out block data"
+    }
+    puts $fd "bdata@"
+    foreach n $blocks {
+	set hsz [expr [llength $block($n,hdr)] - 1]
+	for {set i 0} {$i < $block($n,rsz)} {incr i} {
+	    set a pd=$n,$i
+	    for {set c 0} {$c < $hsz} {incr c} {
+		set val ""
+		catch {set val $pd($n,$i,$c)}
+		lappend a $val
+	    }
+	    puts $fd $a
+	}
+    }
+    puts $fd "."
+}
+
+# return the sum of the values of a partial column in the pd array
+proc sumcol { n c st end } {
+    global pd
+
+    set sum 0
+    while {$st <= $end} {
+	if {[info exists pd($n,$st,$c)] && $pd($n,$st,$c) != ""} {
+	    set sum [expr $sum+$pd($n,$st,$c)]
+	}
+	incr st
+    }
+    return $sum
+}
+# (Re)Calculate the values in a block
+# data element = pd($n,$r,$c) description = $b
+# s => Sum of the column
+proc calc_block { n } {
+    global block pd vd
+
+    set docnvt 0
+    if {[info exists block($n,out)]} {
+	set docnvt 1
+	set outfn $block($n,out)
+	set infn $block($n,in)
+    }
+
+    set totrow -1
+    if {[info exists block($n,total)]} {
+	set totrow $block($n,total)
+    }
+    set tdcol -1
+    if {[info exists block($n,td)]} {
+	set tdcol $block($n,td)
+    }
+
+    set ncols [expr [llength $block($n,hdr)] -1]
+    for { set c 0} {$c < $ncols} {incr c} {
+	for { set r 0} {$r < $block($n,rsz)} {incr r} {
+
+	    set b [lindex $block($n,row,$r) [expr $c +1]]
+	    
+	    if {$b == ""} continue
+
+	    switch -- [string index $b 1] {
+		s { set pd($n,$r,$c) [sumcol $n $c 0 [expr $r -1]] }
+		= {
+		    if [catch {set pd($n,$r,$c) \
+			[eval [string range $b 3 end]]}] {
+			set pd($n,$r,$c) ""
+		    }
+		}
+		E {
+		    if {$tdcol < 0} {
+			puts stderr \
+			    "calc_block: Estimate required but no todate column"
+		    } elseif {$totrow < 0} {
+			puts stderr \
+			    "calc_block: Estimate required but no total row"
+		    } else {
+			if {[info exists pd($n,$totrow,$c)] 
+			 && $pd($n,$totrow,$c) != ""
+			 && $pd($n,$totrow,$tdcol) != 0
+			 && $pd($n,$r,$tdcol) != "" 
+			 && $pd($n,$totrow,$tdcol) != ""} {
+			    set pd($n,$r,$c) \
+	[expr 1.0*$pd($n,$totrow,$c)*$pd($n,$r,$tdcol)/$pd($n,$totrow,$tdcol)]
+			} else {
+			    set pd($n,$r,$c) ""
+			}
+		    }
+		}
+	    }
+	    if {$docnvt} {
+		switch -- [string index $b 2] {
+		    b { set vd($n,$r,$c) ""}
+		    e {
+			if {[info exists vd($n,$r,$c)] == 0} {
+			    if {[info exists pd($n,$r,$c)]} {
+				set vd($n,$r,$c) [$outfn $pd($n,$r,$c)]
+			    } else {
+				set vd($n,$r,$c) ""
+			    }
+			}
+		    }
+		    E {
+			if {[info exists vd($n,$r,$c)] == 0
+			  && [info exists pd($n,$r,$c)] == 1} {
+			    set vd($n,$r,$c) [$outfn $pd($n,$r,$c)]
+			}
+			if [catch {set pd($n,$r,$c) [$infn $vd($n,$r,$c)]}] {
+			    set pd($n,$r,$c) ""
+			}
+		    }
+		    t {
+			if {[info exists pd($n,$r,$c)] == 0} {
+			    set pd($n,$r,$c) ""
+			}
+			set a1 $pd($n,$r,$c)
+			set c1 [expr $c - 1]
+			if {[info exists pd($n,$r,$c1)] == 0} {
+			    set pd($n,$r,$c1) ""
+			}
+			set a2 $pd($n,$r,$c1)
+			if {$a1 == ""} {
+			    set tot $a2
+			} elseif {$a2 == ""} {
+			    set tot $a1
+			} else {
+			    set tot [expr $a1 + $a2]
+			}
+			set vd($n,$r,$c) [$outfn $tot]
+		    }
+		    % {
+			set c1 [expr $c -1]
+			set c2 [expr $c -2]
+			set act $pd($n,$r,$c2)
+			if {$act == ""} {
+			    set act 0
+			}
+			if {$pd($n,$r,$c1) != ""} {
+			    incr act $pd($n,$r,$c1)
+			}
+			if {$totrow < 0} {
+			    puts stderr "calc_block: No total row for % To date"
+			} else {
+			    set totact $pd($n,$totrow,$c2)
+			    if {$totact == ""} {
+				set totact 0
+			    }
+			    if {$pd($n,$totrow,$c1) != ""} {
+				incr totact $pd($n,$totrow,$c1)
+			    }
+			    if {$totact == 0} {
+				set vd($n,$r,$c) ""
+				set pd($n,$r,$c) ""
+			    } else {
+				set pd($n,$r,$c) [expr 1.*$act/$totact]
+				set vd($n,$r,$c) [format "%4.1f" \
+				    [expr 100.*$pd($n,$r,$c)]]
+			    }
+			}
+		    }
+		    p {
+			set vd($n,$r,$c) [format "%4.1f" [expr \
+			    100.*$pd($n,$r,$c)]]
+		    }
+		    default {
+			if {[info exists pd($n,$r,$c)]} {
+			    set vd($n,$r,$c) [$outfn $pd($n,$r,$c)]
+			} else {
+			    set vd($n,$r,$c) ""
+			}
+		    }
+		}
+		# convert input here
+	    }
+	}
+
+    }
+
+}
+# Convert phase to row number
+proc phase2row { ph } {
+    global phase_list
+
+    return [lsearch $phase_list $ph]
+}
+
+# Update summaries by one log entry
+proc add_log { type entry } {
+    global support pd debug
+
+    if {[info exists support($type)] == 0 || $support($type) == 0} return
+
+    switch -- $type {
+	time {
+	    set ph [lindex $entry 1]
+	    set atime [lindex $entry 0]
+	    set r [phase2row $ph]
+	    if {$debug} { puts stderr "add_log: $r $ph $atime secs" }
+	    if {$r >= 0} {
+		if {[info exists pd(time,$r,1)] == 0 || $pd(time,$r,1) == ""} {
+		    set pd(time,$r,1) 0
+		}
+		incr pd(time,$r,1) $atime
+	    }
+	}
+	Bug {
+	    set bno [lindex $entry 0]
+	    set btype [lindex $entry 1]
+	    set phrm [phase2row [lindex $entry 2]]
+	    set phinj [phase2row [lindex $entry 3]]
+	    set tfind [lindex $entry 4]
+	    set tfix [lindex $entry 5]
+	    if {$debug} {
+		puts stderr "add_log: Bug $bno injected $phinj -  removed $phrm"
+	    }
+	    # Could process the time rather than the count
+	    if {$phinj >= 0} {
+		sincr pd(DefIn,$phinj,1) 1
+	    }
+	    if {$phrm >= 0} {
+		sincr pd(DefOut,$phrm,1) 1
+	    }
+	}
+    }
+}
+# simple conversion of seconds to output display
+proc s_time_out { t } {
+    if {$t == ""} { return $t}
+    return [format "%5.1f" [expr $t/60.]]
+}
+# simple conversion of minutes to seconds
+proc s_time_in { t } {
+    if {[regexp {[0-9]} $t] == 0} { return 0}
+    return [expr round($t*60)]
+}
+
+# append results of process to the todate log file
+proc wr_tdfile { f } {
+    global block debug project blocks pd
+
+    if {$debug} {
+	puts "Appending to todate log $f"
+    }
+
+    if {[sopen $f a fd] < 0} {
+	die "Can't write to date information to $f"
+    }
+    puts $fd "# [gdate]"
+    puts $fd "td(project): $project"
+    foreach e $blocks {
+	set t {}
+	if {[info exists block($e,td)] == 0} {
+	    puts "psp defn error: No to date defn exists for $e"
+	    continue
+	}
+	set tdcol $block($e,td)
+	set aval 1
+	for {set r 0} {$r <= $block($e,total)} {incr r} {
+	    set td 0
+	    catch {set td [expr $td+$pd($e,$r,$tdcol)]}
+	    set act 0
+	    catch {set act [expr $act+$pd($e,$r,$aval)]}
+	    set b ""
+	    catch {set b [lindex $block($e,row,$r) [expr $tdcol+1]]}
+	    set v ""
+	    if {[string  index $b 2] == "t"} {
+		catch {set v [expr $act + $td]}
+		if {$debug} {
+		    puts stderr "wr_tdfile: pd($e,$r,$aval) = $act + $td => $v"
+		}
+	    } else {
+		set v $td
+		if {$debug} {
+		    puts stderr "wr_tdfile: pd($e,$r,$aval) = $td => $v"
+		}
+	    }
+	    lappend t $v
+	}
+	puts $fd "td($e): $t"
+	if {$debug} {
+	    puts stderr "wr_tdfile: td($e): $t"
+	}
+    }
+    close $fd
+}
+
+# Read in the todate information and then initialise pd array with it
+proc init_tdfile { file } {
+    global block blocks td pd debug
+
+    switch -- [rd_initfile $file] {
+	2 {
+	    die "init_tdfile: can't read the todate file $file"
+	}
+	1 -
+	0 {
+	    if {$debug} {puts stderr "init_tdfile: blocks = $blocks"}
+	    foreach e $blocks {
+		if {[info exists block($e,td)] == 0} {
+		    puts stderr "psp defn error: No to date defn exists for $e"
+		    continue
+		}
+		set tdcol $block($e,td)
+		if {[info exists td($e)] == 0} {
+		    puts stderr "No to date information for $e"
+		    for {set r 0} {$r <= $block($e,total)} {incr r} {
+			set pd($e,$r,$tdcol) ""
+		    }
+		    continue
+		}
+		for {set r 0} {$r <= $block($e,total)} {incr r} {
+		    set pd($e,$r,$tdcol) [lindex $td($e) $r]
+		    if {$debug} {
+		puts stderr "init_tdfile: pd($e,$r,$tdcol) = $pd($e,$r,$tdcol)"
+		    }
+		}
+
+	    }
+	}
+    }
+}
+
+# initialise all the pd and vd fields used by this psp
+proc init_data { } {
+    global blocks block pd vd
+
+    foreach b $blocks {
+	set ncols [expr [llength $block($b,hdr)] -1]
+	for {set c 0} {$c < $ncols} { incr c} {
+	    for {set r 0} {$r < $block($b,rsz)} {incr r} {
+		set vd($b,$r,$c) ""
+		set pd($b,$r,$c) ""
+	    }
+	}
+    }
+}
+# safely increment the variable - catches errors and sets it to one on any
+proc sincr { value {inc 1} } {
+
+    upvar $value val
+    if {[catch {incr val $inc} msg]} {
+	set val $inc
+    }
+}
+
+# Identity function - returns it's argument 
+proc identity { a } { return $a }
+
+proc rdcmds { fd } {
+    global debug
+    set cbuf ""
+
+    while {[rd_line $fd ln]} {
+	if {$ln == "."} break
+	append cbuf $ln "\n"
+    }
+    if $debug { puts stderr "rdcmds: [string range $cbuf 0 80]..." }
+    if [catch {eval $cbuf} msg] {
+	puts stderr "rdcmds: error in processing cmds $msg : $cbuf"
+    }
+}
+
+# redisplay the window and scrollbar using placer 
+# scrollbar command routine - takes window, scrollar parent window position
+proc sbc { w sb p loc } {
+
+    set totalUnits [winfo height $w]
+    set wsize [winfo height $p]
+    if {$loc < 0} {set loc 0}
+    set maxloc [expr $totalUnits - $wsize]
+    if {$loc >= $maxloc} {set loc $maxloc}
+
+    place configure $w -y -$loc
+    $sb set $totalUnits $wsize $loc [expr $loc+$wsize]
+}
+
+# calculate an estimate based on loc and past data - takes name of block
+# to do estimate for and works on the total field for that block
+# Then calculate the rest of the data for that block
+proc calc_est { n } {
+    global pd block td
+
+    set Ni 5
+    if {$n == "loc"} {
+	set totn $Ni
+    } else {
+	set totn $block($n,total)
+    }
+    if {[info exists td($n)] && [info exists td(loc)]} {
+	set pd($n,$totn,0) [loc2est $pd(loc,$Ni,0) $n]
+    }
+    calc_block $n
+}
+
+# compute estimate based on average per loc for total of $loc lines for
+# item of block $n
+# If no data available returns "". Could extend this to do regression later
+proc loc2est { loc n } {
+    global pd block td debug
+
+    set Ni 5
+    if {$n == "loc"} {
+	set totn $Ni
+    } else {
+	set totn $block($n,total)
+    }
+    set est ""
+    catch {set tot [lindex $td($n) $totn]}
+    catch {set Loctot [lindex $td(loc) $Ni]}
+
+    if $debug {
+	puts stderr "loc = $loc tot = $tot Loctot = $Loctot"
+    }
+    catch {set est [expr 1.0*$loc*$tot/$Loctot]}
+
+    return $est
+}
+# adjust todate values to given amount - used for testing
+proc to_date { n args } {
+    global pd debug
+
+    set r 0
+    foreach f $args {
+	set pd($n,$r,2) [expr $f]
+	catch {set pd($n,$r,2) [expr $pd($n,$r,2) - $pd($n,$r,1)]}
+	if {$debug} {
+	    puts stderr "pd($n,$r,2) = $pd($n,$r,2)"
+	}
+	incr r
+    }
+}
+
+# safely sum two possible real numbers possibly blank.
+# if both blank we return blank
+proc ssum { a b } {
+    set tot 0
+    catch {set tot [expr $tot + $a]}
+    catch {set tot [expr $tot + $b]}
+    if {$tot == 0} {
+	return ""
+    }
+    return $tot
+}

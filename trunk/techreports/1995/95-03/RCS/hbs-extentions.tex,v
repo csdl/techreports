@@ -1,0 +1,167 @@
+head	1.2;
+access;
+symbols;
+locks; strict;
+comment	@% @;
+
+
+1.2
+date	95.02.09.22.25.02;	author johnson;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	95.02.03.21.02.29;	author cmoore;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.2
+log
+@*** empty log message ***
+@
+text
+@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% hbs-extentions.tex -- 
+%% Author          : Carleton Moore
+%% Created On      : Fri Jan 20 17:16:19 1995
+%% Last Modified By: Philip Johnson
+%% Last Modified On: Thu Feb  9 12:10:32 1995
+%% Status          : Unknown
+%% RCS: $Id: hbs-extentions.tex,v 1.1 1995/02/03 21:02:29 cmoore Exp johnson $
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1995 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\section{Popular Extentions}
+\label{sec:extentions}
+\subsection{Adding new operations}
+There are five steps to adding new operations to
+HBS. 
+
+\begin{enumerate}
+\item Edit the {\tt config/hb\_config.hh} file and include the new operation
+  name in the following statement.\small 
+  \begin{verbatim}typedef enum { ALLOP, ... , NEW_OPERATION,  NO_OPERATION} operations; 
+  \end{verbatim} \normalsize 
+
+\item Edit the {\tt block4/block4a.cc} file and add a new case to the
+switch statement in the {\tt hb\_client::hb\_read\_message} function.  The
+case should look something like this: \small \begin{verbatim}
+    case NEW_OPERATION:
+      // Does wonderful things
+      read(readfd, &larg, LONGSIZE); // first parameter
+      ...
+      readsok(&nodeName, &nodeNameLength);   // string parameter
+      ...
+      readsok(&message, &messageLength);  // user message
+      ret = block3.newOperation(clientnum, username, eventfd, larg,
+                                   ...
+                                   nodeName, nodeNameLength,
+                                   ...
+                                   message, messageLength);
+      delete [] message;
+      write(writefd, &ret, INTSIZE);
+      if(ret == OK)
+        {
+          write(writefd, &nodeNum, INTSIZE); // any more information that
+	                                     // needs to be sent to the user
+
+        }	  
+      if (debug == 1) // level one Control Flow Tracing 
+        { 
+	  cerr << username << "\t< NEW\_OPERATION " << form("%5d", arg1) << 
+	    form("%5d", arg2) << ">" << form("%5d",ret) << " at " << currentTime(); 
+        }  
+      returnvalue = ret;      
+      break;
+\end{verbatim}
+\normalsize
+
+\item Edit the {\tt block3/MainEventLock.hh} file and add a new member
+  function declaration to the EventLock class declaration.  The operation
+  would look something like: \small
+\begin{verbatim}  int newOperation(int userid,char* username, int eventfd,
+                                   long parameterOne,...,char* string1, 
+                                   long string1Length,..., char* message,
+                                   long messageLength);
+\end{verbatim}
+\normalsize
+
+\item Edit the {\tt block3/MainEventLock.cc} file and add the new member
+function to the EventLock class.
+
+\item Edit {\tt block4/main.cc} to change the version number of HBS.
+
+\end{enumerate}
+
+\subsection{Changing max node size}
+
+The maximum size of any node is determined by the number of direct data
+pointers and the data block size.  The formula to determine the maximum data
+size is: $(b*s) + ((s/4) * s) + ((s/4) * (s/4) * s)$.  Where b is the
+number of direct links, s is the size of the data block in bytes, and 4 is
+the {\em sizeof(long)} on the machine running the HBS. See \cite{Wiil90a}
+page 27 for a detailed description. (e.g. if the number of direct links is
+8 and the data block size is 256 bytes then the maximum amount of data that
+can be stored in a node is $(8 * 256) + ((256/4) * 256) + ((256/4) *
+(256/4) * 256) = 1,067,008$ bytes)
+
+If you wish to change the maximum datasize edit the {\tt
+config/hb\_config.hh} file and change the following two lines:\small
+\begin{verbatim}#define NUMBER_OF_BLOCK_PTR_IN_DATANODE 8
+#define DATABLOCKSIZE 256
+\end{verbatim}
+\normalsize
+You will have to recompile the entire HBS once you have changed the values.
+
+\subsection{Changing number of users}
+
+Changing the maximum number of users in the HBS is very similar to changing
+the maximum datasize.  Edit the {\tt config/hb\_config.hh} file and change
+the following line:
+
+\small 
+\begin{verbatim}
+#define MAXUSERS 32
+\end{verbatim}
+\normalsize 
+
+You will have to recompile the entire HBS once you have change the {\tt
+MAXUSERS} value.
+
+@
+
+
+1.1
+log
+@initial turnin
+@
+text
+@d5 2
+a6 2
+%% Last Modified By: Carleton Moore
+%% Last Modified On: Fri Feb  3 09:32:40 1995
+d8 1
+a8 1
+%% RCS: $Id$
+d17 4
+a20 2
+There are five steps to adding new operations to the
+HBS. \begin{enumerate}
+d75 1
+d77 1
+d79 1
+a79 1
+pointers and the data block size.  The formula to determin the maximum data
+d97 1
+d100 8
+a107 2
+the following line \small \begin{verbatim}#define MAXUSERS 32
+\end{verbatim}\normalsize 
+@

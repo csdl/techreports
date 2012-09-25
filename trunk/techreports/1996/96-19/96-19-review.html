@@ -1,0 +1,261 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>PSP/Baseline SRS Review Summary</title>
+  </head>
+
+  <body>
+      <h1>PSP/Baseline SRS Review Summary</h1>
+
+<h2>Critical Defects/Changes</h2>
+
+This section summarizes the most important changes to be made to the 
+SRS.
+
+<p><hr>
+<h3>(1) .prj file syntax</h3>
+
+The contents of the .prj file is not specified precisely:
+
+<blockquote>
+Each .prj file contains project information.  The file is a
+mixture of comment lines and project information lines. Each 
+project information line has the following format:
+<pre>
+&ltproject&gt {&ltproject_info_file&gt}*
+</pre>
+where
+<ul>
+<li> any field may be empty
+<li> each field is separated by a tab.
+<li> &ltproject&gt is a description.
+<li> there are zero or more occurrences of &ltproject_info_file&gt 
+<li> &ltproject_info_file&gt is a description.
+<li> <b> each &ltproject_info_file&gt is either a .phase file or a .doctype
+file</b>
+</ul>
+</blockquote>
+
+<p><hr>
+<h3>(2) Newline representation</h3>
+
+The following functional requirement will be added:
+
+<blockquote>
+
+<h3>Both PC and Unix EOL representations are supported.</h3>
+
+<dl>
+<dt> Description
+<dd> Both the Unix newline character (carriage return) and the PC newline
+character combination (carriage return/line feed) must be supported.
+<dt> Technical issues
+<dd> This affects file processing. Files should be read in either format.
+They should be written in the format they were read in with.  New files
+should be written in the format appropriate to the platform they were
+created on. 
+<dt> Risks
+<dd> Lowered usability.
+<dt> Dependencies
+<dd> Affects all file I/O. Also, we need to record the newline state when
+reading a file in. 
+</dl>
+</blockquote>
+
+
+
+<p><hr>
+<h3>(3) Command line processing via .config files</h3>
+
+The following functional requirement will be added:
+
+<blockquote>
+
+<h3>.config files can be used instead of command line arguments.</h3>
+
+<dl>
+<dt> Description
+<dd> PCs typically run applications via "double clicking", obtaining their 
+command line arguments from a .config file.  Applications should be able
+to be invoked with no arguments and read their arguments from an
+appropriate .config file. For example, the TRL tool when invoked
+with no arguments will look for the ./trl.config file, 
+the DRL tool will look for the ./drl.config file, and so forth.
+<dt> Technical issues
+<dd> This should  allow indirection. In other words, a .config file
+should be able to contain another .config file as one of its entries.
+<dt> Risks
+<dd> Few. 
+<dt> Dependencies
+<dd> Affects all file I/O. 
+</dl>
+</blockquote>
+
+<p><hr>
+<h3>(4) Help</h3>
+
+The following functional requirement will be added:
+
+<blockquote>
+<h3>On-line help information should be provided.</h3>
+
+<dl>
+<dt> Description
+<dd> The "status" line for the various tools should also be available for 
+providing help information. For example, whenever the mouse passes over a
+button, a descriptive message indicating the function of the button should
+be displayed in part of the status line. (The status line could be broken
+into regions, such that the "Ready" message could be displayed along with
+help information.)
+<dt> Technical issues
+<dd> Unclear as to how efficiently livetable/Java will implement this.
+<dt> Risks
+<dd> Few. 
+<dt> Dependencies
+<dd> 
+</dl>
+</blockquote>
+
+<p><hr>
+<h3>(5) Whitespace rather than Tab as the field delimiter.</h3>
+
+Anne has bitter experience using tab as a delimiter. Some editors
+silently replace tabs with spaces, others insert tabs, etc. She 
+believes (and I agree) that manual editing of tab-infested files
+will prove to be a head-ache.
+<p>
+An alternative is to use any whitespace as the field delimiter. 
+This has the following implications for the four primitive persistant "data
+types" in PSP/Baseline (dates, durations, descriptions, and numbers).
+<ul>
+<p><li> Dates.  Their format must be changed to eliminate whitespace from:
+<pre>
+YYYY/MM/DD HH:MM:SS
+</pre>
+to something like:
+<pre>
+YYYY/MM/DD-HH:MM:SS
+</pre>
+<p><li> Durations.  Unchanged.
+<p><li> Descriptions. Descriptions must have their own delimiter, such as a
+quotation mark.  (This means that internal quotation marks must themselves
+be escaped, such as by double quotation marks or `\"'.) 
+</ul>
+      <p>
+<p>
+<b>Problems</b>
+<p>
+Delimiting descriptions creates some new ugliness: file names, phase names,
+document type names, and so forth will all require delimiters under this
+scheme. 
+<p>
+Using arbitrary whitespace as a delimiter also complicates the representation of a 
+"missing" field. We may need to define "null" dates, durations,
+descriptions, and numbers. 
+
+<p><hr>
+<h3>(6) "Command Post" project</h3>
+
+A new project should be defined whose goal is to provide a single 
+point of entry to the entire PSP/Baseline system. In Star Trek 
+terms, we need a "bridge". 
+
+<p><hr>
+<h3>(7) Default process data files.</h3>
+
+If the TRL (or DRL or PCL) tool is invoked without a .trl (.drl/.pcl) file
+argument, then it should look for/create a file called default.trl
+(.drl/.pcl) in the current directory.  The goal here is to simplify 
+initial setup of the system.  If process data files can be defaulted,
+then a set of "standard" .config files can be created with the process
+elements that can be used by novices to run the system without 
+complicated setup.
+
+
+<p><hr>
+<h3>(8) Command line processor project.</h3>
+
+The following project will be added:
+
+<blockquote>
+<h3>2.5 FileArgs/1 Project</h3>
+
+Requirements: 
+<ul>
+<li> Build a FileArgs.java class that is responsible for
+parsing the command line args or the (possibly embedded) .config
+files and returning a FileArgs object that contains a vector
+of each file type.
+
+<li> FileArgs should do some initial error processing. For example,
+it could call FileCheck to make sure the file exists and is of the
+appropriate syntactic structure. 
+
+<li> If process data files are not supplied, FileArgs is responsible
+for determining this and looking for the appropriate default.* file. 
+
+</ul>
+<p>
+Project dependencies: None.
+</blockquote>
+
+
+<h2>Defect Type Summary</h2>
+
+<table border>
+<tr><th>10<td>Syntax<td>Any syntax or grammatical error. <td>29
+<tr><th>20<td>Intro<td>A semantic/structural error in the Intro section.
+<tr><td>21<td>Clarification <td> Existing info requires clarification. <td>1
+<tr><td>22<td>Required Addition<td> New information must be added.
+<tr><td>23<td>Optional Addition<td> New information may be added. <td>3
+<tr><td>24<td>Incorrect<td> An incorrect statement was made. <td> 1
+<tr><th>30<td>Scenarios<td>A semantic/structural error in the Scenarios section.
+<tr><td>31<td>Clarification <td> Existing info requires clarification. <td>
+14
+<tr><td>32<td>Required Addition<td> New information must be added. <td> 6
+<tr><td>33<td>Optional Addition<td> New information may be added. <td> 10
+<tr><td>34<td>Incorrect<td> An incorrect statement was made. <td> 1
+<tr><th>40<td>Func. Reqs<td>A semantic/structural error in the Func. Reqs. section.
+<tr><td>41<td>Clarification <td> Existing info requires clarification.
+<tr><td>42<td>Required Addition<td> New information must be added. <td> 2
+<tr><td>43<td>Optional Addition<td> New information may be added.
+<tr><td>44<td>Incorrect<td> An incorrect statement was made.
+<tr><th>50<td>Gen. Desc.<td>A semantic/structural error in the Gen. Desc. section.
+<tr><td>51<td>Clarification <td> Existing info requires clarification.
+<tr><td>52<td>Required Addition<td> New information must be added.
+<tr><td>53<td>Optional Addition<td> New information may be added.
+<tr><td>54<td>Incorrect<td> An incorrect statement was made.
+<tr><th>60<td>Interface<td>A semantic/structural error in the Interface section.
+<tr><td>61<td>Clarification <td> Existing info requires clarification.
+<tr><td>62<td>Required Addition<td> New information must be added.
+<tr><td>63<td>Optional Addition<td> New information may be added. <td> 1
+<tr><td>64<td>Incorrect<td> An incorrect statement was made.
+<tr><th>70<td>Data<td>A semantic/structural error in the Persistant Data section.
+<tr><td>71<td>Clarification <td> Existing info requires clarification. <td>
+2
+<tr><td>72<td>Required Addition<td> New information must be added. <td> 1
+<tr><td>73<td>Optional Addition<td> New information may be added.
+<tr><td>74<td>Incorrect<td> An incorrect statement was made.
+<tr><th>80<td>Conc. Des.<td>A semantic/structural error in the Conc. Design section.
+<tr><td>81<td>Clarification <td> Existing info requires clarification.
+<tr><td>82<td>Required Addition<td> New information must be added.
+<tr><td>83<td>Optional Addition<td> New information may be added.
+<tr><td>84<td>Incorrect<td> An incorrect statement was made.
+<tr><th>90<td>Project Plan<td>A semantic/structural error in the Project Plan section.
+<tr><td>91<td>Clarification <td> Existing info requires clarification. <td>
+3
+<tr><td>92<td>Required Addition<td> New information must be added. <td> 2
+<tr><td>93<td>Optional Addition<td> New information may be added.
+<tr><td>94<td>Incorrect<td> An incorrect statement was made. <td> 2
+</table>
+
+
+
+      <hr>
+      <address><a href="mailto:johnson@natasha.ics.Hawaii.Edu">Philip Johnson</a></address>
+<!-- Created: Thu Jan 16 11:54:35 HST 1997 -->
+<!-- hhmts start -->
+Last modified: Thu Jan 16 14:50:13 HST 
+<!-- hhmts end -->
+  </body>
+</html>

@@ -1,0 +1,445 @@
+%%% \documentstyle[11pt,/group/csdl/tex/definemargins,
+%%%                        /group/csdl/tex/lmacros]{article} 
+%%% 
+%%%           \begin{document}
+%%%           \begin{center}
+%%%           {\large\bf CSRS Experiment -- Source Listing \\
+%%%             Source: Employee2 }
+%%% \end{center}
+
+\chapter {CSRS Experiment (ICS313): Source Listing -- Employee2}
+\small
+	  
+
+\section{Employee}
+\subsection*{Specification:}
+Employee class: each instance of this class represents a single
+employee. Each Employee has the following attributes: name (a string),
+socSecurity (a string with format "XXX-XX-XXXX", where each X is a digit),
+age (an integer between 17-55), numDependents (an integer between 0 and 10).
+\subsection*{Source-code:}
+\begin{verbatim}
+001:class Employee
+002:
+003:{
+004: protected:   // Protected for use in derived classes
+005:  char *name;
+006:  char *socSecurity;
+007:  int age;
+008:  int numDependents;
+009: public:
+010:  Employee();
+011:  virtual ~Employee();
+012:  int setName(char* newName);
+013:  int setSocSecurity(char* newNum);
+014:  int setAge(int newAge);
+015:  int setNumDependents(int newNumDependents);
+016:  char* getSocSecurity();
+017:  virtual void print();
+018:};
+019:
+\end{verbatim}
+\section{EmployeeNode}
+\subsection*{Specification:}
+Structure to hold a single employee object and a pointer to the next
+employee.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:class EmployeeNode
+002:
+003:{
+004:private:
+005:  Employee* data;   //pointer to an employee data
+006:  EmployeeNode* next;       //link to the next employee in the list
+007:  friend class Company2;//allowing Company2 to access private members
+008:
+009:public:
+010:  EmployeeNode();           //constructor
+011:  ~EmployeeNode();          //destructor
+012:};
+013:
+014:
+\end{verbatim}
+\section{Company2}
+\subsection*{Specification:}
+Company2 class: Each instance of company2 holds instances of employees.
+Instances of employee must be stored as a linked-list ordered ascendingly by
+social security number.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:class Company2
+002:
+003:{ 
+004:private:
+005:  EmployeeNode* list_employee;//list of workers in the company
+006:  int numEmployees;       //number of employees in the company    
+007:public:
+008:  Company2();
+009:  ~Company2();
+010:  void print(void); //print employees in the company
+011:  int addEmployee(Employee* new_employee);//add new employee
+012:  int deleteEmployee(char* ssn);  //delete employee from company
+013:  Employee* findEmployee(char* ssn);  //find a specified employee
+014:};
+015:
+\end{verbatim}
+\section{Employee::Employee}
+\subsection*{Specification:}
+Constructor to initialize Employee
+\subsection*{Source-code:}
+\begin{verbatim}
+001:Employee::Employee()
+002:
+003:{
+004:  name = "";            //set to empty
+005:  socSecurity = "";     //set to empy
+006:  age = 17;             // init age
+007:  numDependents = 0;    // init number of dependents
+008:}
+009:
+010:
+\end{verbatim}
+\section{Employee::\~Employee}
+\subsection*{Specification:}
+Destuctor for Employee
+\subsection*{Source-code:}
+\begin{verbatim}
+001:Employee::~Employee()
+002:
+003:{
+004:  delete[] name;            // delete name array
+005:  delete[] socSecurity;             // delete SSN array
+006:
+007:  name = 0;
+008:  socSecurity = 0;
+009:}
+010:
+011:
+\end{verbatim}
+\section{Employee::setName}
+\subsection*{Specification:}
+Set the name of the Employee to newName
+  Takes a char pointer to newName.
+  Returns an int 0 if name set, 1 if failed.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:int Employee::setName(char* newName) 
+002:  
+003:{
+004:  int n = strlen(newName);
+005:
+006:  if (name == 0)        //no space allocated ? 
+007:      name = new char [n]; //allocate the space
+008:  //space is already allocated
+009:  strcpy(name, newName);
+010:  return 0;
+011:}
+012:
+013:
+\end{verbatim}
+\section{Employee::setSocSecurity}
+\subsection*{Specification:}
+Set SSN for the Employee to newNum.
+  Takes a char pointer to newNum.
+  Returns an int 0 if SSN set 1 if failed.
+  SSN must be a string with format "XXX-XX-XXXX",
+  where each X is a digit.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:int Employee::setSocSecurity(char* newSSN)
+002:
+003:{
+004:  int i = 0;
+005:  int validDigits = 0; //number of valid digits
+006:  
+007:  if (socSecurity == 0)
+008:    socSecurity = new char[12];
+009:  
+010:  //Check for valid SSN format
+011:  while (newSSN[i] != '\0'){
+012:    if (newSSN[i] >= '0' && newSSN[i] <= '9'){
+013:      socSecurity[i] = newSSN[i];
+014:      i++;
+015:      validDigits++;
+016:    }
+017:    else if ((newSSN[i] == '-') && (i == 3 || i == 6))
+018:      i++;
+019:    else
+020:      break;
+021:  }
+022:
+023:  if (validDigits < 9)
+024:      return 1; //unsuccessful
+025:  else
+026:      return 0; //successful
+027:}
+028:
+029:
+\end{verbatim}
+\section{Employee::setAge}
+\subsection*{Specification:}
+Set the age of the Employee to newAge
+  Takes an integer newAge.
+  Returns an int 0 if age set 1 if failed.
+  Age is an integer between 17 - 55.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:int Employee::setAge(int newAge)    
+002:  
+003:{
+004:  if (newAge < 17 && newAge > 55)  // is out of the range?
+005:    return 1;
+006:
+007:  age = newAge;          
+008:  return 0;
+009:}
+010:
+011:
+\end{verbatim}
+\section{Employee::setNumDependents}
+\subsection*{Specification:}
+Set the number of employee dependents to newNumDependents.
+  Takes an integer newNumDependents.
+  Returns an int 0 if the number of dependents set 1 if failed.
+  The number of dependents is an integer between 0 and 10.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:int Employee::setNumDependents(int newNumDependents) 
+002:  
+003:{ //check range 
+004:  if ((newNumDependents >= 0) && (newNumDependents <= 10)){ 
+005:    numDependents = newNumDependents;       // if it is then set it!
+006:    return 0;
+007:  }
+008:  else
+009:    return 1;
+010:}
+011:
+012:
+\end{verbatim}
+\section{Employee::print}
+\subsection*{Specification:}
+Prints the Employee. One line output per employee.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void Employee::print()
+002:
+003:{
+004:  cout << "Name: "<< name;
+005:  cout << "  SSN: "<< socSecurity;
+006:  cout << "  Age: "<< age;
+007:  cout << "  #Dep: "<< numDependents;
+008:  cout << "\n";
+009:}
+010:
+011:
+\end{verbatim}
+\section{Employee::getSocSecurity}
+\subsection*{Specification:}
+Returns a pointer to the SSN of the Employee
+\subsection*{Source-code:}
+\begin{verbatim}
+001:char* Employee::getSocSecurity()
+002:
+003:{
+004:  return socSecurity;
+005:}
+006:
+007:
+\end{verbatim}
+\section{EmployeeNode::EmployeeNode}
+\subsection*{Specification:}
+Constructor for Employee Node
+\subsection*{Source-code:}
+\begin{verbatim}
+001:EmployeeNode::EmployeeNode()
+002:     
+003:{ 
+004:  data = 0;         //initialize data field to null
+005:  next = 0;         //intialize next field to null
+006:}
+007:
+008:
+\end{verbatim}
+\section{EmployeeNode::\~EmployeeNode}
+\subsection*{Specification:}
+Destructor for Employee Node
+\subsection*{Source-code:}
+\begin{verbatim}
+001:EmployeeNode::~EmployeeNode()
+002:     
+003:{
+004:  //use default destructor
+005:}
+006:
+\end{verbatim}
+\section{Company2::Company2}
+\subsection*{Specification:}
+Constructor for Company2 class
+\subsection*{Source-code:}
+\begin{verbatim}
+001:Company2::Company2()
+002:
+003:{
+004:  //set list_employee to NULL pointer
+005:
+006:  list_employee = 0;  
+007:}
+008:
+009:
+\end{verbatim}
+\section{Company2::\~Company2}
+\subsection*{Specification:}
+Destructor from Company2 class
+\subsection*{Source-code:}
+\begin{verbatim}
+001:Company2::~Company2()
+002:
+003:{ 
+004:  EmployeeNode* temp;       
+005:
+006:  //delete all nodes
+007:  while(list_employee != 0) //if there are employees
+008:    {
+009:      temp = list_employee;
+010:      list_employee = list_employee->next; //update first employee
+011:      delete temp;     
+012:    }
+013:}
+014:
+015:
+\end{verbatim}
+\section{Company2::findEmployee}
+\subsection*{Specification:}
+Finds an Employee in the Company2.
+   Takes a char pointer SSN.
+   Returns a pointer to Employee if found, NULL pointer otherwise.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:Employee* Company2::findEmployee(char* ssn)
+002:         
+003:{   
+004:  EmployeeNode* current = list_employee;
+005:  int result;
+006:  
+007:  if (current == 0)
+008:    return 0; //empty list, return Null pointer
+009:
+010:  result=strcmp(current->data->getSocSecurity(), ssn);
+011:
+012:  //traverse the list until ssn is found or the list is empty
+013:  while ((result < 0) && (current != 0)){
+014:    current=current->next;
+015:    result=strcmp(current->data->getSocSecurity(), ssn);
+016:  }
+017:  if ((current==0) && (result > 0)) //key match not found
+018:    return 0; //NULL pointer
+019:  else // result=0
+020:    return current->data ; 
+021:}
+022:
+023:
+\end{verbatim}
+\section{Company2::addEmployee}
+\subsection*{Specification:}
+Adds a new Employee to Company2.
+  Employee records are maintained in ascending order of SSN.
+  Takes an Employee pointer newWorker.
+  Returns an integer 0 if newWorker is successfully added,
+  returns 1 otherwise.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:int Company2::addEmployee(Employee* newWorker)
+002:       
+003:{
+004:  int compare;       //string compare result
+005:  EmployeeNode* current = list_employee; //current employee node
+006:  EmployeeNode* previous = 0; //before current employee node
+007:  EmployeeNode* new_node = new EmployeeNode; //create new node
+008:
+009:  new_node->data = newWorker;  //set newWorker to this node
+010:  
+011:  while(current != 0){
+012:    compare = strcmp (new_node->data->getSocSecurity(),
+013:                  current->data->getSocSecurity());
+014:    if(compare = 0){
+015:      return 0; //duplicate
+016:    }
+017:    else if(compare < 0){
+018:      previous = current;
+019:      current = current->next;
+020:    }
+021:    else{   //found the right place, insert the node 
+022:      new_node->next = current; 
+023:      previous->next = new_node;
+024:      numEmployees++;
+025:      return 0;
+026:    }
+027:  }
+028:  //insert at the end of the list
+029:  previous->next = new_node;
+030:  numEmployees++;
+031:  return 0;
+032:}
+033:
+034:
+\end{verbatim}
+\section{Company2::deleteEmployee}
+\subsection*{Specification:}
+Deletes an Employee in the Company2.
+  Takes a char pointer SSN.
+  Returns an integer 0 if deleted successful, 1 if failed.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:int Company2::deleteEmployee(char* ssn)
+002:       
+003:{
+004:  EmployeeNode* current = list_employee; //current employee
+005:  EmployeeNode* temp;
+006:  int result;
+007:
+008:  if (current == 0) //empty ?
+009:    return 1;   //unsuccessfull
+010:
+011:  while (current->next != 0){
+012:    if((result=strcmp(current->next->data->getSocSecurity(),ssn))<0)
+013:      current=current->next;
+014:    else if (result==0){    //found, delete current->next node
+015:      temp = current->next;
+016:      current->next = temp->next;
+017:      delete temp;
+018:      return 0;                     //successful
+019:    }
+020:  }
+021:  //if no ssn matches with any nodes in the list
+022:  return 1;         //unsuccessful
+023:}
+024:
+025:
+\end{verbatim}
+\section{Company2::print}
+\subsection*{Specification:}
+Print employess of company2
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void Company2::print(void)
+002:
+003:{
+004:  EmployeeNode* current; //points to a current employee
+005:  
+006:  current = list_employee; //intializes current employee
+007:
+008:  if(current == 0){ //no employees in company
+009:    cout <<"\nThere are no employees in the company to print.\n";
+010:    return;
+011:  }
+012:
+013:  while(current->next != 0){//if employee exists
+014:    current->data->print();
+015:    current = current->next;
+016:  }
+017:  cout << "\nThere are " << numEmployees << " employees.\n";
+018:}
+019:
+\end{verbatim}
+%%\end{document}

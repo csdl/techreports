@@ -1,0 +1,1642 @@
+head	1.15;
+access;
+symbols;
+locks; strict;
+comment	@% @;
+
+
+1.15
+date	95.07.07.03.38.20;	author cmoore;	state Exp;
+branches;
+next	1.14;
+
+1.14
+date	95.07.01.01.29.04;	author cmoore;	state Exp;
+branches;
+next	1.13;
+
+1.13
+date	95.06.30.22.56.52;	author cmoore;	state Exp;
+branches;
+next	1.12;
+
+1.12
+date	95.06.30.03.58.25;	author cmoore;	state Exp;
+branches;
+next	1.11;
+
+1.11
+date	95.06.28.23.59.13;	author cmoore;	state Exp;
+branches;
+next	1.10;
+
+1.10
+date	95.06.26.03.18.47;	author cmoore;	state Exp;
+branches;
+next	1.9;
+
+1.9
+date	95.06.24.08.40.23;	author cmoore;	state Exp;
+branches;
+next	1.8;
+
+1.8
+date	95.06.23.07.34.42;	author cmoore;	state Exp;
+branches;
+next	1.7;
+
+1.7
+date	95.06.23.06.33.26;	author cmoore;	state Exp;
+branches;
+next	1.6;
+
+1.6
+date	95.06.23.06.32.54;	author cmoore;	state Exp;
+branches;
+next	1.5;
+
+1.5
+date	95.06.22.04.47.19;	author cmoore;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	95.06.07.21.40.05;	author cmoore;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	95.06.05.19.53.58;	author cmoore;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	95.05.22.00.21.35;	author cmoore;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	95.02.19.21.42.34;	author cmoore;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.15
+log
+@Final Copy
+@
+text
+@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% thesis-AEN.tex -- 
+%% Author          : Carleton Moore
+%% Created On      : Tue Jan 10 11:59:25 1995
+%% Last Modified By: Carleton Moore
+%% Last Modified On: Thu Jul  6 17:37:53 1995
+%% Status          : Unknown
+%% RCS: $Id: thesis-AEN.tex,v 1.14 1995/07/01 01:29:04 cmoore Exp cmoore $
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1995 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+%for review purposes
+%\ls{1}
+
+\newpage
+
+\chapter{AEN: A Collaborative Hypertext Authoring Tool}
+\label{sec:AEN}
+
+AEN is a collaborative hypertext authoring tool designed to support and
+explore the nature of strong collaboration.  This chapter provides an
+overview of the design and implementation of AEN.  Section
+\ref{sec:architectureAEN} describes the general architecture of AEN.
+Section \ref{sec:designAEN} discusses the design of AEN and how its tools
+help support strong collaboration.  The final section provides a brief
+discussion of the development of AEN and its current status.
+
+\section{Architecture of AEN}
+\label{sec:architectureAEN}
+
+AEN is a collaborative, instrumented learning/authoring tool implemented
+with the Egret collaborative system development
+environment\cite{csdl-93-09}.  As with all Egret domain-specific
+applications, AEN is a client-server system running over TCP/IP, where
+clients (implemented as customized versions of XEmacs) interact with a
+central server called HBS (implemented in C++) to store and retrieve
+information or communicate with other clients.  AEN makes substantial use
+of Egret's facilities for agents, or autonomous client processes that
+extend the system's information processing capabilities beyond those
+provided by HBS or the clients.  Figure \ref{fig:aen-architecture}
+illustrates AEN's basic client-server architecture.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=client-server.eps,width=5in}} 
+  {\ls{1.0}{\em AEN consists of a central server called HBS that provides basic
+  storage and concurrency control mechanisms, augmented with several agent
+  processes to support strong collaboration.}}
+ \caption{AEN's architecture from an OS process perspective.}
+\label{fig:aen-architecture}
+\end{figure}
+
+\section{The design of AEN}
+\label{sec:designAEN}
+\subsection{Structure of Data in AEN}
+
+AEN provides facilities for storage, retrieval, and analysis of a hypertext
+network of node and links. The hypertext network represents the text from
+which the students learn and the product of collaboration among the
+participants.  AEN provides a static, predefined set of node and link
+types.
+
+\subsubsection{Node Types}
+
+At the user-level, AEN provides two type hierarchies of nodes: artifact
+nodes and figure nodes.  Nodes of type {\em artifact} represent textual
+information in the hypertext document.  Nodes of type {\em figure}
+represent graphical information.
+
+Artifact nodes contain ETML\footnote{A primary difference between the Egret
+Text Markup Language (ETML) and HTML is that ETML supports {\tt egret::}
+URL specifier for link and node objects within an HBS server.} code that
+provides formating directives and inter-node links.  There are four
+subclasses of artifacts:
+
+\begin{itemize}
+
+\item{\bf Document:} Nodes that contain the text of the document created by
+the participants.
+
+\item{\bf Comment:} Nodes containing the reactions of the participants to
+the contents of other nodes.
+
+\item{\bf Quicky Quiz:} Nodes that contain exercises for the participants
+to complete.
+
+\item{\bf Quicky Quiz Answer:} Nodes that contain the participant's
+solutions to the quicky quiz nodes.
+
+\end{itemize}
+
+Quicky Quiz and Quicky Quiz Answer nodes are used in AEN to support
+learning.  They can be ignored for collaborative authoring.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Data.eps,width=5in}}
+  \caption{Data Relationships in AEN}
+  \label{fig:Data}
+\end{figure}
+
+Unlike artifact nodes, figure nodes contain the graphics data used by Xview
+to display the figures.  Users can create links from artifact nodes to
+figure nodes or other artifact nodes by a simple menu-based command.  Such
+an operation results in both the creation of a new link object within the
+server and the creation of an ETML link anchor as part of the contents of
+the artifact node.  However, since figure nodes contain graphical
+information, compatible with Xview, rather than ETML code, users cannot
+create links from figure nodes.  Figure \ref{fig:Data} shows the
+relationships between the node types.
+
+\subsubsection{Link Types}
+
+AEN defines six types of links: Include, Xref,
+see\_Quicky\_\-Quiz, see\_\-Quicky\_\-Quiz\_\-Answer, see\_\-Comment, and
+see\_Figure.  AEN restricts the type of the source and destination nodes
+for each type of link. Table 2.1 describes the different
+links.  The different types of links allows the authors to create different
+structures in the hypertext document. 
+
+\begin{table}
+  \begin{center}
+    \caption{Link Types}
+    \begin{tabular}{|l|l|l|l|}
+      \hline
+      Link Type&Source Node&Destination Node&Description\\ \hline \hline&&&\\ 
+      Include&document&document&Backbone structure \\
+      &&&of hypertext document\\ \hline
+      Xref&document&document&Cross reference\\ \hline
+      See\_Comment&Any&comment&Points to a Comment\\ \hline
+      See\_Quicky\_Quiz&Any&Quicky Quiz&Points to a Quicky Quiz\\ \hline
+      See\_Quicky\_Quiz\_&Quicky Quiz&Quicky Quiz&Points to a\\
+      Answer&&Answer&Quicky Quiz Answer\\\hline
+      See\_Figure&Any&Figure&Points to a Figure\\ \hline
+    \end{tabular}
+    \label{tab:types}
+  \end{center}
+\end{table}
+
+
+\subsubsection{The AEN Backbone}
+\label{sec:aen-backbone}
+
+Given the set of node and link types in AEN, there are many possible ways
+to organize the resulting hypertext network.  However, given the intended
+usage of AEN, it is natural and appropriate to provide a fundamental
+organization of the hypertext as an ordered sequence of interlinked,
+hypertext ``chapters'', each hypertext chapter having as its root a single
+document node.
+
+Each document node with a link to it from a chapter node represents a
+``section'' within that chapter. In the same manner, each document node
+with a link to it from a section node represents a subsection within that
+section, and so forth ad infinitum.
+
+Any document node can, of course, have a link to it from more than one
+other document node in the hypertext, with the result that the same node
+can be a ``section'' with respect to one node, but a ``sub-subsection''
+with respect to another.  As a result, the AEN hypertext is organized as a
+directed, hierarchical, but potentially cyclic graph structure.
+
+So far, this description seems to indicate that there is a one-to-one
+correspondence between each document node and each chapter, section,
+subsection, and so forth in the document.  The reality is slightly more
+complex.  Each document node does contribute at least one new chapter, or
+section, or subsection, etc. to the hypertext.  However, if a document
+node contains the HTML {\em heading} formatting directive, then the label for
+this heading indicates a new section (or subsection, etc. depending upon
+context) within the node.
+
+To bootstrap this organization, some distinguished ``root'' document node
+is required, which I call the AEN Backbone.  This node contains a set of
+links to document nodes which define the set of top-level chapters in AEN.
+
+The AEN Backbone and the nested structure of document nodes defines the
+major organizing principle for the AEN hypertext, and leads to the first
+data manipulation tool: the table of contents screen, as shown in Figure
+\ref{fig:Screen1}.  The next section discusses the table of contents screen
+and the other data manipulation tools. 
+
+
+
+\begin{figure}[htb]
+ \centerline{\psfig{figure=screen1.ps,width=6in}}
+ {\ls{1.0}{\em This screen shot shows a portion of this 
+ user's table of contents in the upper left screen, and a retrieved
+ document node called ``Design'' in the upper right screen.  The Design
+ node contains within it both a link to a figure called ``Figure 1'' and a
+ comment called ``Regions'' immediately after it (represented in the
+ Design node by the textual anchor ``[??]''.  Both the figure and the
+ comment are retrieved and displayed in the screens in the lower left and
+ lower right hand corners, respectively.}}
+ \caption{Screen Shot of AEN's Main display, a comment node, a figure node,
+ and TOC.}
+ \label{fig:Screen1}
+\end{figure}
+
+
+\subsection{Mechanisms for Data Manipulation in AEN}
+\label{sec:mechanisms}
+
+For browsing, AEN emulates many of the facilities of WWW browsers such as
+Mosaic or Netscape.  Each node is displayed in a separate screen, and
+multiple nodes can be displayed simultaneously.  The contents of nodes are
+automatically reflowed to conform to the size of the screen.
+Middle-clicking over a link anchor retrieves the corresponding node from
+the server.  As noted above, AEN supports storage and retrieval of both
+text and graphics, and although audio is not currently available in AEN, it
+has been implemented in other Egret-based applications, and could be easily
+added.  Due to a limitation in the current release of XEmacs, in-line
+graphics are not currently available in AEN.
+
+Where AEN begins to depart from WWW systems is in its support for
+authoring and collaboration.  First, AEN provides an authoring mode
+for nodes, including menu and command key-based formatting directives
+for headings, lists, and fontification, link anchor creation, and so
+forth.  Second, all artifact nodes must be locked before they can be
+modified.  Locking preserves the integrity of information when
+multiple authors are working on a document, but provides only basic
+support for collaboration.  AEN augments locking with an access
+control mechanism, discussed next.
+
+\subsubsection{Access Control}
+
+AEN implements three forms of access to individual nodes: read access,
+write access, and annotation access.  The administrator(s) of a node can set each
+form of access independently for each user of AEN.
+
+When no access is provided to a node, then that node is essentially
+private and can be retrieved and edited only by the administrator(s) of the
+node. (The creator of a node is given the status of ``administrator'', which
+has the effect of irrevocably providing all forms of access. Only the
+administrator[s] of a node can delete the node.)
+
+When a user has read access for a node, they can retrieve it but they
+cannot add a link to it or edit its contents. Providing only read access to
+a node to others indicates that the information is available for use, but
+not for review or feedback.
+
+When a user has both read and annotation access for a node, they can both
+retrieve it and add a link from the node to a newly created comment
+node. Providing both read and annotation access indicates that the
+information is available for use and that comments from others about the
+content of the node are welcomed.  Annotation access allows the administrator of
+the node to solicit suggestions for changes to the contents of the node,
+while still retaining control over whether those changes are actually
+applied to the document.
+
+When a user has both read and write access for a node, they can both
+retrieve it and lock it for editing.  Providing both read and write access
+signifies the desire for the closest form of collaborative development, in
+which those with write access can make arbitrary changes to the contents of
+a node.
+
+Of course, the administrator of a node may grant all three access rights to another
+user, which allows them to select which form of feedback to provide.  It is
+also interesting to note that without read access, neither annotation nor
+write access is useful, since one cannot annotate or lock a node without
+first retrieving it.  This is actually quite useful in practice, since it
+allows the administrator of a node to temporarily ``hide'' a node simply by
+disabling read access to the group.  By re-enabling read access, the
+previous annotation, and write access are all reinstated.
+
+
+\begin{figure}%[htb]
+ \centerline{\psfig{figure=screen2.ps,width=6in}}
+ {\em This screen shot illustrates some of the real-time support
+for strong collaboration in AEN.  The Snoopy window in the lower right hand
+corner shows, for each user of the system, whether or not they are logged
+in currently and if so, where they are working in the document.  Both user
+cmoore and user jeremyt are working on the document node called ``Shared
+Emacs''.  The Partyline screen, in the lower right hand corner, allows these
+users (as well as all others) to talk to each other while they work.  This
+figure also shows a local TOC for the Shared Emacs chapter, and a screen
+displaying the current set of unread document nodes for this user.}
+ \caption{Screen Shot of AEN's Main display, Snoopy, Partyline,  Node List
+ and TOC.}
+ \label{fig:Screen2}
+\end{figure}
+
+\subsubsection{Context-Sensitive Table of Contents}
+
+The access control mechanism determines which nodes a user may read and
+what they may do to the node once they have read it, but it does not help
+the user determine which node they want to read.
+
+The primary navigation mechanism  provided by AEN is {\em tables of
+contents}.  Each table of contents (TOC) is a dynamically generated, linear
+traversal of document nodes in the database, organized according to the AEN
+Backbone structure described in Section \ref{sec:aen-backbone}.  Figures
+\ref{fig:Screen1} and \ref{fig:Screen2} each contain an example of a table
+of contents.  Each line in a TOC is mouse-sensitive, and middle-clicking on
+it retrieves the corresponding node (or section within a node) from the
+server.  The indentation of headings provides a visual cue to the
+hierarchical structure of the hypertext.  Once the TOC is displayed the
+user can collapse or expand the listing to reduce or enlarge the number of
+listings present.
+
+
+AEN generates a TOC based upon a starting node that the user chooses.  The
+TOC algorithm only analyzes document nodes for which the user has read
+access, thus, the TOC is both location and user-specific.  The algorithm
+only visits the children of a node once, which breaks cycles in the
+hypertext. Finally, each time a document node is written to the server,
+structural information relevant to the TOC is extracted, cached, and
+propagated to all clients if it has changed. Such a mechanism is crucial to
+the usability of the system; one cannot retrieve every document node from
+the database each time a TOC is generated.
+
+
+\subsubsection{Node Lists}
+
+The tables of contents provide the most important perspective on the
+hypertext---that of the document-level structure, but other viewpoints are
+also useful.  Users can make queries for nodes satisfying various criteria
+with the node-list mechanism. In AEN, useful criteria so far include the
+type of nodes, whether or not the nodes have been retrieved by this user
+yet, and the nodes owned by the user.
+
+Each node-list returned from a query consists of a mouse-sensitive
+list of node names appearing in a single screen. Middle-clicking
+on the node retrieves it in the standard fashion for AEN navigation.
+
+The Hyperstar Bulletin \foot{The name of this mechanism is a pun on the
+name of Honolulu's evening newspaper: the Star-Bulletin.} is an agent-based
+mechanism intended to support collaboration via a daily ``snapshot'' of
+what has changed in the database since each user last visited it.  The
+Hyperstar Bulletin consists of an agent process that wakes up at
+approximately 4 a.m. each morning and sends a daily electronic
+``newspaper'' to each participant containing a listing of which nodes (for
+which the user has read access) have been created or changed since the last
+time the user logged in. 
+
+
+\subsubsection{Snoopy and Partyline}
+
+The mechanisms described above support the construction of a hypertext by
+multiple authors, but falls short of support for strong collaboration in
+one crucial way.  With these above mechanisms alone, the actual people
+involved in the collaborative activity are ``invisible'' within the system:
+their effects upon hypertext document are visible, but they themselves are
+not.  To create a physical presence for participants within the system, AEN
+provides two additional facilities: Snoopy and Partyline, as illustrated in
+Figure \ref{fig:Screen2}.
+
+The Snoopy mechanism allows the user to see who else is at work and have an
+idea of what they are working on.  It displays basic information about the
+connection status and last read node of the users of AEN. A Snoopy screen
+is created automatically each time a user connects to AEN, and is updated
+every 30 seconds.  Through Snoopy, each user knows who else is currently in
+AEN and where they are in the hypertext.
+
+Partyline is a mechanism for passing real time messages to other users of
+AEN.  Partyline allows the user to send a textual message to all the users
+currently connected to AEN or send a private message to one other user
+currently connected to Partyline.  Partyline is similar to an Internet
+``chat'' mechanism.  Typically, users greet the other people when they
+log in to AEN with Partyline messages.
+
+Both facilities provide access to the users of AEN.  In order to help
+support strong collaboration, users of AEN need access to the other users.
+Snoopy and Partyline provide this service.
+
+\section{Development and Status}
+
+\subsection{Brief History}
+
+Research on AEN has been underway for almost one year.  The initial
+requirements document for AEN \cite{csdl-94-06} was developed in June,
+1994.  In this document, the stated design goal of AEN was to support
+virtually all lecture material and participant interactions for a seminar
+in collaborative systems to be held in Fall, 1994.  An alpha Version 1.0 of
+AEN conforming to these requirements was released for classroom use in
+September, 1994.  
+
+Participants in the seminar used AEN to read and react to material posted
+by students and the instructor.  Based upon their reactions, the material
+was revised and improved, or new material was added. On-line quizzes, as
+well as semester projects, assessed the learning process. Face-to-face
+classroom meetings provided supplementary forums to discuss things learned
+or questioned through on-line activities.  Through AEN, groups of students:
+learned how to develop software in Emacs Lisp; used Egret to
+implement a collaborative system; designed and presented a project proposal for
+their collaborative system; and created a well-structured report on the results
+of their effort.
+
+During the Fall, 1995 seminar, the notion of AEN as a testbed for the
+concept of strong collaboration emerged.  However, during this initial
+usage, strong collaboration occurred only rarely due to system frailty and
+incompleteness.  After redesign and rework, I used AEN in a case study
+during Spring, 1995, to evaluate the system and better understand its
+support for strong collaboration.
+
+
+\subsection{Current Status}
+
+Since its initial release, AEN has gone through over 30 minor version and
+three major versions.  AEN consists of over 12,000 lines of lisp code. I
+have authored or co-authored three documents about AEN, CSDL technical
+report 94-06 \cite{csdl-94-06}, my Masters thesis proposal
+\cite{csdl-94-16}, and a paper published in the Fourth
+Workshop on Enabling Technologies: Infrastructure for Collaborative
+Enterprises (WET-ICE '95) \cite{csdl-94-20}.
+
+I am cleaning up the code and documentation and writing an on-line tutorial
+for AEN, in preparation for AEN's public release in early Fall, 1995.
+
+
+
+@
+
+
+1.14
+log
+@turn in to committee
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Fri Jun 30 13:45:46 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.13 1995/06/30 22:56:52 cmoore Exp cmoore $
+d39 5
+a43 13
+information or communicate with other clients.  
+%AEN uses the hypertext
+%document as the text from which the students learn and the product of
+%collaboration among the participants consists of a hypertext
+%document and several tools to support strong collaboration.
+%  The hypertext
+%document represents the text from which the students learn and the product
+%of collaboration among the participants.  
+AEN makes substantial use of
+Egret's facilities for agents, or autonomous client processes that extend
+the system's information processing capabilities beyond those provided by
+HBS or the clients.  Figure \ref{fig:aen-architecture} illustrates AEN's
+basic client-server architecture.
+d47 1
+a47 1
+  {\em AEN consists of a central server called HBS that provides basic
+d49 1
+a49 1
+  processes to support strong collaboration.}
+a50 4
+% \caption{\ls{1.0} AEN's architecture from a OS process perspective. AEN consists
+%of a central server called HBS that provides basic storage and concurrency
+%control mechanisms, augmented with several agent processes to support
+%strong collaboration.}
+d122 16
+a137 14
+\begin{tabular}{|l|l|l|l|}
+\hline
+Link Type&Source Node&Destination Node&Description\\ \hline \hline&&&\\ 
+Include&document&document&Backbone structure \\
+&&&of hypertext document\\ \hline
+Xref&document&document&Cross reference\\ \hline
+See\_Comment&Any&comment&Points to a Comment\\ \hline
+See\_Quicky\_Quiz&Any&Quicky Quiz&Points to a Quicky Quiz\\ \hline
+See\_Quicky\_Quiz\_&Quicky Quiz&Quicky Quiz&Points to a\\
+Answer&&Answer&Quicky Quiz Answer\\\hline
+See\_Figure&Any&Figure&Points to a Figure\\ \hline
+\end{tabular}
+\label{tab:types}
+\caption{Link Types}
+d172 1
+a172 1
+is required, which we call the AEN Backbone.  This node contains a set of
+d185 1
+a185 1
+ {\em This screen shot shows a portion of this 
+d192 1
+a192 1
+ lower right hand corners, respectively.}
+a194 8
+% \caption{\ls{1} This screen shot shows a portion of this 
+% user's table of contents in the upper left screen, and a retrieved
+% document node called ``Design'' in the upper right screen.  The Design
+% node contains within it both a link to a figure called ``Figure 1'' and a
+% comment called ``Regions'' immediately after it (represented in the
+% Design node by the textual anchor ``[??]''.  Both the figure and the
+% comment are retrieved and displayed in the screens in the lower left and
+% lower right hand corners, respectively.}
+d200 1
+a201 1
+
+d233 1
+a233 1
+administrator(s) of a node can delete the node.)
+a277 9
+% \caption{\ls{1.0} This screen shot illustrates some of the real-time support
+%for strong collaboration in AEN.  The Snoopy window in the lower right hand
+%corner shows, for each user of the system, whether or not they are logged
+%in currently and if so, where they are working in the document.  Both user
+%cmoore and user jeremyt are working on the document node called ``Shared
+%Emacs''.  The Partyline screen, in the lower right hand corner, allows these
+%users (as well as all others) to talk to each other while they work.  This
+%figure also shows a local TOC for the Shared Emacs chapter, and a screen
+%displaying the current set of unread document nodes for this user.}
+d281 1
+a281 1
+\subsubsection{Context-sensitive table of contents}
+d390 1
+a390 1
+incompleteness.  After redesign and rework, we used AEN in a case study
+d398 6
+a403 6
+three major versions.  AEN consists of over 12000 lines of lisp code. We
+have written three documents about AEN, CSDL technical report 94-06
+\cite{csdl-94-06}, my Masters thesis proposal \cite{csdl-94-16}, and a
+paper accepted for publication in the Fourth Workshop on Enabling
+Technologies: Infrastructure for Collaborative Enterprises (WET-ICE '95)
+\cite{csdl-94-20}.
+d405 2
+a406 3
+We are cleaning up the code and documentation and writing an on-line
+tutorial for AEN, in preparation for AEN's public release in early Fall,
+1995.
+@
+
+
+1.13
+log
+@turn in to committee
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Fri Jun 30 12:56:34 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.12 1995/06/30 03:58:25 cmoore Exp cmoore $
+d129 1
+a129 1
+for each type of link. Table \ref{table:link types} describes the different
+d146 1
+a146 1
+\label{table:link types}
+@
+
+
+1.12
+log
+@Thursday last draft?
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Thu Jun 29 17:57:34 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.11 1995/06/28 23:59:13 cmoore Exp cmoore $
+d203 1
+a203 1
+ \caption{Screen Shot of AEN's Main display, A comment node, A figure node,
+@
+
+
+1.11
+log
+@Accepted by Philip!!!
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Wed Jun 28 13:59:01 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.10 1995/06/26 03:18:47 cmoore Exp cmoore $
+d15 1
+a15 1
+\ls{1}
+@
+
+
+1.10
+log
+@first revision
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Sun Jun 25 17:18:33 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.9 1995/06/24 08:40:23 cmoore Exp cmoore $
+d27 1
+a27 1
+help support strong collaboration.  This chapter concludes with a brief
+d39 9
+a47 4
+information or communicate with other clients.  AEN consists of a hypertext
+document and several tools to support strong collaboration.  The hypertext
+document represents the text from which the students learn and the product
+of collaboration among the participants.  AEN makes substantial use of
+d54 5
+a58 5
+ \centerline{\psfig{figure=client-server.eps,width=5in}}
+ \caption{AEN's architecture from an OS process perspective. AEN consists
+of a central server called HBS that provides basic storage and concurrency
+control mechanisms, augmented with several agent processes to support
+strong collaboration.}
+d71 4
+a74 2
+network of node and links. AEN provides a static, predefined set of node
+and link types.
+d195 1
+a195 1
+ \caption{This screen shot shows a portion of this 
+d203 2
+d285 1
+a285 1
+ \caption{This screen shot illustrates some of the real-time support
+d294 2
+d395 7
+a401 24
+AEN has been in existence for almost a year.  The initial requirements
+document for AEN \cite{csdl-94-06} was developed in June, 1994.  The design
+goal of AEN was to support virtually all lecture material and participant
+interactions for the seminar.  Participant interaction would consist of
+reading and reacting to material posted by students and the instructor.
+Based upon the reactions, the material would either be revised and
+improved, or new material would be added. On-line quizzes, as well as
+semester projects, would assess the learning process. A small number of
+face-to-face classroom meetings would provide supplementary forums to
+discuss things learned or questioned through on-line activities.  Through
+AEN, groups of students were expected to learn how to develop software in
+Emacs Lisp, use Egret to implement a collaborative system, design and
+present a project proposal for a collaborative system, and create a
+well-structured report on the results of their effort.  An alpha Version
+1.0 was released for classroom use in September, 1994.  In Fall, 1994, we
+both reimplemented and used AEN in a graduate seminar, ICS 613 at the
+University of Hawaii.  This process redefined the requirements of AEN, but
+did not rigorously evaluate them.  During this process, the notion of our
+system as a testbed for strong collaboration emerged.  However, during this
+initial usage strong collaboration did not occur except in isolated
+circumstances, because of system frailty and incompleteness.  After
+redesign and rework, we used AEN in a case study during Spring, 1995, to
+evaluate the system and better understand its support for strong
+collaboration.
+d403 10
+d414 8
+d424 11
+a434 3
+Currently, AEN is up to release 2.3.14.  We are cleaning up the code and
+documentation and writing an on-line tutorial for AEN.  All in preparation
+for AEN's public release in early Fall, 1995
+@
+
+
+1.9
+log
+@day 4 getting closer to a complete draft
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Fri Jun 23 13:51:32 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.8 1995/06/23 07:34:42 cmoore Exp cmoore $
+d384 24
+a407 29
+%AEN has been in existence for almost a year.  During the year, it has gone
+%through a major change in focus.  The initial requirements document for AEN
+%\cite{csdl-94-06} was developed in June, 1994, and an alpha Version 1.0 was
+%released for classroom use in September, 1994.  By mid-October, we finished
+%a substantial redesign of AEN and released Version 2.2.0.  The design goal
+%of AEN was still to support virtually all lecture material and participant
+%interactions for the seminar.  Participant interaction would consist of
+%reading and reacting to material posted by students and the instructor.
+%Based upon the reactions, the material would either be revised and
+%improved, or new material would be added. On-line quizzes, as well as
+%semester projects, would assess the learning process. A small number of
+%face-to-face classroom meetings would provide supplementary forums to
+%discuss things learned or questioned through on-line activities.  Through
+%AEN, groups of students were expected to learn how to develop software in
+%Emacs Lisp, use Egret to implement a collaborative system, design and
+%present a project proposal for a collaborative system, and create a
+%well-structured report on the results of their effort.
+%
+%In the summer of 1994, we developed the initial requirements behind AEN.  As
+%we implemented the system our ideas about collaboration evolved.  We
+%started out looking for the tools that helped build a collaborative
+%hypertext document.  In Fall, 1994, we both implemented and used AEN in ICS
+%613.  This process redefined the requirements of AEN, but did not
+%rigorously evaluate them.  During this process, the notion of our system as
+%a testbed for strong collaboration emerged.  However, during this
+%initial usage strong collaboration did not occur except in isolated
+%circumstances, because of system frailty and incompleteness.  In Spring,
+%1995, a case study approach was used to better understand the system and its
+%support for strong collaboration.  
+d409 1
+d412 5
+a416 2
+%Cleaning up code, bug fixes and documentation work for public release in
+%August, 1995.
+@
+
+
+1.8
+log
+@day 3 end turnin
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Thu Jun 22 21:34:15 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.7 1995/06/23 06:33:26 cmoore Exp cmoore $
+d126 1
+a126 1
+\begin{figure}
+d141 1
+a141 1
+\end{figure}
+@
+
+
+1.7
+log
+@day 3 first revision
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Thu Jun 22 20:33:17 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.6 1995/06/23 06:32:54 cmoore Exp cmoore $
+d402 11
+d416 2
+@
+
+
+1.6
+log
+@day 3 first revision
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Thu Jun 22 20:29:17 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.5 1995/06/22 04:47:19 cmoore Exp cmoore $
+d403 3
+a405 1
+\subsection{Current Status}
+@
+
+
+1.5
+log
+@turn in to save version.  Day one of death race
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Wed Jun 21 18:46:53 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.4 1995/06/07 21:40:05 cmoore Exp cmoore $
+d23 6
+a28 6
+explore strong collaboration.  This chapter provides an overview of the
+design and implementation of AEN.  Section \ref{sec:architectureAEN} describes
+the general architecture of AEN.  Section \ref{sec:designAEN} discusses the
+design of AEN and how its tools help support strong collaboration.  This
+chapter concludes with a brief discussion of the development of AEN and its
+current status.
+d49 2
+a50 2
+ \centerline{\psfig{figure=client-server.eps,width=6in}}
+ \caption{AEN's architecture from a OS process perspective. AEN consists
+d102 1
+a102 1
+  \centerline{\psfig{figure=Data.eps,width=4in}}
+d306 1
+a306 1
+Backbone structure described in Section \ref{sec:aen-backbone}.  figures
+@
+
+
+1.4
+log
+@changed chapter title removed krusty stuff
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Wed Jun  7 11:35:19 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.3 1995/06/05 19:53:58 cmoore Exp cmoore $
+d14 3
+d19 1
+a19 1
+\chapter{AEN, a Collaborative Hypertext Authoring Tool}
+d22 7
+a28 1
+\section{An Overview of AEN}
+d30 3
+d34 13
+a46 13
+with the Egret collaborative system development environment
+\cite{csdl-93-09}.  As with all Egret domain-specific applications, AEN is
+a client-server system running over TCP/IP, where clients (implemented as
+customized versions of XEmacs) interact with a central server called HBS
+(implemented in C++) to store and retrieve information or communicate with
+other clients.  AEN consists of a hypertext document and several tools to
+support strong collaboration.  The hypertext document represents the text
+from which the students learn and the product of collaboration among the
+participants.  AEN makes substantial use of Egret's facilities for agents,
+or autonomous client processes that extend the system's information
+processing capabilities beyond those provided by HBS or the clients.
+Figure \ref{fig:aen-architecture} illustrates AEN's basic client-server
+architecture.
+d62 1
+a62 1
+
+d103 1
+a103 1
+  \caption{{\bf Data Relationships in AEN}}
+d120 1
+a120 1
+see\_Quicky\_Quiz, see\_Quicky\_Quiz\_Answer, see\_Comment, and
+d126 1
+a126 1
+\begin{table}
+d129 1
+a129 1
+Link Type&Source Node&Destination Node&Description\\ \hline \hline
+d135 2
+a136 2
+See\_Quicky\_Quiz\_Answer&Quicky Quiz&Quicky Quiz Answer&Points to a \\
+&&&Quicky Quiz Answer\\ \hline
+d141 1
+a141 1
+\end{table}
+d159 5
+a163 6
+Any document node can, of course, have a link to it from more
+than one other document node in the
+hypertext, with the result that the same node can be a ``section'' with
+respect to one node, but a ``sub-subsection'' with respect to another.  As a
+result, the AEN hypertext is organized as a directed, hierarchical, but
+potentially cyclic graph structure.
+d235 1
+a235 1
+write access, and annotation access.  The owner(s) of a node can set each
+d239 2
+a240 2
+private and can be retrieved and edited only by the owner(s) of the
+node. (The creator of a node is given the status of ``owner'', which
+d242 1
+a242 1
+owner(s) of a node can delete the node.)
+d253 1
+a253 1
+content of the node are welcomed.  Annotation access allows the owner of
+d264 1
+a264 1
+Of course, the owner of a node may grant all three access rights to another
+d269 1
+a269 1
+allows the owner of a node to temporarily ``hide'' a node simply by
+d343 1
+a343 1
+what's changed in the database since each user last visited it.  The
+d380 24
+a403 1
+The next chapter discusses our early experiences with AEN.
+@
+
+
+1.3
+log
+@checking in for safety
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Mon May 22 10:33:35 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.2 1995/05/22 00:21:35 cmoore Exp cmoore $
+d16 1
+a16 1
+\chapter{AEN, a collaborative hypertext tool}
+d38 1
+a38 1
+ \caption{\ls{1.0} AEN's architecture from a OS process perspective. AEN consists
+d42 4
+a48 15
+
+%The initial requirements of AEN were to create a virtual classroom and move
+%nearly all of the lectures for a class on-line into a hypertext document
+%called {\em The Annotated Egret}.  The class' subject is how to design and
+%construct collaborative systems using Egret.  This class would meet both
+%on-line and off-line for discussions about issues.  Most of the interaction
+%in the class would occur through annotation of the lecture material with
+%new hypertext links to questions, comments, and insights.  A few actual
+%classroom meetings would be supplementary forums to discuss things learned
+%or questioned through on-line activities \cite{csdl-94-06}.  Chapter
+%\ref{sec:fall94} discusses our experiences with AEN as a virtual class
+%room and it evolution.
+%  The following section provides a detailed
+%description of AEN's current design.
+
+d177 1
+a177 1
+ \caption{\ls{1} This screen shot shows a portion of this 
+d185 8
+d265 1
+a265 1
+ \caption{\ls{1.0} This screen shot illustrates some of the real-time support
+d274 9
+a314 8
+%
+%The user can create multiple TOCs starting from different document nodes.
+%The table of contents should help users find their way through the
+%hypertext document.  The TOC provides orienting information about the
+%hypertext network and prevents the ``lost-in-hyperspace'' phenomenon.
+%Another mechanism AEN has to help the user navigate in the hypertext
+%document is node lists.
+%
+a367 160
+
+%Both facilities provide services that are similar to walking into
+%a room containing the other people using AEN.  There are some significant
+%differences between AEN's Snoopy/Partyline and the walking into a room.
+%When you walk into a room, you can only see the people in the room.  You
+%have no idea how long the people have been in the room and when people left
+%the room.  Snoopy gives you this information.  You can see how long ago
+%people left the room and how long people have been working on their current
+%task.
+
+%In a room many conversations can go on simultaneously and you can listen to
+%any of the conversations in the room.  Partyline allows you to ``listen''
+%to conversations that are sent to the entire room. In a real room it is
+%easy to have two conversations at the same time since we can tune out other
+%noises.  Partyline does not support two ``global'' conversations well.
+%Since Partyline is text-based, users have to read the messages.  When the
+%user receives a message they have to see who sent it.  This does not allow
+%them to totally ignore the other conversations in the room.  If they
+%actually read the message they focus their attention on the other
+%conversation and may loose their train of thought of their conversation.
+
+%One special feature that Partyline does allow is to have private
+%conversations.  In a real room you can tell when people are ``whispering''
+%to each other.  In Partyline there is no indication that two people are
+%``whispering''.
+
+%Another special feature of Partyline is that it keeps track of
+%conversations.  If a user leaves their workstation and don't log out of AEN
+%the Partyline buffer records the Partyline conversations.  When they return,
+%the conversations are still accessible in the Partyline buffer.  The other
+%users in AEN will know that they still can ``hear'' the conversations
+%since Snoopy tells them that the user is asleep.  Snoopy displays the
+%asleep message if the user has not done anything in a while.  Partyline
+%allows a user to be paged.  Even though the user might be asleep the
+%persistence of Partyline will tell them they have been paged.  They can
+%respond to the page when they return.
+
+%\subsection{AEN's Process Model}
+
+%All of the above mechanisms are used by AEN to support strong
+%collaboration.
+
+%learning and authoring.  The next sections discuss how these mechanisms
+%are used for collaborative learning and authoring.
+
+%\subsubsection{Collaborative Learning}
+
+%AEN uses a constructivist model of learning.  Constructivism, often
+%associated with Jean Piaget, is the theory that knowledge is constructed
+%not just acquired.  The students take an active role in their learning.
+%They do not sit passively as knowledge is poured into them.  They interact
+%with their instructor and each other to create knowledge.  Piaget contends
+%that the restructuring of prior knowledge (learning) requires challenging
+%existing views and coordinating old with new knowledge\cite{Piaget77}.
+
+%In AEN the hypertext document represents the textbook, the instructor's
+%lectures, and the construction site for learning.  When students explore
+%the hypertext document, they can ask questions by annotating the text.  The
+%instructor or other students can interact by making annotations on the
+%question or changing the original text that raised the question.  This way
+%``class discussions'' can take place, and students and instructors can
+%explore their views about the subjects.  By using the access control
+%mechanism students and instructors can decide who can participate in these
+%discussions.  This allows a rich variety to the interactions in the class.
+
+%The Snoopy and Partyline features expand AEN's learning environment by
+%providing synchronous communications.  Students can get together in AEN and
+%discuss the concepts presented in the text.  They can work together on
+%solving the quizzes or projects presented in AEN.  Snoopy and Partyline
+%allow the instructor to hold office hours by being ``present'' in AEN at
+%given times.  The students can ask the instructor questions and receive
+%answers immediately.  The instructor could have a group discussion with all
+%the students present in AEN. If anyone decides that they want to save the
+%discussion they can create a node in the hypertext document and paste the
+%conversation into it.  This way a permanent record of the discussion can be
+%kept.
+
+%The combination of hypertext document and synchronous communications allows
+%the students to learn in many ways.  They can learn by exploring the text,
+%asking questions, answering questions raised by their fellow students,
+%building their own hypertext sections or by answering the exams and quizzes
+%added by the instructor.  As the class learn, the hypertext document
+%will be evolving.  It represents the restructured prior knowledge and
+%the current collaborative state of learning for the class.
+ 
+
+%\subsubsection{Collaborative Authoring}
+
+%Baecker et al. introduced a taxonomy of collaborative
+%writing\cite{Baecker93}.  AEN supports many of the features described in
+%their taxonomy.  I will discuss each in turn.
+%\begin{itemize}
+%\item{\bf Roles}
+%  \begin{itemize}
+%  \item{\em Writer:}  AEN's user interface is XEmacs, which is an editor.
+%    This allows the user to easily record their ideas and modify the existing
+%    text.
+%  \item{\em Consultant:}  The Partyline messaging system allows users to
+%    participate without actually writing any text.  Consultants are also
+%    able to make comments that are not part of the finished document.
+%  \item{\em Editor:}  XEmacs and AEN's access control model allow the users
+%    to edit the hypertext document.
+%  \item{\em Reviewer:}  Annotations to the hypertext document allow all of
+%    the users who have annotation access to comment on the hypertext
+%    document.  Users can also use Partyline to talk to the author/editor of
+%    the node they are reviewing.
+%  \end{itemize}
+%\item{\bf Activities}
+%  \begin{itemize}
+%  \item{\em Brainstorming:}  AEN allows authors to create nodes to store
+%    their ideas.  With the right accesses other authors can build off of
+%    nodes created by the other authors.
+%  \item{\em Researching:}  AEN does not provide any support for external
+%    research.
+%  \item{\em Planning:}  AEN's backbone provides an simple mechanism to
+%    create an outline structure for the hypertext document.
+%  \item{\em Writing:}  AEN's interface and collaborative nature make
+%    transforming ideas into text easy.
+%  \item{\em Editing:}  XEmacs and AEN's access control model allow the users
+%    to edit the hypertext document.
+%  \item{\em Reviewing:} Annotations to the hypertext document allow all of
+%    the users who have annotation access to comment on the hypertext
+%    document.  Users can also use Partyline to talk to the author/editor of
+%    the node they are reviewing.
+%  \end{itemize}
+%\item{\bf Document Control Mechanisms}
+%  \begin{itemize}
+%  \item{\em Centralized:}  AEN's access control mechanism can be used to
+%    allow only one author to make changes to the hypertext document.  The
+%    other authors would only be able to make comments or suggestions.
+%  \item{\em Relay:}  AEN's access control mechanism is dynamic so the
+%    access levels for the hypertext document could passed on from one author
+%    to the next.
+%  \item{\em Independent:}  Authors are able to use AEN's access control
+%    mechanism to create their own sections of the hypertext document.  The
+%    authors have complete control over the access controls for their
+%    sections.
+%  \item{\em Shared:}  All authors can share in the  control of the access
+%    to a node in the hypertext document.  Through the locking mechanism AEN
+%    ensures that the node can only be changed by one author at a time.
+%  \end{itemize}
+%\item{\bf Writing Strategies}
+%  \begin{itemize}
+%  \item{\em Single Writer:}  AEN's access control mechanism can be used to
+%    allow only one author to make changes to the hypertext document.  The
+%    other authors would only be able to make comments or suggestions.
+%  \item{\em Scribe:}  An author can be designated to record the decisions
+%    and comments made by the other authors.  This can easily be done by
+%    cutting and pasting from the Partyline.
+%  \item{\em Separate Writers:}  Authors are able to use AEN's access control
+%    mechanism to create their own sections of the hypertext document. Each
+%    of these sections are automatically part of the whole hypertext
+%    document.  The authors have control of how much is included into the
+%    final document.  They can also control the amount of commenting and
+%    editing is done to their sections.
+%  \item{\em Joint Writing:}  This is what we call strong collaboration.
+%    This is the goal of AEN.  We want to support strong collaboration in
+%    AEN.
+%  \end{itemize}
+%\end{itemize}
+@
+
+
+1.2
+log
+@draft done
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Sun May 21 14:19:50 1995
+d8 1
+a8 1
+%% RCS: $Id: thesis-AEN.tex,v 1.1 1995/02/19 21:42:34 cmoore Exp cmoore $
+d16 1
+a16 1
+\chapter{Collaborative Learning and Authoring in AEN}
+d46 13
+a58 12
+The initial requirements of AEN were to create a virtual classroom and move
+nearly all of the lectures for a class on-line into a hypertext document
+called {\em The Annotated Egret}.  The class' subject is how to design and
+construct collaborative systems using Egret.  This class would meet both
+on-line and off-line for discussions about issues.  Most of the interaction
+in the class would occur through annotation of the lecture material with
+new hypertext links to questions, comments, and insights.  A few actual
+classroom meetings would be supplementary forums to discuss things learned
+or questioned through on-line activities \cite{csdl-94-06}.  Chapter
+\ref{sec:fall94} discusses our experiences with AEN as a virtual class
+room and it evolution.  The following section provides a detailed
+description of AEN's current design.
+d407 1
+a407 1
+\subsection{AEN's Process Model}
+d409 2
+a410 3
+All of the above mechanisms are used by AEN to support collaborative
+learning and authoring.  The next sections discuss how these mechanisms
+are used for collaborative learning and authoring.
+d412 2
+a413 1
+\subsubsection{Collaborative Learning}
+d415 1
+a415 7
+AEN uses a constructivist model of learning.  Constructivism, often
+associated with Jean Piaget, is the theory that knowledge is constructed
+not just acquired.  The students take an active role in their learning.
+They do not sit passively as knowledge is poured into them.  They interact
+with their instructor and each other to create knowledge.  Piaget contends
+that the restructuring of prior knowledge (learning) requires challenging
+existing views and coordinating old with new knowledge\cite{Piaget77}.
+d417 7
+a423 9
+In AEN the hypertext document represents the textbook, the instructor's
+lectures, and the construction site for learning.  When students explore
+the hypertext document, they can ask questions by annotating the text.  The
+instructor or other students can interact by making annotations on the
+question or changing the original text that raised the question.  This way
+``class discussions'' can take place, and students and instructors can
+explore their views about the subjects.  By using the access control
+mechanism students and instructors can decide who can participate in these
+discussions.  This allows a rich variety to the interactions in the class.
+d425 9
+a433 11
+The Snoopy and Partyline features expand AEN's learning environment by
+providing synchronous communications.  Students can get together in AEN and
+discuss the concepts presented in the text.  They can work together on
+solving the quizzes or projects presented in AEN.  Snoopy and Partyline
+allow the instructor to hold office hours by being ``present'' in AEN at
+given times.  The students can ask the instructor questions and receive
+answers immediately.  The instructor could have a group discussion with all
+the students present in AEN. If anyone decides that they want to save the
+discussion they can create a node in the hypertext document and paste the
+conversation into it.  This way a permanent record of the discussion can be
+kept.
+d435 19
+a453 7
+The combination of hypertext document and synchronous communications allows
+the students to learn in many ways.  They can learn by exploring the text,
+asking questions, answering questions raised by their fellow students,
+building their own hypertext sections or by answering the exams and quizzes
+added by the instructor.  As the class learn, the hypertext document
+will be evolving.  It represents the restructured prior knowledge and
+the current collaborative state of learning for the class.
+d456 1
+a456 1
+\subsubsection{Collaborative Authoring}
+d458 72
+a529 72
+Baecker et al. introduced a taxonomy of collaborative
+writing\cite{Baecker93}.  AEN supports many of the features described in
+their taxonomy.  I will discuss each in turn.
+\begin{itemize}
+\item{\bf Roles}
+  \begin{itemize}
+  \item{\em Writer:}  AEN's user interface is XEmacs, which is an editor.
+    This allows the user to easily record their ideas and modify the existing
+    text.
+  \item{\em Consultant:}  The Partyline messaging system allows users to
+    participate without actually writing any text.  Consultants are also
+    able to make comments that are not part of the finished document.
+  \item{\em Editor:}  XEmacs and AEN's access control model allow the users
+    to edit the hypertext document.
+  \item{\em Reviewer:}  Annotations to the hypertext document allow all of
+    the users who have annotation access to comment on the hypertext
+    document.  Users can also use Partyline to talk to the author/editor of
+    the node they are reviewing.
+  \end{itemize}
+\item{\bf Activities}
+  \begin{itemize}
+  \item{\em Brainstorming:}  AEN allows authors to create nodes to store
+    their ideas.  With the right accesses other authors can build off of
+    nodes created by the other authors.
+  \item{\em Researching:}  AEN does not provide any support for external
+    research.
+  \item{\em Planning:}  AEN's backbone provides an simple mechanism to
+    create an outline structure for the hypertext document.
+  \item{\em Writing:}  AEN's interface and collaborative nature make
+    transforming ideas into text easy.
+  \item{\em Editing:}  XEmacs and AEN's access control model allow the users
+    to edit the hypertext document.
+  \item{\em Reviewing:} Annotations to the hypertext document allow all of
+    the users who have annotation access to comment on the hypertext
+    document.  Users can also use Partyline to talk to the author/editor of
+    the node they are reviewing.
+  \end{itemize}
+\item{\bf Document Control Mechanisms}
+  \begin{itemize}
+  \item{\em Centralized:}  AEN's access control mechanism can be used to
+    allow only one author to make changes to the hypertext document.  The
+    other authors would only be able to make comments or suggestions.
+  \item{\em Relay:}  AEN's access control mechanism is dynamic so the
+    access levels for the hypertext document could passed on from one author
+    to the next.
+  \item{\em Independent:}  Authors are able to use AEN's access control
+    mechanism to create their own sections of the hypertext document.  The
+    authors have complete control over the access controls for their
+    sections.
+  \item{\em Shared:}  All authors can share in the  control of the access
+    to a node in the hypertext document.  Through the locking mechanism AEN
+    ensures that the node can only be changed by one author at a time.
+  \end{itemize}
+\item{\bf Writing Strategies}
+  \begin{itemize}
+  \item{\em Single Writer:}  AEN's access control mechanism can be used to
+    allow only one author to make changes to the hypertext document.  The
+    other authors would only be able to make comments or suggestions.
+  \item{\em Scribe:}  An author can be designated to record the decisions
+    and comments made by the other authors.  This can easily be done by
+    cutting and pasting from the Partyline.
+  \item{\em Separate Writers:}  Authors are able to use AEN's access control
+    mechanism to create their own sections of the hypertext document. Each
+    of these sections are automatically part of the whole hypertext
+    document.  The authors have control of how much is included into the
+    final document.  They can also control the amount of commenting and
+    editing is done to their sections.
+  \item{\em Joint Writing:}  This is what we call strong collaboration.
+    This is the goal of AEN.  We want to support strong collaboration in
+    AEN.
+  \end{itemize}
+\end{itemize}
+d531 1
+a531 3
+The next chapter discusses our experiences with trying to support
+collaborative learning with AEN.  It also touches on the evolution of our
+idea of strong collaboration.
+@
+
+
+1.1
+log
+@initial turnin
+@
+text
+@d6 1
+a6 1
+%% Last Modified On: Thu Feb 16 12:56:00 1995
+d8 1
+a8 1
+%% RCS: $Id$
+d27 4
+a30 1
+other clients.  AEN makes substantial use of Egret's facilities for agents,
+d41 1
+a41 2
+strong collaboration.  AEN was used with anywhere between one and twelve simultaneous
+user-level client connections during Fall, 1994.}
+a44 4
+AEN consists of a hypertext document and several tools to support
+collaboration.  The hypertext document represents the text from which the
+students learn and the product of collaboration among the participants in
+the class.
+d54 4
+a57 1
+or questioned through on-line activities \cite{csdl-94-06}.  
+a58 2
+The following section provides a detailed description of AEN's design.
+
+d69 4
+a72 3
+AEN has two different classes of nodes: artifact
+nodes and figure nodes.  Artifact nodes represent textual information in
+the hypertext document.  Figure nodes represent graphical information. 
+d82 1
+a82 1
+\item{\bf document:} Nodes that contain the text of the document created by
+d85 1
+a85 1
+\item{\bf comment:} Nodes containing the reactions of the participants to
+d88 1
+a88 1
+\item{\bf quicky quiz:} Nodes that contain exercises for the participants
+d91 1
+a91 1
+\item{\bf quicky quiz answer:} Nodes that contain the participant's
+d96 2
+d100 1
+a100 1
+  \centerline{\psfig{figure=Data.eps,width=6in}}
+d107 7
+a113 4
+figure nodes or other artifact nodes by a simple menu-based command.
+However, since figure nodes contain graphical information rather than ETML
+code, users cannot create links from figure nodes.  Figure \ref{fig:Data}
+shows the relationships between the node types.
+d121 2
+a122 1
+links.
+d143 1
+d160 1
+a160 1
+respect to one node, but a ``subsubsection'' with respect to another.  As a
+d178 4
+a181 1
+major organizing principle for the AEN hypertext.
+a183 16
+%, and leads directly to a
+%browsing mechanism: the table of contents screen, as shown in Figure
+%\ref{fig:Screen1}.
+%
+%\begin{figure}[htb]
+% \centerline{\psfig{figure=screen1.ps,width=6in}}
+% \caption{\ls{1} This screen shot shows a portion of this 
+% user's table of contents in the upper left screen, and a retrieved
+% document node called ``Design'' in the upper right screen.  The Design
+% node contains within it both a link to a figure called ``Figure 1'' and a
+% comment called ``Regions'' immediately after it (represented in the
+% Design node by the textual anchor ``[??]''.  Both the figure and the
+% comment are retrieved and displayed in the screens in the lower left and
+% lower right hand corners, respectively.}
+% \label{fig:Screen1}
+%\end{figure}
+d185 12
+d198 1
+d207 5
+a211 1
+the server.
+a221 5
+%
+%The previous section discussed the Data Model for AEN.  This section
+%discusses mechanisms to manipulate artifacts: access control, table of
+%contents, and nodelist.  The section concludes with two mechanisms to
+%support real time communication in AEN, Snoopy and Partyline.
+d227 1
+a227 1
+form of access indipendently for each user of AEN.
+d265 13
+a277 1
+\subsubsection{Table of Contents}
+d279 1
+a279 16
+The access control mechanism determines which nodes a user may read, but it
+provides no navigational aids to the user.  To help the user navigate
+through the hypertext document AEN has a dynamically generated table of
+contents (TOC).  The user can ask for a new TOC at any time.  AEN
+calculates the new TOC from a starting node that the user chooses.  The TOC
+generation algorithm only looks at document nodes the user has read access
+to and include links.  It will only visit the children of
+a node once.  This rule breaks any cycles in the traversal of a hypertext
+network.  Once the TOC is displayed the user can decide what level of
+detail they want to view.  Figure \ref{fig:TOC} shows what an example TOC
+looks like.  The user can create multiple TOCs starting from different
+document nodes.  The table of contents should help users find their way
+through the hypertext document.  The TOC provides orienting
+information about the hypertext network and prevents the
+``lost-in-hyperspace'' phenomenon.  Another mechanism AEN has to help the
+user navigate in the hypertext document is node lists.
+d281 3
+d285 11
+a295 5
+\begin{figure}[htb]
+  \centerline{\psfig{figure=TOC.eps,height=4in}}
+  \caption{{\bf AEN's Table of Contents}}
+  \label{fig:TOC}
+\end{figure}
+d298 9
+a306 1
+\subsubsection{Node Lists}
+d308 8
+a315 9
+Node lists are a list of nodes based upon certain
+criteria.  AEN provides the user with several built in criteria for
+building these lists.  First, AEN allows the user to get a list of all the
+nodes of any type.  Second, the user can get a list of all the nodes they
+have not read yet or that have changed since the last time they were on
+AEN.  Finally, AEN allows the user to get a list of all the nodes they own.
+All of the node lists provide the user with a list of nodes from which 
+they may select and view. Figure \ref{fig:nodelist} shows what a node list
+of unread document nodes would look like.
+d317 1
+d319 6
+a324 5
+\begin{figure}[htb]
+  \centerline{\psfig{figure=nodelist2.eps,height=2.5in}}
+  \caption{{\bf Unread Document Node List}}
+  \label{fig:nodelist}
+\end{figure}
+d326 3
+d330 9
+a339 8
+All of the above mechanisms build upon the basic hypertext document, but we
+believe that a plain hypertext document is not good enough for effective
+collaboration.  To fully support collaboration there should be a
+``physical'' presence in the hypertext document.  Users can
+see who else is reading the document, what section they are in and
+communicate to any one else using AEN.  These features are difficult to
+support by just using hypertext.  The following two mechanisms provide
+these features in AEN.
+d341 1
+a341 10
+%With out real time communications we feel
+%that a virtual classroom is not possible.  Virtual classrooms with out real
+%time communications seem foreign to the us and we believe the lack of
+%communication will be a hindrance.  For the classroom we also want a way of
+%``seeing'' who was present and what they were doing.  This allows the user
+%to ask questions of the people that are present and that have been looking
+%at the same piece of the hypertext.  For collaborative authoring we also
+%want to be able to see who else is using AEN.  This way authors will be
+%able to meet other authors and talk to them. We have added two tools to
+%provide this presence and communication in AEN, Snoopy and Partyline.
+d343 8
+a350 1
+\subsubsection{Snoopy}
+d354 4
+a357 2
+connection status and last read node of the users of AEN.  Figure
+\ref{fig:snoopy} shows a view of the snoopy buffer.
+a358 10
+\begin{figure}[htb]
+  \centerline{\psfig{figure=snoopy.eps,height=2in}}
+  \caption{{\bf AEN's Snoopy Buffer}}
+  \label{fig:snoopy}
+\end{figure}
+
+\newpage
+
+\subsubsection{Partyline}
+
+d362 3
+a364 2
+currently connected to Partyline.  Figure \ref{fig:Partyline} shows a view
+of the Partyline buffer.
+d366 3
+a368 5
+\begin{figure}[htb]
+  \centerline{\psfig{figure=partyline.eps,height=2in}}
+  \caption{{\bf AEN's Partyline}}
+  \label{fig:Partyline}
+\end{figure}
+d370 8
+a377 8
+Both facilities provide services that are similar to walking into
+a room containing the other people using AEN.  There are some significant
+differences between AEN's Snoopy/Partyline and the walking into a room.
+When you walk into a room, you can only see the people in the room.  You
+have no idea how long the people have been in the room and when people left
+the room.  Snoopy gives you this information.  You can see how long ago
+people left the room and how long people have been working on their current
+task.
+d379 10
+a388 10
+In a room many conversations can go on simultaneously and you can listen to
+any of the conversations in the room.  Partyline allows you to ``listen''
+to conversations that are sent to the entire room. In a real room it is
+easy to have two conversations at the same time since we can tune out other
+noises.  Partyline does not support two ``global'' conversations well.
+Since Partyline is text-based, users have to read the messages.  When the
+user receives a message they have to see who sent it.  This does not allow
+them to totally ignore the other conversations in the room.  If they
+actually read the message they focus their attention on the other
+conversation and may loose their train of thought of their conversation.
+d390 4
+a393 4
+One special feature that Partyline does allow is to have private
+conversations.  In a real room you can tell when people are ``whispering''
+to each other.  In Partyline there is no indication that two people are
+``whispering''.
+d395 10
+a404 10
+Another special feature of Partyline is that it keeps track of
+conversations.  If a user leaves their workstation and don't log out of AEN
+the Partyline buffer records the Partyline conversations.  When they return,
+the conversations are still accessible in the Partyline buffer.  The other
+users in AEN will know that they still can ``hear'' the conversations
+since Snoopy tells them that the user is asleep.  Snoopy displays the
+asleep message if the user has not done anything in a while.  Partyline
+allows a user to be paged.  Even though the user might be asleep the
+persistence of Partyline will tell them they have been paged.  They can
+respond to the page when they return.
+d414 7
+a420 13
+For collaborative learning the hypertext document represents the textbook
+for the class and the instructor's lectures. When students have questions
+about the textbook or ``lectures'', they can ask their questions by
+annotating the text.  The instructor or other students can answer
+the questions by making annotations on the original question.  This way
+``in-class discussions'' can take place about different topics.  By using the
+access control mechanism students or instructors can decide who gets to
+read the node and who can participate in the discussions.  This allows
+groups to collaborate on a question or project easily.  When the group is
+ready, they can allow the rest of the class to view their answer or project.
+To find out if anything has changed on their project the students can use
+the node lists to see what nodes have changed.  This way they will waste
+less time searching for new information.
+d422 16
+a437 6
+The Snoopy and Partyline features expand AEN's textbook by providing
+synchronous communications. Students can get together in AEN and discuss the
+concepts presented in the text.  They can work together on solving the
+quizzes or projects presented in AEN.  Snoopy and Partyline allow the
+instructor to hold office hours by being ``present'' in AEN at given
+times.  The students can ask the instructor questions and receive
+d441 2
+a442 2
+conversation into it.  This way a permanent record of the discussion can
+be kept. 
+d448 3
+a450 4
+added by the instructor.  As the students learn, the hypertext document
+will be evolving.  The instructor will change the text to answer the
+questions raised by the students.  The students will be creating
+sub-documents in the hypertext document to explore the subject.  
+d455 72
+a526 9
+AEN supports two methods for collaborative authoring: {\em proofreading \&
+trading the lock}.  In the proofreading method the author can create a node
+and ``publish'' it by changing the read and annotate access for the
+document.  Then other co-authors can make comments as simple as
+proofreading comments or as complex as philosophical discussions.  These
+comments could be thought of as marginal notes suggesting changes, new
+ideas, or just general comments on the subject.  The author can read the
+comments and make changes to the document or comment on the comments.  This
+can lead to discussions on the contents of the document.
+d528 3
+a530 5
+In the trading the lock method the author can create a node and
+allow other authors to edit the node by giving them read and write access to the
+node.  When a node is saved, all connected users viewing the node
+see the changes.  In this way two or more co-authors could trade the lock and
+make changes that all the co-authors will see.  
+@

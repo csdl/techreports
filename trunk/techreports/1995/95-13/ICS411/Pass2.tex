@@ -1,0 +1,599 @@
+%%% \documentstyle[11pt,/group/csdl/tex/definemargins,
+%%%                        /group/csdl/tex/lmacros]{article} 
+%%% 
+%%%           \begin{document}
+%%%           \begin{center}
+%%%           {\large\bf CSRS Experiment -- Source Listing \\
+%%%             Source: Pass2 }
+%%% \end{center}
+%%% 
+\chapter {CSRS Experiment (ICS411): Source Listing -- Pass2}
+\small
+	  
+
+\section{Type and var declarations}
+\subsection*{Specification:}
+
+\subsection*{Source-code:}
+\begin{verbatim}
+001:/* 
+002:THIS IS A SIMPLE ASSEMBLER FOR SIC (STANDARD VERSION) PASS 2.
+003:IT READS INTERMEDIATE FILE AND GENERATES OBJECT CODE.
+004:
+005:THE SOURCE PROGRAM TO BE ASSEMBLED (IN PASS 1) MUST BE IN FIXED 
+006:FORMAT AS FOLLOWS:
+007:      BYTES  0-7  LABEL
+008:               8  BLANK
+009:             9-14 OPERATION CODE
+010:            15-16 BLANK
+011:            17-34 OPERAND
+012:            35-65 COMMENT
+013:
+014:IF A SOURCE LINE CONTAINS "." IN THE FIRST BYTE, THE ENTIRE LINE IS
+015:TREATED AS A COMMENT. 
+016:*/
+017:
+018:#ifndef true
+019:# define true    1
+020:# define false   0
+021:#endif
+022:
+023:#  define EXIT_SUCCESS  0
+024:#  define EXIT_FAILURE  1
+025:
+026:#define QUOTE           '\''
+027:
+028:#define MAXERRORS       25   /* SIZE OF ARRAY OF ERROR FLAGS */
+029:#define MAXOPS          25   /* SIZE OF OPCODE TABLE */
+030:
+031:#define BLANK6          "      "
+032:#define BLANK8          "        "
+033:#define BLANK18         "                  "
+034:#define BLANK30         "                              "
+035:#define BLANK31         "                               "
+036:
+037:typedef unsigned char BOOLEAN;
+038:
+039:typedef char CHAR4 [4];
+040:typedef char CHAR6 [6];
+041:typedef char CHAR8 [8];
+042:typedef char CHAR18 [18];
+043:typedef char CHAR30 [30];
+044:typedef char CHAR31 [31];
+045:typedef char CHAR50 [50];
+046:typedef char CHAR66 [66];
+047:
+048:typedef struct SOURCETYPE {
+049:  /* SOURCE LINE AND SUBFIELDS */
+050:  CHAR66 line;
+051:  BOOLEAN comline;
+052:  CHAR8 labl;
+053:  CHAR6 operation;
+054:  CHAR18 operand;
+055:  CHAR31 comment;
+056:} SOURCETYPE;
+057:
+058:typedef struct OBJTYPE {
+059:  /* OBJECT CODE, LENGTH, AND TYPE */
+060:  enum { HEADREC, TEXTREC, ENDREC, NONE } rectype;
+061:  int objlength;
+062:  CHAR30 objcode;
+063:} OBJTYPE;
+064:
+065:typedef struct REC_OPTABTYPE {
+066:  CHAR6 mnemonic;
+067:  int opcode;
+068:} REC_OPTABTYPE;
+069:
+070:
+071:typedef enum {
+072:  SEARCH, STORE} 
+073:SYMREQTYPE;
+074:
+075:typedef enum {
+076:  FOUND, NOTFOUND, ADDED, DUPLICATE, TABLEFULL
+077:}SYMRETTYPE;
+078:
+079:typedef enum {
+080:  NORMAL, ENDFILE
+081:} INTRETTYPE;
+082:
+083:typedef enum {
+084:  VALIDOP, INVALIDOP
+085:} OPRETTYPE;
+086:
+087:
+088:/* OPCODE TABLE--ASSUME THIS TABLE IS INITIALIZED PROPERLY */
+089:static REC_OPTABTYPE OPTAB[MAXOPS];
+090:
+091:/*ASCII CONVERSION TABLE--ASSUME IT IS INITIALIZED PROPERLY */
+092:static int ASCII[256]; 
+093:
+094:static FILE *srcfile, *objfile, *lisfile, *intfile;
+095:static int LOCCTR;
+096:static CHAR6 PROGNAME;
+097:static int PROGSTART;
+098:
+099:/* GLOBALS USED ONLY BY P2_ASSEMBLE_INST */
+100:
+101:static BOOLEAN FIRSTSTMT, ENDFOUND;
+102:
+103:/* GLOBALS USED ONLY BY P2_WRITE_OBJ */
+104:
+105:static int TEXTSTART, TEXTADDR, TEXTLENGTH;
+106:static char TEXTARRAY[60];
+107:
+108:/* ERROR MESSAGES */
+109:static CHAR50 ERRMSG[MAXERRORS] = {
+110:  "ILLEGAL FORMAT IN LABEL FIELD                     ",/*ERRMSG[0]*/
+111:  "MISSING OPERATION CODE                            ",/*ERRMSG[1]*/
+112:  "ILLEGAL FORMAT IN OPERATION FIELD                 ",/*ERRMSG[2]*/
+113:  "MISSING OR MISPLACED OPERAND IN START STATEMENT   ",/*ERRMSG[3]*/
+114:  "ILLEGAL OPERAND IN START STATEMENT                ",/*ERRMSG[4]*/
+115:  "ILLEGAL OPERAND IN BYTE STATEMENT                 ",/*ERRMSG[5]*/
+116:  "ODD LENGTH HEX STRING IN BYTE STATEMENT           ",/*ERRMSG[6]*/
+117:  "MISSING OR MISPLACED OPERAND IN BYTE STATEMENT    ",/*ERRMSG[7]*/
+118:  "MISSING OR MISPLACED OPERAND IN RESW STATEMENT    ",/*ERRMSG[8]*/
+119:  "ILLEGAL OPERAND IN RESW STATEMENT                 ",/*ERRMSG[9]*/
+120:  "MISSING OR MISPLACED OPERAND IN RESB STATEMENT    ",/*ERRMSG[10]*/
+121:  "ILLEGAL OPERAND IN RESB STATEMENT                 ",/*ERRMSG[11]*/
+122:  "DUPLICATE LABEL DEFINITION                        ",/*ERRMSG[12]*/
+123:  "TOO MANY SYMBOLS IN SOURCE PROGRAM                ",/*ERRMSG[13]*/
+124:  "DUPLICATE OR MISPLACED START STATEMENT            ",/*ERRMSG[14]*/
+125:  "MISSING OR MISPLACED START STATEMENT              ",/*ERRMSG[15]*/
+126:  "ILLEGAL OPERAND IN WORD STATEMENT                 ",/*ERRMSG[16]*/
+127:  "MISSING OR MISPLACED OPERAND IN WORD STATEMENT    ",/*ERRMSG[17]*/
+128:  "MISSING OR MISPLACED OPERAND IN END STATEMENT     ",/*ERRMSG[18]*/
+129:  "ILLEGAL OPERAND IN END STATEMENT                  ",/*ERRMSG[19]*/
+130:  "UNDEFINED SYMBOL IN OPERAND                       ",/*ERRMSG[20]*/
+131:  "STATEMENT SHOULD NOT FOLLOW END STATEMENT         ",/*ERRMSG[21]*/
+132:  "ILLEGAL OPERAND FIELD                             ",/*ERRMSG[22]*/
+133:  "UNRECOGNIZED OPERATION CODE                       ",/*ERRMSG[23]*/
+134:  "MISSING OR MISPLACED OPERAND IN INSTRUCTION       " /*ERRMSG[24]*/
+135:  };
+136:
+137:
+138:
+139:
+\end{verbatim}
+\section{dectonum}
+\subsection*{Specification:}
+THIS FUNCTIONS SCANS THE STRING STR, BEGINNING AT THE BYTE POSITION GIVEN BY
+FIRST, FOR THE CHARACTER REPRESENTATION OF A DECIMAL VALUE.  THIS VALUE,
+CONVERTED TO NUMERIC, IS RETURNED AS THE VALUE OF THE FUNCTION, AND LAST IS
+SET TO INDICATE THE NEXT CHARACTER IN STR AFTER THE VALUE THAT WAS FOUND. IF
+ANY SCANNING OR CONVERSION ERRORS ARE FOUND, CONVERROR IS SET TO TRUE. THE
+MAXIMUM LENGTH VALUE TO BE SCANNED IS 4 DECIMAL DIGITS.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:int dectonum(char *str,int first, int *last, BOOLEAN *converror)
+002:
+003:{
+004:  int n, i;
+005:  BOOLEAN scanning;
+006:
+007:  n = 0;
+008:  scanning = true;
+009:  *converror = false;
+010:  while (scanning) {
+011:    if (str[first + i] >= '0' && str[first + i] <= '9')
+012:      n = n * 10 + str[first + i] - '0';
+013:    else if (str[first + i] == ' ')
+014:      scanning = false;
+015:    else 
+016:      *converror = true;
+017:    i++;
+018:  }
+019:  *last = first + i;
+020:  return n;
+021:}
+022:
+023:
+\end{verbatim}
+\section{Read\_Int\_File}
+\subsection*{Specification:}
+THIS FUNCTION READS INTERMEDIATE FILE INTFILE.  THE VARIABLES DESCRIBED ABOVE
+ARE SET WITH THE VALUES READ FROM THE INTERMEDIATE FILE. VARIABLES THAT ARE
+NOT REPRESENTED IN THE FILE (FOR EXAMPLE, SOURCE.LABL AND ERRORSFOUND FOR A
+COMMENT LINE) ARE SET TO BLANK (FOR CHARACTER FIELDS) OR TO FALSE (FOR
+BOOLEAN VARIABLES). IF THE END OF FILE HAS BEEN REACHED, RETURNS ENDFILE;
+OTHERWISE RETURNS NORMAL.
+
+THE INTERMEDIATE FILE CONSISTS OF THE CURRENT SOURCE PROGRAM LINE, FOLLOWED
+BY A BOOLEAN VALUE (T OR F) THAT INDICATES WHETHER THIS IS A COMMENT LINE,
+AND THE CURRENT LOCATION COUNTER VALUE. FOR NON-COMMENT LINES, THIS IS ALSO
+FOLLOWED BY SUBFIELDS AND THE VALUE OF ERRORSFOUND (T OR F). IF AND ONLY IF
+ERRORSFOUND WAS TRUE, THIS AGAIN IS FOLLOWED BY THE VALUES IN ERRORFLAGS.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:INTRETTYPE Read_Int_File (SOURCETYPE *source,
+002:                      BOOLEAN *errorsfound,
+003:                      BOOLEAN *errorflags)
+004:
+005:{
+006:  int i;
+007:  char ch;
+008:
+009:  if ((ch=getc(intfile))==EOF)
+010:    return(ENDFILE);
+011:
+012:  ungetc(ch,intfile);
+013:  for (i = 0; i <= 65; i++) 
+014:    source->line[i] = getc(intfile);
+015:  ch = getc(intfile);
+016:  if (ch == 'T')
+017:    source->comline = true;
+018:  source->comline = false;
+019:  if (source->comline) {
+020:    memcpy(source->labl, BLANK8, sizeof(CHAR8));
+021:    memcpy(source->operation, BLANK6, sizeof(CHAR6));
+022:    memcpy(source->operand, BLANK18, sizeof(CHAR18));
+023:    memcpy(source->comment, BLANK31, sizeof(CHAR31));
+024:    *errorsfound = false;
+025:    for (i = 0; i < MAXERRORS; i++)
+026:      errorflags[i] = false;
+027:    return(NORMAL);
+028:  }
+029:  for (i = 0; i <= 7; i++) 
+030:    source->labl[i] = getc(intfile);
+031:  for (i = 0; i <= 4; i++) 
+032:    source->operation[i] = getc(intfile);
+033:  for (i = 0; i <= 17; i++) 
+034:    source->operand[i] = getc(intfile);
+035:  for (i = 0; i <= 30; i++) 
+036:    source->comment[i] = getc(intfile);
+037:  ch = getc(intfile);
+038:  getc(intfile);            /*discard newline*/
+039:  if (ch == 'T')
+040:    *errorsfound = true;
+041:  else
+042:    *errorsfound = false;
+043:
+044:  if(*errorsfound){
+045:    for (i = 0; i < MAXERRORS; i++) {
+046:      ch = getc(intfile);
+047:      if (ch == 'T')
+048:    errorflags[i] = true;
+049:      else
+050:    errorflags[i] = false;
+051:    }
+052:    getc(intfile);          /*discard newline*/
+053:  }
+054:  else
+055:    for (i = 0; i < MAXERRORS; i++)
+056:      errorflags[i] = false;
+057:
+058:  return (NORMAL);
+059:}
+060:
+061:
+\end{verbatim}
+\section{P2\_Search\_Optab}
+\subsection*{Specification:}
+THIS PROCEDURE SEARCHES THE OPERATION CODE TABLE (OPTAB) FOR THE MNEMONIC
+PASSED AS PARAMETER. IF THE MNEMONIC IS FOUND, RETURNCODE IS SET TO VALIDOP
+AND OPCODE IS SET TO THE VALUE GIVEN IN OPTAB. OTHERWISE, RETURNCODE IS SET
+TO INVALIDOP AND OPCODE IS SET TO 255.
+
+THE ENTRIES IN OPTAB ARE ORDERED BY MNEMONIC. THIS PROCEDURE USES A BINARY
+SEARCH.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void P2_Search_Optab(char *mnemonic,
+002:                 OPRETTYPE *returncode,
+003:                 int *opcode)
+004:
+005:{
+006:  int low, mid, high;
+007:
+008:  high = MAXOPS - 1;
+009:  low = 0;
+010:  do {
+011:    mid = (low + high) / 2;
+012:    if (strncmp(mnemonic, OPTAB[mid].mnemonic, sizeof(CHAR6)) < 0)
+013:      high = mid + 1;
+014:    else
+015:      low = mid - 1;
+016:  } while (strncmp(mnemonic, OPTAB[mid].mnemonic, sizeof(CHAR6)) &&
+017:       high >= low);
+018:  if (strncmp(mnemonic, OPTAB[mid].mnemonic, sizeof(CHAR6))) {
+019:    /*FOUND VALID OPCODE*/
+020:    *returncode = VALIDOP;
+021:    *opcode = OPTAB[mid].opcode;
+022:  } 
+023:  else {
+024:    *returncode = INVALIDOP;
+025:    *opcode = 255;
+026:  }
+027:
+028:}
+029:
+030:
+031:
+\end{verbatim}
+\section{P2\_Proc\_START}
+\subsection*{Specification:}
+PROCESS START STATEMENT -- IF THIS IS THE FIRST SOURCE LINE, SET OBJECT TYPE
+= HEADREC AND OBJECT CODE = PROGRAM NAME.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void P2_Proc_START(SOURCETYPE source,
+002:               BOOLEAN *errorsfound,
+003:               BOOLEAN *errorflags,
+004:               OBJTYPE *objct)
+005:
+006:{
+007:  int i;
+008:  
+009:  if (!FIRSTSTMT) {
+010:    *errorsfound = true;
+011:    errorflags[14] = true;/*DUPLICATE OR MISPLACED START STATEMENT*/
+012:  }
+013:  objct->rectype = HEADREC;
+014:  objct->objlength = 0;
+015:  for (i = 0; i <= 5; i++)
+016:    objct->objcode[i] = source.labl[i];
+017:  for (i = 6; i <= 14; i++)
+018:    objct->objcode[i] = ' ';
+019:}
+020:
+021:
+\end{verbatim}
+\section{P2\_Proc\_BYTE}
+\subsection*{Specification:}
+PROCESS BYTE STATEMENT -- THE OPERAND MUST BE EITHER C'...' OR X'...'.  IF A
+FORMAT ERROR IN THE OPERAND (ERRORS 5, 6, 7) WAS DETECTED PREVIOUSLY, DO NOT
+ATTEMPT TO ASSEMBLE ASSUME ASCII CONVERSION TABLE HAS BEEN INITIALIZED
+PROPERLY.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void P2_Proc_BYTE (SOURCETYPE source,
+002:               int LOCCTR,
+003:               BOOLEAN *errorsfound,
+004:               BOOLEAN *errorflags,
+005:               OBJTYPE *objct)
+006:
+007:{
+008:
+009:  int i;
+010:  CHAR4 temp;
+011:  char hexchar;
+012:  int asciival;
+013:
+014:  if (!errorflags[5] && !errorflags[6] && !errorflags[7]) {
+015:    /* OPERAND IS C'...' -- USE THE ASCII CONVERSION TABLE TO
+016:       FIND THE ASCII CODE FOR EACH CHARACTER AND PACK INTO
+017:       OBJECT CODE. SET OBJECT TYPE = TEXTREC. */
+018:
+019:    if (source.operand[0] = 'C') {
+020:      i = 1;
+021:      while (source.operand[i + 1] != QUOTE) {
+022:    asciival = ASCII[source.operand[i + 1]];
+023:    numtohex(asciival, temp);
+024:    objct->objcode[i * 2 - 2] = temp[2];
+025:    objct->objcode[i * 2 - 1] = temp[3];
+026:    i++;
+027:      }
+028:      objct->objlength = i - 1;
+029:      objct->rectype = TEXTREC;
+030:    } 
+031:    else {
+032:      /* OPERAND IS X'...' -- PACK HEX DIGITS INTO OBJECT CODE AND
+033:     SET OBJECT TYPE = TEXTREC.
+034:     ERRORS DETECTED: 5 */
+035:      while (source.operand[i + 1] != QUOTE) {
+036:    hexchar = source.operand[i + 1];
+037:    if (isdigit(hexchar) || (hexchar >= 'A' && hexchar <= 'F'))
+038:      objct->objcode[i - 1] = hexchar;
+039:    else {
+040:      *errorsfound = true;
+041:      errorflags[5] = true; /* ILLEGAL OPERAND IN BYTE */
+042:    }
+043:    i++;
+044:      }
+045:      objct->objlength = i - 1;
+046:      objct->rectype = TEXTREC;
+047:    }/*else*/
+048:  }
+049:
+050:}
+051:
+052:
+053:
+\end{verbatim}
+\section{P2\_Assemble\_Inst}
+\subsection*{Specification:}
+THIS PROCEDURE GENERATES THE OBJECT CODE (IF ANY) FOR THE SOURCE STATEMENT
+CURRENTLY BEING PROCESSED. THE OBJECT CODE GENERATED IS PLACED IN OBJECT
+(THIS RECORD ALSO INCLUDES AN INDICATION OF THE TYPE OF OBJECT CODE AND THE
+LENGTH).
+
+THIS PROCEDURE ALSO TESTS FOR ERRORS SUCH AS A MISSING START OR END OR
+STATEMENTS IMPROPERLY FOLLOWING THE END STATEMENT. IN ORDER TO DO THIS, IT
+MAKES USE OF THE GLOBAL VARIABLES FIRSTSTMT AND ENDFOUND.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void P2_Assemble_Inst(SOURCETYPE source,
+002:                  int LOCCTR,
+003:                  BOOLEAN *errorsfound,
+004:                  BOOLEAN *errorflags,
+005:                  OBJTYPE *objct)
+006:
+007:
+008:{
+009:  
+010:  if (ENDFOUND) {
+011:    *errorsfound = true;
+012:    errorflags[21] = true;   /* STATEMENT SHOULD NOT FOLLOW END */
+013:  }
+014:
+015:  if (!strncmp(source.operation, "START ", sizeof(CHAR6))) 
+016:    P2_Proc_START(source,errorsfound,errorflags,objct);
+017:  
+018:  else if (!strncmp(source.operation, "WORD  ", sizeof(CHAR6))) 
+019:    P2_Proc_WORD(source,LOCCTR,errorsfound,errorflags,objct);
+020:
+021:  else if (!strncmp(source.operation, "BYTE  ", sizeof(CHAR6)))
+022:    P2_Proc_BYTE(source,LOCCTR,errorsfound,errorflags,objct);
+023:
+024:  else if (!strncmp(source.operation, "RESB  ", sizeof(CHAR6)) ||
+025:       !strncmp(source.operation, "RESW  ", sizeof(CHAR6))) {
+026:    /* NO OBJECT CODE FOR RESB OR RESW */
+027:    
+028:    objct->rectype = NONE;
+029:  } 
+030:  
+031:  else if (!strncmp(source.operation, "END   ", sizeof(CHAR6))) 
+032:    P2_Proc_END(source,LOCCTR,errorsfound,errorflags,objct);
+033:  
+034:  else 
+035:    P2_Proc_INST(source,LOCCTR,errorsfound,errorflags,objct);
+036:
+037:  if(FIRSTSTMT && !strncmp(source.operation,"START ",sizeof(CHAR6))){
+038:   /*THE FIRST SOURCE STATEMENT (EXCEPT FOR COMMENTS) MUST BE START*/
+039:    *errorsfound = true;
+040:    errorflags[15] = true; /*MISSING OR MISPLACED START STATEMENT*/
+041:  }
+042:}
+043:
+044:
+045:
+\end{verbatim}
+\section{P2\_Write\_Obj}
+\subsection*{Specification:}
+THIS PROCEDURE PLACES THE GENERATED OBJECT CODE INTO THE OBJECT
+PROGRAM. THERE ARE THREE TYPES OF OBJECT CODE TO BE HANDLED: HEADREC (FROM
+START STATEMENT), ENDREC (FROM END STATEMENT), AND TEXTREC (FROM INSTRUCTIONS
+AND WORD AND BYTE STATEMENTS).
+
+TO KEEP TRACK OF THE TEXT RECORD CURRENTLY BEING CONSTRUCTED, THIS PROCEDURE
+USES THE GLOBAL VARIABLES TEXTSTART, TEXTADDR, TEXTLENGTH, AND TEXTARRAY.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void P2_Write_Obj(OBJTYPE objct,
+002:              int locctr,
+003:              char *progname,
+004:              int proglength)
+005:
+006:
+007:{
+008:  int i;
+009:  CHAR4 temp;
+010:  int textbytes, forlim;
+011:
+012:  if (objct.rectype == HEADREC) {
+013:    fprintf(objfile, "H%.6s", progname);
+014:    numtohex(locctr, temp);
+015:    fprintf(objfile, "00%.4s", temp);
+016:    numtohex(locctr, temp);
+017:    fprintf(objfile, "00%.4s\n", temp);
+018:    return;
+019:  }
+020:
+021:  /* HEADREC -- GENERATE HEADER RECORD IN OBJECT PROGRAM */
+022:
+023:  if (objct.rectype == TEXTREC) {
+024:    /*TEXTREC -- PUT OBJECT CODE INTO A TEXT RECORD. IF THE OBJECT
+025:      CODE WILL NOT FIT INTO THE CURRENT TEXT RECORD, OR IF ADDRESSES
+026:      ARE NOT CONTIGUOUS, A NEW TEXT RECORD MUST BE STARTED. */
+027:
+028:    if (TEXTLENGTH == 0) {
+029:      TEXTADDR = locctr;
+030:      TEXTSTART = locctr;
+031:    }
+032:    if (TEXTLENGTH + objct.objlength > 60 && locctr != TEXTADDR) {
+033:      putc('T', objfile);
+034:      numtohex(TEXTSTART, temp);
+035:      fprintf(objfile, "00%.4s", temp);
+036:      textbytes = TEXTLENGTH * 2;
+037:      numtohex(textbytes, temp);
+038:      fprintf(objfile, "%c%c", temp[2], temp[3]);
+039:      forlim = TEXTLENGTH;
+040:      for (i = 0; i < forlim; i++)
+041:    putc(TEXTARRAY[i], objfile);
+042:      putc('\n', objfile);
+043:      TEXTLENGTH = 0;
+044:      TEXTSTART = locctr;
+045:    }
+046:    for (i = 0; i <= objct.objlength; i++)
+047:      TEXTARRAY[TEXTLENGTH + i] = objct.objcode[i];
+048:    TEXTLENGTH += objct.objlength;
+049:    TEXTADDR = locctr + objct.objlength / 2;
+050:    return;
+051:  }
+052:
+053:  /* ENDREC -- WRITE OUT THE LAST TEXT RECORD (IF THERE IS ANYTHING
+054:     IN IT) AND THEN GENERATE THE END RECORD */
+055:
+056:  if (TEXTLENGTH != 0) {
+057:    putc('T', objfile);
+058:    numtohex(TEXTSTART, temp);
+059:    fprintf(objfile, "00%.4s", temp);
+060:    textbytes = TEXTLENGTH / 2;
+061:    numtohex(textbytes, temp);
+062:    fprintf(objfile, "%c%c", temp[2], temp[3]);
+063:    forlim = TEXTLENGTH;
+064:    for (i = 0; i < forlim; i++)
+065:      putc(TEXTARRAY[i], objfile);
+066:    putc('\n', objfile);
+067:  }
+068:  putc('E', objfile);
+069:  for (i = 0; i < objct.objlength; i++)
+070:    putc(objct.objcode[i], objfile);
+071:  putc('\n', objfile);
+072:}
+073:
+074:
+075:
+\end{verbatim}
+\section{Pass\_2}
+\subsection*{Specification:}
+THIS IS THE MAIN PROCEDURE FOR PASS 2. IT READS EACH LINE FROM THE
+INTERMEDIATE FILE, AND CALLS P2\_ASSEMBLE\_INST AND P2\_WRITE\_OBJ FOR EACH
+NON-COMMENT LINE. HOWEVER, P2\_WRITE\_OBJ IS CALLED ONLY IF GENOBJECT =
+TRUE. GENOBJECT IS SET TO FALSE (TO SUPPRESS THE OBJECT PROGRAM) IF ANY
+ASSEMBLY ERRORS ARE DETECTED. P2\_WRITE\_LIST IS CALLED FOR EVERY LINE
+PROCESSED.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void Pass_2()
+002:
+003:{
+004:  SOURCETYPE source;   /* SOURCE LINE AND SUBFIELDS */
+005:  BOOLEAN errorsfound; /* TRUE IF ANY ERRORS IN CURRENT STMT */
+006:  BOOLEAN errorflags[MAXERRORS];  /* ERROR FLAGS FOR CURRENT STMT */
+007:  OBJTYPE objct; /* OBJECT CODE FOR CURRENT STATEMENT */
+008:  int proglength;
+009:
+010:  proglength = LOCCTR - PROGSTART;
+011:  FIRSTSTMT = true;
+012:  ENDFOUND = false;
+013:  TEXTLENGTH = 0;
+014:  rewind(intfile);
+015:  rewind(lisfile);
+016:  rewind(objfile);
+017:
+018:  while (Read_Int_File (&source, &errorsfound, errorflags)!=ENDFILE){
+019:    objct.rectype = NONE;
+020:    objct.objlength = 0;
+021:    memcpy(objct.objcode, BLANK30, sizeof(CHAR30));
+022:    if (!source.comline) {
+023:      P2_Assemble_Inst(source,LOCCTR,&errorsfound,errorflags,&objct);
+024:      if (!errorsfound)
+025:    P2_Write_Obj(objct, LOCCTR, PROGNAME, proglength);
+026:    }
+027:    P2_WRITE_LIST(source,objct,errorflags);
+028:  }
+029:  if (intfile != NULL)
+030:    fclose(intfile);
+031:  intfile = NULL;
+032:  if (lisfile != NULL)
+033:    fclose(lisfile);
+034:  lisfile = NULL;
+035:  if (objfile != NULL)
+036:    fclose(objfile);
+037:  objfile = NULL;
+038:}
+039:
+\end{verbatim}
+%%\end{document}

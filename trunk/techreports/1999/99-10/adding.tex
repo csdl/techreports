@@ -1,0 +1,136 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% adding.tex -- 
+%% Author          : Joe Dane
+%% Created On      : Tue Oct  5 15:35:04 1999
+%% Last Modified By: Joe Dane
+%% Last Modified On: Tue Nov  9 09:31:12 1999
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1999 Joe Dane
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\chapter{Adding a size metric to LOCC}
+\label{chap:add}
+
+LOCC was designed with one goal clearly in mind: to make it as simple
+as possible to add size metrics to the tool.  It was clear early in
+the development of LOCC that it would be foolish to think that one single
+size measure would be sufficient for all circumstances.  Differences
+in development languages alone would most likely require a
+modification of the size metric being used.  If the tool was to have
+any chance of being used, it would have to be flexible enough to
+support multiple size metrics.
+
+Once a developer has decided on a new metric, his efforts should be
+focused on implementing that metric and not on the details of
+interaction with the user of the metric.  It should be noted that
+these details are not as trivial as they may seem.  It is common in
+computer science research to find products developed with the goal of
+illustrating some fine point of the research in question, but which take
+little care with actual usability issues.  One may design the perfect
+program size metric, but making it simple to use is usually left ``as
+an exercise for the reader''.  LOCC alleviates this problem by taking 
+care of the boring details of the interfaces to the user
+and file system.
+
+\section{Deciding on a metric}
+
+The first step is naturally to figure out what is to be counted and how.
+This should be the most difficult step, and if it is, then LOCC can be
+considered a success.  The only limitations imposed on the size metric by
+LOCC are that it be implemented as one or more Java classes and that the
+classes fulfill the size counting interfaces defined by LOCC.  These
+interfaces are so general that they will not constrain the designer of new
+size metrics.
+
+To illustrate the process of adding a new size metric to LOCC, I will
+present a simple size metric, one which counts the number of semicolons in
+a Java source file.  This is not quite as useless as it might sound: since
+semicolons are used to separate statements in Java, the number of
+semicolons should be close to the number of statements.  Two functions
+(methods, actually) must be defined: one for measuring total size and one
+for measuring size difference.  In this case, total size will be the total
+number of semicolons in a source file.  Size difference will be defined
+simply as the difference in the numbers of semicolons in the respective
+source files.
+
+\section{Write the Java code}
+
+%\input{semi-fig}
+\begin{figure}
+  \centering
+  \input{JavaSemiCount.java}
+  \caption{A simple size metric}
+  \label{fig:locc-ext}
+\end{figure}
+
+The Java code which implements this count is shown in Figure
+\ref{fig:locc-ext}. In most cases the size metric designer would
+probably spread the implementation out over several classes.  To keep
+things compact here, I have compressed everything into a single
+top-level class and an enclosed inner class.  The top level class,
+{\tt JavaSemiCount} will be loaded by the {\tt LOCCClassLoader} and
+incorporated into LOCC.  The size metric will be constructed by a call
+to its zero-argument constructor, and LOCC will ask the metric for a
+description of itself by calling the {\tt getName()}, {\tt
+  getCLIArg()}, and {\tt getOutputFormats()} methods.  
+
+
+This size metric provides a single output format, represented by the
+inner class {\tt PlainOutputFormat}.  Like the {\tt SizeMeasure} of which it 
+is a part, {\tt PlainOutputFormat} provides methods which allow LOCC
+to ask about the format name, description, and command line argument
+switch.  {\tt PlainOutputFormat} additionally implements the methods of 
+both the {\tt TotalPrinter} and {\tt DiffPrinter} interfaces, so when
+it is asked to supply references to the objects which will ultimately 
+execute the count, it simply returns references to itself.  LOCC
+stores these references and calls {\tt printTotal} and {\tt printDiff} 
+on them after opening streams on the input and output files.
+
+
+\section{Modify the LOCC preferences file}
+
+\begin{figure}
+  \centering
+  \input{locc.properties}
+  \caption{An LOCC properties file}
+  \label{fig:locc-prefs}
+\end{figure}
+
+After writing and compiling the Java code, the next step is to direct
+LOCC to the code.  This is done by modifying a preferences file.  LOCC 
+uses both a global and a user-level preferences file, so the
+modifications can be done at either level.  The preferences file must
+look something like Figure \ref{fig:locc-prefs}.  
+
+The format of the file is a standard Java preferences file.  Comments
+can begin with either the ``{\tt !}'' or the ``{\tt \#}'' characters
+and extend to the end of line.  Blank lines are ignored.  Non-comment
+lines must be formatted either as {\em key : value\/} or {\em key = value\/}.
+
+The ``sizes'' line is a list of short names of size metrics.  The names are
+arbitrary, and are only used within the preferences file.  For each
+size metric named on this line, three additional lines must appear.  
+The keys for these lines are generated from the name of the size
+metric with the strings ``dir'', ``class'' and ``package''
+appended. The ``dir'' value specifies the directory in the file system
+in which the classes reside.  The ``class'' value gives the name of
+the main Java class which implements the {\tt SizeMeasure} interface.  
+The class must exist in a file in the directory
+specified in the ``dir'' value.  The use of jar or zip files is not
+supported.  The ``package'' value indicates the Java package in which
+the size code resides.  Classes from sub-packages of this package are
+loaded in a manner similar to the system class loader, from
+directories beneath the top level directory.
+
+\section{Use the metric}
+
+After the preferences file has been modified, LOCC will be ready to
+use the new metric.  Simply starting LOCC in the usual way will cause
+the new classes to be loaded and incorporated into LOCC.  The entire
+process, from the design to the use of the size metric took 20
+minutes.  This particular size metric is, admittedly, rather simple.
+The important point is that almost all of that 20 minutes was used in
+actually thinking about how the size metric should work, and very
+little effort was wasted in thinking about extraneous issues.

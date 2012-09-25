@@ -1,0 +1,395 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>An Annotated Overview of CSDL Software Engineering</title>
+  </head>
+
+  <body>
+<center>
+<h1>An Annotated Overview of CSDL Software Engineering</h1>
+Philip Johnson <br>
+Collaborative Software Development Laboratory<br>
+Department of Information and Computer Sciences<br>
+University of Hawaii<br>
+   Last Modified On: Thu Nov  6 08:52:55 1997
+</center>
+<p>
+
+  
+<h3>Introduction</h3>
+
+Current software engineering activities in CSDL can be viewed as consisting
+of two basic components: product engineering and process
+engineering. Product engineering refers to the various work products
+created during development.  Process engineering refers to the various
+measurements and analyses performed on the development process.  A major
+continuing focus of CSDL for the past five years has been to better
+understand and improve our process and product engineering within our
+academic research development environment.  
+<p>
+
+This document presents an overview of our findings thus far. It emphasizes
+the software engineering techniques that we have successfully adopted
+within CSDL and used consistently, in most cases for several years. The
+final section of this document briefly presents our current and planned
+future experimental activities in software engineering.
+
+
+<p>
+
+<h3>Product Engineering</h3>
+
+In our development, we observe the following relative degrees of 
+volatility in our work products:
+
+<pre>
+code &gt; tests &gt; class interfaces &gt;&gt; class hierarchy &gt;&gt; architecture
+</pre>
+
+In other words, code changes very rapidly and unpredictably.  Public class
+interfaces are less volatile than the code, but still change a great deal.
+The overall collection of classes and their relationships changes more
+slowly, and the architecture---the fundamental principles of coordination
+and process---changes more slowly still.  This observation does not imply
+that architecture is fixed: we redesigned the architecture of Egret (our
+framework for collaborative systems) three distinct times, for example.  This
+observation also does not imply that architecture is dictated top-down: in
+Egret's case, many architectural features emerged in a bottom up style from
+our experiences of building a suite of distinct collaborative applications
+using Egret as infrastructure.
+
+<p>
+
+These different levels of volatility led us to conclude, from an
+engineering perspective, that while it was reasonable to create stand-alone
+documentation for slowly changing work products, such as architecture, it
+was completely infeasible to create independent documentation for things
+like code, tests, and class interfaces. While documentation of these
+volatile components was absolutely essential to enable review, improvement,
+and reuse of these work products, the only feasible way to maintain
+accurate documentation in this highly exploratory environment was to
+generate it by parsing the primary work product (typically Lisp source code).
+We developed the initial version of a tool called DSB around 1992 for this
+purpose.  DSB is a kind of "JavaDoc on steroids", in that it not only
+generates HTML (or better yet, LaTeX) by extracting class interfaces and
+comment strings, it also provides a simple but useful form of quality
+assurance. DSB checks, for example, to see that all public functions have a
+documentation string, and that all documentation strings for a public
+function mention each parameter explicitly.  Violations of these and other
+errors or omissions and their location are provided as an appendix to the
+generated design document.
+
+<p>
+
+DSB is integrated with another system called Defsys, also initially developed
+around 1992.  Defsys uses RCS and other tools to support a simple
+configuration management scheme which provides a serial stream of
+"releases", along with a separate "development" version of software
+components. We use a three level release versioning scheme in CSDL:
+<em>X.Y.Z</em>, where <em>X</em> indicates a major redesign of the
+component, <em>Y</em> indicates an enhancement, and <em>Z</em> 
+indicates a bug fix. 
+
+<p>
+
+From 1991 to 1995, we developed Egret and a suite of collaborative
+applications based upon it: AEN (a collaborative hypertext authoring
+tool), CSRS (a collaborative code review tool), CLARE (a collaborative
+learning environment), and ShEmacs (a shared Emacs editor). We used 
+DSB and Defsys to coordinate this development.  Egret, for example,
+went through 3 major releases (each of which involved an architectural 
+redesign), over two dozen minor releases, and perhaps 60-100 distinct
+bug fix releases. 
+
+<p>
+
+For details on DSB, Defsys, and our methods for product engineering in the
+Egret system and its applications, see our internal developer page at:
+<blockquote> 
+CSDL Lisp Software Engineering: <br>
+<a href="http://www.ics.hawaii.edu/~csdl/Primer/lisp.html">
+         http://www.ics.hawaii.edu/~csdl/Primer/lisp.html</a>
+</blockquote>
+
+
+
+
+
+We did not "finish" Egret, then start work on its applications. 
+Instead, Egret and its applications were developed concurrently
+in a deeply co-evolutionary manner.  In such a situation, where
+architectures, interfaces, designs, and code are in a state of
+flux for literally years, configuration management (using defsys) and 
+current documentation (using DSB) were not sufficient by themselves.
+The third essential component of our product engineering was
+automated regression testing.  
+<p>
+We approached testing from a purely pragmatic point of view. 
+We realized that unless testing was virtually free, we wouldn't do
+it. We also realized that any sort of comprehensive testing would
+take too much work and anyway, we didn't really understand what it 
+would mean to do "comprehensive" testing, and weren't interested
+in trying to figure that out.  The goal of testing in CSDL was to
+try to minimize and quickly catch <em>regression</em>: the situation
+where something that used to work has stopped working, either because
+your code or someone's code that you're using has changed in an
+unforeseen manner.  CSDL testing also had to be <em>automatic</em>:
+it must be possible to invoke a single function to run all the test
+cases defined for a given system and report the results.  These
+goals led to the following style of test case development:
+<ul>
+<li> No user-level interaction.  All tests consist of calls to 
+the public interface of classes.
+<li> Minimal attempt at breadth.  A satisfactory test suite for a component
+called every public function at least once. More than one function could
+be called in a given test case, of course.
+<li> Incremental test suite development. The set of tests included with 
+the initial release of a component could be relatively small. 
+However, after finding and fixing a bug, we would often add a new test case to 
+exercise the function that was broken. 
+</ul>
+
+Despite this extremely unsophisticated approach, the Egret regression
+test suite alone grew to over 100 test cases, which were always invoked
+before any new release of the system. Implemented this way, CSDL
+regression testing became very popular with all the developers, since
+each test case would be defined only once but could be used on every 
+subsequent release of the system as a simple quality assurance check.
+Needless to say, innumerable errors were caught during regression test,
+and the "unit-level" nature of the test meant that the failing test
+typically pointed the developer quite accurately toward the code 
+(or at least the developer) responsible. 
+<p>
+
+We also found an unanticipated use for regression testing. The Egret
+regression test cases are provided with the public release and used in the
+installation process to check whether the system is running correctly.
+
+<p>
+For an example of our regression testing system, see the following design
+document (in postscript) for ECSTest, the regression test suite we built for Egret:
+<blockquote> 
+ECSTest Documentation:<br>
+<a href="http://www.ics.hawaii.edu/~csdl/designs/ecstest-1.2.4.ps">
+         http://www.ics.hawaii.edu/~csdl/designs/ecstest-1.2.4.ps</a>
+</blockquote>
+
+
+In the summer preceeding the public release of Egret, I began work on a
+tutorial guide which was intended to (a) explain the basic mechanisms in
+Egret, (b) how to combine them together to produce collaborative systems,
+and (c) illustrate via simple examples some of our general insights on how
+to develop collaborative systems. Several students took an independent
+study course with me, worked through all the examples, and generally
+debugged the presentation. The 120 page Egret Primer became an essential
+supplement to the 180 page Egret design documentation, because Egret and
+its application suite had now grown to over 60,000 lines of code, the
+client side alone involving six major subsystems, 35 classes, and over 500
+public functions:
+
+
+<blockquote> 
+The Egret Primer: A tutorial guide to coordination and control in interactive
+client-server-agent applications:<br>
+<a href="http://www.ics.Hawaii.Edu/~csdl/egret/primer/">
+         http://www.ics.Hawaii.Edu/~csdl/egret/primer/</a>
+<p>
+ECS (Egret Client) Design Document:<br>
+<a href="http://www.ics.hawaii.edu/~csdl/designs/ECS/">
+         http://www.ics.hawaii.edu/~csdl/designs/ECS/</a>
+<p>
+HBS (Egret Server) Design Document:</br>
+<A HREF="file://ftp.ics.hawaii.edu/pub/tr/ics-tr-95-03.ps.Z">
+         file://ftp.ics.hawaii.edu/pub/tr/ics-tr-95-03.ps.Z</a>
+</blockquote>
+
+
+In 1995, we made the first public release of Egret and a set of
+applications developed using it: 
+
+<blockquote> 
+Egret Release Page:<br>
+<a href="http://www.ics.hawaii.edu/~csdl/egret/release-notes.html">
+         http://www.ics.hawaii.edu/~csdl/egret/release-notes.html</a>
+</blockquote>
+
+
+
+Since 1995, Egret has been downloaded from our site over 300 times, and
+continues to be downloaded on an average of about once every week.  Actual
+<em>usage</em> at remote sites has been non-zero (reports on use of Egret
+and/or Egret applications have appeared in publications by several
+independent research groups), but it is clear that very little if any
+long-term "adoption" of Egret technology within external organizations has
+occurred.
+
+<p>
+
+Despite low adoption, I am extremely proud of the Egret project, not only
+for its research contributions (as reported in six journal articles, seven
+conference publications, and ten refereed workshop articles) but for its
+software engineering aspects alone.  It took us three major redesigns over
+four years, but Version 4 of Egret is (in my humble and admittedly biased
+opinion) an elegant collaborative architecture.  The class structure verges
+on the poetic in its simplicity, economy, and expressiveness. Much of the
+code cuts like butter. But don't take my word for it: take a look at the
+design and code yourself. In the end, we built Egret to be read as
+literature as much as to be executed as a system.
+
+
+
+<h3>Process Engineering</h3>
+
+At the beginning of 1996, a few months following Egret's public release, a
+couple of important shifts in my view on CSDL software engineering
+occurred. First, I felt that CSDL had acquired a basic grounding in the
+principles of software product engineering, and that although further
+product engineering improvements were needed, we also needed to begin
+emphasizing process issues as well.  At the same time, I started teaching a
+course based upon Watts Humphrey's "A Discipline of Software Engineering".
+This book articulates a "personal software process", which struck me as
+much more relevant and adaptable to the needs of CSDL than prior process
+work such as the Capability Maturity Model, which seemed to require large
+institutional infrastructure not accessable to my group.
+
+<p>
+Second, I felt that the XEmacs/Unix platform constraints for Egret 
+had too severely constrained our user/evaluation community, and that
+Java ("twice as good as C++, half as good as Lisp") was a cross
+platform development language with acceptably low levels of bogosity.
+After some initial playing around, we decided to move to Java for 
+new development and suspend further work on the Egret code base.
+
+<p>
+During 1996 and continuing to the present, we have been working on a
+Java-based toolkit to support PSP-style development and CSRS-style software
+review in an integrated format. Moving to Java meant that we needed to
+rebuild our product engineering environment (Defsys, DSB, regression
+testing, etc). We no longer needed DSB, since the JavaDoc package provided a
+sufficient subset of its functionality.  We did modify DefSys to work on Java
+files and observe the Java package-subdirectory relationship.  Finally, we
+defined some conventions for how to build regression test suites for each
+package.
+
+<blockquote> 
+CSDL Java Directory Structure Conventions:<br>
+<a href="http://www.ics.hawaii.edu/~csdl/Primer/Java/java-dirs.html">
+         http://www.ics.hawaii.edu/~csdl/Primer/Java/java-dirs.html</a>
+<p>
+CSDL Java Regression Test Conventions:<br>
+<a href="http://www.ics.hawaii.edu/~csdl/Primer/Java/regression-test-standard.html">
+         http://www.ics.hawaii.edu/~csdl/Primer/Java/regression-test-standard.html</a>
+</blockquote>
+
+
+In addition to the product engineering support, which we carried over
+from the Egret project, we added a more formalized development process
+which combined aspects of our de facto process that resulted from 
+Egret with additional procedures to support process improvement from
+our PSP experiences. We call this process CSDL/Baseline, as it is 
+intended to be the "jumping off point" from which each CSDL 
+developer builds their own, individualized development process
+
+
+<blockquote> 
+Introduction to the CSDL/Baseline Process:<br>
+<a href="http://www.ics.hawaii.edu/~csdl/csdlbase/">
+         http://www.ics.hawaii.edu/~csdl/csdlbase/</a>
+<p>
+CSDL/Baseline "in a nutshell":<br>
+<a href="http://www.ics.hawaii.edu/~csdl/csdlbase/nutshell.html">
+         http://www.ics.hawaii.edu/~csdl/csdlbase/nutshell.html</a>
+</blockquote>
+
+For this project, I also extended our product engineering 
+efforts by developing a software requirements 
+specification document. This document was intended to articulate the vision
+for the research project through a set of scenarios.  The SRS 
+also included extremely simple mockups of the user interface and 
+a preliminary task breakdown:
+
+<blockquote> 
+PSP/Baseline: Software Requirements Specification:<br>
+<a href="http://www.ics.hawaii.edu/~csdl/techreports/96-19/96-19.html">
+         http://www.ics.hawaii.edu/~csdl/techreports/96-19/96-19.html</a>
+</blockquote>
+
+
+We have now worked for approximately six months using this product and
+process engineering, and the preliminary results are encouraging.  
+CSDL has gone on hiatus this summer, partially due to my sabbatical 
+visit to DSTC, and partially due to my inordinate success at placing
+CSDL students in industry internships for the summer. 
+The released packages in the system so far can be
+viewed at:
+
+<blockquote> 
+PSP/Baseline Packages:<br>
+<a href="http://www.ics.Hawaii.Edu/~csdl/java/pspbase/">
+         http://www.ics.Hawaii.Edu/~csdl/java/pspbase/</a>
+</blockquote>
+
+
+<h3>Summary</h3>
+
+Despite the gradually increasing level of formality in both process and
+product software engineering within CSDL, and an increasing emphasis on
+requirements, design, and testing in addition to coding, we do not use, nor
+are we moving toward a "waterfall" model of software development. We see
+requirements, design, coding, and testing as a linear, sequential process
+only during the initial implementation of a software component; for the
+majority of a component's lifetime, these phases are concurrent, entwined
+activities.  Our development process can be better viewed as a structured
+walk through the space of all possible component designs and component
+interactions. CSDL software engineering is designed to accelerate the
+velocity of this walk and to provide insight into its direction.
+
+<p>
+
+The legacy of the multi-year Egret project is that current CSDL members
+are, for example, actively using and maintaining code (such as DefSys) that
+was designed five years ago by members who have graduated from the group.
+We know through our own personal experience and through our daily
+activities that it is worthwhile to invest time and energy into product and
+process engineering activities, because we will have to live with the
+outcomes of these activities for months or years to come.
+
+<h3>Future Directions: Toward Organizational Engineering</h3>
+
+CSDL is still a young organization and its software engineering
+culture is still quite volatile.  Furthermore, significant gaps in its
+product and process engineering still exist, which I hope we will address
+over the next several years. 
+<p>
+
+While everyone in CSDL is committed to improving our process and product
+engineering, I intend over the next year to add a third focal point to
+CSDL: <em>organizational</em> engineering.  Becoming a world class software
+engineer within a world class software engineering group requires more than
+simply state-of-the-art tools and methods. In fact, it is generally
+accepted that these issues are of secondary importance next to the social,
+cultural, managerial, and physical environments surrounding the activity of
+software development.  Over the next year, in concert with the move of CSDL
+to its new space in the POST building, I will begin activities intended to
+explore organizational engineering and its relationship with product and
+process engineering.  My ultimate goal is to provide CSDL members with an
+example of and experience with a world-class product, process, and
+organization. CSDL members can use this experience as a basis for
+transforming and improving their post-CSDL professional development
+environments.  A separate document on organizational engineering in CSDL is
+forthcoming.
+<p>
+
+
+
+
+
+
+
+
+
+    <hr>
+    <address><a href="mailto:johnson@eucalyptus.dstc.edu.au">Philip Johnson</a></address>
+<!-- Created: Tue May 27 13:42:51 EST 1997 -->
+  </body>
+</html>

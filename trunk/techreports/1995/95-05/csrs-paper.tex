@@ -1,0 +1,401 @@
+\documentstyle [12pt, /group/csdl/tex/named-citations,
+/group/csdl/tex/definemargins, /group/csdl/tex/lmacros]{article}
+
+\input{/group/csdl/tex/psfig/psfig}
+
+\begin{document}
+\begin{center}
+{\Large\bf CSRS: A Collaborative Software Review System}\\
+\vspace {.2in}
+by\\
+\vspace {.2in}
+{\em Danu Tjahjono\\
+(dat@uhics.ics.hawaii.edu)}\\
+Nov, 1994
+\vspace {.4in}
+\end{center}
+
+\section{Introduction}
+
+Software reviews or Formal Technical Reviews (FTR) plays
+an important role in software development as a means to
+improve the quality of software products. Unfortunately, many
+software organizations have not employed the full potential of
+this technique.  One problem that hinders its adoption to an
+organization is the labor intensive nature of the technique,
+especially when practiced manually. Another problem is related to 
+the current proliferation of FTR methods and ambiguities in their 
+practices. The same review method is often practiced differently by
+different organizations. Furthermore, there are many conflicting
+theories as to
+what factors can be attributed to the success or failure of a
+particular review method. 
+
+Our CSRS (Collaborative Software Review System) is developed to address
+these problems. Instead of prescribing a specific review method, we
+develop a review system with enactable review methods.
+The organization can then implement their own review method
+that most suitable to their organizations. Furthermore, we provide
+automatic metrics collection that allows the organization to
+evaluate their methods and improve them over time.
+
+\section{Data and Process Modeling Language}
+
+CSRS implements a generic review system by providing data and
+process modeling languages.  
+These languages allow an organization to develop their own review
+method, or to develop various review methods and empirically
+investigate them to find the most effective one under certain
+circumstances. 
+
+\subsection{Data Modeling Language}
+
+The data modeling language describes what artifacts are manipulated by
+the review method. Specifically, it defines various types of review
+artifacts, their field structures, and the relationships among the
+artifacts. In CSRS terminology, review artifacts are called nodes.
+Each node may contain multiple fields, and each field may store
+various types of object, such as 
+textual string, function definitions, link definitions, or other non
+textual data (e.g., audio data). Relationships among the nodes are
+represented by links.   
+Nodes and links are typed, that is, different review artifacts and
+their relationships can be represented by different node and link types. 
+A set of computational supports may also be provided for different
+artifact types.
+
+One may also define a set of attributes to node instances (with or
+without a specific node type), such as node-name, creation-date,
+creator, etc. A ``state'' can also be attached to a node. These
+information allows one, for example, to keep track the review
+status of a specific node created by a specific user during the
+current or subsequent phases. 
+
+A typical review method usually includes four top-level node
+types: Source, Commentary, Checklist and Administrative.
+
+Source nodes contain input artifacts to be reviewed. The language
+system allows the user to further differentiate source node types,
+such as function, macro, module, etc. 
+
+Commentary nodes contain output artifacts generated during the
+review. Similarly, one can define different commentary types,
+such as, {\it issue} nodes to record defects in the source,
+{\it action} nodes to record proposal in resolving the issue, 
+{\it consolidated-issue} nodes to consolidate similar issue nodes, etc.
+
+Checklist nodes contain verification aids. In manual review practices,
+such as Fagan's method \cite{Fagan76}, the reviewers are often required
+to consult this checklist when examining source nodes. CSRS language
+system allows checklist items to be defined for a specific source
+node, and/or a specific participant role.
+This checklist can also be stated as {\it required} or {\it optional}. 
+For the required checklist, the reviewers
+must explicitly check off the item when examining the corresponding source.
+
+Administrative nodes contain administrative information about the
+review process and project related information, such as participant names
+and roles, the starting and ending review date, etc.
+
+Figure \ref{fig:async-data-model} shows an example of data model used
+by FTArm (Formal, Technical, Asynchronous review
+method)\cite{Johnson93,CSDL-93-17}. Figure \ref{fig:data-language}
+shows an example of the data modeling language for describing
+{\sl Issue} node, its field structure and its link ({\sl derives})
+originated from {\sl Source} node.
+
+\begin{figure}[htb]
+  {\centerline{\psfig{figure=async-data-model.epsi}}}
+  \caption{FTArm Data Model}
+  \label{fig:async-data-model}
+\end{figure}
+
+\begin{figure}[tp]
+  \footnotesize
+  \begin{verbatim}
+(l*data*define-node-schema
+  :name "Issue"
+  :superschema "Commentary"
+  :fields (("Subject")
+	   ("Category")
+	   ("Criticality")
+	   ("Source-node" :init-fn e*issue*set-source)
+	   ("Lines")
+	   ("Description")
+	   ("Consensus" :init-fn (e*node*set-consensus "confirm"))
+	   ("Related-issues")
+	   ("Proposed-actions")
+	   )
+  :make-link-fn e*derives*make
+  )
+
+(l*data*define-field-schema
+  :name "Subject"
+  :type text
+  )
+
+(l*data*define-field-schema
+  :name "Source-node"
+  :type lisp
+  :display-fn e*node*name
+  )
+
+(l*data*define-link-schema
+ :name "derives"
+ :documentation "Derives issue node from any source nodes"
+ :from-nodes ("Source")
+ :to-nodes ("Issue" "Consolidated-issue")
+ :label "csrs-link-label"
+ :at-fields  '((:from-node "Source" :to-node "Commentary" :field "Issues")
+              )
+ )
+
+  \end{verbatim}
+  \normalsize
+  \caption{Example of CSRS data language}
+  \label{fig:data-language}
+\end{figure}
+
+
+
+\subsection{Process Modeling Language}
+
+The process modeling language describes specific steps or phases that
+review participants must go through in order to complete a review activity.
+
+A software review process normally involves a group of
+people with the same or different roles reviewing software
+products, and a set of predefined review phases to follow. Each review
+phase involves one or more objectives to be achieved (e.g.,
+understanding the product, finding defects, consolidating the
+defects), a specific interaction mode (e.g., face to face group
+meeting, private mode, etc), and a specific strategy or technique to
+be used in order to achieve the objective (e.g., using checklist
+when examining/finding defects in the source). Furthermore, each phase
+may have a set of preconditions to be satisfied before entering the
+phase or postconditions to satisfy in order to leave the phase.
+Figure \ref{fig:async-process-model} shows an example of review
+process used by FTArm \cite{Johnson93,CSDL-93-17}. 
+
+\begin{figure}[htb]
+  {\centerline{\psfig{figure=async-process-model.epsi}}}
+  \caption{FTArm Process Model}
+  \label{fig:async-process-model}
+\end{figure}
+
+CSRS process modeling language allows one to define these phases
+descriptively. 
+Specifically, constructing a review process involves first defining
+review phases and their entry (pre) or exit (post) conditions, review
+participants and their roles, and the
+review artifacts (nodes, links, fields, and attributes) manipulated by
+the participant during specific phases.  
+A set of operations can also be defined for the participant 
+playing a specific role during a specific phase. In general, these
+operations make up the review strategy for the given phase.
+
+CSRS provides two built-in interaction modes: asynchronous
+and synchronous meeting mode. In the former, the
+participants manipulate common artifacts (nodes) asynchronously.
+Group discussion is done through the creation of follow-up nodes using
+links. When following the discussion, the participants simply follow the
+links to the appropriate nodes. Additional computational supports can
+also be provided to automatically consolidate the discussion by 
+traversing the proper links (for example, to display all arguments that
+support a proposal mentioned in the node, the system can simply traverse
+all links of type {\it confirm} originating from the node and display
+the corresponding destination nodes).
+
+Synchronous mode supports allows all participants' screens to be
+synchronized with the meeting leader. Thus, when the leader displays a
+node, the node will also be displayed in all participants' screens.
+CSRS language system allows one to define what node types to be
+synchronized, and with whom they are to be synchronized. 
+
+The interaction mode may also involve private or group interaction. In
+private mode, only the creator of the node can read the node, while in 
+public mode, all participants can read the node. CSRS language system
+allows one to define what artifacts can be accessed (read/write) by
+whom (what role) during what phase.
+
+CSRS implements a sequential process workflow, that is, a review process
+consists of a sequential ordering of review phases.
+CSRS provide both manual and automatic
+activation of these phases. In the manual mode, a designated participant
+(e.g., moderator) will check the status of the review periodically (or
+program the system to notify him/her when the status changes) and activate
+the next phase accordingly. In the automatic mode, an autonomous agent
+(background process) will monitor the status of the review
+periodically by checking the post-conditions of the current phase, or
+pre-conditions of the next phase, and activate the next phase
+accordingly when the conditions have been met.
+
+Within a phase, the process workflow is enforced through menu
+selections. The operations installed in the menu are
+not only sensitive to the current phase, but also to the current role that
+the participant is assuming, and the current node and field types.
+This also implies that when defining new operations, one must specify
+whether the operations will be applied to specific 
+phases, roles, node types and/or field types. The operations can also
+be defined to be automatically invoked by the
+system right after the participant successfully connect to the system.
+This feature defines the starting state of the process flow, that is,
+guiding the participants as what to do when they first login to the
+current phase. 
+
+Figure \ref{fig:process-language} shows an example of process
+language for describing the process model of FTArm (partial
+description). 
+
+\begin{figure}[tp]
+  \footnotesize
+  \begin{verbatim}
+(l*process*define-method       ;define process model of FTR method
+  :name "FTArm"                
+  :phases ("Orientation" "Private" "Public" "Consolidation" "Meeting" "Conclusion")
+  )
+
+(l*process*define-phase
+ :name "Private"
+ :documentation "Individual reviewers examine source nodes"
+ :objective "Finding issues in the source nodes."
+ :roles ("Reviewer" "Producer")
+ :synchronicity "Asynchronous"
+ :technique "Free Review"
+ :exit-condition-fn e*private*sources-reviewed-p
+ :display-status-fn e*private*display-status
+ :metrics-collection-p t
+ )
+
+(l*process*define-role         ;define valid role
+ :name "Reviewer"
+ :documentation "Participants who review source nodes."
+ )
+
+(l*process*define-access-privilege 
+  :role "Reviewer"
+  :phase "Private"
+  :privilege ((:operation create-node 
+               :access private 
+               :node-schemas ("Issue" "Action" "Comment"))
+              (:operation read-node 
+               :access public 
+               :node-schemas ("Source" "Checklist"))
+              (:operation lock-node
+               :acess private
+               :node-schemas ("Issue" "Action" "Comment"))
+              )
+  )
+  \end{verbatim}
+  \normalsize
+  \caption{Example of CSRS process language}
+  \label{fig:process-language}
+\end{figure}
+
+
+\subsection{User Interface}
+CSRS user interface is built on top of Lucid Emacs, an X-Window
+version of Emacs editor that supports pull-down menu, pop-up menu, and
+scroll bar. A node is displayed as an instance of Emacs
+buffer, with its fields as distinguished regions in the buffer. A link
+will appear as link-label in the buffer. To follow the link, the user
+simply use the {\it mouse} to click on the corresponding label. The
+user may also annotate a 
+specific text region within a node with another node.
+
+Different node buffers can also be displayed on different Emacs screens. 
+CSRS language system allows the user to define screen real estate,
+such as where to put the screen on the workstation display and
+what node types should be displayed on it.
+
+Finally, one may define a summarized view of node contents
+using {\it summary-buffer}. The specific items to be displayed on the
+buffer and their display format can be specified in advance.
+Figure \ref{fig:csrs-screen} shows a typical CSRS screens.
+
+\begin{figure}[htb]
+  {\centerline{\psfig{figure=csrs-screen.ps}}}
+  \caption{CSRS Screen}
+  \label{fig:csrs-screen}
+\end{figure}
+
+\subsection{Review Metrics}
+Metrics collection is always part of a well executed review activity.
+CSRS collect these metrics automatically and at a
+fine-grain level. There are two types of metrics collected by
+the system: those associated with review artifacts and their
+attributes, and those associated with review efforts (time spent by
+participants).  The first type of metrics can be obtained directly
+from the corresponding nodes/links generated during the review
+(for example, counting the number of issue nodes generated by a
+particular participant). To obtain the second type of metrics, we
+instrument the primitive CSRS commands with time-stamps. When the user
+invokes the command, the system will record the starting time of the
+command, the artifact type upon which the command is operated on, and the
+current selected screen. 
+The time-stamp mechanism allows one to obtain various kinds of
+review metrics that relate to user's efforts, such as, how long the
+user reads particular nodes, the order of nodes traversal,
+or even the order of command invocations from the beginning to
+the end of the review session.
+
+\section{System Architecture}
+CSRS implements a client-server architecture. Multiple clients send
+commands to a shared server. 
+The server implements basic hypertext operations,
+such as creating, retrieving and deleting nodes and links.
+The server also implements event mechanisms
+that allow different clients to synchronize their states (e.g., when one
+client updates the node, the updates will be propagated to other clients
+currently displaying the nodes). This  feature is used to
+implement synchronous meeting mode.
+
+The clients are implemented on top of Egret, a generic hypertext system
+that provides session management to the server as well as typing
+mechanism. The next layer is CSRS engine that provides internal
+operations of the system, and the language subsystem that provides
+enactable review methods.
+
+One may also add special client running as a background process,
+called {\it Agent}, that performs specific 
+tasks by listening to specific events from the server.
+Some examples of agents include GAgent (which updates internal global
+tables of the system), Magent (which listens to review state
+and informs the participants through mail messages accordingly), etc. 
+The system architecture is shown in Figure \ref{fig:csrs-architecture}
+
+\begin{figure}[htb]
+  {\centerline{\psfig{figure=csrs-arch.epsi}}}
+  \caption{CSRS Architecture}
+  \label{fig:csrs-architecture}
+\end{figure}
+
+\subsection{Current Status}
+
+
+Our first prototype of collaborative software review system (CSRS ver.1)
+has been around for a while. It implements an asynchronous review
+method \cite{Johnson93}. 
+The experience we gain from this system 
+(in terms of system usability and ease of use) is generally positive.
+However, it also made us realize the need
+for generalizing the system to implement other review methods.  
+
+This leads to the development of CSRS version 3 that support generic
+modeling capability as discussed above. This version has just recently
+been completed. It is currently
+used in our research group as part of software quality assurrance
+method. We also plan to use the system as an experimental testbed to
+investigate various Formal Technical Review factors \cite{CSDL-94-07}. 
+
+
+\newpage
+
+\bibliography{/group/csdl/bib/csdl-trs,/group/csdl/bib/ftr}
+\bibliographystyle{/group/csdl/tex/named-citations}
+
+\end{document}
+
+
+
+
