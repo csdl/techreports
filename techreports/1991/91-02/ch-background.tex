@@ -1,0 +1,500 @@
+\chapter{Background Information}
+\section{Introduction}
+
+This document presents an architectural and functional specification
+of Egret. In addition to overview material, it presents snapshots of
+two on-line databases, the Egret Designbase and TestBase.  While these
+snapshots provide a recent perspective on the design of Egret, the
+on-line versions are considered the authorative source for
+specification and testing information.
+
+Egret is an environment for the implementation of exploratory collaborative
+hypertext applications \cite{csdl-91-03,csdl-92-01}.  Egret provides
+mechanisms for the integration of an underlying database server
+application process, and an intermediate, highly expressive
+exploratory type system, with a top-level editor and graphical display
+applications.  In doing so, it provides a language and environment for
+implementation of domain-specific collaborative systems, such as for
+research review \cite{csdl-92-03,csdl-92-05}, or code inspection
+\cite{csdl-92-04}.  This document does not attempt to provide a
+detailed description of the research concepts and motivations for
+Egret. For this kind of background reading, we point the reader to any
+of the above references, although \cite{csdl-92-01} and
+\cite{csdl-92-03} are particularly good starting points.  If you have
+not read at least one of these documents, we strongly suggest you do
+so before wading into this document.
+
+This report is organized into four parts.  The first part provides
+background information about motivations and conventions used in the
+design, testing, and implementation.  It also presents a brief
+overview of the major subsystems in Egret.  The second part jumps to a
+relatively detailed functional specification of the public interface
+to each of these systems.  This description is automatically generated
+from the on-line Design database.  The third part documents the test
+system, and includes both an overview of the testing method, the test
+environment built for Egret, and finally a natural language
+description of each of the current test cases (also automatically
+generated from the Test database).  The final part of this report, the
+appendix, presents some design rationale commentary for various parts
+of the system.
+
+
+\section{Architectural Requirements}
+
+Egret is heavily influenced by our experiences with CoReView, a
+prototype collaborative system we developed in 1991.  The successes
+and failures of that system stressed to us the importance of
+extensibility, verifiability, and recoverability for the successor to
+CoReView.  In designing this successor, we balanced two research
+goals.  On the one hand, Egret was designed to explore issues in
+exploratory collaborative type systems.  On the other hand, Egret was
+also designed to provide an excellent platform for development of
+novel applications in collaborative hypertext systems.  The next few
+sections briefly overview these issues that significantly influenced
+the development process and products of Egret.
+
+\subsection{Extensibility}  
+
+Egret has an architecture-level specification that defines a set of
+responsibilities and a public interface for the three primary subsystems:
+Server, Type, and Interface.  Each of these subsystems is internally
+organized as a set of classes with public and private interfaces.  Egret 
+also defines naming conventions for program entities that simplify the
+identification and understanding of their behavior.  These conventions
+are documented in Section \ref{conventions}.
+
+One goal of this architectural structure is to facilitate migration of
+system functionality across different application processes.  For
+example, certain database functions that are now implemented in Emacs
+might migrate to the database server, if we find a better server
+platform.  Our current choices for editor, window interface, or
+graphical browser may change over time.  Another architectural goal is to
+facilitate the the implementation of new applications, such as
+mechanisms for sophisticated impact analysis.  
+
+\subsection{Verification} 
+
+A design goal for Egret is completely automated regression testing: a
+suite of test cases that can be run on the system to test whether or
+not major functionality is present and correct after making changes.
+
+Egret supports this goal by providing a layered architecture that
+separates the Interface subsystem, where user interaction with the
+system occurs, with other subsystems, where the structure of the
+collaborative network is physically manipulated.  It is possible to
+test much of Egret by ``simulating'' the Interface subsystem
+interactions programmatically.\foot{Unfortunately, the current test
+framework implementation does not allow testing of multi-user
+coordination functions, which is admittedly a significant failing.}
+The layered architecture supports incremental integration as well as
+unit testing.
+
+Regression testing is supported through the TestBase, a system for
+declaratively specifying test cases and their expected results. A detailed
+introduction to the Egret test system is provided in Part \ref{test-system}.
+
+\subsection{Information Replication and Recoverability}
+
+A fundamental architectural feature of Egret is replication of  information. 
+Information replication occurs through two orthogonal (and combinable)
+constructs:  tables and locally cached nodes.  We first discuss these
+two constructs separately, then show their relationship, and finally
+discuss the need for recoverability implied by these constructs.
+
+Egret maintains many table structures to facilitate queries about the
+graph-level structure, type-level properties, and process state of the
+hypertext database and collaborative environment.   For example,  Egret
+maintains a table that associates each node with (among other things) the
+links that point to it.  Without this table, a query to the underlying database
+server to determine the links pointing to  a node would require searching
+through every node in the database individually\foot{Since the hyperbase
+system does not maintain backlink information.}   While such a table provides
+efficient answers to queries of this form, it does by incurring several costs. 
+First, this table must be updated whenever the link-level structure of the
+database changes, and so the overhead of table update is added to node and
+link creation and deletion operations.  Second,  this table replicates
+information already present implicitly in the structure of the hypertext
+database, and so maintaining consistency between it and the database is
+vital.  Third, the database must store this table someplace, and thus extra
+space must be allocated.
+
+An orthogonal form of information replication is locally cached
+nodes.  Locally cached nodes are motivated by the need to provide 
+efficient access to the same node on a frequent basis.  For example, 
+under normal circumstances, a request by the user to access the 
+contents of an Egret node results in a query to the hyperbase server
+process over the network, which sends back the contents of the node.
+Since other concurrently connected users might also be accessing and
+updating this same node's contents, a later request for this node's 
+contents would require a second hyperbase query, network access,
+and network retrieval.  In the case where the node contents are not
+updated frequently but required frequently,  high overhead can result
+from this procedure.   Locally cached nodes are an efficient solution when
+the contents of a node changes relatively slowly but is accessed 
+by users relatively frequently.   Instead of accessing the hyperbase
+each time the node's contents are required, a copy of the node's contents
+are maintained by the client in their local process, and events are used
+to signal to the client process when this node's contents have been
+updated.  Until the client receives such an event indicating that the
+hyperbase's version of the node has been updated, it simply refers to 
+its locally cached copy of the node.  The tradeoffs of this approach
+are straight-forward: the overhead of querying the hyperbase each
+time the node contents are needed is traded for the overhead of 
+processing the update events.  
+
+Egret frequently combines these two concepts by maintaining
+tables in locally cached nodes.   Tables are frequently a natural 
+fit to the strengths of locally cached nodes, since they contain
+information that is updated relatively infrequently but is referred
+to quite frequently.  
+
+Information replication directly leads to the problem of  consistency
+maintenance.  Whenever information is represented redundantly, either
+through tables that replicate information  implicit in the structure or
+contents of the database, or through locally cached nodes that replicate the
+contents of the central server process, the occurrence of corruption is not
+only possible,  but inevitable.    For this reason, Egret requires {\bf recovery
+operations} to be associated with certain classes.   Recovery operations, when
+invoked, restore the  state of the object.  For example, if the node storing the
+table that associates nodes with the links that point to them became
+corrupted, the recovery operation for that table could be invoked to rebuild
+the table contents by mapping through the entire contents of the database. 
+Recovery operations for locally cached nodes simply consist of re-reading the
+node contents from the centralized database server process. 
+
+
+It is important to note that consulting local information maintained
+via the event mechanism leads to the possibility of presenting
+erroneous information to a client.  As a simple example, suppose one
+client queries Egret  for the total number of nodes in the database
+just after another client deletes a node. If the local
+client process determines the answer to this query by computing the length of the
+local list of node-IDs, and if this computation is performed before the
+event updating this list is received, then the query result will be
+off by one.  Therefore, local information should not be used when this
+event propogation delay could produce significant problems (for
+example, a locally maintained list of locked nodes should not be
+consulted in order to determine whether to grant a lock.)
+ 
+If Egret  could be perfectly implemented and if its supporting
+network and workstation environment could function without failure,
+consistency maintenance would not be an issue.  Unfortunately, client
+connections fail unpredictably, implementation errors prevent
+propogation of updated information, and local and global state become
+corrupted on a regular basis.  For this reason, it is the
+responsibility of the implementor of any mechanism that holds either: state
+information (such as an ``unread nodes'' facility); locally maintained
+information (such as the ``cv-nodes'' list);  or globally maintained
+information (such as the ``type database'' facility) to also implement
+recovery operations.
+
+Recovery operations repair replicated information that
+has somehow gotten out of sync, or corrupted. For example, the 
+recovery operation for the locally maintained list of node-IDs would
+send the database server a request to re-transmit a fresh copy of this list
+to the client requesting it.  The recovery operation would then replace
+the corrupted list with the newly received one. 
+
+The actual repair mechanism depends upon the nature of the replication
+information, and may not entirely restore the system to its state
+prior to the moment of corruption. For example, a recovery operation
+for a corrupted unread nodes information might simple re-initialize
+the unread nodes list for a given user (or all users) to the empty
+list. 
+
+\subsection{Support for Exploratory Groupwork}
+
+Support for exploratory groupwork in Egret begins with its mechanism for
+defining type-level structure, called the Exploratory Collaboration Type
+System (ECTS), and a process model called EXCON, for 
+Exploration-Consolidation Cycle.
+
+The EXCON model views exploratory collaboration as cycling between two
+modes: exploration and consolidation.  During exploration, collaborators are
+discovering new structural features of the domain and reifying these features
+into the structure of the artifact under construction.  During consolidation,
+collaborators compare and contrast the structural features they have
+individually discovered during exploration, and build consensual structures
+that embody the mutually agreed upon features.
+
+ECTS is designed to support these features of the exploration-consolidation
+cycle.  In ECTS, collaborators can define typed schemas of nodes and links, and
+specify their internal structure.  Once defined, schemas form templates from
+which collaborators create instances with common structure and behavior.
+
+While this aspect of ECTS is completely similar to conventional
+object-oriented database schema mechanisms, ECTS departs from this model
+in a singular way: while classes can be used to create instances with shared
+structure and behavior, instances are not constrained to the structure and
+behavior as defined by their parent class. Collaborators are free to modify
+instances by adding to, deleting, or modifying the properties of its internal
+structure.
+
+To support this process, ECTS also provides a structural variance tool that
+indicates, for a specific node or link class, the degree to which its instances
+depart from the class-level structure, and summarizes how that variance is
+expressed in terms of added fields, deleted fields, and changes to the
+properties of the class-level defined fields.  This information can be
+aggregated over the entire database to determine an overall measure of
+variance for the database.
+
+See \cite{csdl-92-01} for more details on ECTS and the EXCON process
+model.
+
+\section{Notational Conventions}
+\label{conventions}
+
+\subsection{Identifier Syntax}
+
+Function and variable names in Egret have a standard format.
+Each name must adhere to the following template:
+
+\small\begin{verbatim}
+<sys-name>:<sys-vis><class-name><class-vis><name>
+\end{verbatim}\normalsize
+
+\noindent where:
+\begin{itemize}
+  
+\item {\tt <sys-name>} is a single character that identifies the
+  subsystem membership of the object.  Currently, {\bf u} identifies the
+  utilities subsystem, {\bf i} identifies the interface subsystem, {\bf t}
+  identifies the type subsystem, and {\bf s} identifies the server subsystem.
+  
+\item {\tt <class-name>} is typically the full class name, but may
+sometimes be an abbreviation.
+  
+\item {\tt <sys-vis>} and {\tt <class-vis>} are single characters
+  indicating the external visibility of the object. The character
+  {\bf *} indicates that the object is public, the character {\bf !}
+  indicates that the object is private, and the character {\bf @}
+  indicates that the object is a system administration function to be
+  manipulated only by distinguished users at special times (such as
+  database initialization, recovery, and so forth).  
+
+  \item {\tt <name>} is the actual name of the operation or
+  attribute.
+
+\end{itemize}
+
+For example, the function {\bf i*cmd*find-node} is the
+interface subsystem public operation {\sf find-node} from the class
+{\sf command}, which is abbreviated as {\bf cmd}.  By prefixing
+operations with their class name, the operation's class membership is
+automatically documented, as well as allowing the same operation name
+to be defined for different classes (for example, {\bf node*find-node}.)
+
+In this document, boldface font is used when referring to a specific Egret 
+operation or attribute, such as {\bf s*hbserver!connect}.  Sans serif 
+font is used when referring to class names or operation names in general, 
+such as {\sf command} or {\sf delete}.  The typewriter font is used when
+referring to Emacs or Epoch functions, such as {\tt title}, or when 
+displaying sections of code that may include Egret and Emacs functions, such
+as:
+\small\begin{verbatim}
+(foobar (i*screen*name scrn) "New Screen")
+\end{verbatim}\normalsize
+
+\subsection{Common Name Components}
+
+Beyond naming syntax, Egret also has conventions for naming certain
+kinds of semantically related operations.  These conventions may be
+repeated elsewhere in this document, but are collected here for
+handy reference:
+
+\begin{itemize}
+
+\item Constructor and instantiation operations are prefixed by {\bf make-}.
+
+\item Deletion operations are prefixed by {\bf delete-}.
+
+\item Operations that set the value of an attribute are prefixed by {\bf set-}.
+
+\item Recovery operation names are by convention prefixed with {\bf reset-},
+and whenever possible suffixed with the name of the attribute or
+operation whose functioning they repair.  For example, the server
+subsystem node class attribute {\bf s*node*incoming-links}
+would have a corresponding recovery operation called {\bf s*node!reset-incoming-links}.
+
+\end{itemize}
+
+\section{Object Orientation Conventions}
+
+The Egret design is object-oriented.  However, ``object oriented'' can
+mean very different things to different people.  This section
+clarifies our use of object orientation by describing the major
+entities in our design: classes, objects, attributes, operations, and
+collections.  It also describes how public and private interfaces for
+class attributes and operations are defined\foot{The mechanisms for
+inheritance and visibility control do not attempt to extend the state
+of the art: inheritance is implemented ``manually''.  The goal here is
+to introduce a set of concepts for object orientation and visibility
+that provide the greatest benefit for the lowest overhead.}.
+
+
+\subsection{Classes}  
+
+A {\em class}\/ is a collection of objects with related structure and
+behavior.  {\sf Node} and {\sf link} are obvious classes in Egret . Each class
+has associated with it a set of superclasses, a set of subclasses, a set of
+attributes, and a set of operations.  The design of Egret  is  neutral on the
+issue of single vs.  multiple inheritance, although no occurrences of multiple
+inheritance in the design currently exist.
+
+Classes frequently have constructor and destructor operations for the objects
+associated with them.  These operations are always called {\sf make}
+and {\sf delete}. If these operations are not specified, then the class is an 
+{\em abstract class}. Abstract classes exist to collect together related
+structure that is inherited by other classes that do have constructor
+and destructor operations.  
+
+Classes are, in some sense, purely a design-level representation. No explicit
+Emacs Lisp support for defining classes exists.  The reification of classes in
+Emacs Lisp occurs purely through the use of naming conventions for functions
+and variables, and voluntary observance by programmers of the visibility
+constraints.  However, designing and  programming in an object oriented
+fashion will greatly ease understanding of the system architecture, as well as
+supporting migration to other languages providing direct support for these
+concepts.
+
+\subsection{Objects} 
+
+Classes are an organizational entity--what actually exists during
+execution are particular instances of classes, or {\em objects}.
+
+Each object has a unique identifier associated with it, and this unique
+identifier (or the object itself) is virtually always the first argument to the
+operations associated with a class.  This convention implements a simple kind
+of message passing behavior, where the first argument to a function call
+indicates the particular object that the message (the function) is sent to.  For
+example, the {\bf n*node*lock} operation takes a node-ID as its
+first argument, which can be interpreted as having the effect of sending a
+message to that particular node to lock itself.
+
+A rough design heuristic is that if an entity does not have a distinguishing
+unique ID, or if one is never needed to implement its behavior, then the entity
+should probably exist as a part of another class.  Similarly, deciding the
+primary home for an object operation can sometimes be resolved by
+considering the most appropriate first argument to it.
+
+\subsection{Attributes}  
+
+Each class instance has a set of characteristics, or {\em
+attributes}\/ associated with it.  For example, each screen has a
+geometry, color, name, and so forth.  These are attributes of the
+class.  If a class has an attribute defined for it, then there exists
+a function that returns the value of the attribute.  For example, {\bf
+n!screen*name} returns the {\sf name} attribute for an instance of the
+class {\sf screen}.
+
+Attributes need not be ``static''.  For example, a reasonable
+attribute of the class {\sf node-buffer} is {\sf
+link-under-mouse}---an attribute that returns the link ID of the link
+label currently under the mouse cursor (or {\tt nil} if the mouse
+cursor is not currently over any link label).
+
+Attribute functions take a single argument, the object whose attribute
+value is to be retrieved.  This argument is either the object itself
+(for example, the Emacs screen object), or the unique ID of the object
+(for example, a node ID).
+
+Some attributes are {\em setable}.  This means that an operation
+corresponding to the attribute is defined to change its value. This
+operation is named by prefixing the attribute name with {\bf set-}.
+For example, if the {\bf n!screen*name} attribute is setable,
+then the operation {\bf n!screen*set-name} is defined to change
+the value of that operation.
+
+Not all attributes should be setable.  For example, it probably
+doesn't make sense to have the {\bf node-buffer*link-under-mouse}
+attribute mentioned above be setable\foot{Although, you could
+conceivably argue for making that attribute setable as a way of
+warping the mouse cursor to a particular link label.  But we won't.}.
+
+Attributes can be private or public.  Public attributes are indicated
+notationally by the use of {\bf *} as the visibility token; {\bf !} as
+the visibility token indicates a private attribute.  If an attribute is
+private, then functions outside the implementation of the class should
+not access or set the attribute's value.  This, of course, is not
+enforced in Emacs Lisp, but is rather a way of helping programmers to 
+understand what parts of a subsystem are internal details and can thus
+be safely ignored.  If you find yourself as a class implementor needing 
+access to a private attribute of another class, you should publicize this
+observation immediately.  It may be the case that there is a public mechanism
+that you are aware of and should use instead.  Alternatively, it may be
+the case that the private attribute should be changed to public.
+
+It is common to have an attribute be publically accessable but only  privately
+setable.  To do this, define both the {\bf *} and {\bf !}  forms of the attribute,
+but only define the set operation for the {\bf !} form. For example, one could
+define two accessors for screen names,  {\bf i*screen*name} and
+{\bf i*screen!name}, the first public for use by any class, and the second
+private to the implementation of the screen class.  By defining the set
+operation {\bf i!screen!set-name}, you provide a consistent mechanism for
+updating the screen title internally without making this capability public. 
+
+\subsection{Operations}
+
+While attributes refer to characteristics of classes, {\em operations}
+refer to the behaviors of the instances of the class.  For example,
+one behavior of a node is to be written out or retrieved from the
+hyperbase.  These behaviors are represented by the operations
+{\sf write} and {\sf retrieve}, with corresponding Emacs functions {\bf
+n*node*write} and {\bf n*node*retrieve}.
+
+Operations may take any number of arguments, but the first argument
+is, by convention, an object representing the class instance.  In the
+case of objects like nodes or links, the first argument is their
+unique ID.  In the case of objects like buffers or screens, the first
+argument may be the actual buffer or screen object itself.  Operations
+must always document what form their first (as well as the other)
+argument must take. The operation may take additional required or
+optional arguments depending upon the nature of the behavior.
+
+
+Operations can be public, indicated by the visibility token ``*'',
+or private, indicated by ``{\bf !}''.  Public operations are accessable to
+other classes, while private operations are only accessable to the
+internal implementation of the class. As noted above, this is purely
+convention, and unfortunately Emacs Lisp does not enforce this
+encapsulation.  To repeat, if you find yourself as a class implementor
+needing access to a private operation of another class, you should
+publicize this observation immediately.  It may be the case that there
+is a public mechanism that you are aware of and should use instead.
+Alternatively, it may be the case that the private operation should be
+changed to public.
+
+All instantiable (i.e. non-abstract) classes have a constructor and a
+destructor operation associated with them.  By convention, these
+operations are named {\sf make} and {\sf delete}, and are normally
+public.  (It is often useful to implement two constructor operations,
+for example {\bf s*node*make} and {\bf s*node!make}.  The first is the
+public operation with publically-supplied arguments; the second is the
+internal, down-and-dirty constructor that may take many more arguments
+or return an internal object that should be hidden from the external
+interface.
+
+\subsection{Collections}
+
+Operations, as defined above, operate on individual instances of the
+class. There is another kind of operation, however, that operates on
+the set of all objects that exist in the class. These are called {\em
+collection operations}.  For example, an operation that returns a list
+of all nodes of a specified type is a collection operation.  These
+operations, taken together, represent many of the classical database
+query and retrieval operations supported in Egret .
+
+Collection operations are always defined relative to a class, and are
+named by wrapping {\bf \{} and {\bf \}} around the class name.  Unlike
+conventional class arguments, collection operations do not have a
+distinguished first argument, since their name indicates which
+collection the function operates on\foot{Future revisions to this
+design may lead to the presence of a first argument that is passed a
+collection object, consisting of some subset of objects of the named
+type.}.  For example, the collection operation that returns all the
+IDs for server-level nodes is {\bf s*\{node\}*IDs}.  This operation
+does not take any arguments, since the class that it operates on is
+implicit in its name.
+
+Collection operations can be public or private, and their visibility is
+indicated in the standard manner by {\bf *} or {\bf !}.

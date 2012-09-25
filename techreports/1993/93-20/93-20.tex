@@ -1,0 +1,1533 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 93-20.tex -- 
+%% Author          : Philip M Johnson
+%% Created On      : Thu Nov  7 09:52:47 1991
+%% Last Modified By: Philip Johnson
+%% Last Modified On: Tue Nov 30 14:33:41 1993
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentstyle [11pt,/group/csdl/tex/definemargins,
+                /group/csdl/tex/lmacros]{article}
+
+\begin{document}
+\title{{\bf Gtables: From Egret 2.x.x to Egret 3.0.x}}
+\author {Philip Johnson\\
+         Danu Tjahjono\\
+         Dadong Wan\\
+         Robert Brewer\\
+         Collaborative Software Development Laboratory\\
+         University of Hawaii}
+\date{CSDL TR 93-20\\November, 1993}
+
+\maketitle
+\newpage
+\tableofcontents
+\newpage
+
+\section{Overview}
+
+This document describes the current design of the server subsystem class
+s*gtable, which provides an efficient and high-level mechanism for the
+implementation and maintenance of global tables.  The purpose of this
+documentation is to serve as a basis for the redesign and reimplementation
+of gtables in Egret-3.0.x. 
+
+This document combines bits and pieces of information about gtables from
+the original gtable design document created in November of 1991, and its
+redesign document for agents in November of 1992, along with miscellaneous
+supplements from e-mail and other text files.  It appears that gtables are
+consistently redesigned on an annual basis in November!
+
+Conceptually, gtables are important in Egret because they overlay a
+``relational'' structure on top of the hypertext structure provided by the
+database server.  Gtables thus allow developers to design Egret
+applications that can answer certain kinds of queries without traversing
+the entire hypertext database.  (In fact, since gtables are cached locally,
+the applications typically can answer the query without querying the
+database server process at all.)
+
+Functionally, s*gtables can be viewed as a hybrid of the system node class
+s*snode\foot{The current relationship between the s*snode class and gtables
+is fairly muddy. Gtables turn out to use the internal implementation
+mechanisms of s*snodes, but do not obey their external interface.} and the
+table class u*table.  In general, an s*gtable is defined and manipulated in
+manner similar to a u*table, but unlike a u*table, the s*gtable is both
+shared and persistent.  It is shared because updates to an s*gtable by one
+client are immediately seen by all other clients.  It is persistent because
+an update to the s*gtable during one session will be preserved until the
+next session.
+
+Implementationally, gtables are maintained in part by an independent Egret
+process called the gagent\foot{Gagent is pronounced {\em gee-agent},
+although frustrated Egret developers may have been tempted to pronounce it
+{\em GAG-ent}.}.  Use of a separate process has the advantage of vastly
+increasing the responsiveness of the system, by offloading many gtable
+maintenance duties from the user's client process.  However, the current
+gagent design and implementation was vastly complicated by the fact that
+the database server process was a defect-ridden black box.  We will return
+to a discussion of the gagent after introducing gtables from a user-level,
+functional perspective.
+
+Consider the following example definition of an s*gtable:
+
+\small\begin{verbatim}
+(s*gtable*define :table-name t*nschemas
+                 :fn-prefix "t*nschemas!"
+                 :hashp 'yes
+                 :rlookup-fn t*nschema-name
+                 :comp-fn t*nschema-name
+
+                 :node-entry-table t
+                 :recovery-fn :automatic
+
+                 :new-entry-fn t*nschemas!process-create
+                 :update-entry-fn t*nschemas!process-update
+                 :delete-entry-fn t*nschemas!process-delete
+                 )
+\end{verbatim}\normalsize
+
+The first five parameters are analogous to their counterparts in
+u*table, and specify the representational characteristics of the local
+table and its invocation functions.  (The other optional u*table
+parameters for table size, initial value, and completion function can
+be supplied to s*gtable, but are omitted here for brevity.)
+
+The sixth and seventh parameters allow the user to specify certain
+representational characteristics of the global table, and are discussed
+in more detail below.
+
+The final three parameters specify functions that will be called whenever
+entries in the table are created, updated, or deleted. These functions are
+passed the actual key value pair involved, and allow each client to perform
+some action whenever any client makes a change to the table.
+
+The result of this call is the definition of the following 
+public functions\foot{The appearance of the ``!''  in the 
+function names may give the appearance that these are private,
+not public functions.  In fact, they are private to the subsystem
+in which the gtable is defined, which is why the client used the 
+prefix ``t*nschemas!'' rather than ``t*nschemas*''.  However, they
+are public functions from the point of view of the gtable implementation.
+In other words, the gtable implementation defines many other functions
+in addition to these, but these functions define the public, user-level 
+interface to the gtable.} for use by the client:
+\small\begin{verbatim}
+t*nschemas!put
+t*nschemas!get
+t*nschemas!delete
+t*nschemas!get-key
+t*nschemas!recover
+t*nschemas!add-node-entry
+\end{verbatim}\normalsize
+
+Clients add and modify entries in the table using PUT, retrieve
+entries using GET, perform reverse-lookup using GET-KEY, and recover
+the table using RECOVER. The ADD-NODE-ENTRY function will be described
+below.
+
+The next few sections provide additional perspectives on gtables
+by comparing them to other EGRET mechanisms, such as u*tables and
+s*snodes.
+
+\subsection{s*gtables vs. u*tables}
+
+One major difference between s*gtables and u*tables is that u*tables
+are local while s*gtables are global. This means that when one client
+adds, deletes, or updates an entry to a s*gtable, the change is
+automatically and immediately visible to all other currently connected
+clients.  
+
+To allow all clients to perform some action whenever a change is made
+to the table by one client, s*gtables have their own simple event
+processing facility.  This allows the user to specify functions to be
+called after table entry addition, deletion, and modification.  In the
+first two cases, the function is passed the key and value pair being
+added or deleted, while in the third case, the function is passed both
+the old and the new key and value pairs.
+
+Finally, unlike u*tables, s*gtables are persistent.  While u*tables
+must be explicitly rebuilt by clients each time they connect, the
+state of an s*gtable is automatically preserved between sessions.
+
+\subsection{s*gtables vs. s*snodes}
+
+S*gtables and s*snodes differ primarily in the fact that s*gtables provide a
+structured, high-level interface.  While both s*gtables and s*snodes
+implement global, persistent data, the characteristics and
+manipulation of this data differ greatly in the two implementations.
+
+First, snodes store a single, variable length string, whose contents
+must be interpreted manually by clients.  Client manipulation of an
+snode involves reading this string into a buffer, parsing its
+contents, and write the buffer back out to the snode.  In contrast,
+s*gtables implement a table with high-level operations such as put,
+get, and delete---the client interacts with the table directly and is
+insulated from low-level buffer and string manipulation activities.
+
+A second, more important difference between snodes and s*gtables is
+that s*gtables provide an optimized, robust implementation of shared,
+persistent tables.  The straightforward implementation of tables using
+snodes (such as the implementation of s*nodes in the server level)
+suffers from both performance and reliability problems.
+
+Note, again, that gtables are {\em not} implemented in terms of the public
+operations on the s*snode class.  It does, however, exploit the internal
+mechanisms (such as the defstruct) used for s*snodes. This is not
+necessarily a good design decision.
+
+
+\paragrs is enormously complicated by several
+factors:
+\begin{itemize}
+\item When a new client connects, it must be possible to bring the client
+  ``up to speed'' with a consistent, local gtable representation, even
+  though other connected clients may be simultaneously changing the
+  database and the gtable.
+\item When a client changes a gtable, other clients should access the
+  database only to get the changes, not to get the entire table.
+\item The current implementation was performed in a situation where the
+  server process was a defect-ridden black box, which led to amazing
+  work-arounds. 
+\end{itemize}
+
+
+\subsection{Representation of gtables}
+
+\subsubsection{Client-side representation}
+
+On the client side, the representation is each individual gtable is simple:
+each s*gtable is represented using a u*table instance.
+
+In addition to the u*table for each gtable instance, there is an additional
+u*table which has a single entry for each gtable containing specialized
+structural information.  This is the s*snodes table.  The s*snodes table is
+always stored in the {\em boot} node (with node-ID 2), and is the first
+thing that each client downloads on connecting to the hyperbase. Once the
+client has downloaded the s*snodes table, then it ``knows'' about all the
+currently defined gtables and where to get them. The structure of each
+entry in the s*snodes table is provided in Appendix \ref{app:snode}.
+
+
+\subsubsection{Server-side representation}
+
+On the server side, the representation is more complicated.  There are at
+least two s*snodes used to store the global table.  
+
+\paragraph{Primary nodes.}
+
+The first snode stores the current set of entries, or key-value pairs, with
+one entry per line.  Each key and corresponding value is retrieved by
+calling READ twice per line. The final line of this {\em primary} snode
+contains a list containing a single integer---an update counter.
+(S*gtables share the u*table constraint that NIL may not be stored as a
+value.) These primary snodes are named {\tt msnode-<table-name>}.
+
+\paragraph{Auxiliary nodes.}
+
+The second, {\em auxiliary} snode contains a record of the last update made
+to the s*gtable, and is named {\tt asnode-<table-name>}.  This snode
+contains one line in the following format:
+
+\small\begin{verbatim}
+<update counter> (<operation> <key> <data> <user-name>)
+\end{verbatim} \normalsize
+
+{\tt <Operation>} is one of: recover, add, delete, or update.  {\tt <Update
+counter>} is an integer which is set to 0 when a recovery operation occurs,
+and otherwise incremented each time the auxiliary node stores a new update
+to the s*gtable.
+
+\paragraph{Inodes.}
+
+There are more than two snodes used to represent a gtable, if the gtable is
+a {\tt :automatic}.  In this case, there is an individual ``backup'' snode
+created for each entry in the gtable.  These are called {\em inodes} in the
+implementation.
+
+\subsection {Processing Algorithms}
+
+Processing algorithms sometimes depend upon whether
+the client is a normal user client or the gagent.  Differences are noted
+where they occur.
+
+\subsubsection{Initialization}
+
+Initialization is only performed by the gagent, and consists of the two
+steps: (1) add update-counter = 0 to all primary gtable nodes; and (2)
+ensure that the gtable is empty.
+
+Note that new entries are always appended to the end of buffer, instead of
+inserting at the beginning of buffer (node).  This applies for both the aux
+and primary tables.
+
+The last entry of the primary table is the update counter (currently stored
+as list object, so that I can use this to indicate the end of buffer as
+well).
+
+\subsubsection{Connection}
+
+Connection involves an intricate dance between the client and the gagent.
+This is required in order to bring the client up to speed, as discussed
+above, and as discussed further below in Appendix
+\ref{app:synchronization}.
+
+\paragraph{Gagent connection.}
+
+When a gagent connects, the following occurs:
+\begin{enumerate}
+\item Read and process all primary tables.
+\item For each primary table, do until update-counter is seen:
+  \begin{enumerate}
+    \item  Read entry (key and data).
+    \item  Install it to the local gtable (hashtable).
+  \end{enumerate}
+  
+\item Set this update-counter to the local-variable-update-counter of the
+  corresponding auxiliary table.)  Thus, for example the update counter found
+  in \&\&gtable-msnode-t*nodes\&\& is set to variable
+  \&\&gtable-asnode-t*nodes\&\&-counter (I shall call the later the
+  local-update-counter)
+	
+\item Keep all primary tables in each corresponding buffer, so that
+  subsequent update to the primary node involves only write operation.
+\end{enumerate}
+
+Gagent connection is relatively simple because it assumes that no other
+clients are currently connected, and thus that no changes are being made
+to the database. User connections cannot make this assumption, and the
+result is the following.
+
+\paragraph{User connection.}
+\begin{enumerate}
+  
+\item When a client is attempting for connection, it first
+  subscribes to all events, then locks node-ID 2 (bootnode).  Note:
+  events in the event buffer are always in the same order as seen
+  by agent and other connected clients.
+  
+\item The agent operates as usual until it detects/processes this lock
+  event by the connecting client. In this case, it stops doing anything: it
+  writes the content of all primary nodes into hyperbase and waits until the
+  client releases the lock.
+  
+\item The client then embarks upon the following activities: 
+\begin{enumerate}
+\item The client resets the filter function associated with the read
+  socket and attaches process buffer to this socket.  The process buffer
+  implies that all data/command read from the hyperbase will be inserted
+  into this buffer. The emacs automatically updates the process-marker
+  when inserting data into this buffer, and the main routine uses variable
+  s!sp!process-header to read the data/any values returned from hyperbase.
+  
+\item The client downloads node-ID 2 (in s*snode!bootstrap), and installs
+  the content of this node in table s*snodes.
+  
+\item The client downloads each primary node after detecting that the
+  agent has written it to the hyperbase. To detect this, it searches the
+  event buffer for this write data event.
+  
+\item Next, the client processes the content of the downloaded primary
+  nodes by calling the corresponding recovery-boot-function. This involves:
+  (a) installing the (key data) pair into corresponding table; and (b)
+  setting the local counter to the value read from primary node.
+
+\item Next, it resets process buffer.
+\item Next, it reactivates the filter function associated with this read
+  socket.  
+\item Finally, it sets s*sp!event-header to the entry right after the lock
+  event.
+\end{enumerate}
+  
+\item The agent resumes its operation upon detecting that the lock on the
+  boot node by the connecting client has been released.
+  
+\item The client processes its pending events beginning from the one right
+  after its lock event.
+
+\item The client starts its normal operation.
+
+\end{enumerate}
+
+
+
+\subsubsection{Client perspective: Add, Update, or Delete Operations}
+
+When these functions are invoked by the client process,
+only the following occurs:
+
+\begin{enumerate}
+  
+\item Client creates a temporary node and stores the new entry in it.
+
+\item The temporary node has a special name:  \&\&gtable-isnode-$<$table$>$\&\&
+
+\end{enumerate}
+
+\subsubsection{Gtable perspective: Add, Update, or Delete Operations}
+
+When the gagent receives write data event on an is-node, it does
+the following:
+
+\begin{enumerate}
+
+\item The gagent reads the contents of the is-node.
+  
+\item The gagent determines which gtable this is-node refers to by parsing
+the name.
+
+\item The gagent updates the corresponding aux node.  This requires
+  getting the last update-counter from this aux node. If the aux node is
+  empty use local-counter stored in the update-counter slot.  This slot is
+  initialized during connection with the value read from the corresponding
+  primary node.
+        
+\item The gagent appends the contents of the is-node to the end of the
+  aux node and increments the value of update-counter.
+  
+\item It then cleans up entries in the aux node if upper-water-mark has
+  been reached.
+
+\item Finally, the gagent writes the aux node to the hyperbase.
+
+\end{enumerate}
+
+
+
+\subsubsection{Recover}
+
+Only the agent can currently invoke the recover operation.  However, this
+operation is not yet tested.
+
+It runs only during s*sp@initialization.  There are two cases: one for the
+primary node and one for the aux node.
+
+For the primary node:
+\begin{enumerate}
+\item If :automatic recovery is defined, calls s*gtable!auto-recover-fn
+           otherwise calls user-recovery-fn with argument
+           s*gtable!put-entry-to-buffer
+\item Append update-counter 0 at the end of the buffer.
+\item Save the buffer to hyperbase.
+\end{enumerate}
+
+For the aux node, simply clear the node.
+
+
+\subsubsection{Data Event processing}
+
+All clients, including the gagent, perform data event processing in the
+following fashion.  Note that normal clients never process their own 
+events. 
+
+When a data event is triggered by s*sp!parse-event, the following occurs:
+
+\begin{enumerate}
+\item Get entry from local-cache.
+\item If nil, read from hyperbase:
+  \begin{enumerate}
+   \item Search the entry where update-counter = local-counter + 1.
+     
+    \item If not found, and if buffer is empty then simply ignore.
+     Otherwise signal error if no previous counter or previous-counter
+     is not equal to current local counter
+     
+    \item If found, then get first entry (counter + information), and cache
+     remaining entries into local-cache.
+   \end{enumerate}
+     
+ \item Process the entry (if non-nil) according to its operation type:
+   add, update, delete, or recover.  (If the client is the agent, then the
+   entry is written to the backup node if inode-p is specified for this
+   table.)
+     
+ \item If this is agent, then write to the corresponding primary node.
+   Since, the agent keeps the primary-node buffer local, the entry read from
+   the aux will be inserted into this buffer, and won't be written to
+   hyperbase until the local-cache is empty.
+
+\end{enumerate}
+
+\subsubsection{Recovery Event Boot}
+
+This function is used during connect time to initialize table with the
+content of primary node.  This function reads data from the process-buffer
+activated during bootstrapping.  It processes things in the following
+manner:
+
+\begin{enumerate}
+\item Read through all entries in the node and install them to
+  corresponding table.
+
+\item Set local-update-counter to the value found in last entry.
+
+\item If agent, keep the buffer (i.e., create primary-node buffer).
+\end{enumerate}
+
+
+\newpage
+\section{Gtables in Egret-3.0.x}
+
+\subsection{General Assumptions}
+
+Let me start with a few general assumptions along with the rationale for
+making the design decision.  This initial section provides a broad overview
+of how things could work in 3.0.x.  Hopefully it will stimulate the reader to
+discover errors or improved mechanisms.
+
+\subsubsection*{Scope of Gagent Duties} 
+
+In 3.0, the event message field will be engineered in such a fashion as to
+provide all necessary information for non-connect time gtable maintenance.
+For example, each node creation event must include a message field that
+provides all the details about the node necessary to update all gtables.
+(Note: this might be somewhat interesting to engineer from the EGRET side.
+More about this below.)
+
+An implication of this assumption is that client-gagent interaction occurs
+only at connect time.
+
+{\em Rationale:} This assumption means that the scope of gagent duties are
+restricted to one goal: to support efficient and reliable connection by
+clients.
+
+\subsubsection*{Server-side representation of gtables}
+
+Each non-{\tt :automatic} gtable will be represented in the HBS by a single
+primary node.  Each {\tt :automatic} gtable will be represented in the HBS
+by a single primary node and by backup nodes for each entry. 
+
+The implication of this is the elimination of all current aux nodes and
+is-nodes, as well as all current aux node and is-node processing.
+
+{\em Rationale: } Since gtables are updated through events after
+connect-time, rather than through gagent communication, these
+representations and their associated processing are no longer necessary.
+
+\subsubsection*{Locking, or the lack thereof}
+
+Surprisingly, in this redesign there is no locking-related issues, since
+clients and the gagent have a strictly read-only relationship with each other.
+
+First, the gagent can keep a permanent lock on the gtable primary nodes,
+since it will be the only process writing to them.  And gtable primary
+nodes (and backup nodes) are the {\em only} nodes that the gtable is
+concerned with.  The gagent never writes to a user-node, and in fact never
+even reads one except when doing gtable recovery.  (It uses event messages
+under normal processing circumstances.)
+
+Similarly, clients can lock or unlock any of their own nodes independent of
+any gagent considerations, since the gagent will never desire a lock on
+them.
+ 
+\subsubsection*{Changes for HBS 3.x}
+
+The HBS will be extended by changing the behavior of the CONNECT 
+operation and by adding several new operations.
+
+\begin{itemize}
+
+\item CONNECT\_AS\_GAGENT (client)
+  
+  This is a special form of connect to be invoked only by the gagent.  It
+  tells the HBS that CLIENT is a special client whose commands will not be
+  queued during regular connect time processing. Otherwise, this command does
+  the same thing that CONNECT does in HBS 2.x.
+
+\item CONNECT (client)
+  
+  In HBS 3.x, the CONNECT command will be changed so that immediately
+  upon receiving it, operation requests from all clients {\em except} the
+  gagent and this client will be queued.  This queuing will continue until
+  this client sends a CONNECTED event.
+  
+  However, all events generated by the operations of the client and the
+  gagent during this {\em connecting time} are sent out to all clients as
+  usual.
+
+\item CONNECTED (client-name)
+  
+  When the HBS processes this command, it starts processing command
+  requests from all clients in a normal fashion.
+
+  When clients receive the CONNECTED event, they update their s*users
+  gtable to indicate that the client connected successfully.
+
+\end{itemize}
+
+{\em Rationale:} These new operations are intended to support simple and
+reliable client-gtable communication during connect-time.
+
+\subsubsection*{Event and Message Processing}
+
+This section contains several miscellaneous assumptions concerning events
+and messages.
+
+\begin{itemize}
+  
+\item All clients (including the gagent) always provide their s*user*ID as
+  part of the message field when they invoke HBS operations.  
+  
+  {\em Rationale: } The identity of the client initiating an operation is
+  always known in a uniform manner using EGRET-level representations. This
+  is also needed since the user-name of the gagent or other agent might be
+  the same as a client (i.e. johnson, dat, etc.)
+  
+\item All clients (including the gagent) always ignore any event for which
+  they were responsible (as evidenced by their s*user*ID in the message
+  field.) 
+  
+  One implication of this is that clients are always responsible for
+  updating their own local gtables with the result of their own actions.
+  This also means that chronological ordering of events among clients
+  will not be preserved---I might update my own gtable before processing
+  an event from another client that represents an action that occurred
+  before mine. See Appendix \ref{app:synchronization} for an in-depth
+  discussion of this issue. In particular, this may have implications for
+  face-to-face mode.
+
+  {\em Rationale: } This establishes a uniform processing invariant that is
+  intended to simplify event processing algorithms. 
+
+\item The gagent is the only client that reacts to CONNECT events.
+  
+  {\em Rationale: } This is intended to simplify the gagent implementation,
+  by allowing the gagent to be implemented as a ``normal'' EGRET client that
+  simply does some additional processing under certain circumstances.
+    
+\item All clients always ignore gagent-initiated events, except when they
+  are connecting.
+  
+  {\em Rationale: } This is intended to raise a ``firewall'' between the
+  clients and the gagent, and further ensure that the scope of their
+  interaction is limited to connect-time only.  It also allows the gagent
+  to periodically make changes to the gtable primary nodes without worrying
+  that clients will react to these events.
+
+\end{itemize}
+
+
+\subsection{Connect time processing}
+
+Now, let's look at the sequence of actions during connect time, first from
+the gagent's perspective, and next from the client's perspective.
+
+\subsubsection{The gagent perspective}
+
+Normally, the gagent is sitting around processing events just like
+everybody else.  However, something special happens when clients connect, 
+as described next.
+
+\begin{enumerate}
+  
+\item The HBS receives a CONNECT request.  
+  
+  All command processing is immediately suspended except for those from
+  the gagent and this connecting client. It sends out the CONNECT event,
+  which is the last ``regular'' event.
+  
+\item The gagent receives the CONNECT event.  
+  
+  It knows that no other events can follow this event, and thus that no
+  other changes can be made to the database. By definition, the gagent
+  does not have any pending events.
+    
+  In response to the CONNECT event, the gagent then writes out an {\em
+  accurate} (as defined in Appendix \ref{app:synchronization} version of
+  each gtable to the gtable's primary node.  (Each of these writes will
+  generate an event that will be ignored by all clients except for the
+  connecting client. Why?  Because only connecting clients listen to
+  gtable events.)
+
+\end{enumerate}
+
+First, note that this single, special behavior, triggered by the receipt of
+a CONNECT event (that is always ignored by all other clients), is the {\em
+only} major difference between a gagent and a normal client in EGRET.
+Otherwise, gagents are exactly similar to normal clients: they maintain
+their own local copies of gtables, and update them in response to HBS
+events just like everyone else.
+
+Actually, there is one other (minor) difference: the connect sequence for
+gagents is also different: the gagent uses CONNECT\_AS\_GAGENT and builds
+the gtables by itself.
+
+
+\subsubsection{The client perspective}
+
+Now let's look at connecting time from the client's perspective:
+
+\begin{enumerate}
+
+\item The client sends a CONNECT command to the HBS.  
+  
+\item It downloads the boot node to obtain the information needed to
+  determine how many primary nodes there are and other relevent
+  bootstrapping information.
+  
+\item The client begins processing events, ignoring all events until it
+  sees its CONNECT event.
+  
+\item Next, the client reads each gtable primary node in response to a
+  write data event by the gagent on that node.
+    
+\item Once all gtables have been initialized, the client sends a
+CONNECTED command to the HBS and begins processing events normally.
+
+\end{enumerate}
+
+\subsubsection{Concluding Design Rationale Commentary}
+
+\paragraph {The good news.}
+This connect time algorithm is extremely simple, which should make it
+easier to verify and debug. Note the following pleasant features.
+
+First, gagents only support client connection.  This vastly simplifies the
+representation of gtables in HBS and the gagent's processing.  In fact,
+gagents can now be implemented as ``normal'' Egret clients, with only two
+special cases: connection of the gagent itself, and processing of CONNECT
+events.
+
+Second, clients have a well-defined, and strictly delimited relationship
+with the gagent. After connect time, clients can function perfectly
+normally even if the gagent crashes. Locks are not even mentioned in this
+design, since they are essentially irrelevent.
+
+Third, the handshake between client and gagent is very simple: the client
+says, ``I'm connecting'', the gagent responds by writing out an accurate
+version of all the gtables, and the client responds to those writes by
+reading them the gtables. 
+
+In conclusion, a simple algorithm, will well-defined roles and strictly
+limited responsibilities, is typically easier to understand, easier to
+implement, and easier to make reliable.
+
+\paragraph {The bad news.}  
+This connect time algorithm may incur significant performance penalties 
+over our current (unreliable, and currently nonfunctional :-)
+implementation for the following three reasons.
+
+First, at connect time the entire contents of all gtables must be written
+to the HBS by the gagent.  In addition, the entire contents of all gtables
+must be read from the HBS by the connecting client. In general, the time to
+connect will be a minimum of the sum of times to both read and write each
+gtable. This is the {\em best case} scenario.
+
+Second, connect time may be much worse than the best case, in the event
+that multiple clients connect simultaneously.  In this case, the effective
+connect time is the best case time {\em multiplied} by the number of
+simultaneously connecting clients.  I refer to ``effective'' connect time
+since even after successful connection, the clients will be blocked from
+accomplishing any work until after the last client connects. 
+
+Three, clients will suffer momentary pauses during processing each time a
+new client connects. This pause will be equal at a minimum to the best case
+scenerio, or potentially worse if simultaneous connections occur.  
+
+The usability impact of this performance degradation is a function of (1)
+how long it takes to read and write the tables, which is itself a function
+of their size, and (2) the frequency of co-occuring connections.
+
+Fortunately, I believe that a simple change on the client side can
+substantially ameliorate this problem.  Remember that the client has two
+things to do to set up a gtable.  First, it must download the gtable node
+from the HBS.  Second, it must process the node contents, and build an
+internal hash table.  I believe that well over half of our current connect
+time processing involves the second activity, which is purely local
+processing.  Thus, consider client-side processing as follows:
+\begin{enumerate}
+\item Download {\em all} gtable nodes into separate buffers without any
+local table building.
+
+\item Send the CONNECTED command.
+
+\item Build the local tables. 
+
+\item Begin processing events. 
+\end{enumerate}
+
+In this case, other clients will not be waiting for a client to finish
+building its own local tables.  Just as a guess, I bet that it takes no
+more than a couple of seconds to read or write most gtables if no local
+post-processing is going on.  I would think that a half-dozen gtables could
+be processed in about 10 seconds. 
+
+\subsection{Non-connect time processing}
+
+As mentioned above, non-connect time gtable processing occurs through
+message passing.  The principle engineering problem here are: (1) how to
+specify in the s*gtable*define form what needs to go in a message, (2) to
+deal with the fact that different gtables may want to add their own
+messages to the same HBS event, and (3) to allow each gtable access to its
+own message once an event comes in.
+
+These issues aren't hard, but they do require some work. I leave it as an
+exercise to the reader. :-)
+
+
+
+\appendix
+
+\newpage
+\section{Problems in connect-time processing}
+
+Danu notes that these problems have theoretically been fixed in 
+Egret-2.10, but that they may still have value in stimulating our
+thinking about the current event processing problems. 
+
+\begin{enumerate}
+  
+\item One problem with connect-time processing is that s*sp!parse-event is
+  sometimes run even when another s*sp!parse-event hasn't yet finished
+  processing.
+  
+  For example, when the agent processes the lock event, it is supposed to
+  cease any processing but writing the content of primary nodes to
+  hyperbase and wait until the bootnode is unlock.  Unfortunately, the
+  event buffer shows that after sync-ing primary nodes, the agent continue
+  doing some processing instead of waiting for unlock event.  This can only
+  happen if another s*sp!parse-event is run while the other one waits for
+  unlock event.
+  
+  In general, s*sp!parse-event is run either by s*sp!event-process-filter
+  or s*sp*with-hb-call-protected depending on the value of "flags":
+  
+\item In the original code, the calls to s*sp!parse-event is only
+  controlled by the flag s*sp!in-command.  Thus, when hb-sys-call in
+  session s*sp!event-process-filter should never call parse-event.
+  Unfortunately, when s*sp!parse-event is currently running and then blocks
+  for a while (for example, waiting for unlock node), then another
+  s*sp!event-process-filter will run because the flag s*sp!in-command is
+  nil.
+  
+\item The current implementation uses two flags: s*sp!in-command and
+  s*sp!pending-event to control the parse event.  If s*sp!in-command or
+  s*sp!pending-event is true than don't calls s*sp!parse-event.  This,
+  however, still has problem as shown by the example in (1).
+\end{enumerate}
+ 
+\newpage
+\section{Current Gtable Documentation String}
+\label{app:gtable-doc-string}
+
+\small\begin{verbatim}
+s*gtable*define: a Lisp macro.
+
+Defines gtable called TABLE-NAME with specified properties.
+Gtables are shared, persistant objects containing a set of key/value pairs.
+Keys may be any symbol. Data may be any NON-NIL lisp object.
+
+s*gtable*define generates the following operations (with FN-PREFIX)
+
+  PUT (key data) => data     Put key/data pair to the table and shared store.
+  DELETE (key)  => key       Deletes key/data from the table and shared store.
+  GET (key) => data          Returns data corresponding to key, or NIL.
+  MAP (fn) => NIL            Maps through table, calling FN with each key and value.
+  RECOVER () => NIL          Rebuilds table from database contents.
+
+It may also generate the following functions, depending upon its arguments:
+
+  GET-COMPLETION-LIST () => LIST   Returns the table's completion list.
+  GET-KEY (data) => KEY  => Returns key that matches reverse-lookup data.
+
+Keyword TABLE-NAME is a required symbol indicating the name of table.
+
+Keyword FN-PREFIX is a required string used as prefix of table operations.
+
+Keyword HASHP, if non-nil, specifies hashtable as the internal representation.
+  Defaults to nil, specifying an association list internal representation.
+
+Keyword TABLE-SIZE is an optional prime number indicating the size of hashtable. 
+ Meaningful only when HASHP is non-nil.
+
+Keyword RLOOKUP-FN is an optional arg indicating DATA's component on which reverse
+ lookup is done.  This argument generates the GET-KEY function.
+Keyword COMPLETION-FN is an optional arg indicating DATA slot on which 
+ completion list will be maintained. This generates the GET-COMPLETION-LIST.
+
+Keyword RECOVERY-FN is a required argument specifying a function that will returns
+ a buffer with is its contents initialized from the current state of the database.
+
+Keyword AGENTP is optional Boolean indicating agent is used. When t, the main 
+snode is done by the agent instead of individual clients (OBSELETE).
+
+Keyword NEW-ENTRY-FN is an optional arg specifying additional event fns
+  in the case of new entry being added. These fns might be used to change 
+  other elements in local state. 
+  Each NEW-ENTRY-FN fn is called with two args: KEY and DATA.
+
+Keyword UPDATE-ENTRY-FN is an optional arg similar to 
+  NEW-ENTRY-FN except it is called upon updating an extant entry.
+  Each UPDATE-FN is passed three args: KEY NEW-DATA OLD-DATA
+
+Keyword DELETE-ENTRY-FN is an optional arg similar to 
+  NEW-ENTRY-FN except it is called upon deleting an extant entry.
+  Each DELETE-ENTRY-FN fn is passed two args: KEY and DATA.
+
+Keyword BOOT-ENTRY-FN is an optional arg similar to
+  NEW-ENTRY-FN except it is called during booting process.
+  Each NEW-ENTRY-FN fn is passed two args: KEY and DATA.
+
+Keyword NODE-ENTRY-TABLE is Boolean value indicating whether gtable is 
+  responsible for creating primary nodes for gtable entries.
+
+Keyword ACCESS-PRIMARY-TABLE-P is Boolean value when specified will generate
+two functions (with FN-PREFIX):
+  PRIMARY-PUT (key data)  Put key/data pair to the primary table
+  PRIMARY-DELETE (key)    Delete key from the primary table
+Only AGENT can invoke these functions.
+
+Returns TABLE-NAME.
+\end{verbatim}\normalsize
+
+
+
+\newpage
+\section{Current snode structure}
+\label{app:snode}
+
+\small\begin{verbatim}
+(defstruct (s*snode (:type vector)
+                    (:named))
+  "structure holding snode information.
+NAME slot holds snode name for uninstantiated node, or
+NODE-ID if snode has been instantiated.
+Acccess key to snode is unique NODE-NAME, which is different from
+other tables. Use S*SNODE!GET-KEY to get NODE-ID of a given snode."
+  ID                         ; unique snode ID
+  connect-fn                 ; connect-hook function
+  data-event-fn              ; data event hook function
+  disconnect-fn              ; disconnect hook function
+  recovery-fn                ; content recovery function
+  gtablep                    ; whether it is GTABLE
+  table-name                 ; corresponding ltable name
+  msnode-name                ; main snode name
+  prefix                     ; inode and table fn prefix
+  (update-counter 0)         ; counter since last processed entry 
+                             ; in the aux node
+  local-cache                ; cache containing remaining entries to be 
+                             ; processed in aux node. When processing 
+                             ; the aux node (in response to data-event), 
+                             ; the program first reads from this local
+                             ; cache. Only when this cache is nil is the 
+                             ; read operation to the hyperbase performed.
+
+  )
+
+\end{verbatim}\normalsize
+
+\newpage
+\section{Synchronization in Egret}
+\label{app:synchronization}
+
+{\em Editor's note: The following is a reformatted e-mail message from 
+November of 1992 containing additional information about synchronization
+in gtables.}
+
+
+\paragraph{Motivation.}
+
+The introduction of agents into EGRET has brought to the surface the
+general issue of synchronization, or, more specifically, how can a
+common representation of global state be maintained in a distributed
+environment. This document will attempt to show two things: (a) that
+maintaining ``perfect" synchronization between clients in EGRET
+requires too much overhead to be practical, and (b) the real issue
+we are confronting is how much less than ``perfect" synchronization 
+is acceptable in our domain?
+
+This document is structured in terms of the following claims, 
+loosely summarized as follows:
+
+\begin{itemize}
+\item  Gtables have a conceptual global state.
+\item  Gtables are semantically inter-dependent.
+\item  Client state consistency depends upon order of gtable update.
+\item  Client state consistency doesn't depend upon order of gtable update :-)
+\item  Our current design allows client state inconsistency to arise in 
+    several ways. 
+\item  One kind of client state inconsistency is acceptable.
+\item  Another kind of client state inconsistency is unacceptable.
+\item  Small changes to the design can lead to tolerable inconsistency.
+\end{itemize}
+
+This should give you a feel for where I'm going in the paragraphs
+below.  I will also introduce a bunch of new terms which will help us
+in our discussion.  Let's begin.
+
+\paragraph{Global State.}
+
+There is the concept of a ``global state" of a gtable.  A physical
+instance of a gtable that corresponds precisely to the current global
+state will be called an ``accurate" gtable.
+
+The current global state of a gtable can be derived by taking the
+state of the primary node and invoking upon it the set of ``unapplied"
+operations in its auxiliary node.
+
+The global state can also be derived from a locally cached copy of a 
+gtable by invoking the unapplied operations in the auxiliary node. 
+
+To create a physical instance of the current global state of a gtable,
+one must first lock its auxiliary node to prevent any further updates,
+then invoke any unapplied operations.  This results in an ``accurate"
+representation of a gtable, since it corresponds perfectly to the
+current global state.  As soon as the aux node is unlocked, it can no
+longer be assumed that the representation is accurate, since another
+client may immediately lock the aux node and insert a new operation,
+thus changing the global state. Certain kinds of EGRET operations will
+require one or more ``accurate" gtables, as will be shown below.
+
+\paragraph{Gtables are semantically interdependent.}
+
+The information contained in different gtables is not logically
+independent. For example, the node instance gtable contains
+node-schema-IDs, and each node-schema-ID in the node instance gtable
+should be defined in the node-schema gtable.
+
+I will say that a client state is ``inter-gtable consistent" when all
+such data dependencies between gtables are satisfied.  I will say that
+a client process state is ``inter-gtable inconsistent" when such data
+dependencies are not satisfied.  The central issue to be solved in
+EGRET is how to ensure that inter-gtable consistency is always
+possible, even if it is not currently present.
+
+\paragraph {The order of event processing is significant in maintaining
+clients in a state of inter-gtable consistency.}
+
+Each time a client invokes an unapplied aux node operation, it updates
+its local state.  In general, this new client state may be either
+inter-gtable consistent or inter-gtable inconsistent.  For example, if
+the operation adds a node instance I with schema value S to the node
+instance gtable, but the schema S does not currently exist in the node
+schema gtable, then applying this operation will put the client state
+into inter-gtable inconsistency.
+
+Assume for the moment that we want clients to always be in a state of
+inter-gtable consistency after every application of an aux node update
+operation.  One way to do that is to guarantee the following two
+conditions:
+
+(1) Clients must always invoke EGRET functions in an order that 
+maintains inter-gtable consistency.  For example, an operation that 
+creates a new node schema S must be invoked before an operation 
+that creates a  new node instance I with schema S.  
+
+(2) Events signalled by EGRET functions must be processed in the 
+order that they are generated, even when the events relate to 
+different gtables.   In the above case, if the event associated with the 
+node instance creation is processed before the event associated with 
+the node schema creation, then the client process state will be inter-
+gtable inconsistent until the node schema creation event is processed.
+
+We will see below that satisfying the constraint of continuous
+inter-gtable consistency is expensive.
+
+\paragraph {Incorrectly ordered event processing does not necessarily preclude
+eventual inter-gtable consistency.}
+
+A desirable property of gtables and the EGRET implementation is that
+if a client has ``accurate" versions of all gtables, then it also is in
+a state of inter-gtable consistency.  Let's refer to this as the
+``accuracy implies consistency" claim.
+
+If this property is true, then a client can create an inter-gtable
+consistent state whenever it wants to by simply locking all auxiliary
+nodes (to prevent any further updating), then invoking all unapplied
+updates to all of its local gtables.  During this process, the client
+may transition through intermediate states of inter-gtable
+inconsistency on the way to consistency.
+
+\paragraph {Our current design allows inter-gtable inconsistency to arise
+during connect time.}
+
+Assume that the current design merely requires clients to download 
+the global table at connect time, then begin responding to events. In 
+this case, a client state containing a node instance I with undefined 
+schema S could arise if either: (a) the set of primary nodes are
+inter-gtable inconsistent because the Agent did not respond to 
+events in the strict order they were received, or (b) the newly 
+connected client did not receive all events generated by the 
+unapplied operations in the aux node.  Since the order in which 
+events are received dictate the order in which aux node operations 
+must be applied, the lack of these events means that information
+necessary to maintain consistency is simply not available.
+
+\paragraph {Our current design allows inter-gtable inconsistency to occur 
+during a client session.}
+
+A simple illustration of this phenomenon is the following form:
+
+\begin{verbatim}
+(t*node-schema*ID-p (t*node-schema*make))
+\end{verbatim}
+
+There is no reason to assume that this form will return T, due to the
+fact that the local gtable state is updated sometime after the make
+form returns, and the ID-p operation uses the local gtable
+representation to test for validity.
+
+The designbase update procedure illustrates another example of inter-
+gtable inconsistency. One situation is the following: the client
+creates a new node schema.  This results in the client updating the
+node schema aux node with a schema creation update operation.
+However, the presence of this node schema is not reflected in this
+clients local state until it receives the associated event and
+retrieves this aux node from the database.  However, before this event
+is processed, the client has gone on and attempted to create a node
+instance using this schema, which signals an undefined schema error,
+since the schema does not yet exist in the client's local gtable.
+
+Many other examples can easily be constructed where delays in
+receiving events or updating gtables in an improper order can lead to
+inter-gtable inconsistency.  However, as long as the ``accuracy implies
+consistency" claim is true, then these inconsistent states are
+guaranteed to be temporary.
+
+\paragraph {Eliminating the possibility of even temporary inter-gtable
+inconsistency in a client is expensive.}
+
+The only approach I can think of involves satisfying the following
+two conditions:
+
+First, it must eliminate the ID-p phenomenon illustrated above,
+since it is a fundamental form of inconsistency (the integer value
+returned by the make for is semantically a legal node-schema-ID, but
+this semantic fact may not be reflected in the local state).
+
+Second, it must guarantee that no application of any aux node 
+update operation ever results in inter-gtable inconsistency.  A 
+reasonable approach to this involves guaranteeing that both EGRET 
+functions are invoked in a manner that maintains consistency and 
+that clients process events in the order in which they were 
+generated, as noted above.
+
+Interestingly, it is non-trivial to satisfy both of these conditions
+simultaneously.  The obvious way to eliminate the ID-p phenomenon is
+to update the local state of the client that invoked the operation
+immediately, and ignore the event that occurs later.  Unfortunately,
+in order to also satisfy the second criterion, the client must process
+all other events that occurred before he generates this new event.
+Thus, any client invoking an EGRET function that results in a gtable
+update operation must first lock all of the aux nodes, process all of
+the events in the correct order (to create accurate versions of all
+gtables in his local state without creating any inconsistent
+intermediate states), and finally carry out the operation that will
+result in the gtable update.  Since all prior events have been
+processed, the client is free to immediately update his local state
+without violating the second condition.
+
+Again, this solution requires multiple locks, which at the very least
+will require some simple deadlock prevention design measures.  It will
+also create significant processing overhead, as now a simple node
+creation operation (for example) will require N hyperbase accesses and
+locks, where N is the current number of defined gtables in the system
+(N = 6 in the current system).
+
+This analysis leads me to the conclusion that guaranteeing continuous
+consistency is impractical (unless a smarter way to accomplish it is
+thought of).  A plausible alternative is the one hinted at several
+times in this document: if the accuracy implies consistency claim is
+true, then we can guarantee that ``eventually" the client state will be
+consistent, even if it is temporarily inconsistent.  The next section
+investigates the issues in satisfying this claim.
+
+\paragraph {Implementing the ``accuracy implies consistency" design invariant 
+requires some thought.}
+
+Another way of viewing this invariant might be the following:
+temporary inconsistency may result in the system preventing you from
+doing something that you really should be allowed to do, but it cannot
+allow you to do something that you shouldn't be able to.
+
+For example, temporary inconsistency is permitted to result in a 
+situation such as where the person sitting at the workstation next to 
+you creates a new node schema with ID= 42, but you get an ``invalid 
+node schema ID" error when you immediately try to create a new 
+node instance with that node-ID.  However, if you wait sufficiently 
+long, you will eventually be able to create that node instance. 
+
+On the other hand, temporary inconsistency is not permitted to result in a
+situation where the person sitting at the workstation next to you
+successfully deletes the field-schema with ID = 12, and then you also
+successfully perform a field-schema deletion operation with ID = 12.
+(Temporary inconsistency would allow you to successfully create a node
+instance with ID = 12 even after another client has deleted it, as long as
+it is guaranteed that this use of the deleted field-ID would eventually be
+propogated to your local state, thus preventing you from doing that
+operation.
+
+The distinction between legal and illegal situations can also be viewed as
+follows: if two events can be re-ordered in time so as to make them
+semantically legal, then temporary inconsistency allows them to occur. On
+the other hand, if two events cannot be re-ordered in time so as to make
+them legal, then they are also not legal under temporary inconsistency.
+Multiple deletes of the same field-schema-ID fall into this latter
+category.
+
+Under this interpretation, it appears that only delete operations 
+require special handling to ensure the accuracy of the local gtable 
+before carrying out the operation.  Addition and modification 
+operations are legal, although they may result in strange behavior 
+(such as adding a field ID to a node instance that was just deleted by 
+some other client).  
+
+Here is a hypothesis which I suspect to be true, but for which
+everyone should try to find a counterexample. Let's refer to this as
+the ``update only accurate gtables" hypothesis:
+
+The current use of gtables permits the ``accuracy implies consistency"
+criterion to be satisfied when:
+\begin{itemize}
+  \item An update to any individual gtable is only performed after 
+      assessing its validity with respect to an ``accurate" version
+      of the gtable.
+  \item Only an accurate version of the gtable being updated is required,
+      all others may be inaccurate. 
+\end{itemize}
+
+Note that the ``update only accurate gtables" assumption not only
+permits ``chunked" updates by clients, but actually demands it in the 
+case where a client is itself creating the update. 
+
+
+\paragraph{ ``Accuracy implies consistency" does not imply ``EGRET is usable".}
+
+The accuracy implies consistency claim means that the client will 
+eventually have a consistent state, but says nothing about the 
+proportion of time spent in an inconsistent state.  It is conceivable 
+that under certain usage patterns, the client state is nearly always 
+inconsistent, even though it is guaranteed to eventually become 
+inconsistent.  This is not good from a usability standpoint. 
+
+The ID-p inconsistency presented above is perhaps representative of
+the most typical user-level problem resulting from temporary
+inter-gtable inconsistency: a client performs one operation, then 
+attempts to perform a second operation that depends upon the first,
+but is prevented because the local state has not yet been updated
+to reflect the results of the first operation.
+
+It appears much rarer for a client to be prevented from performing an
+operation because they were not provided an update from another
+client's operation quickly enough.
+
+\paragraph{ ``Update only accurate gtables" allows elimination of the
+common user-level inconsistency problem.}
+
+One simple way to correct this type of problem is to have the
+initiating client update his local state during the operation, rather
+than returning from the operation with its local state inconsistent
+and waiting for the event processing mechanism to ``catch it up" to an
+accurate gtable. This happens automatically under the hypothesis,
+since the initiating client must validate the operation with respect
+to an accurate gtable, which involves performing all the updates up to
+the actual operation being invoked.  There is thus little point in not
+going one step further and updating the local state with the actual
+operation.
+
+\paragraph {Consistency at connect time can be achieved.}
+
+By changing the design to connect and create ``accurate" versions of 
+all gtables simultaneously, the connect time inconsistency problem 
+can be eliminated.  The cost is that all aux nodes must be 
+simultaneously locked.  Note that by property (4) it does not matter 
+what order the gtables are updated during the connect time process, 
+since the result is defined to be inter-gtable consistent.  (Note that 
+locking more than one node at a time requires deadlock 
+prevention/recovery procedures.)
+
+\paragraph{Acceptable consistency during a session can be achieved.}
+
+The most important insight that this discussion has given me is that
+*temporary* inconsistency is acceptable in our system, as long as
+*permanent* inconsistency is prevented. It is not absolutely clear to
+me that the ``update only accurHere is (hopefully) my last e-mail before the meeting today.  It contains
+an explanation for the reason why Egret is hanging, at least some of the time, and 
+a proposal for a *simplified* event processing mechanism that should guarantee
+that such hangs cannot occur in the future.  These changes can be implemented into
+2.10.x very easily and tested. 
+
+Despite Danu's claims to the contrary, when Egret is accepting process output from 
+the read socket (such as when it is getting a return value from the server), Emacs will
+run the filter function associated with either the read or the event socket. (I'm completely convinced of this
+now, for the simple reason that if this were not the case, then the EHTS system wouldn't
+have needed the in-command variable and neither would we.)
+
+Why is this a problem?  It's because if the processing of an event *also* leads to an hb-sys-call,
+then Egret can quickly get confused. Consider the following sequence of interactions:
+     Command X is waiting for a return value from the read socket.
+     Egret receives an event Y.  (The filter function is guaranteed to run.)
+     The filter function (erroneously) executes the action associated with the event Y.
+     This Action Y calls hb-sys-call command Y.
+     Command Y calls accept-process-output from the read socket.
+     The return value from X finally comes in, except it is read as Command Y's return value.
+
+Obviously, at this point things are totally unpredictable, but a hang is a pretty likely eventuality.
+
+So, since we can't prevent Emacs from running the event filter function whenever 
+we're waiting for a return value from the read socket, both we and EHTS do the next
+best thing: we save these events and only process them once we're guaranteed that any
+currently executing hb-sys-call has gotten the data it needs. 
+
+The most reliable way I know of to reason about this kind of situation is to introduce 
+"design invariants": things that we ensure are true and that help us informally "prove" the 
+correctness of the implementation.  In this case, the principle design invariant we need 
+is the following:
+
+  HB operations occur in a strictly serial fashion.
+
+In other words, HB operations cannot be nested.  If HB operations cannot be nested, no matter
+where or when they occur, then there's no way for one operation to get the other's return value.
+Now for the hard part: how do we guarantee that HB operations cannot be nested?
+
+I propose the following, which I believe is sufficient.  It may not be the only way, and it may 
+be slightly over-restrictive, but I do not know how to relax any of these assumptions and still
+convince myself that operations are serial:
+
+  (1) All calls to hb-sys-call must be wrapped in a with-hb-sys-call-protected form.  (Cam found that
+        even this rule is violated in the current implementation.)
+
+  (2) Calls to with-hb-sys-call-protected can never be nested. (This is also currently violated,
+        as I showed yesterday.)
+
+  (3) With-hb-sys-call correctly defers event processing until after the hb-sys-call completes.
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          //                              -*- Mode: Java -*- 
+// DocType.java -- 
+// Author          : Philip Johnson
+// Created On      : Fri Oct 10 07:43:35 1997
+// Last Modified By: Carleton Moore
+// Last Modified On: Wed Oct 15 15:59:50 1997
+// RCS: $Id: DocType.java,v 1.2 1997/10/10 23:32:30 johnson Exp johnson $
+// 
+//   Copyright (C) 1997 Philip Johnson
+// 
+// 
+
+
+package csdl.java.leap.util;
+
+import java.util.*;
+
+
+/**
+ * DocType --- A data structure containing info about Leap document types.
+ * @author         Philip Johnson
+ * @version        Wed Oct  8 09:43:44 1997
+ */
+
+public class DocType extends LeapData {
+
+  private DocType() {} // hide default constructor.
+  private Vector docIDs = new Vector(); 
+  private Vector defTypes = new Vector ();
+
+  /**
+   * Defines a new document type instance.
+   * @param name The document type name.
+   * @param comment A string containing documentation on the document type.
+   */
+  public DocType(String name, String comment) {
+    super(name, comment);
+  }
+
+
+  /**
+   * Add a new documentID as one of these document types.
+   * @param docID The new documentID.
+   */  
+  public void addDocID (DocID docID) {
+    docIDs.addElement(docID);
+  }
+
+  /**
+   * @return A vector of docIDs.
+   */
+  public Vector getDocIDs () {
+    return docIDs;
+  }
+
+
+  /**
+   * Add a new defect type as associated with this document type.
+   * @param defType The new defect type instance.
+   */  
+  public void addDefType (DefType defType) {
+    defTypes.addElement(defType);
+  }
+
+  /**
+   * @return A vector of defect types.
+   */
+  public Vector getDefTypes () {
+    return defTypes;
+  }
+
+}
+
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                           //                              -*- Mode: Java -*- 
+// LeapData.java -- 
+// Author          : Philip Johnson
+// Created On      : Fri Oct 10 08:28:59 1997
+// Last Modified By: Carleton Moore
+// Last Modified On: Wed Oct 15 15:59:53 1997
+// RCS: $Id: LeapData.java,v 1.1 1997/10/10 19:17:37 johnson Exp $
+// 
+//   Copyright (C) 1997 Philip Johnson
+// 
+// 
+
+package csdl.java.leap.util;
+
+import java.io.*;
+import java.util.*;
+
+/**
+ * LeapData --- A data structure providing common slots and methods for all leap data objects (Projects, DocTypes, DocIDs, and DefTypes.)
+ * @author         Philip Johnson
+ * @version        Wed Oct  8 09:43:44 1997
+ */
+
+public class LeapData {
+  protected String name;
+  protected String comment;
+
+  protected LeapData () {};  // forbid this.
+
+  protected LeapData(String name, String comment) {
+    this.name = name;
+    this.comment = comment;
+  }
+
+  /**
+   * @return The name.
+   */
+  public String getName () {
+    return name;
+  }
+
+  /**
+   * @return The comment.
+   */
+  public String getComment () {
+    return comment;
+  }
+
+  public String toString() {
+    return "[" + name + "]";
+  }
+}
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% primer-precis.tex -- 
+%% Author          : Philip Johnson
+%% Created On      : Thu Mar  9 14:21:21 1995
+%% Last Modified By: Philip Johnson
+%% Last Modified On: Thu Jun  8 13:26:25 1995
+%% Status          : Unknown
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1995 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\documentstyle [nftimes,11pt,/group/csdl/tex/definemargins,
+                /group/csdl/tex/lmacros,/group/csdl/tex/functiondoc]{article}
+\definemargins{1in}{1in}{1in}{1in}{0.3in}{0.3in}
+\input{/group/csdl/tex/psfig/psfig}
+
+\newcounter{exercise}
+\newcommand{\exercise}[4]
+   {\addtocounter{exercise}{1}\par\medskip\noindent{\bf Exercise \theexercise: #1}%
+   \hfill{\em Time/Size Averages: #2 min.},{\em #3 LOC}\hfill #4 \par\noindent}
+
+\newcommand{\primersummary}[4]
+   {\begin{figure}[h]
+    \horizontalline \newline
+    \noindent {\em Class Name:} #1 \newline
+    \noindent {\em Purpose:} #2 \newline
+    \noindent {\em Focal ECS facilities:} #3 \newline
+    \noindent {\em Related Primer Material:} #4 \newline
+    \horizontalline
+    \end{figure}
+    }
+
+
+\begin{document}
+
+\title{{\bf {\rm\small A Publisher's Preview of:}\\Constructing Collaborative Systems:\\{\Large Coordination and Control
+in Interactive Client-Server-Agent Applications}}}
+
+\author{Philip Johnson, Ph.D.\\ 
+        Director, Collaborative Software Development Laboratory\\
+        Assistant Professor, Department of Information and Computer Sciences\\ 
+        2565 The Mall\\ 
+        University of Hawaii\\ 
+        Honolulu, Hawaii 96822\\ 
+        (808) 956-3489\\
+        {\tt johnson@hawaii.edu}}
+
+\date{}
+
+\maketitle
+
+\section{Why collaborative systems are important}
+
+If the 1980's were the era of the ``personal computer'', the 1990's are the
+era of the ``collaborative network.''  In just a few short years, the
+Internet and the World Wide Web have begun to fundamentally change the
+public's perception of computers: from a mechanism used to automate tasks
+for individuals, computers are now becoming perceived as a mechanism for 
+communication and coordination of people spread across offices,
+towns, countries, and the earth.
+
+Loosely stated, this transformation in the nature of computers is the focus
+of the field of computer supported cooperative work (CSCW). Drawing
+together practitioners from the fields of psychology, sociology,
+anthropology, management information systems, computer science, and other
+disciplines, CSCW concerns the impact that computers have upon the work of
+groups, as well as the work of groups upon the design and implementation of
+computer systems.  
+
+Some primitive collaborative software is already in widespread use today.
+Electronic mail and news groups are ubiquitous and extremely successful
+examples of collaborative software.  Yet they are, in a real sense, only
+the ``first generation languages'' of collaboration: primitiveate gtables" hypothesis is sufficiently
+strong to guarantee that the set of all accurate gtables is
+necessarily consistent, but it appears like a reasonable start. 
+
+\newpage
+\section{Hints for using Gtables}
+
+{\em Editor's note: This is an e-mail from Robert when he first started
+using gtables.}
+
+Here is the list of hints I came up with during my struggle with gtables.
+Please feel free to add or ask for elaboration on any point.
+
+
+\begin{enumerate}
+  
+\item You must put the gtable definition macros in a separate file from
+  other source code.
+
+\item You must put the name of the gtable definition file in both the
+  Defsys ``module" field and the ``module-macros" field. It should be
+  placed very early in the list of ``module" files so that it is always
+  loaded before any code that calls it is loaded.
+  
+\item The gagent must have the gtable definition available to it when it
+  loads. To do this you must put a {\tt (load "mygtable.el")} line in your
+  ``run-agent" script.
+
+\item You must define your own recovery function for the gtable. 
+  
+\item Additions to the a gtable are made instantly to a local table.
+  Therefore to test your gtable you need to put a key-data pair into the
+  gtable, disconnect, and then reconnect and try to get that data back out.
+\end{enumerate}
+
+
+\end{document}
+

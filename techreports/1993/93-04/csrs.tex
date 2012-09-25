@@ -1,0 +1,714 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% csrs.tex -- 
+%% RCS:            : $Id$
+%% Author          : Danu Tjahjono
+%% Created On      : Tue May  4 09:11:06 1993
+%% Last Modified By: Danu Tjahjono
+%% Last Modified On: Wed May 19 19:45:31 1993
+%% Status          : Unknown
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1993 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+%% History
+%% 4-May-1993		Danu Tjahjono	
+
+
+\documentstyle [11pt,
+/group/csdl/tex/named-citations,
+/group/csdl/tex/definemargins,
+/group/csdl/tex/lmacros]{article}
+\input{/home/3/dxw/c/tex/psfig}
+\special{header=/group/csdl/tex/psfig/lprep71.pro}
+%\definemargins{0.75in}{0.75in}{0.75in}{0.75in}{0.3in}{0.3in}
+
+\begin{document}
+
+\begin{titlepage}
+\vspace*{1in}
+
+\begin{center}
+  {\Large\bf CSRS: a New Approach to Software Review}\\
+  \bigskip\par
+  
+  \silentfootnote{Support for this research was provided in part by the
+  National Science Foundation Research Initiation Award CCR-9110861 and
+  the University of Hawaii Research Council Seed Money Awards
+  R-91-867-F-728-B-270 and F-92-868-F-728-B-430.}
+  
+  Danu Tjahjono                    \bigskip\par
+  
+  Collaborative Software Development Laboratory\\
+  Department of Information and Computer Sciences\\
+  University of Hawaii\\
+  Honolulu, HI 96822\\
+  (808) 956-6920\\
+  {\tt dat@uhics.ics.hawaii.edu}           \bigskip\par
+  
+  {\bf CSDL-TR-93-04}                \bigskip\par
+  
+  Last Revised: \today
+  
+\end{center}
+\end{titlepage}
+\newpage
+
+%\ls{1.0}
+
+\pagenumbering{roman}
+\tableofcontents
+\newpage
+
+\pagenumbering{arabic}
+
+\section {Overview}
+
+The importance of software review has been well accepted by
+software engineers. It is a powerful way to improve the quality
+and productivity of the software process \cite{Humphrey90}. It is quite
+effective in finding errors that one or more of these should be
+employed in every programming project \cite{Myers79}. It is even more
+effective than testing \cite{Basili85}. In cases where no automatic support is
+currently feasible, it is the only technique available (e.g.,
+for assessing the readability and understandability of software
+product). 
+When  applied early in the development cycle, it will save a
+significant amount of development resources as errors are detected
+early and closer to the originator and are therefore prevented
+from propagating to the next phases of the cycle \cite{Fagan76}.
+In the field of software quality assurance, it plays
+the central role of managing and ensuring the quality of software
+product. 
+
+Despite its overwhelming documented benefits, there are many
+problems and questions associated with current review practices. 
+
+This research attempts to investigate these problems and
+provide empirical evidence to the questions related to the practices of
+software review.
+We also introduce a review system called CSRS (Collaborative Software
+Review System) that allows one to
+experiment with  various aspects of review process, to compare
+different review methods,  and at the same 
+time to use it as practical tools for supporting review activities.
+The system also allows the user's organization to analyze and 
+to improve their review process based upon metrics data collected by
+the system automatically. 
+
+In the next section, we outline our motivation and the research
+problems, then we describe the approaches to solve the problems.
+After that we present the system in details and
+finally, we conclude with the discussion on the current status
+and the future direction  of the system.
+
+\section {Research Problems}
+Our research is primarily motivated by the following problems apparent
+from the current practices of software review:
+
+\begin {itemize}
+\item {\sl No or very  few computational supports currently available for
+software review.}
+Most current practices of software review/ inspection are entirely
+manual and labor-intensive. Reviewers flip through a stack of printout
+paper back and forth, record the issues on a separate sheet/form. The
+moderator then goes through each of the forms, combines similar
+issues and rewrites them (if any) so that they can be presented
+properly during the meeting. During and after the meeting, the
+moderator must recheck the forms to ensure
+all issues have been discussed and actions have been specified.
+Finally, he/she must rewrite the results to be included in the final
+report.
+Current practices also lack of computational supports for human
+activity, especially supports for group process. 
+
+The computer-based review systems such as
+ICICLE \cite{Brothers90}, INSPEQ \cite{Knight91}, provides very limited
+computational supports. They are also influenced strongly by the
+manual method. 
+
+\item {\sl Ill defined process.}
+    Although there is a well published literature on how to
+    effectively conduct software review/inspection \cite{Fagan76}, in
+    practice there
+    are many variations on how to carry this out; the
+    review results also vary considerably, some even show conflicting
+    results.  For example, some practices
+    \cite{Fagan76,Russel91} explicitly 
+    advocate the use of parapharasing for effective review, others
+    do not \cite{Humphrey90}.
+
+\item {\sl Lack of understanding of review factors and high quality
+measurements.}
+As stated by Myers \cite{Myers79}, no one currently knows or has done any
+investigation of what factors are actually contributed to the
+effectiveness of software review, or whether some review methods are
+better than the others. This type of study is currently very
+difficult to setup and measure  since different methods use different
+environment and/or incompatible review process. 
+
+\item {\sl Lack of understanding of review metrics and support for
+process improvement.} 
+  Although metrics collection is always part of a review process, 
+  there are few studies that investigate the contribution of various
+  metrics data to the effectiveness of review process and to use it
+  for process improvement. In other words, the data are not carried
+  over to the subsequent review processes.
+ Worse yet current practices collect metrics manually
+  which often reduces the accuracy of the data.
+  For example, the literature \cite{Gilb88,Humphrey90} suggest that the time the reviewers
+  spent in preparing review meeting correlates positively with the
+  effectiveness of review.  However, there is no empirical support for
+  this yet. Similarly, inspection rate correlates strongly with the
+  number of errors found; reducing this rate will drop review
+  effectiveness significantly \cite{Gilb88} Unfortunately, no study
+  has investigated this optimum rate. And most of all, no one has
+  studied how these performance change over time.
+  Other interesting metrics that has never been investigated
+  include the effect of program size, program complexity, etc. to
+  the review effectiveness (average number of errors found per unit
+  time  per participant),etc. 
+\end {itemize}
+
+
+\section {Approach}
+Our basic approach to software review is to implement computer
+supported review system  called CSRS (Collaborative Software Review
+System) that addresses the above problems as follows:
+\begin {itemize}
+\item {\sl Supports human activity and automates clerical procedures.}
+In principle, software review  is a human activity, any computational
+tools must therefore support this activity.  
+CSRS provides this support through automation of clerical procedures
+such as forms preparation and consolidation, and by improving both the
+individual and the group process associated with the review activity.
+The later is realized by means of data and process models.
+The data model characterizes review products (review artifacts),
+and the process model characterizes review steps or phases.
+From the user's perspective, the data model guides review participants in
+what to look for and how to express it during review process, and
+the process model guides them in when to look for.
+
+
+\item {\sl Provides well defined data and process model.}
+CSRS is a generic review method that operates on a well defined data and
+process model described earlier. The data model captures  wide
+varieties of review artifacts 
+independent of review methods. The process model, however, is
+review method specific. In other words, to follow a specific review
+method, such as Fagan \cite{Fagan76}, only the process model needs to be changed.
+The current system, however, does not support various process models
+yet. It operates on our own process model described shortly.
+
+
+\item {\sl Provides a framework for investigating review factors.}
+Any software review activities involve two basic activities, namely,
+reading comprehension and verification/error checking. Each
+can be further distinguished by the degree of efforts involved,
+whether it is individual or group, and also by the specific technique
+to carry out this activity (for example, stepwise abstraction technique
+for program reading, checklist or program correctness for verification,
+etc). These factors can be used (as control variable) to compare the
+effectiveness of different review methods currently available.
+CSRS can be setup to perform this experiment by running it with
+different process models corresponding to the different review
+methods under investigation. Some interesting experiments include
+whether checklist based verification is more effective than {\it free}
+verification, whether paraphrasing (group verification) is more effective
+than individual verification, etc.
+
+\item {\sl Collect review metrics automatically.}
+Review metrics is used to assess the effectiveness of a review
+process. It can also tell the quality of the product by
+which the process is operated on.
+CSRS collects metrics associated with the product and the process of
+review unobtrusively.  When taken repeatedly for a long period of
+time using the same process model, this data can tell and predict the
+effectiveness of the process and how to improve it.
+
+CSRS metrics data currently include
+time spent in reviewing program objects, in
+raising issues, in proposing actions, and/or engaging in 
+discussion; the number of errors found (under various categories); the
+number of participants; and the characteristics of
+the work product, such as program size and type (i.e., function, macro,
+design) for code review, etc.
+
+\end{itemize}
+
+\section {CSRS}
+
+CSRS is a collaborative software review system that assists review
+participants in carrying out formal review activity. The system
+follows a specific process and data model corresponding to the product
+and the process of the activity.
+
+\subsection {Data Model}
+The CSRS data model describes what artifacts are produced and
+consumed by review activity. 
+The  model also facilitates reasoning about the artifacts both by
+human and machine.  For example, it is easy to compare and contrast
+various issues raised by different reviewers, semi-automatically
+consolidate them and finally propose a single consentual action.
+The model also imposes a more structured group communication. In fact,
+CSRS can also be considered as group support system. The later
+has been shown effective in reducing group barriers
+typically found in face-to-face meeting \cite{Nunamaker91}.  The system allows
+reviewers to express his opinions and argue about one's position in a
+controlled and productive manner. It also implements
+consensus building mechanism to further speed up the group process.
+
+In general, CSRS data model consists of a set of typed nodes and links
+where the nodes correspond to review artifacts and the links
+correspond to relationship among these artifacts. \ref{fig:data-model} shows the
+details of the model. This model has been constantly improved since the
+initial design of the system \cite{csdl-92-02}.
+Source nodes are input materials  to be reviewed.  They may include
+requirement document, design document, source code, and/or other software
+artifacts.
+Source nodes can be annotated with other source nodes. For example, source
+code is annotated with its detailed design for code review.
+Annotation can be defined on a specific region in the source 
+and substitute-able (i.e., the region can be
+replaced with its annotation).  This later feature allows, for example,
+source code to be systematically 
+abstracted into its detailed design section by section similar to the
+stepwise abstraction technique for code reading \cite{Linger79}.
+For code review, the source nodes are classified into
+program objects such as function, macro, structure, and variable
+definition. 
+
+Standard-issue nodes contain issues that are identified by the
+organization (from previous review process or the literatures) and are
+checked off by reviewers against the source nodes during review session.
+Standard issues are similar to checklist in code inspection
+\cite{Fagan76}.  CSRS's checklist, however, may include other artifacts such as
+special requests from the producer to the reviewers to check specific
+properties in the source nodes. It may also include a set of questions
+prepared by the producer 
+to assess reviewers' familiarity with specific concepts in the source.
+This type of requests and questions  has been shown effective in
+the design review process \cite{Parnas85}.  
+Unlike standard issues which are generally  applied to
+all source nodes, questions based checklist are source
+nodes specific; when the source is displayed, the question
+will be displayed as well.  In figure 1,
+this question appears as comment node that annotates source node.
+
+
+The rest of the nodes in the data model are commentary nodes; they are
+generated as a result of review process. Individual reviewers record
+any suspected problems or defects in the source in issue nodes.
+He/she may then propose one or more actions to resolve this issue in
+action nodes. 
+
+Comment nodes are to question, confirm, or disconfirm  issue or action
+nodes. They may also question source nodes in order to seek
+clarification about the source. Responses to questions are
+also recorded in comment nodes. 
+
+Case nodes are to record test cases or test data that are raised by
+reviewers in particular source nodes. These test cases are 
+similar to the ones used in ordinary testing method, which are derived from
+the corresponding source, except that case nodes are created only when the
+reviewers find a specific test case in the source very difficult to
+exercise mentally, and wants to delegates this task to the producer or the
+group. Unlike questions (in comment node) that inquire the logic
+of the source, cases inquire verification of the source. 
+Mentally simulating test cases are very common in code inspection
+practices; it is conducted as part of paraphrasing activity during
+inspection meeting \cite{Russel91,Ackerman89}. 
+Case and comment nodes may suggest new issues, and comment
+suggests new actions.
+
+Consolidated-issue and consolidated-action nodes are to consolidate
+issues/ actions raised by different reviewers. These nodes represent
+the group consensus on the issues/ action.
+Consolidated-action nodes are further classified into type {\it Fix, Ignore}
+and {\it Undecided}.
+Consolidated-action also modifies the source. 
+This {\it modify} link is especially important during re-review phase. It
+facilitates reviewers to check whether the suggested changes described
+in the consolidated-action has been properly implemented by the
+producer. It is even more important since the study shows that error
+rate found in modified code is considerably higher than is found in
+new code \cite{Fagan76}. 
+Finally, consolidated-issue may derives new standard-issue node. 
+The procedure of incrementally refines standard-issues is similar to
+the defect prevention method \cite{Jones85}.
+
+Finally, despite many different types of nodes and links, reviewers do
+not need to memorize  them, they are all transparent from the
+CSRS's user interface that implements pull-down menu and
+context-sensitive pop-up menu. 
+
+\begin{figure}[htb]
+  \fbox{\centerline{\psfig{figure=data-model.eps}}}
+  \caption{CSRS Data Model}
+  \label{fig:data-model}
+\end{figure}
+
+
+
+\subsection {Process model}
+The CSRS process model describes specific steps or procedures that
+review participants must follow during review session.
+In manual code inspection, the process model is well
+documented \cite{Fagan76}. However, there is no evidence yet that shows this
+model is the most effective one, especially when it involves
+computer supported review environment such as CSRS.
+In fact, one of our research goal is to experiment with
+different review phases (i.e., process model) and finds the most
+productive one (if any). 
+
+In general, the process model constrains what review artifacts can be
+manipulated during a given phase, or what nodes and links defined in
+the data model are legal for a given phase.
+The CSRS process model is shown in \ref{fig:process-model}. 
+
+\begin{figure}[htb]
+  \fbox{\centerline{\psfig{figure=process-model.eps}}}
+  \caption{CSRS Process Model}
+  \label{fig:process-model}
+\end{figure}
+
+
+This process model is 
+somewhat similar to classic code inspection except that it gears toward
+computer based review environment. The model consists of the
+following review phases:
+
+\begin {itemize}
+\item {\bf Review Initialization.}
+This initial review phase starts with selecting review participants
+and assigning review roles to the them.
+The roles are similar to Fagan's inspection which
+include moderator, producer, reviewer, and recorder. 
+These information are then entered into the system along with
+administrative data such as starting review date, project description,
+the nature of this review (new or re-review), etc.
+Afterwards, the producer with the assistance of the moderator inputs
+review source nodes from the prepared source files (assuming the files
+have met all input conditions decided by the management). The system
+will automatically parse the files into program objects (for source
+codes) and generate appropriate types of source nodes. The producer
+then prepares annotation nodes, comment nodes for special request
+checklist if any, and finally  a short description of the top level
+design of the source 
+nodes to be reviewed along with its guided map (for code review). This
+map suggests the ordering of source nodes to be followed by the reviewers 
+in order to facilitate better comprehension of the source. 
+Some code inspection practices uses top-down techniques
+when reviewing source codes \cite{Hart82}, others prefer bottom-up
+techniques \cite{Linger79}. At present, we use the top down technique.
+When done, the moderator initiates the next phase of the review process.
+
+\item {\bf Orientation.}  This is a short group meeting where the
+producer briefs  reviewers the work products, usually the top-level
+description of the products. This phase, however, can be skipped if the
+moderator feels that the on-line documentation prepared in the
+previous phase is sufficient, or the participants are already familiar
+with the product. CSRS currently does not provide computational
+services for this phase, other than to generate hard-copy briefing
+materials.
+
+\item {\bf Private review.}
+In manual code inspection, this phase is called
+preparation: individual reviewers familiarize themselves with the
+software product in order to attend the upcoming inspection
+meeting; they normally focus their efforts more on understanding the
+products than searching for errors. 
+
+In computer based review such as CSRS, where one of the objective is 
+to minimize meeting time, this phase is used for both understanding
+and error hunting. Errors (i.e., issues in CSRS terminology)
+discovered during  this time are not made public in order to reduce
+free riding \cite{Nunamaker91} and to prevent unnecessary discussion/debate.
+
+Program understanding is the most difficult, mentally draining but
+essential activity in code review and yet many computer-based review 
+systems (e.g., ICICLE \cite{Brothers90} ) explicitly avoided this issue.
+In manual code inspection, this activity  may take up more than half of
+the entire review time \cite{Humphrey90}.  Our approach in supporting
+program understanding is to allow 
+reviewers to post questions (comment node of type question) directly
+to the producer. The question can be as specific as referring to
+a small block in the source code.  Questions and answers of this type
+are made public to all reviewers. 
+Additional tools to facilitate program reading and understanding in
+CSRS include manual abstraction (replacement of a block of code with
+its informal description),  hiding or showing a selective block of
+code, and cross-references. 
+
+Similar to code inspection, reviewers are provided with a set of
+checklist items. The checklist includes both standard-issues and
+special requests from the producer described in the
+previous section if any.
+Individual reviewers simply
+go through this checklist item by item and mark v when done. When all
+these items are marked v  the corresponding source node is
+considered reviewed. 
+
+When the reviewer suspects any defects in the source, he/she creates
+an issue node describing the problem. One or more action nodes can be
+proposed to 
+resolve this issue. Many code inspection literatures
+\cite{Fagan76,Humphrey90} disallow actions to be decided during the review.
+However, our experience with manual
+inspection shows that reviewers often suggest actions when identifying
+issues. In fact, these actions often give clarification to the issues
+both during the review and/or the rework phase. In
+structured-walkthrough \cite{Yourdon79}, action is part of the review process.
+In light of this evidence, we decided to 
+makes action generation optional; in other words, reviewers are free to
+create or not create action nodes. 
+
+The reviewer may also create a case node when he/she has difficulty
+verifying specific property of the source as described in the
+previous section.
+
+The private review phase concludes when all reviewers have marked the
+source nodes reviewed. The moderator (running the system in Admin
+mode) then deactivates this phase and activates the next phase, Public
+Review. 
+
+
+\item {\bf Public review.} In this phase,  review participants
+including producer react to the 
+issues, actions and comments generated by other participants during
+private review phase.  In classic code inspection this phase takes
+place in a 
+face-to-face meeting. Our public review is conducted entirely in a non
+face-to-face meeting (computer-mediated). This computer-mediated
+meeting mode has been consistently shown \cite{Nunamaker91} to yield  more productive
+meeting outcomes. When the reviewer disagrees to a particular issue or
+comment, he/she can create a comment node and attaches disconfirm-link.
+Similarly, he/she may further confirm the issue using a comment node (
+and confirm-link). We also require that every participants take one
+position of either confirm, disconfirm or neutral on every issue
+node. This information is then used to build group consensus by the
+moderator. The reviewers are also required to create similarity link
+when noticing that his/her issue or action is similar to the one
+posted by others. This link allows the system to consolidate similar
+issues/actions semi-automatically. They may also create additional
+issue nodes, especially after reading comments or issues posted by
+others. 
+
+In general, during public review phase, all reviewers must read and
+response to every issues created in 
+the system. Other commentary nodes do not need to be responded but
+read. 
+The reviewers may start this phase by reading all unseen issues,
+actions or other commentary nodes, or prefer to go through each source
+and read the issues listed in it one by one. The reviewers can also read 
+consolidated-issue node. This node merges two or more similar issues
+into one and also presents the discussion/ argument regarding the
+issue by the group 
+members so far (the discussion is extracted from comment nodes and is
+grouped according to its confirmation or disconfirmation links.)
+Unlike individual issue, which can only be modified by the creator of the 
+issue, consolidated issue can only be modified by the moderator (during
+consolidation phase). During public review phase, the system will
+refresh the content of this consolidated node every time a new 
+issue or comment is added to the discussion thread. 
+
+This phase concludes when reviewers have responded to all commentary
+nodes.
+
+\item {\bf Consolidation.}
+This phase, which is carried out by the moderator,
+is to consolidate issues raised by individual reviewers during public
+review. In manual review, this task is  non-trivial since the moderator
+needs to read and go through all issues, group them and finally write one
+consolidated one. In CSRS, all issues are grouped naturally as part of
+the public review activity.
+The moderator simply edits this consolidated issue if necessary and
+then creates one consolidated action if consensus has been reached.
+
+At the conclusion, some issues may remain unresolved (no consensus). 
+The moderator then calls for a meeting to discuss and resolve these
+issues.  A report summarizing the consolidated and unconsolidated
+issues will be distributed to the participants prior to the meeting.
+
+\item {\bf Meeting.}
+This optional phase is to discuss issues that have not been
+resolved or agreed upon during previous phase. In addition, it may be
+used to walkthrough test cases (recorded in Case node) requested by
+some participants. The procedure of doing this task is similar to
+paraphrasing technique used in Fagan's method; the producer/reader
+goes to the source in question mentally simulating the test cases.
+Additional issues discovered during this phase will be recorded in
+consolidated-issue nodes, and proposed resolutions in consolidated
+actions respectively. This face-to-face meeting is currently done
+manually without computer support.
+
+This phase concludes when all consolidated issues have consolidated
+actions. 
+
+\item {\bf Conclusion.}
+This phase, which is also carried out by the moderator, is to generate
+metrics and final report of the entire review process.  The metrics
+include every 
+aspect of review activity. The number of errors is obtained by
+simply counting the number of consolidated-issues that have
+consolidated-actions.
+The errors per user can be obtained by counting the number of  user's
+issue nodes that lead (link) to consolidated action.
+Time related metrics  is collected by the system automatically.
+Specifically, for every CSRS command invoked by the user, the system
+will generate a metrics data consisting of {\sl User-ID, Operation, Entity,
+Time, Screen, Info},  where {\sl User-ID} is the ID of the user who
+invokes the operation, {\sl Operation} is the name of the operation,
+{\sl Entity} is the name of the node or link on which the operation
+operates on, {\sl Time} is the time when this operation takes place,
+{\sl Screen} is the name of the screen (visible window), and {\sl Info}
+is additional information to be added if any. These raw metrics are then passed
+to metrics analyzer to generate review statistics.
+For example, to find out how many hours spent by a particular
+reviewer in reading a particular node, we subtract the
+time this node is read (operation = read-node) by this user 
+until it is closed (operation = close-node).
+
+This phase is also used to generate or refine standard issues
+by analyzing the identified errors as described in the previous section.
+
+\item {\bf External development.}
+This phase is to carry out the rework task. The assigned programmers can
+simply look up consolidated action nodes (generated as final hard-copy
+report) to determine what need to be done with the source nodes.
+
+\end {itemize}
+
+\section {Review experiences}
+
+We have conducted two rounds of code review using CSRS.  The
+first review was actually intended to debug the system. The
+source program codes are trivial (small and easy to comprehend).  Based
+on the feedback from the user, the user's interface of the system
+was then improved. The second review involves 435 lines of 
+codes and 18 program objects (functions and global variables) of
+generic-interface subsystem of EGRET called nbuff (short for
+node-buffer). The participants include 4 reviewers and 1 producer
+(5 people).  Two of the participants also assume the
+role of moderator; one played the role during review
+initialization and another performed issues consolidation and
+moderated the group meeting.
+
+The review process was conducted according to the process model
+described earlier which involved mostly no meeting.  The
+orientation meeting where the producer explained the top-level
+design of the nbuff took only 15 minutes. The handout from this
+meeting was also provided on-line in CSRS.
+
+In general, we imposed no time restriction to reviewers. They
+basically worked at their leisure time.  The entire review
+process took 3 weeks to complete. 
+The private review lasted for about 10 days, but the average time
+spent by reviewers is only 3.5 hours.  The review rate ranges
+from 100 lines/hour to 250 lines/hour.
+  
+The public review completed in about a week, and the average
+review time was 2 hours, or 3 minutes/issue.  The consolidation
+phase performed by the moderator took less than 30 minutes to complete,
+or 0.75 minutes/issue.
+There were 42 issues identified, 37 of them were resolved during
+public review based upon the reviewers' consensus.  The last 5
+issues were brought to the meeting for discussion.  In the
+meeting, the moderator also presented the remaining 37 issues (in
+consolidated form) and their corresponding actions.  The overall meeting
+lasted for about 50 minutes, or the average time for issue
+discussion is 1.2 minutes/issue.
+
+Informal questionnaires after the review indicate that the
+reviewers are generally satisfied with the outcomes, the review
+process and the CSRS itself. They also do not have problem reading the
+code from computer display without having the hardcopy on hand.
+Some reviewers who have been exposed to manual review even prefer
+CSRS to hardcopy program code.
+
+Prior to implementing CSRS, we have also conducted manual code
+review on 2500 lines of codes of server subsystem of Egret and
+identified 174 issues. The review process was more or less
+similar to CSRS's process model except that the public review
+was carried out in a face-to-face meeting. After the meeting, the
+moderator performed issues and actions consolidation off-line.
+The review rate was about 350 lines/hour on the average, and during the
+meeting issues were discussed at the average rate of 2.5 minutes/issue.
+
+The data clearly shows that the meeting for manual review
+takes twice longer to conclude than for CSRS.  The CSRS's public
+review, however, is slightly longer (3 minutes/issue) than the
+public review in manual code review (2.5 minutes/issue). In the
+later review, however, the moderator needs to spend additional
+1.5-2 minutes/issue after the meeting for consolidation. Worse
+yet, the moderator had difficult time carrying out the later
+consolidation; the actions decided during the meeting were not
+properly 
+recorded, they were often implied from the group discussion. 
+In CSRS arguments are presented as comment nodes and attached to
+the corresponding issues.  This facilitates consensus building
+and at the same time serves as supporting evidence for the action
+taken by the group.
+
+Taken into consideration the public review, meeting and consolidation 
+phase, the data does not show significant time saving using
+CSRS. However, participants uses review time more productively in CSRS
+(i.e., doing review rather than doing clerical tasks) and the process
+also yields more satisfactory outcomes as issues, comments and actions
+are effectively captured.
+
+Despite the many benefits of asynchronous mode, we also observed that
+some reviewers feel 
+irritated during public review phase as they have to constantly login
+to the system to check for new issues or responses from other
+reviewers/ producer. We plan to provide automatic electronic mail
+notification to resolve this problem.
+
+As for review rate during private review, the data shows that
+CSRS takes longer (100-250 lines/hour) than manual review (350
+lines/hour).  On the other hand, this may indicate that CSRS
+yields more comprehensive review than manual one.
+The literatures \cite{Russel91} suggest than 150 lines/hour is the
+optimum review rate for effective review.
+
+As for error detection effectiveness, our data shows that CSRS
+identified more errors or issues (9.4 issues/100LOC) than manual
+review (7 issues/100LOC). In both reviews the error are mostly
+design or specification incorrect; coding or algorithm errors are
+rarely identified. However, one issue indirectly identified severe
+errors in the program and others accurately predicted the problem that
+may occur in the future based upon the current coding. For example, 
+one reviewer identified the use of current buffer may pose
+brittleness to the system, and this was later confirmed.
+
+
+\section {Current status}
+
+The current version of CSRS (version CSRS-1.2) implements most of the
+functions described in the previous sections. Specifically, it
+provides basic hypertext functionalities to create nodes and links as
+described in the data model. It supports private review, public
+review, consolidation phase and administrative mode during review
+initialization and for metrics generation. The review metrics 
+also includes raw data collection as described in the previous
+section. 
+
+Checklist support is partially completed; reviewers must explicitly
+invoke the command {\sl set status to reviewed} when finish reviewing
+the source. Re-review 
+cycle which takes into account the {\sl modify} relationship between
+the consolidated-action node and the new source node is not yet
+supported.
+
+\section {Future Direction}
+We intend to extend the system for different programming environment,
+such as C, or C++. We also plan to use the system for design review and
+requirement review in the future. And finally, we plan to perform
+several formal experiments to compare different review methods
+currently available.
+
+\newpage
+\bibliography{csrs}
+\bibliographystyle{/group/csdl/tex/named-citations}
+
+\end{document}
+

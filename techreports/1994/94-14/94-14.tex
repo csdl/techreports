@@ -1,0 +1,1964 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 94-14.tex -- 
+%% RCS:            : $Id: 94-14.tex,v 1.2 1995/07/21 02:08:31 johnson Exp johnson $
+%% Author          : Carleton Moore
+%% Created On      : Tue Aug 31 10:28:14 1993
+%% Last Modified By: Philip Johnson
+%% Last Modified On: Tue Aug 22 09:35:01 1995
+%% Status          : Unknown
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1993 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+%% History
+%% 31-Aug-1993		Carleton Moore	
+%%    
+
+\documentstyle [nftimes,11pt,/group/csdl/tex/definemargins,/group/csdl/tex/lmacros]{article}
+
+\definemargins{1in}{1in}{1in}{1in}{.3in}{.3in}
+
+\begin{document}
+
+\title{{\bf HBS Interface Specification}}
+\author {Philip Johnson\\Carleton Moore\\Rosemary Andrada\\
+Collaborative Software Development Laboratory\\ 
+Department of Information and Computer Sciences\\
+University of Hawaii\\
+Honolulu, HI 96822\\
+(808) 956-3489\\
+ICS/CSDL Technical Report 94-14}
+
+\date{HBS Version 4.0.0\\
+      Last Revised: \today}
+
+\maketitle
+
+\begin{abstract}
+This document specifies the interface protocol observed between the HBS
+server system and the ECS client system, together known as Egret. HBS is a
+multiuser, database server for (non-video) hypermedia applications.  It
+manages storage, locking, retrieval, and inter-client communications.
+This document is intended to describe the interface between
+HBS and ECS in enough detail so that alternative database servers can be
+built to service requests from an ECS clients. It is also intended to serve as a source
+of reference material for maintainers of the HBS and ECS systems. 
+\end{abstract}
+\newpage
+\tableofcontents
+
+\newpage 
+\section{Overview}
+\label{sec:motivation}
+
+This document specifies the interface protocol observed between the HBS
+server system and the ECS client system, together known as Egret.  HBS is a
+multiuser, database server for (non-video) hypermedia applications.  Its
+principle function is to manage storage, locking, and retrieval for a set
+of node and link objects.  In addition, it provides an event-based
+notification mechanism that clients use to monitor changes to the database
+and for inter-client communication.
+
+The two goals of this document are: (1) to describe the interface between
+HBS and ECS in enough detail so that alternative database servers can be
+built to service requests from an ECS clients; and (2) to serve as a source
+of reference material for maintainers of the HBS and ECS systems.
+
+The next section of this document describes the evolution of HBS development
+since its initial design in 1989.  The following section introduces the major
+services provided by HBS.  Following this, each HBS operation required by 
+ECS is described in detail, focussing on the client-server communication protocol.
+This document concludes with a set of appendices summarizing various representations
+used in HBS.
+
+
+\section{History of HBS}
+
+The HBS system is a descendent of a system called HyperBase, which was
+designed and developed in 1989 as a Master's degree project by a group of students at
+the University of Aalborg in Denmark.  This system was intended to provide
+a ``configurable file system for hypermedia applications" which would
+introduce only minimal constraints upon the application domain.  In
+parallel with the HyperBase server, several client tools were developed,
+including a textual front-end implemented in Emacs called EHTS and a
+graphical browser.
+
+The Aalborg group published several documents about this work: comprehensive
+low-level design and implementation documentation for the Hyperbase
+\cite{Wiil90a}, two overviews of the architecture and initial experiences with
+Hyperbase \cite{Wiil90b,Wiil90c}, and overviews focussing on the design of the
+EHTS client \cite {Wiil91b} and the event-based mechanism \cite{Wiil91}.
+
+Source code and executables for both HyperBase and the EHTS client tools
+were released to the public in late 1990, and were downloaded by the
+Collaborative Software Development Laboratory in early 1991.  The Aalborg
+group provided two versions: a 0.2 Beta version and a version 1.1.  Both
+were implemented using the GNU C++ compiler and employed classes from the
+g++lib version 1.39.  The 0.2 Beta executable ran with non-fatal errors in
+the CSDL environment, and we used this version until the Summer of 1993.
+Version 1.1, although containing several enhancements, contained fatal
+errors, and CSDL never used this release, although one student did spend a
+summer attempting to recompile and remove these errors.  We used EHTS for
+only a short time before designing and implementing our own Emacs-based
+client interface, which is now called ECS.
+
+In the Summer of 1993, CSDL sponsored an advanced C++ programming course
+whose goal was to rewrite and redesign the HyperBase.  We needed to rewrite
+and redesign it for several reasons. First, we had discovered several
+important problems with the Beta release, including the following: (1) The
+locked-by operation should return nil if no one is currently locking the
+node.  Instead, it returns the last locker of the node. (2) Disconnect
+events should have a user-ID as part of the event data. (3) All locked
+nodes are unlocked whenever any user disconnects.  (4) Bad node names lead
+to a core dump, rather than an error return value.  (5) Several major
+memory leaks exist.  (6) The source is incompatible with the current
+release (2.3) of g++lib. (7) Storage and retrieval of non-ASCII data is
+not implemented correctly.
+
+Second, our experiences had convinced us that several changes to the
+client-server protocol would be useful for our Egret application domains: (1)
+Clients should be able to specify data to be passed to other clients though
+the event generated during an HBS operation.  (2) It should be possible to
+append data to a preexisting node.  (3) Link objects should include both
+source and destination node-IDs, (4) A single operation should exist to
+create a new node, assign it a name, and initialize its data field, and (5)
+Several additional HyperBase operations would be helpful.
+
+The summer programming course participants divided into four groups, each developing in
+parallel their own revised version of the HyperBase.  In addition to fixing
+bugs and incorporating enhancements, the groups rewrote
+individual class implementations to conform to recently published
+guidelines for C++ syntax and structure \cite{Ellemtel92} and C++ class design
+\cite{Cargill92,Coplien92}.
+
+The course was very successful and well-received by participants, and at
+the end of the summer, two groups' implementations were combined to create
+the first CSDL-based HyperBase implementation.  At this time, in order to
+recognize the substantially modified design and implementation of the
+revised system, the new system was named HBS.
+
+The switch to HBS immediately pointed out several suboptimal design
+decisions in ECS which had been made to work around problems in the
+HyperBase.  In early 1994, a complete redesign of ECS took place to exploit
+the improved functionality of HBS.  ECS and HBS co-evolved during this
+time, and in mid-1994, Versions 3 of both HBS and ECS were released.
+
+In July of 1995, as we worked on final preparations for public
+release of Egret, we realized that security, an issue we had never
+before actively considered in the design of Egret, must be dealt with 
+before providing the system to the public at large.  This is 
+because an unscrupulous Egret Version 3 user with some Lisp skill could
+create and manipulate a Unix subshell owned by any other 
+connected client on any Egret database anywhere on the Internet!
+We removed this possibility and several other security problems
+in new major releases (Version 4) of HBS and ECS.
+
+The HyperBase history of HBS is important to understanding its current
+design, because we did not remove mechanisms from HyperBase simply
+because ECS does not use them. Thus, HBS contains a certain amount of
+``vestigial'' code and functionality that is no longer needed by ECS. A
+goal of this document is to clearly separate the required features of HBS 
+for communication with ECS clients from its vestigial functionality.
+As an example, HyperBase provides a
+configuration language that allows changes to the set of fields available
+for nodes and links.  However, ECS requires only a single, static representation of nodes
+and links, and so the set of fields for nodes and links could be hard-coded
+in the server.  Another example is the ``many-to-one" linking mechanism that
+survives in HBS from the original HyperBase but is not supported in ECS.
+Reference to the original HyperBase design document \cite{Wiil90a} may sometimes be needed to
+understand certain aspects of the current HBS implementation.
+
+\section{Basic Services}
+
+HBS provides several essential services to ECS clients: file-based storage,
+socket and ID management, data storage and retrieval, concurrency control,
+event-based notification, Gagent awareness, and compound operations.  These
+services are implemented through one or more of the operations described in
+Section \ref{sec:operations}. The following sections provide a more general
+overview of these services.
+
+\subsection {File-based storage}
+
+HBS stores the database it manages as a set of Unix files. Currently, it
+reads and writes to seven files: one containing client name
+and password info, one containing node info, one containing
+node data, one containing link info, one containing the database ID, and
+two containing the last node and last link ID allocated.  This file-level
+partitioning, and the internal structuring of their contents, is an
+internal implementation decision and does not impact upon the HBS/ECS
+protocol.
+
+There is, however, one Egret-level requirement: HBS should maintain an
+accurate representation of the database state within these files at all
+times.  In other words, successful completion of a state-changing client
+operation request results in changes to one or more of these files.  Thus,
+the server can be brought down (or crash) at any time except while in the
+midst of writing out changes to the files without affecting the integrity
+of the database.
+
+\subsection {Socket management}  
+
+HBS is responsible for allocation and deallocation of the sockets used to
+communicate with ECS clients.  When an HBS process is brought up, it
+immediately creates a single socket with a public port-number.  This
+``public" socket is used by all ECS clients for communication during the
+initial connection period only. (The actual port number for this socket is
+specified as the socketid command line argument.)
+  
+In addition to the public socket, each time a client connects, HBS
+creates three additional sockets for private use by the connecting
+client.  One socket is used for reading, one for writing, and one for
+events.  Each time a client disconnects, HBS must deallocate the three
+private sockets that it allocated for this client. When HBS terminates
+execution, it must deallocate the single public socket.
+
+
+\subsection{ID management}  
+
+HBS is responsible for generating unique, 4 byte integer IDs that can be
+used to retrieve nodes and links.  ECS requires that node-IDs be even
+integers, link-IDs be odd integers, and that the first node-ID allocated
+by HBS is the integer 2.  ECS also requires that HBS not reuse ID
+numbers that were allocated to deleted nodes. 
+
+\subsection{Storage management}  
+
+HBS is responsible for managing storage of arbitrarily sized sequences of
+(potentially binary) data.  Because binary data may contain null
+characters, HBS does not rely on standard C end-of-string markers to
+delineate the end of data, but instead preceeds data transmission with an
+integer specifying the length of the  data to follow.
+ 
+HBS has a fixed upper bound on node data field size, but this upper
+bound can be made arbitrarily large through adjustment of a 
+compile-time parameter. 
+In the 
+current release of HBS, the data field associated with any
+single node is limited to approximately 1 megabyte.
+
+\subsection{Concurrency control}  
+
+HBS provides concurrency control in the form of simple locking on each
+node.  Each node is either locked by a single client or unlocked. Locking
+is atomic, and a request to lock an already locked node fails. If a node
+is locked, then the client locking the node is stored and can be
+determined by other clients.  Also, if a node is locked, an attempt by a
+client to write the contents of the node will fail unless they own the
+lock. A lock can be held only during connection; once a client
+disconnects, any locks associated with the client are automatically
+released by HBS.  (Applications can build more complex, inter-session
+locking by allocating nodes to store lock state information and using HBS
+locks to coordinate access to this node.)
+
+\subsection{Event subscription}  
+
+HBS provides an event  mechanism that serves two major purposes.
+
+First, it enables clients to be dynamically notified when the state of
+the database changes through the action of any connected client.  
+For each HBS operation,
+there exists a corresponding event.  Each time HBS
+successfully carries out an operation invoked by a client, it then
+sends events to all those clients who have subscribed to the event
+associated with this particular operation.
+
+Second, events allow clients to communicate with each other through the
+message field associated with each operation.  The message field is an
+arbitrarily sized byte sequence that is supplied by a client in
+each operation
+request, which is included in the event sent by HBS to notify clients that
+this operation was carried out successfully.
+For example, a client may wish to update a node's contents and 
+communicate the new contents to other clients.  By
+supplying the updated data in the message field, the client can
+communicate the new contents to other clients without requiring them to
+individually retrieve the node's data from HBS.
+
+Two operations, broadcast-message and client-message, serve only as an
+inter-client communication mechanism: they do not change the state of
+the database. Their only effect is to generate events that enable clients
+to communicate using the message field.
+
+\subsection{Gagent awareness}  
+
+One architectural result from our experience with Egret is the
+Gagent\foot{Pronounced {\em gee}-Agent, not {\em Gag}-ent.}: a
+distinguished client process that maintains type-level structural
+information about the database.  Using a Gagent, it is possible to
+effectively distribute query processing across both the HBS and Gagent
+processes, and to efficiently support a dynamically extensible type system.
+The Gagent basically serves as a cache for structural information which is
+intermittently written out to a set of HBS nodes.
+
+However, HBS itself is ``type-unaware"; it simply stores and retrieves
+arbitrarily long byte sequences.  It is ECS, supported by the Gagent, which
+interprets this byte stream as a rich and dynamically typed set of nodes
+and links.  
+
+Although this architectural separation of concerns works elegantly in
+almost all places, there is one situation, connect-time, in which
+incorporating into HBS some knowledge about the Gagent's role tremendously
+simplifies processing.
+
+Clients, once connected, use events to communicate the structural
+information cached by the Gagent among each other.  However, during
+connect-time, the connecting client client must obtain the {\em current} structural state.
+This, of course, is often ambiguous; the server may be partially
+through an operation request; others may be in transmission through sockets;
+and clients may be in the midst of reading events. When a client connects, 
+then, the basic task is to complete the currently executing operation request,
+if any, suspend processing of all new operation requests by other clients (to stabilize
+the current structural state) and let the new client get it.  Unfortunately, new
+client may not be able to find this state in HBS, since it's the Gagent who has
+it, and it writes out this information only intermittently.
+
+A simple solution is to have HBS suspend processing of all operation requests 
+{\em except} those of the connecting client and the Gagent durinng connect time.
+This allows the Gagent to download the current structural state to the HBS and 
+the client to read it without fear of the state changing in the midst of the 
+process.  Once they have finished synchronizing the new client, then they inform
+the HBS to begin servicing operation requests in the normal way. The connect
+time protocol description provides more details on this process.
+
+\subsection{Compound operations}  
+
+Another result from our early experiences with Egret and the HyperBase was
+the knowledge that some common actions result in stereotypical sequences of
+operations.  For example, to create a locked node, one first invokes the
+create-node operation and then the lock-node operation.  Another example is
+creating a hypertext ``comment": this involves invoking create-node (to
+hold the comment), then create-link (to link the comment node to some other
+preexisting node), then lock-node (to allow the comment to be edited.)  In
+the original HyperBase, certain common actions required six or more
+commands to carry out.  In contrast, HBS provides a set of ``compound"
+operations, which are exactly similar to normal operations except that they
+make several changes to the database at once.  We have found that compound
+operations make a dramatic impact, sometimes increasing performace five or
+seven-fold.  
+
+\section{Starting HBS}
+
+During execution, HBS manipulates six files called maxLink.hb, maxNode.hb, datablocks.hb,
+datanodes.hb, dbID.hb, and linknodes.hb.  These six files must exist (or else
+will be created) in the directory where hbs is initially invoked.  If the
+files do not exists, then hbs creates and initializes them, effectively
+creating a new, empty database.  If the files already exist, then hbs will
+use them to initialize its internal state (as long as the correct dbID is
+supplied at the command-line), effectively maintaining a previously created
+database.
+
+A seventh file, clients.hb, must be created by the database 
+administrator before starting up hbs, and it is read by HBS 
+in order to determine the set of clients who can legally 
+connect and their associated passwords. It is written by the
+HBS whenever a set-password command is processed.
+
+{\em Warning: it is possible, but extremely dangerous, to start up two HBS
+processes in the same directory.  These processes will read and write to
+the same files, almost certainly corrupting the contents of the database.}
+
+For complete details on starting up HBS, see the Appendix on Bringing
+up Egret in the ECS Design Reference Manual.
+
+
+\section{HBS Operations}
+\label{sec:operations}
+
+This section contains a complete listing of all HBS operations required by
+ECS clients.  Note that inspection of the HBS Version 4.x source code will
+reveal support for several additional operations, but these operations are
+vestigial from the HyperBase and no longer used in ECS.  They may safely be
+ignored. 
+
+Several conventions have been followed in documenting the HBS operations:
+
+\begin{itemizenoindent}
+\item The protocol descriptions refer to the read, write, and event
+  sockets.  These names are employed from the ECS client perspective: the ECS
+  client reads from the read socket and writes from the write socket.  Thus,
+  conversely, HBS writes to the read socket, and reads from the write socket.
+  The event socket is always written to by HBS and read from by ECS clients.
+ (Within the actual HBS source code, however, references to the read socket
+  refer to the read socket from HBS's point of view, but that is irrelevant
+  to this document.)
+
+\item Except for connect and disconnect operations, all HBS
+  operations conform to the following structure:
+  \begin{enumerate}
+  \item A client sends an operation {\em request} on the write socket.
+  \item HBS reads the request from the write socket, and attempts to {\em satisfy} it.
+  \item If HBS:
+    \begin{itemize}
+    \item {\bf can} satisfy the request, it sends out on the read socket of
+      the connecting client a {\em return value} indicating success and
+      (optionally) some {\em return data}.  Then, it sends out an {\em event} on the
+      event sockets of all clients who have subscribed to this
+      operation's events.
+
+    \item {\bf cannot} satisfy the request, it sends out on the read
+      socket of the connecting client a {\em return value} indicating
+      failure.  No other data is sent to the requesting client, and
+      no events are sent.
+    \end{itemize}
+  \end{enumerate}
+
+\item Operation descriptions include a tabular description
+  of the data sent back and forth between ECS clients and HBS
+  server. Reading from top to bottom, they present in chronological order
+  the client request, the HBS response, and the HBS event sent. Remember
+  that the HBS response will be sent to the requesting client only, while
+  the event is sent to all clients who have subscribed to it.
+
+\item In most cases, data is passed between the client and server by first
+  passing a 4 byte integer representing the length of the data, then passing
+  those many bytes.  This allows binary data to be stored and
+  retrieved. There is one exception to this rule: client names and 
+passwords.  Client names and passwords
+  are always passed in traditional C string representation with the null
+  character representing the end of the string.  Thus, no 4 byte integer
+  representing the length of the client name string is needed or used.
+
+\item All events have a fixed structure: a null-terminated client string,
+  followed by three four byte integers, followed by the event message size,
+  followed by the event message (if the event message size was non-zero).  In
+  some cases, not all of the three four byte integers are meaningful for the
+  particular operation.  In this case, one or more of them might be simply a
+  four byte zero whose sole purpose is to ensure that this fixed structure is
+  preserved. This is indicated by the ``Send placeholder'' action in certain
+  events. 
+
+\item Event messages are optional.  When an event
+  message is not supplied, this is indicated by simply passing zero as
+  the event message length size, and no data.
+
+\item Only the return values indicating success are noted in the following
+sections. For a list of the possible error return values that can be
+returned
+by operations, refer to Appendix \ref{app:return-values}.
+
+\end{itemizenoindent}
+
+\newpage
+\subsection{Connect, Connected}
+
+Connect-time processing is by far the most complicated operation carried
+out by clients and servers, since it involves establishing sockets,
+synchronizing database state, and downloading structural information by the
+newly connected client. It can be roughly split into three phases.
+
+\subsubsection*{Phase 1: Socket Setup}
+
+During the first phase, the ECS client connects to HBS, obtains its three
+private sockets, tells HBS its client-name, and provides the event message:
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Connect}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length (Bytes) 
+                                   & Value & Action       & Socket & Length (Bytes) & Value \\ \hline
+Create socket
+connection to 
+server public
+socket            & Public &       &       &              &        &       &          \\ \hline
+                  &        &       &       & Send Read
+                                             socket port number      & Public & 4     & Port Num \\ \hline
+Create socket
+connection to 
+private read
+socket            & Read   &        &      &              &        &       &           \\ \hline
+                  &        &        &      & Send Write
+                                             socket port number      & Public & 4     & Port Num \\ \hline
+Create socket
+connection to 
+private write
+socket            & Write  &        &      &              &        &       &           \\  \hline
+                  &        &        &      & Send Event
+                                             socket port number     & Public & 4     & Port Num \\  \hline
+Create socket
+connection to 
+private write
+socket            & Write  &         &     &              &        &       &           \\  \hline
+Break socket
+connection to
+server public
+socket            & Public &         &     &              &        &       &           \\  \hline
+Send null
+terminated
+client name       & Write  & ?       & Name &      &        &       &           \\  \hline
+Send null
+terminated
+password          & Write  & ?       & Password &      &        &       &           \\  \hline
+Send null
+terminated
+db-ID             & Write  & ?       & Name &      &        &       &           \\  \hline
+Send event message
+ size             & Write  & 4       &  Msize &       &        &       &           \\  \hline
+Send event message
+                  & Write  &  MSize &  Message &       &        &       &           \\  \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0      \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder  & Event  &   4   &  0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  16   \\ \hline
+                  &        &       &       & Send placeholder     & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  &  Msize&  Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+During phase 1 of connection, HBS must create three new sockets, 
+and represent this client's connection internally.
+
+As soon as HBS observes the connection of an ECS client to its public
+socket, it suspends servicing of operation requests from all clients except
+the Gagent and the connecting client. It does, however, send out the
+connect operation event to all subscribing clients. (The connect operation
+event is used by ECS clients to generate the minibuffer message that a new
+client is connecting.)
+
+During Phase 1, HBS receives the client name and password, and checks
+to make sure that the client name has been defined in the clients.hb
+file, and that the encrypted version of the password matches the 
+encrypted version associated with the client in the clients.hb file. 
+
+HBS will return 0 if the connect operation succeeds. Otherwise, it can
+return: -9999 (socket setup problems), -101 (client already connected),
+-102 (client passes a db-ID that does not match the db-ID associated with
+the database), -103 (HBS is connected to its maximum number of clients
+and cannot connect another), -104 (Wrong password supplied), or 
+-105 (Unauthorized client). 
+
+
+
+\subsubsection*{Phase 2: Gagent/Client synchronization}
+
+In phase two of connection, the ECS client: (a) subscribes to various
+events, (b) uses a broadcast-message operation to tell the Gagent to
+download its gtables, (c) waits until the Gtable signals completion of
+downloading, and finally (d) uses read-node operations to get the contents
+of the gtables.  The details of this client-gagent handshake are not
+important from the HBS perspective, since HBS just services any and all
+requests it receives from the Gagent and the connecting client.  Refer to
+the ECS design documentation and the ECS source for full details on this
+phase.
+
+\subsubsection*{Phase 3: Finalizing connection}
+
+In phase three, the connecting client has now initialized its state, and all that
+remains is to instruct HBS to resume normal processing of all client
+operation requests. This is accomplished by the client invoking the connected
+operation, which serves as a signal to HBS that all connect-time Gagent/client
+processing has been accomplished and no further suspension of other client 
+processing is required.
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.4in}|p{1.2in}|p{.4in}|p{.4in}|p{.4in} |} \hline
+\multicolumn{8}{|c|}{{\bf Connected}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length (Bytes) 
+                                   & Value & Action       & Socket & Length (Bytes) & Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send
+Connected Operation ID        & Write  & 4     & 27    &              &        &       &       \\ \hline
+Send event message
+ size             & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0      \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder  & Event  &   4   &  0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  27   \\ \hline
+                  &        &       &       & Send placeholder     & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  &  Msize&  Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+\newpage
+\subsection{Disconnect}
+
+The disconnect operation disconnects the client from the HBS.
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.4in}|p{1.2in}|p{.4in}|p{.4in}|p{.4in} |} \hline
+\multicolumn{8}{|c|}{{\bf Disconnect}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length (Bytes) 
+                                   & Value & Action       & Socket & Length (Bytes) & Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send
+Disconnect Operation ID        & Write  & 4     & 17    &              &        &       &       \\ \hline
+Send event message
+ size             & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0      \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder  & Event  &   4   &  0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  27   \\ \hline
+                  &        &       &       & Send placeholder     & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  &  Msize&  Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+\newpage
+\subsection{Read Node}
+
+The read node operation requests the contents of the supplied node-ID, 
+which HBS looks up and returns.  
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Read Node}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Read Node Operation ID   & Write  & 4     & 1     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  ID &           &        &       &       \\ \hline
+Send key (data field)    & Write  & 4     & 517   &              &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0 or 351      \\ \hline
+                  &        &       &       & Send data size & Read &  4    &  Dsize \\ \hline
+                  &        &       &       & Send data    & Read   & Dsize &  Data \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  1   \\ \hline
+                  &        &       &       & Send key     & Event  &   4   &  517    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  &  Msize&  Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+Return values of either 0 (success) or 351  (node is locked by another client) 
+indicate success.
+
+
+
+\newpage
+\subsection{Create Node}
+
+The create node operation requests that HBS create a new node with the
+supplied name and data.
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Create Node}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Create Node Operation ID  & Write  & 4     & 28    &              &        &       &       \\ \hline
+Send Name Size    & Write  & 4     &  Nsize &        &        &       &       \\ \hline
+Send Name         & Write  &  NSize &  Name &   &        &       &       \\ \hline
+Send Data Size    & Write  & 4     &  Dsize &        &        &       &       \\ \hline
+Send Data         & Write  &  DSize &  Data &   &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0      \\ \hline
+                  &        &       &       & Send new node ID & Read &  4    &  node-ID \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   node-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  28   \\ \hline
+                  &        &       &       & Send placeholder     & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  &  Msize&  Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+
+\newpage
+\subsection{Create Locked Node}
+
+The create locked node operation requests that HBS create
+a new locked node with the supplied name and data.
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Create Locked Node}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Create Locked Node & Write  & 4     & 29    &              &        &       &       \\ \hline
+Send Name Size Operation ID   & Write  & 4     &  Nsize &        &        &       &       \\ \hline
+Send Name         & Write  &  NSize &  Name &   &        &       &       \\ \hline
+Send Data Size    & Write  & 4     &  Dsize &        &        &       &       \\ \hline
+Send Data         & Write  &  DSize &  Data &   &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0      \\ \hline
+                  &        &       &       & Send new node ID & Read &  4    &  node-ID \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   node-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  29   \\ \hline
+                  &        &       &       & Send placeholder     & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  &  Msize&  Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+
+\newpage
+\subsection{Delete Node}
+
+
+The delete node operation requests that HBS delete
+the node with the supplied ID.  The node must be unlocked for 
+deletion to be successful.  Deleted node-IDs may not be reused.
+All outgoing links associated with the node-ID are implicitly
+and automatically deleted when the node-ID is deleted.
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Delete Node}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Delete Node Operation ID  & Write  & 4     & 6     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  node-ID &           &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   node-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  6   \\ \hline
+                  &        &       &       & Send placeholder     & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  &  Msize&  Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+
+\newpage
+\subsection{Write Node}
+
+The write node operation requests that HBS update the data field of the supplied node-ID
+with the supplied data. 
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Write Node}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Write Node Operation ID  & Write  & 4     & 2     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  ID &           &        &       &       \\ \hline
+Send key (data field)   & Write  & 4     & 517   &              &        &       &       \\ \hline
+Send Data Size    & Write  & 4     &  Dsize &        &        &       &       \\ \hline
+Send Data         & Write  &  DSize &  Data &   &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   node-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  2   \\ \hline
+                  &        &       &       & Send key (data field)    & Event  &   4   &  517    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  &  Msize&  Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+
+\newpage
+\subsection{Write Node and Unlock}
+
+The write node and unlock operation requests that HBS update the data field of the supplied node-ID with the supplied data, and  unlock it.
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Write Node and Unlock}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Write Node and Unlock Operation ID  & Write  & 4     & 34     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  node-ID &           &        &       &       \\ \hline
+Send key (data field)    & Write  & 4     & 517   &              &        &       &       \\ \hline
+Send Data Size    & Write  & 4     &  Dsize &        &        &       &       \\ \hline
+Send Data         & Write  &  DSize &  Data &   &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4
+                                             & 0 or 352      \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   node-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  34   \\ \hline
+                  &        &       &       & Send key (data field)    & Event  &   4   &  517    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  &  Msize&  Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+Return values of either 0 (success) or 352  (node is unlocked) 
+indicate success.
+
+
+
+
+\newpage
+\subsection{Write Node Name}
+
+The write node name operation requests that HBS update the name field of
+the supplied node-ID with the supplied name string.
+
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Write Node Name}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Write Node Name Operation ID  & Write  & 4     & 2     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  ID &           &        &       &       \\ \hline
+Send key (name field)    & Write  & 4     & 7   &              &        &       &       \\ \hline
+Send Name Size    & Write  & 4     &  Nsize &        &        &       &       \\ \hline
+Send Name         & Write  &  NSize &  Name &   &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   node-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  2   \\ \hline
+                  &        &       &       & Send key (name field)    & Event  &   4   &  7    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize& Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+
+\newpage
+\subsection{Read Node Name}
+
+The read node name operation requests that HBS return the name field of
+the supplied node-ID.
+
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Read Node Name}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Read Node Name  Operation ID  & Write  & 4     & 1     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  ID &           &        &       &       \\ \hline
+Send key (name field)    & Write  & 4     & 7   &              &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+                  &        &       &       & Send name size & Read &  4    &  Nsize \\ \hline
+                  &        &       &       & Send name    & Read   & Nsize &  Name \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   node-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  1   \\ \hline
+                  &        &       &       & Send key (name field)     & Event  &   4   &  7    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize& Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+\newpage
+\subsection{Append Node Data}
+
+The append node data operation requests that HBS append the supplied
+data to the node indicated by the supplied node-ID.
+
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Append Node Data}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Append Node Data Operation ID  & Write  & 4     & 21     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  ID &           &        &       &       \\ \hline
+Send key (data field)    & Write  & 4     & 517   &              &        &       &       \\ \hline
+Send Data Size    & Write  & 4     &  Dsize &        &        &       &       \\ \hline
+Send Data         & Write  &  DSize &  Data &   &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   node-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  2   \\ \hline
+                  &        &       &       & Send key (name field)     & Event  &   4   &  7    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize& Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+\newpage
+\subsection{Lock Node }
+
+The lock node name operation requests that HBS lock the data field
+of the supplied node-ID.
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Lock Node}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Lock Node Operation ID  & Write  & 4     & 13     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  ID &           &        &       &       \\ \hline
+Send key (data field)    & Write  & 4     & 517   &              &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   node-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  13   \\ \hline
+                  &        &       &       & Send key (data field)    & Event  &   4   &  517    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize& Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+\newpage
+\subsection{Show Lock}
+
+The show lock operation requests that HBS return the client name who
+is locking the node with the supplied node-ID.  
+If no client is locking node-ID, then a message string is returned instead
+of a client name. 
+
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Show Lock}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Show Lock Operation ID  & Write  & 4     & 15     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  node-ID &           &        &       &       \\ \hline
+Send key (data field)    & Write  & 4     & 517   &              &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply when locked:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+                  &        &       &       & Send client name size & Read &  4    &  Nsize \\ \hline
+                  &        &       &       & Send client name    & Read   & Nsize &  Name \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply when unlocked:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 352       \\ \hline
+                  &        &       &       & Send error message size & Read &  4    &  ESize \\ \hline
+                  &        &       &       & Send error message   & Read   & Esize &  Error message \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   node-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  15   \\ \hline
+                  &        &       &       & Send key (data field)    & Event  &   4   &  517    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+This is the only place where a client name size is sent before the client name. 
+
+
+
+\newpage
+\subsection{Unlock Node}
+
+The unlock node operation requests that HBS unlock the 
+node with the supplied node-ID.
+
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Unlock Node}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Unlock Node Operation ID  & Write  & 4     & 14     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  node-ID &           &        &       &       \\ \hline
+Send key (data field)    & Write  & 4     & 517   &              &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   node-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  14   \\ \hline
+                  &        &       &       & Send key (data field)    & Event  &   4   &  517    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+Return values of either 0 (success) or 352  (node is unlocked)
+indicate success.
+
+
+
+\newpage
+\subsection{Broadcast Message}
+
+The broadcast message operation requests that HBS send an event 
+on the supplied node-ID with the supplied event message. No change in 
+state occurs to the the database.
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Broadcast Message}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Broadcast Message Operation ID  & Write  & 4     & 26     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  ID &           &        &       &       \\ \hline
+Send key (data field)    & Write  & 4     & 517   &              &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send node-ID  & Event  &   4   &   node-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  26   \\ \hline
+                  &        &       &       & Send key (data field)     & Event  &   4   &  517    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+\newpage
+\subsection{Client Message}
+
+The client message operation (with operation ID 37) provides point-to-point
+communication between two clients via the HBS event facility.  The
+implementation of this mechanism is a little unusual, and so bears a bit of
+explanation.  
+
+Assume that client A wants to send a message to client B.  To do this,
+client A invokes the client-message operation and passes client B's name as
+the recipient, along with a set of message forms for client B.  HBS then
+generates a ``special'' event (with operation ID 38) that is sent {\em only} to
+client B.  As long as client B is subscribed to events with operation ID 38
+(which is the default in ECS), then the message forms provided for client B
+by client A will be invoked by client B.
+
+So far, so good.  However, since client message is an HBS operation, it
+should also have a ``normal'' event associated with it (i.e. with operation
+ID 37).  And, this normal event should support a normal event message, just
+like any other operations.  To satisfy this requirement, the client message
+operation protocol thus requires {\em two} event messages to be provided by
+the requesting client: one to be sent only to a single client, the other to
+be sent to any client subscribing to client message events.  
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Client Message}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Client Message Operation ID  & Write  & 4     & 37     &              &        &       &       \\ \hline
+Send null-terminated client-name      & Write  & ?     &  C-Name &           &        &       &       \\ \hline
+Send client event
+message size      & Write  & 4     &  C-Msize &         &        &       &       \\ \hline
+Send client event message
+                  & Write  &  C-Msize  &  C-Message &     &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Client Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder  & Event  &   4   &   0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  38   \\ \hline
+                  &        &       &       & Send placeholder     & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send client event message
+                                                  size    & Event  &   4   &  C-Msize \\ \hline
+                  &        &       &       & Send client event message
+                                                          & Event  & C-Msize & C-Message  \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder  & Event  &   4   &   0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  37   \\ \hline
+                  &        &       &       & Send placeholder     & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+\newpage
+\subsection{Read Node IDs}
+
+The client read node IDs operation requests that HBS returns a
+non-delimited sequence of four byte integers enumerating all of the current
+node IDs in the database.
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Read Node IDs}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Read IDs Operation ID  & Write  & 4     & 18     &              &        &       &       \\ \hline
+Send ID type (0 means node)      & Write  & 4     &  0 &           &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+                  &        &       &       & Send node ID list size & Read &  4    &  Dsize \\ \hline
+                  &        &       &       & Send node IDs    & Read   & Dsize &  Data \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder  & Event  &   4   &   0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  18   \\ \hline
+                  &        &       &       & Send ID type (0 means node)     & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+
+\newpage
+\subsection{Create Link}
+
+The create link operation requests that HBS create a link between the
+two supplied node-IDs and name the link with the supplied name.
+
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Create Link}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Create Link  Operation ID & Write  & 4     & 25     &              &        &       &       \\ \hline
+Send From-Node-ID      & Write  & 4     &  node-ID &           &        &       &       \\ \hline
+Send To-Node-ID    & Write  & 4     & node-ID   &              &        &       &       \\ \hline
+Send Name Size    & Write  & 4     &  Nsize &        &        &       &       \\ \hline
+Send Name         & Write  &  NSize &  Name &   &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+                  &        &       &       & Send new link ID & Read &  4    &  Link-ID \\ \hline
+                  &        &       &       & Send name    & Read   & Nsize &  Name \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send link-ID  & Event  &   4   &   Link-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  25   \\ \hline
+                  &        &       &       & Send placeholder    & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+\newpage
+\subsection{Create Link to New Node}
+
+The client create link to new node operation requests that HBS create both a new
+link and a new node, and link the supplied node to the new node through the
+newly created link.  Both the new link ID and the new node ID are returned. 
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Create link to new node}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Create link to new node  Operation ID  & Write  & 4     & 32     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  node-ID &           &        &       &       \\ \hline
+Send to-node-name Size    & Write  & 4     &  Nsize &        &        &       &       \\ \hline
+Send to-node-Name         & Write  &  NSize &  Name &   &        &       &       \\ \hline
+Send link-name Size    & Write  & 4     &  Lsize &        &        &       &       \\ \hline
+Send link-Name         & Write  &  Lsize &  Lname &   &        &       &       \\ \hline
+Send to-node-data Size    & Write  & 4     &  Dsize &        &        &       &       \\ \hline
+Send to-node-data         & Write  &  DSize &  Data &   &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+                  &        &       &       & Send link-ID & Read &  4    &  link-ID \\ \hline
+                  &        &       &       & Send node-ID    & Read   & 4 &  node-ID \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send new link-ID  & Event  &   4   &   link-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  32   \\ \hline
+                  &        &       &       & Send new node-ID     & Event  &   4   &  node-ID    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+
+\newpage
+\subsection{Create Link to New Locked Node}
+
+The client create link to new locked node operation requests that HBS create both a new
+link and a new locked node, and link the supplied node to the new node through the
+newly created link.  Both the new link ID and the new node ID are returned. 
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Create link to new locked node}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Create link to new locked node   & Write  & 4     & 33     &              &        &       &       \\ \hline
+Send Node-ID      & Write  & 4     &  ID &           &        &       &       \\ \hline
+Send to-node-name Size    & Write  & 4     &  Nsize &        &        &       &       \\ \hline
+Send to-node-Name         & Write  &  NSize &  Name &   &        &       &       \\ \hline
+Send link-name Size    & Write  & 4     &  Lsize &        &        &       &       \\ \hline
+Send link-Name         & Write  &  Lsize &  Lname &   &        &       &       \\ \hline
+Send to-node-data Size    & Write  & 4     &  Dsize &        &        &       &       \\ \hline
+Send to-node-data         & Write  &  DSize &  Data &   &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+                  &        &       &       & Send link-ID & Read &  4    &  link-ID \\ \hline
+                  &        &       &       & Send node-ID    & Read   & 4 &  node-ID \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send new link-ID  & Event  &   4   &   link-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  33   \\ \hline
+                  &        &       &       & Send new node-ID     & Event  &   4   &  node-ID    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+\newpage
+\subsection{Delete link}
+
+The delete link operation requests that HBS delete the
+supplied link-ID that originates from the supplied node-ID.  
+Deleted link-IDs are not reused. 
+
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Delete link}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Delete Link Operation ID  & Write  & 4     & 31     &              &        &       &       \\ \hline
+Send node-ID      & Write  & 4     &  node-ID &           &        &       &       \\ \hline
+Send link-ID    & Write  & 4     & link-ID   &              &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send link-ID  & Event  &   4   &   link-ID    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  31   \\ \hline
+                  &        &       &       & Send placeholder     & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+
+\newpage
+\subsection{Read Link IDs}
+
+The  read link IDs operation requests that HBS returns a sequence of four
+byte integers enumerating all of the current link IDs in the database.
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Read Link IDs}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Read IDs Operation ID  & Write  & 4     & 18     &              &        &       &       \\ \hline
+Send ID type (1 equals link)      & Write  & 4     &  1 &           &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+                  &        &       &       & Send link ID list size & Read &  4    &  Dsize \\ \hline
+                  &        &       &       & Send link IDs    & Read   & Dsize &  Data \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder  & Event  &   4   &   0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  18   \\ \hline
+                  &        &       &       & Send ID type (1 equals link)     & Event  &   4   &  1    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+
+\newpage
+\subsection{Subscribe Event}
+
+The  subscribe event operation requests that HBS begin sending events
+to this client whenever an operation of the supplied ID is successfully
+completed by any client.  The ``key'' should be 0 in all cases except when 
+events are desired on only the data field of nodes, in which case 517 can
+be supplied instead. 
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Subscribe Event}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send subscribe event Operation ID  & Write  & 4     & 10     &              &        &       &       \\ \hline
+Send  integer      & Write  & 4     &  0 &           &        &       &       \\ \hline
+Send Operation ID    & Write  & 4     & Operation ID   &              &        &       &       \\ \hline
+Send Key ID    & Write  & 4     &  0 or 517 &        &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder  & Event  &   4   &   0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  10   \\ \hline
+                  &        &       &       & Send key ID    & Event  &   4   &  0 or 517    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+
+\newpage
+\subsection{Unsubscribe Event}
+
+The unsubscribe event operation requests that HBS stop sending events
+to this client whenever an operation of the supplied ID is successfully
+completed by any client.  The ``key'' should be 0 in all cases except when 
+events are desired on only the data field of nodes, in which case 517 can
+be supplied instead. 
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Unsubscribe Event}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send unsubscribe event   & Write  & 4     & 11     &              &        &       &       \\ \hline
+Send  integer      & Write  & 4     &  0 &           &        &       &       \\ \hline
+Send Operation ID    & Write  & 4     & Operation ID   &              &        &       &       \\ \hline
+Send Key ID    & Write  & 4     &  0 or 517 &        &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder & Event  &   4   &   0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   & 11   \\ \hline
+                  &        &       &       & Send key     & Event  &   4   &  0 or 517    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+\newpage
+\subsection{Show Clients}
+
+The show clients operation requests that HBS returns a sequence of 
+null-terminated strings containing all currently connected client names. 
+The number of strings to be sent precedes the strings. 
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Show Clients}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Show Clients Operation ID  & Write  & 4     & 20     &              &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+                  &        &       &       & Send null-terminated  client strings & Read &  4    &  Num clients \\ \hline
+                  &        &       &       & Send client strings & Read   & ? &  Client strings \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder  & Event  &   4   &   0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  20   \\ \hline
+                  &        &       &       & Send placeholder     & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+\newpage
+\subsection{Set Password}
+
+The set password operation requests that HBS change the password
+associated with the requesting client. 
+
+Note that ECS clients do not, by default, subscribe to events on this
+operation and cannot specify message forms in the s*db*set-password
+function.  However, the HBS operation is written to allow both messages and
+events from ECS clients pertaining to this operation if desired in the future.
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Set Password}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Set Password Operation ID  & Write  & 4     & 39     &              &        &       &       \\ \hline
+Send password
+size              & Write  & 4     &  Psize &         &        &       &       \\ \hline
+Send 
+password          & Write  &  Psize  & Password &     &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder  & Event  &   4   &   0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  39   \\ \hline
+                  &        &       &       & Send placeholder     & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+
+\newpage
+\subsection{Ignore Non-Gagent Clients}
+
+The Ignore Non-Gagent Clients operation tells the HBS to disable
+(i.e. queue up) processing of any operation requests by clients other than
+the Gagent.  (This operation is used to enable the Gagent to perform
+backups of the *.hb files will other clients are connected.)  Once this
+operation has been invoked, only the Gagent's operation requests will be
+processed until the Allow Non-Gagent Client operation has been sent by the
+Gagent.
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Ignore Non-Gagent Clients}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Ignore Non-Gagent Operation ID  & Write  & 4     & 35     &              &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder  & Event  &   4   &   0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  35   \\ \hline
+                  &        &       &       & Send placeholder    & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+\newpage
+\subsection{Allow Non-Gagent Clients}
+
+The Allow Non-Gagent Clients operation tells the HBS to re-enable
+processing of operation requests by all clients that had been previously
+disabled by a call to Ignore Non-Gagent Clients.  Only the Gagent can
+successfully invoke this operation, since it is the only client for which
+the HBS is processing operation requests when this command is issued under
+normal circumstances.
+
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.5in}|p{1.2in}|p{.4in}|p{.4in}|p{.5in} |} \hline
+\multicolumn{8}{|c|}{{\bf Allow Non-Gagent Clients}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length  
+                            (Bytes)& Value & Action       & Socket & Length 
+                                                                    (Bytes)& Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send Allow Non-Gagent Operation ID  & Write  & 4     & 36     &              &        &       &       \\ \hline
+Send event
+message size      & Write  & 4     &  Msize &         &        &       &       \\ \hline
+Send event message
+                  & Write  &  Msize  &  Message &     &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Event:}} \\ \hline
+                  &        &       &       & Send null-terminated client
+                                             name string  & Event  &  ?    & Name  \\ \hline
+                  &        &       &       & Send placeholder  & Event  &   4   &   0    \\  \hline
+                  &        &       &       & Send operation 
+                                             ID           & Event  &   4   &  36   \\ \hline
+                  &        &       &       & Send placeholder    & Event  &   4   &  0    \\ \hline
+                  &        &       &       & Send event message
+                                                  size    & Event  &   4   &  Msize \\ \hline
+                  &        &       &       & Send event message
+                                                          & Event  & Msize & Message  \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+
+\newpage
+\subsection{Shutdown}
+
+The shutdown operation tells the HBS to terminate execution.  This
+operation
+will only succeed when only one client is currently connected. Thus, 
+under normal circumstances only the Gagent invokes the shutdown operation. 
+
+\bigskip
+\small
+\begin{tabular}{|p{1.2in}|p{.4in}|p{.4in}|p{.4in}|p{1.2in}|p{.4in}|p{.4in}|p{.4in} |} \hline
+\multicolumn{8}{|c|}{{\bf Shutdown}} \\ \hline
+\multicolumn{4}{|c|}{ECS Client} & \multicolumn{4}{|c|}{HBS Server} \\ \hline
+Action            & Socket & Length (Bytes) 
+                                   & Value & Action       & Socket & Length (Bytes) & Value \\ \hline
+\multicolumn{4}{|l}{{\bf Request:}}&\multicolumn{4}{|l|}{~} \\ \hline
+Send
+Shutdown Operation ID        & Write  & 4     & 19    &              &        &       &       \\ \hline
+\multicolumn{4}{|l}{~}&\multicolumn{4}{|l|}{{\bf Reply:}} \\ \hline
+                  &        &       &       & Send return
+                                             value        & Read   &  4    & 0       \\ \hline
+\end{tabular}
+\normalsize
+\bigskip
+
+A error return value of -110 is sent when more than one client is connected.
+
+\newpage
+\appendix
+
+\section{Return Value Table}
+\label{app:return-values}
+
+\small
+    \begin{tabular} {|c|l|l|} \hline
+      \multicolumn{3}{|c|}{{\bf Return Values}} \\ \hline {\em Return
+      Value} & {\em Meaning} & Operations\\ \hline 
+      -9999 & Socket Error & 16 \\ \hline 
+      -205 & Wrong length & 2,21,28,29,34 \\ \hline
+      -204 & There are still pointers to entity-ID & 6,31 \\ \hline 
+      -203 & Unable to write links & 6,25,31,32,33 \\ \hline 
+      -202 & Node-ID not found & 1,2,21,28*,29*,34 \\ \hline 
+      -201 & Could not open/close node-ID & 6,25,31,32,33 \\ \hline 
+      -110 & Shutdown request denied: multiple clients connected & 19 \\ \hline 
+      -105 & Unauthorized Client & 16 \\ \hline
+      -104 & Incorrect Password & 16 \\ \hline
+      -103 & Maximum number users connected & 16 \\ \hline 
+      -102 & Wrong db-ID  & 16 \\ \hline 
+      -101 & Client already connected & 16 \\ \hline 
+      -100 & User not found & 37 \\ \hline
+      -1 & Low level failure & 1,2,6,21,25,28,29,31,32,33,34 \\ \hline
+      0 & Okay & All \\ \hline 
+      1 & Low level failure & 1,2,6,21,25,28,29,31,32,33,34 \\ \hline
+      208 & Direct write not allowed &  \\ \hline 
+      207 & Link not found & 1,31 \\ \hline 
+      206 & Can't use data keys in link node &  \\ \hline 
+      205 & Can't use link keys in data node &  \\ \hline 
+      204 & Wrong arguments in call & 25,32,33 \\ \hline 
+      203 & Unable to open entity-ID & 1,2,6,21,25,28*,29*,31,32,33,34 \\ \hline 
+      202 & Pointed entity-ID not found & 6,31 \\ \hline 
+      201 & key not recognized & 1,2,21,28*,29*,32*,33*,34 \\ \hline
+      301 & No event &  \\ \hline 
+      302 & No send event &  \\ \hline 
+      350 & Locked & 2,6,13,21,25*,28*,29*,32*,33*,34 \\ \hline 
+      351 & Locked by other & 1,14 \\ \hline 
+      352 & Not locked & 14,15,34 \\ \hline 
+      353 & Not all nodes & 13*,15*,29*,33* \\ \hline 
+      354 & Wrong Node ID & 1,2,10,11,13,14,15,21,25,29*,32*,33*,34 \\ \hline
+      355 & Wrong Operation ID & 10,11 \\ \hline
+      356 & Invalid Key Number & 1*,2*,13*,14*,15*,21*,25*,28*,29*,32*,33,34* \\ \hline 
+      357 & Invalid Lock Key & 1*,2*,13*,14*,15*,21*,25*,28*,29*,32*,33,34* \\ \hline 
+    \end{tabular}
+\renewcommand{\thefootnote}{\fnsymbol{footnote}}
+\footnote[1]{These operations can return these error codes but ECS
+correctly calls these operations so ECS should never get these return
+values.}
+\renewcommand{\thefootnote}{\arabic{footnote}}
+\normalsize
+
+\newpage
+\bibliography{/group/csdl/bib/hbs,/group/csdl/bib/c++}
+\bibliographystyle{plain}
+
+
+
+\end{document}

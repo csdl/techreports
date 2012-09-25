@@ -1,0 +1,590 @@
+\documentstyle [chin-times,
+                chi94,
+                plain-citations]{article}
+
+%\input{/home/3/dxw/c/tex/psfig}
+
+\input{/usr/uh/lib/tex/TeXPS/macros/psfig}
+
+\begin{document}
+
+\title {Collaborative Filtering of Usenet}
+
+%%% \author{
+%%%   \begin{tabular}{c@{\extracolsep{2cm}}c}
+%%%   {\em Robert S. Brewer}&{\em Philip Johnson}\\[.4cm]
+%%%   Collaborative Software Development Laboratory&Collaborative Software Development Laboratory\\
+%%%   Department of Information and Computer Sciences&\\
+%%%   University of Hawaii&99001 MENTHE LA JOLIE, France\\
+%%%   Honolulu, HI 96822&Tel: 33-1 63 34 34 55\\
+%%%   Tel: (808) 956-6920&E-mail:Dupont@bla.bla.fr\\
+%%%   E-mail: rbrewer@uhics.ics.hawaii.edu&\\
+%%%   \end{tabular}
+%%% }
+
+\authorname {Robert S. Brewer and Philip Johnson}
+\authoraddr{
+  Collaborative Software Development Laboratory\\
+  Department of Information and Computer Sciences\\
+  University of Hawaii\\
+  Honolulu, HI 96822\\
+  Tel: (808) 956-3489\\
+  Email: rbrewer@uhics.ics.hawaii.edu, johnson@hawaii.edu}
+
+
+\maketitle
+
+
+\begin{abstract}
+  
+  Usenet is an example of the potential and problems of the nascent National
+  Information Infrastructure. While Usenet makes an enormous amount of useful
+  information available to its users, the daily data overwhelms any user who
+  tries to read more than a fraction of it. This paper presents a
+  collaboration-centered approach to information filtering for very large,
+  dynamic database structures such as USENET. Our approach is implemented in
+  a system called URN, a multi-user, collaborative, hypertextual Usenet
+  reader.  We show that this collaborative method, coupled with an adaptive
+  interface, radically improves the overall relevance level of information
+  presented to a user.
+
+\end{abstract}
+
+\paragraph{KEYWORDS:}
+collaborative filtering, usenet, adaptive interfaces, large databases
+
+\section {INTRODUCTION}
+\label{sec:introduction}
+
+%%%   (Motivates why effective and efficient access to USENET resources is an
+%%%   important problem---can use Information Superhighway.  Also motivates why
+%%%   effective and efficient access to USENET resources is a *hard* problem.
+%%%   Finally, presents the structure of the paper.)
+  
+Information has rapidly become the currency of our modern world. As part of the
+growth of global connectivity, there has been a growing desire to not only
+receive information, but to distribute one's own information. In the United
+States, there are many proposals for a ``National Information Infrastructure''
+[ref] which will enable its citizens to participate in the informatin age.
+However, there already exists a tremendously successful network which where
+people can send and receive information on a global scale. This network is
+Usenet.
+%%%   (for background information about Usenet, see Section \ref{sec:usenet}).
+  
+While Usenet is successful, it suffers from several problems. Foremost
+among these is the problem of {\em information overload}. As anyone who has
+read Usenet can attest to, Usenet generates a very large amount of
+information. [insert recent data on Usenet traffic]. This volume is growing
+every day, with no signs of slowing down.
+  
+Usenet's tremendous volume is a big problem for users because it forces
+them to `read defensively' and avoid topics not because of lack of
+interest, but because it might cause an avalanche of data upon them. In
+fact in some cases the volume of Usenet prompts people to stop reading news
+altogether because there is too much to read. These reading habits cause
+people to miss information that would be useful to them.
+  
+In addition, not all of the articles in Usenet are useful or even
+interesting to a particular user. Due to the poor filtering capabilities of
+current news readers, users spend much of their time reading articles they
+are not concerned about. This volume also leads to poor reading strategies
+such as: completely unsubscribing from high volume newsgroups, marking all
+articles in a newsgroups as read without viewing them, and creating kill
+files that attempt to filter out worthless articles.
+  
+We also find that our contribution to Usenet is inversely related to how
+many articles we have left to read. So when there are less articles to be
+read, we contribute more. If this is a general trend, reducing the volume
+and improving the quality of articles read will cause the number of useful
+articles written increase.
+  
+Solving Usenet's information overload problem is difficult because it has
+several unique qualities. First, Usenet is not structured like a
+traditional database, and thus traditional database organization and
+information retrieval techniques do not work. Second, there is no control
+over data quality or data subject matter, which means that the signal to
+noise ratio, already small, will likely decrease even further as the volume
+increases.
+  
+If, in some sense, it is the highly collaborative nature of Usenet that
+creates these problems, our research suggests that a highly collaborative
+effort may be the right way to solve them. While individuals cannot control
+who contributes to the Usenet information system, or what is contributed,
+they can form small groups of like-minded individuals to collaboratively
+access, evaluate, and filter the Usenet information system.  We have
+designed a system called URN to support this collaborative process, and a
+prototype implementation that provides an initial set of functionality.
+  
+The remainder of this paper is organized as follows: first we give a bit
+more background on Usenet as an information system. We then turn to our
+specific method, URN, for combatting the information overload. Next we
+discuss our experiences using URN. Finally we discuss the future directions
+for the URN project.
+
+\section{USENET AS AN INFORMATION SYSTEM}
+\label{sec:usenet}
+
+%%%   (This section overviews Usenet (very briefly in CSCW, at length in JMIS).
+%%%   It can talk about the various uses of Usenet, from simple
+%%%   request/response, to long discussions of topics, to dissemination of
+%%%   information (Tianniman (sic) Square, Collapse of USSR, Cold Fusion, LA
+%%%   Earthquake.) 
+
+\subsection{Usenet Background
+}
+Usenet (standing for Users Net) is a massive but loosely connected network of
+computers that exchange `netnews' which can be thought of as a kind of `public'
+email. Any user on a Usenet node can post an article to Usenet by simply typing
+in some text and submitting it to a program on the local computer. This local
+computer then forwards the article to a few close-by Usenet nodes, who in turn
+forward it in turn to other nodes. In this manner news is propagated around the
+world, yet the original posting machine need only send it to a few near-by
+machines. Although Usenet started in 1979 with only a few nodes, its growth has
+been incredible.
+
+As of January XX, 1994, an estimated XX,XXX Usenet sites exist with over X.X
+million Usenet readers (data from Brian Reid's {\tt $<$reid@decwrl.dec.com$>$}
+postings in the news.lists newsgroup with message-ID {\tt
+$<$$>$}). The traffic on Usenet is enormous: in
+the two week period January 10-24 1994, for example, Usenet generated
+approximately 1251 megabytes of data, consisting of approximately 673,000
+separate articles.  This is typical of Usenet traffic.
+
+\subsection{Usenet's Structure}
+
+Usenet articles are categorized into thousands of `newsgroups' (approximately
+8910 as of January 24). These newsgroups are the primary way in which articles
+are broken down in to different subject areas. Newsgroups are hierarchically
+named with the levels of the hierarchy separated by `.'. For example, the
+newsgroup about Macintosh hardware is called `comp.sys.mac.hardware'. The
+content of these newsgroups is highly varied, ranging from groups about
+software engineering (`comp.software-eng') to groups about dogs
+(`rec.pets.dogs') to groups about abortion (`talk.abortion').
+
+Just as in all communications media, articles can be statements, questions,
+comments, replies to questions, poems, or any other textual object. After an
+article is posted, other users may choose to `followup' that article in such a
+way that the followup article is linked to the original article. This process
+is recursive, as other users can create followups to followups. A set of
+articles linked together in this way on a common topic is called a `newsthread'
+or simply `thread'. Sophisticated newsreading software (such as trn or GNUS) is
+capable of recognizing these threads and allows the user to explore Usenet at
+this level. Follow up articles often include quotes from the original article.
+This quoting is usually done in an automated fashion so that readers can
+distinguish between quoted and original text. However, this makes for a great
+deal of repeated information, especially in long threads. In fact in March
+1993, quotes represented more than 9\% of Usenet's volume. As an aside, not all
+articles posted to Usenet are human-readable text; some are encoded versions of
+binary files: applications, pictures, and sounds.
+
+Usenet can be used for many different purposes, but three of the most common
+are: question \& answer, discussion, and dissemination. Many newsgroups are
+dominated by users asking questions on a topic, and responses from other users
+answering the questions. Many newsgroups are plagued by a set of questions with
+well-known answers. Because new users begin using Usenet continually, they are
+not aware that their questions are well-known so they post anyway. One
+technique employed to reduce this problem is a set of Frequently Asked
+Questions (FAQ). A list of FAQs with standardly agreed answers is posted to the
+newsgroup on a regular basis to ward off such questions.
+
+Another more collaborative use of Usenet are discussions. These discussions are
+often quite long and involved, and can last for weeks, or months. Due to their
+length and the number of users who participate, the topic of a thread can
+wander and evolve. In many cases there can be more than one actual topic being
+discussed in the same thread. It is not unusual for a thread discussing a
+software package to change into a debate on software patent law or where the
+best pizza place in Silicon Valley is. Since the individual posters decide the
+content and subject heading of their posts, often the subject line for an
+article will be dramatically different from the actual contents.
+
+Usenet is also popular as a way to disseminate timely information. Usenet was
+used to distribute information during the following important world events such
+as: the collapse of the Soviet Union, the initial reports on the ``discovery''
+of cold fusion, and the recent Los Angeles earthquake. These grand events cause
+a deluge of articles on the subject, and usually a new newsgroup for the
+subject is created rapidly thereafter.
+
+\section{COLLABORATION-BASED USENET PARTICIPATION WITH URN}
+
+%%%   (This section presents the overall design goals of URN, its architecture,
+%%%   and its current implementation.  In the CSCW paper, it will include a
+%%%   brief subsection that compares URN to other stuff out there.  In the JMIS
+%%%   paper there will be a separate related work section.)
+
+In order to solve the information overload problem, we have designed and
+implemented a system called URN. In this section we discuss the goals of URN,
+the architecture of URN, the status of the current implementation, and a brief
+comparison to other Usenet systems.
+
+\subsection{Design Goals}
+
+URN was designed to allow users to reduce the amount of information that is
+presented to them from Usenet. It must do this in a way that insures that they
+see the information that is relevant to them, and the rest ignored. It must
+also incur little overhead beyond their usual newsreading requirements. And
+finally it should tap into the potential benefits of collaboration by sharing
+one user's efforts with others in their group.
+
+\subsection{Architecture}
+
+There are many ways in which we can reduce the amount of information that each
+user is presented. The simplest is the subscription of newsgroups. Since each
+newsgroup has a subject area, one can merely subscribe to groups that one finds
+interesting, and leave the uninteresting ones unsubscribed. Unfortunately, this
+method is completely insufficient because many newsgroups receive tens or
+hundreds of articles each day which makes keeping up to date on even a handful
+of newsgroups a chore.
+
+\subsubsection{Kill Files}
+
+Another obvious way to reduce the information overload is to filter the
+volumious news stream into a much smaller, personalized news stream. Most
+newsreading programs have the ability to do this at some level (see the Other
+Usenet Readers section). The most common technique for doing this is known as a
+``kill file''. A kill file consists of a series of of patterns that are
+designed to match fields in the header of an article such as its subject or
+author. When an article is found that matches the pattern, that article is
+marked as `read', and is not presented to the user. In this way subjects or
+authors that a user find uninteresting are removed from his or her view.
+
+There are three primary problems with kill files. The first problem is that
+kill files are binary. They can only choose to mark an article as `read' or do
+nothing at all. This means that patterns for kill files must be chosen very
+carefully, or the user risks killing articles that are relevant to their
+interests. For example, a hypothetical user might dislike IBM, and therefore
+create a kill file entry that kills all articles related to the subject of IBM.
+However, this hypothetical user might also love Apple Computer, and really like
+to see articles about Apple. In this case, if an article was posted that was
+about a partnership between Apple and IBM the kill file would kill it, even
+though it is likely that the user would want to see the article.
+
+The second problem with kill files is that they can only exclude articles, they
+cannot bring articles to the users attention. Since Usenet is very large, it is
+much more logical to think about patterns that match things that one does like
+than to come up with patterns that exclude everything that one doesn't like.
+
+The third problem with kill files is that it requires substantial amount of
+effort, intellectual and otherwise, to come up with a list of patterns for
+articles that one doesn't like. Maintaining this list is also problematic: how 
+does one know when to remove patterns or add new ones.
+
+\subsubsection{Weighting Functions}
+
+Given the disadvantages of kill files, we have decided to use {\em weighting
+functions} instead. In the abstract, a weighting function takes an article as
+input, and returns an integer (positive or negative) value representing the
+`weight' it assigns to that article. Our weighting functions are designed so
+that this weight is interpreted as how relevant this article is to the
+weighting function's creator. The weight can be positive, indicating that the
+article is relevant to this weighting function or negative, indicating that
+this article is not relevant to this weighting function. Returning to our
+hypothetical Apple lover, he or she might have a weighting function that
+assigns a moderately negative weight to articles related to IBM, and a
+weighting function that assigns a high positive value to articles related to
+Apple.
+
+Once we have several weighting functions, all the weighting functions are
+applied to all the available articles, and the weights assigned by each
+weighting function are added up for each article. We now have a measure of how
+relevant each article is to a user's interests. Articles are then sorted in
+decreasing order by weight, hopefully leaving `good' articles at the top and
+`bad' articles at the bottom (perhaps `weight' is somewhat of a misnomer
+considering that articles with high weight rise to the top). Given the weights
+described above, an article discussing an Apple/IBM partnership would get a low
+positive rating because the moderate negative weight associated with IBM would
+be added to the high positive weight associated with Apple. We have found that
+users would rather see something uninteresting (they do this all the time with
+normal Usenet readers) than risk not seeing something interesting. Therefore
+any negative weighting function should have a smaller absolute value than if
+the same weighting function were positive.
+
+The weighting is performed by a background agent that computes the weights on
+all the available Usenet articles in the current database for each user.  This
+computation can be performed late at night during off-peak hours when users are
+not using the system. Therefore users will not be required to wait for the
+system when they are actually reading because all of the processing will have
+been performed previously.
+
+\subsubsection{Collaboration and Adaptive Interface}
+
+While the weighting functions we have described overcome one disadvantage of
+kill files, they share the other: the intellectual effort required to create
+them. We solved this second problem by allowing users to vote on the articles
+that they read. After the user had read an article, they can assign it one of
+three values: interesting, ambivalent, or uninteresting. Certain other user
+actions have the side effect of voting on an article as well. For example,
+skipping to the next article before the current article has been completely
+displayed automatically marks the current article as uninteresting. The use of
+explicit voting requires a careful balance because if users are asked to do too
+much rating, they will become annoyed and stop giving useful ratings and the
+performance of the system will suffer. While ideally interest levels could be
+inferred indirectly from user actions, in many cases one does not know how
+interesting an article is until one is finished reading it. We believe that our
+three level rating system presents a low enough overheard that that users will
+make use of it.
+
+Early on in our use of URN, it became clear that the adaptive interface alone
+was insufficient. Using the user's vote, URN must extract what it believes are
+the relevant features of the article and from them generate weighting
+functions. Because the process of turning votes on articles into weighting
+functions is automated, it is prone to error. Many spurious weighting functions
+were generated, making the weight assigned to an article meaningless. To solve
+this problem we added the ability for users to collaborate. Users are able to
+help the weighting agent by changing the keywords associated with an article
+(see the Implementation section). The changes one user makes to an article are
+seen by all users.
+
+\subsection{Implementation}
+
+URN has been implemented using Egret, which is an environment for the
+implementation of exploratory collaborative hypertext applications
+\cite{csdl-91-03,csdl-92-01}. Egret is an excellent system for the
+implementation of URN because of its support for hypertextual information and
+tight integration with Lucid Emacs. The URN application consists of
+approximately 4 KLOC.
+
+\subsubsection{Inputting Articles}
+
+URN keeps its own database of Usenet articles. Articles are read into the URN
+database periodically by an agent process via the NNTP protocol [ref RFC 977].
+As it reads in each article, keywords are extracted from the header of the
+article. The header fields Subject, Summary, Author, and Keywords from the
+original article are parsed into seperate words. Next ``noise'' words (such as
+``the'', ``or'' ``and'') are removed and the words are converted to lower case.
+These words are then stored with the article, and are called the article's
+keywords. We keep track of how many unique keywords are in the database, and
+the frequency of each keyword. Articles that are members of a thread are linked
+to their neighbors hypertextually.
+
+\subsubsection{User Interface}
+
+Once there are articles in the database, users may connect to the database with
+the URN client. After connection, they are shown a list of all the articles in
+the database, sorted in decending order by weight (see Figure \ref{fig:nbuff}).
+Users may then click on any article from the list, and that article will be
+displayed. The article is displayed similiarly to other news readers, the
+header lines are on the top, followed by the list of hyperlinks and keywords,
+and then the body of the article.
+
+\begin{figure}[tb]
+%%%   {\centerline{\psfig{figure=sbuff.eps}}}
+  \caption{The URN Article Selector}
+  \label{fig:sbuff}
+\end{figure}
+
+\begin{figure}[tb]
+%%%   {\centerline{\psfig{figure=nbuff.eps}}}
+  \caption{An Article Displayed with URN}
+  \label{fig:nbuff}
+\end{figure}
+
+Here the similarity to other newsreaders ends. The user may click on any of the
+highlighted links to move to that article. The user may select any keyword in
+the Keywords field and delete it. The user may select any text from the body
+and add it to the Keywords field. In this way users can collaboratively come to
+an agreement on what keywords best represent this article. In fact, a user may
+vote on an article, and later on that day another user may change the keywords
+associated with that article!
+
+After reading the article, the user will be asked to vote on the article as
+being: interesting, ambivalent, or uninteresting. This vote will be recorded,
+and the user will be taken to the next article in this thread. When users are
+finished reading articles, they can disconnect from the URN database and end
+their URN session.
+
+\subsubsection{Keyword Agent}
+
+After users have voted on articles, another background agent (the Keyword
+Agent) will take their votes and turn them into weights. First the agent reads
+a list of all keywords that have been manually added by users. The bodies of
+all articles in the database are then scanned for these words, and if any are
+found then those keywords are ``promoted'' to the Keywords field for the
+article it was found in. User keywords are treated in this special way because
+it is assumed that user-added keywords are more relevant than automatically
+added keywords, and less likely to be bogus. The net effect is that if a user
+adds a keyword to an article, then the keyword is added to all other articles
+in the database containing that keyword in their body (which is not used for
+keyword extraction normally).
+
+Next the Keyword Agent will use user's votes to generate weighting functions
+for each user. In the current implementation of URN, weighting functions are
+quite simple: a keyword and its associated weight. For each user of the system,
+we assemble a list of all the articles that they voted interesting. We then
+build up a list of all of the keywords from those articles, noting the
+frequency of each keyword. This is the ``goodlist''. We do the same thing for
+the articles which were voted uninteresting, resulting in the ``badlist''. We
+then compare the two lists and decide what to do with keywords that appear on
+both lists. In the current implementation we eliminate any keyword that appears
+in both lists. Then for each keyword in the goodlist we compute a weight using
+the following formula:
+[ Wg = freq. * inv. freq.]
+For each keyword in the badlist, we compute a weight using the following
+formula:
+[ Wb = freq. * inv. freq. * 0.8]
+
+Note that all the weighting functions are dynamic: they are all recomputed each
+time the Keyword Agent runs. This allows the weights of articles to change over
+time, and avoids the problems of expiring weighting functions.
+
+Finally, the Keyword Agent weights all articles in the database for each user.
+For each article, the agent compares the list of keywords for that article to
+the list of weighting functions for a user. If there is a match, then that
+weighting function's weight it added to that user's weight for the article.
+
+\subsection{Other Usenet Readers}
+
+Many different programs have been written to read Usenet. What follows is a
+brief survey of some that are related to URN's goals.
+
+\subsubsection{trn, GNUS, etc}
+
+These are the standard programs used by most Usenet readers. They allow
+subscription to newsgroups, and threads are explicitly represented. Typically a
+user will be shown a list of all the threads from a group, and the user can
+select any number to be read. The only filtering technique provided is kill
+files. There is primative support for the automated creation of kill files
+(i.e. a user may ask to have the Subject line from an article they are reading
+deposited in their kill file). There is no support for signalling articles as
+especially interesting, nor is there any kind of collaboration support.
+
+\subsubsection{strn}
+
+strn stands for ``Scan Threaded Read News'', and it is an enhanced version of
+trn. It adds the concept of virtual newsgroups which are categorizations of
+newsgroups by certain search criteria, and assigning `scores' to articles by
+patterns (similar to URN's weighting functions). It's scores can only be based
+on the header lines of an article, and they must be created manually. It also
+lacks any collaboration support.
+
+\subsubsection{INFOSCOPE}
+
+[Info about INFOSCOPE here]
+
+\subsubsection{Tapestry}
+
+[Info about Tapestry here]
+
+\section{EXPERIENCES WITH URN}
+
+%%%   (This section presents the experimental design and results from the URN
+%%%   usage.)
+
+Our experience with URN was focused on a two week usage of the system with
+articles input from a single newsgroup. All six members of the CSDL group were
+asked to use URN on a regular basis to read the newsgroup "comp.software-eng".
+If they were previously reading this newsgroup with other newsreading software,
+they were asked to unsubscribe from the newsgroup for the duration of the
+usage.
+
+Over the course of the experiment X articles were input into the database,
+averaging N articles a day.
+
+During the experimental period, extensive data was collected on the subject's
+interaction with the system. The data was collected using EGRET's built-in
+metrics facilities [ref?]. Whenever a user performs an action, the system
+records what action occurred, who performed it, what entity it was performed
+on, and the time that it occurred. This datastream is then saved to the
+database at the end of each session.
+
+Of the events recorded, we will discuss two kinds: voting, and keyword
+manipulation. Each time a user voted on an article, URN recorded several pieces
+of information: the user's vote, the article voted on, the type of vote
+(interesting, ambivalent, uninteresting), the weight of article at that time,
+and the position of the article in the Selector at that time.
+
+From this information, we can analyze URN's ability to adaptively generate
+weighting functions. We calculated the average weight of an article voted as
+interesting as a function of time for each user (see Figure
+\ref{fig:weight-goodvote}). [Insert analysis of figure here] As expected, the
+weight started out at zero, and increased over time.
+
+\begin{figure}[tb]
+%%%   {\centerline{\psfig{figure=bogusplot.eps}}}
+  \caption{Average weight of an article voted interesting vs. time}
+  \label{fig:weight-goodvote}
+\end{figure}
+
+\begin{figure}[tb]
+%%%   {\centerline{\psfig{figure=bogusplot.eps}}}
+  \caption{Average weight of an article voted uninteresting vs. time}
+  \label{fig:weight-badvote}
+\end{figure}
+
+Keyword manipulation metrics were also recorded. Whenever a user chose to add
+or delete a keyword, the article and keyword in question were recorded.
+
+[Patterns to look for: density of keyword additions over time, does the first
+person to use URN each day do most of the keyword additions for that day?, do
+people delete each other's keywords?, how often are the keywords for an article
+changed after some people have voted on it?]
+
+Several limitations were found with the voting system implemented in URN.  One
+problem that surfaced was the small of range of possible votes users could
+make. Often when using the system, users wished that they could indicate a
+stronger preference than the binary good or bad. Research in psychology
+suggests that subjects can give meaningful feedback with up to a 7 point rating
+scale [ref], which could easily be implemented in a future version of URN.
+
+Another problem faced constantly in URN was the question of an article's
+quality versus its category. The keywords URN records can, in general, only
+specify what category the article belongs to (except for the author's name,
+which is recorded as a keyword). Since the keywords can only indicate an
+article's category, URN's weighting functions can only rank an article based on
+its category, not its quality. However, when asked to vote on an article, users
+are taking into consideration both the category and the quality of a particular
+article. For example, one user read an article which was an appropriate,
+high-quality response to a posting wholey unrelated to the subject of software
+engineering. The user was faced with a conundrum: should he vote on the article
+as uninteresting and thereby assign an unfavorable weight to the author of a
+high-quality article, or should he vote on the article as interesting and risk
+seeing more articles on the topic which is completely uninteresting him? The
+opposite situation also occurs when low-quality posts are made on high-interest
+subjects.  Clearly some seperate means of recording the quality and the
+category of an article must be made. See section \ref{sec:conclusion}
+
+Despite these problems, weighting functions were created, and found to be
+useful.
+
+[Include indication of user satisfaction through brief post-usage
+questionaire]
+
+\section{CONCLUSIONS AND FUTURE DIRECTIONS}
+\label{sec:conclusion}
+
+%%%   (This section presents just what it says.  The CSCW paper will probably
+%%%   only allow this to be a paragraph or two.  The JMIS paper can go on for a
+%%%   few pages.)
+
+[List of neat stuff that can be added to URN
+
+Add linking of orphans into their appropriate place by parsing Body and looking
+for message-IDs.
+
+Allow queries of the database for a keyword. Should generate a "Query Selector"
+that shows all the articles that contain that keyword.
+
+Allow users to create a WF for themself on the fly.
+
+Show new users a list of all keywords in the database, let them select one
+or more, and generate some initial WF from that list.
+
+Allow users to link orphans into threads manually.
+
+Allow users to delete articles that are bogus.
+
+Allow a user to recommend an article to others.
+
+Create collaboratively selected archive of interesting articles]
+
+\section{ACKNOWLEDGMENTS}
+
+We would like to thank the other members of Collaborative Software Development
+Lab: Rosemary Andrada, Robert Brewer, Carleton Moore, and Dadong Wan for their
+assistance in preparing this manuscript as well as in the development of
+Egret\cite{csdl-92-01}.
+
+\bibliography{/group/csdl/bib/csdl-trs}
+%\bibliography{csrs}
+\bibliographystyle{plain}
+
+\end{document}

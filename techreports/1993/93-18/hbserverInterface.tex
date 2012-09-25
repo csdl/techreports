@@ -1,0 +1,1021 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% hbserverInterface.tex -- 
+%% RCS:            : $Id: hbserverInterface.tex,v 1.20 1995/01/17 20:21:45 cmoore Exp $
+%% Author          : Carleton Moore
+%% Created On      : Tue Aug 31 10:28:14 1993
+%% Last Modified By: Carleton Moore
+%% Last Modified On: Tue Jan 17 10:21:08 1995
+%% Status          : Unknown
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1993 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+%% History
+%% 31-Aug-1993		Carleton Moore	
+%%    
+
+\documentstyle [12pt,/group/csdl/tex/definemargins]{article}
+      % Unix
+% \documentstyle [12pt,definemargins]{article}            % Macintosh
+\input{/home/3/dxw/c/tex/psfig}
+
+\begin{document}
+
+\title{HBS Interface} 
+\author {Cam Moore, Rosemary Andrada\\
+Collaborative Software Development Laboratory\\ 
+Department of Information and Computer Sciences\\
+University of Hawaii\\
+Honolulu, HI 96822\\
+(808) 956-3489\\
+CSDL-TR-93-18}
+
+\maketitle
+
+\tableofcontents
+
+\newpage 
+\section{Motivation}
+\label{sec:motivation}
+
+This interface document is intended to aid in our understanding of the
+relationship between the hyperbase server (HBS) and the client program
+Egret Client System (ECS).  It is to act as the base for discussing
+improvements to HBS.  This document is broken up into several sections.
+The first gives an overview of HBS.  Then we discuss how to connect to HBS
+followed by information about operations available in version 3.2.4.  The
+event mechanism is explained.  Then we present tables on all possible
+function return values, node field values and operation numbers. We end
+with some proposed changes.
+
+\section{Overview of the Hyperbase Server}
+\label{sec:overview}
+HBS is a multiuser, database server for HyperText applications.  It manages
+the nodes and links of the HyperText artifact.  HBS provides a small set of
+generic operations.  Clients can use these generic operations for their own
+HyperText applications.  The small set of operations also reduces the
+bottleneck at the server.
+
+We have significantly expanded the original set of operations provided by
+Wiil et al \cite{Wiil90}.  We have added eighteen new operations.  Many of
+them are Egret specific operations.  Section \ref{sec:operations} describes
+all of the operations available from HBS.
+\newpage
+\section{Connecting to HBS}
+\label{sec:connecting}
+
+The HBS connects to new clients through a TCP/IP socket, a `unique socket'
+whose default value is 10008.  The request to connect is made by calling
+the Unix system call connect().  The HBS sends three, four-byte integers
+through the unique socket.  These numbers are necessary to establish more
+pipes for specific types of communication.  Herein, these pipes will be
+referred to as the server's write, read and event sockets.  After sending
+each four-byte integer the server waits for the client to connect on each
+socket.  The first four-byte integer is the server's write socket.
+Information that the HBS wants to send to the client will be sent through
+this socket.  The second four-byte integer is the HBS's read socket.  All
+requests and information must be sent through this socket.  The third
+four-byte integer is the event socket.  Event information is sent out by
+the HBS on this socket.  Once these three sockets are set up the HBS reads
+in the length of the user's name and then the name itself.  The user's name
+must be sent on the HBS's read socket and the user's name must end with a
+`null' character \footnote{Note the only time a string must be terminated
+with a `null' is when that string is the user's name.  All user names in
+HBS are `null' terminated.}.  Next it reads the length of the message to be
+sent with the event (a four-byte integer) from the read socket.  Next it
+reads that many characters from the read socket.  
+
+When a client connects to HBS, HBS will queue all requests from all other
+connected clients except the client with the name ``Gagent''.  this is done
+to ensure the clients get the correct global state in Egret.  Once the
+client has the correct global state they must send the connected op
+
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/HB_Connect1.eps,width=2.25in}}
+  \caption{{\bf Packet Sent Out by HBS Connect}}
+  \label{fig:hb_connect1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/HB_Connect2.eps,width=2.25in}}
+  \caption{{\bf Packet Expected by HBS Connect}}
+  \label{fig:hb_connect2}
+\end{figure}
+
+
+\newpage
+\section{Available Operations: ver 3.0}
+\label{sec:operations}
+
+\subsection{Read}
+
+This operation reads the specified key value of a given entity number.  If
+successful, it returns the key value through its write socket.  
+
+The HBS reads the operation READ (the four-byte integer 1) from its read
+socket.  Next it reads the entity number (a four-byte integer) from its
+read socket.  Next it reads the key number (a four-byte integer).  
+Next it reads the length of the message to be sent with the event (a
+four-byte integer).  Next it reads that many characters from the read
+socket.  The READ operation then sends out the return value (a four-byte
+integer) on the HBS's write socket.  Then if the return value is equal to
+0(OK) or 351(Locked by other), it sends the length of the data (a four-byte
+integer) to its write socket.  Next it sends that many characters to its
+write socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/read1.eps,width=4.5in}}
+  \caption{{\bf Packet Expected by Read}}
+  \label{fig:read1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/read2.eps,width=3.0in}}
+  \caption{{\bf Packet Sent Out by Read}}
+  \label{fig:read2}
+\end{figure}
+
+
+\newpage
+\subsection{Write}
+
+This operation writes information to a specific key of a given entity
+number.  
+
+The HBS reads the operation WRITE (the four-byte integer 2) from its read
+socket.  Next it reads the entity number (a four-byte integer) from its
+read socket.  Next it reads the key number (a four-byte integer).  Next it
+reads from the read socket the length of the data to be written in the node
+(a four-byte integer).  Next it reads that many characters from the read
+socket.  Next it reads the length of the message to be sent with the
+event (a four-byte integer).  Next it reads that many characters from the
+read socket.  The WRITE operation then sends out the return value (a
+four-byte integer) on the HBS's write socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/write1.eps,width=4.5in}}
+  \caption{{\bf Packet Expected by Write}}
+  \label{fig:write1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/write2.eps,width=1.25in}}
+  \caption{{\bf Packet Returned by Write}}
+  \label{fig:write2}
+\end{figure}
+
+
+\newpage
+\subsection{Create Node}
+
+This operation creates a new node.  If successful, it returns the ID
+number of the newly created node.  These node IDs are always even numbered
+and are reused after deletion.  
+
+The HBS reads the operation CREATE NODE (the four-byte integer 5) from its
+read socket.  Next it reads the length of the message to be sent with
+the event (a four-byte integer).  Next it reads that many characters from
+the read socket.  The CREATE NODE operation then sends out the return
+value (a four-byte integer) on the HBS's write socket.  If the return value
+is equal to 0 it sends the new entity number (a four-byte integer) to its
+write socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/createnode1.eps,width=3.0in}}
+  \caption{{\bf Packet Expected by Create Node}}
+  \label{fig:CreateNode1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/createnode2.eps,width=1.5in}}
+  \caption{{\bf Packet Sent Out by CreateNode}}
+  \label{fig:CreateNode2}
+\end{figure}
+
+\newpage
+\subsection{Delete}
+
+This operation deletes the given entity (node or link).  Deletion will fail
+for nodes if it is linked with another node.  Deletion will fail for links
+if its `From' entity still points to it.  This operation ignores the fact that a
+node or link may be subscribed to using the event mechanism or that a client
+may own a lock on it.  
+
+The HBS reads the operation DELETE (the four-byte integer 6) from its read
+socket.  Next it reads the entity number (a four-byte integer) from its
+read socket.  Next it reads the length of the message to be sent with
+the event (a four-byte integer).  Next it reads that many characters from
+the read socket.  The DELETE operation then sends out the return value
+(a four-byte integer) on the HBS's write socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/delete1.eps,width=3.75in}}
+  \caption{{\bf Packet Expected by Delete}}
+  \label{fig:Delete1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/write2.eps,width=1.25in}}
+  \caption{{\bf Packet Returned by Delete}}
+  \label{fig:Delete2}
+\end{figure}
+
+\newpage
+\subsection{Link}
+
+This operation is a remnant from the original hyperbase.  A more complete
+version will be available in HBS 2.1.x.  This operation will do one of two
+things.  First, if the `To' entity number is a node, then a link will be
+created and the ID number of the newly created link will be returned.  Note
+that this link points to the given node, but no node points to this link
+yet.  To establish this connection, one would need to call this operation
+again in the following context.  If the `From' entity number is a node and
+the `To' entity number is a link, then this operation establishes a
+connection between the two.  That is, the node has as one of its outgoing
+links the given existent link.
+
+The HBS reads the operation LINK (the four-byte integer 7) from its read
+socket.  Next it reads the `From' entity number (a four-byte integer) from
+its read socket.  Next it reads the `To' entity number (a four-byte
+integer) from its read socket.  Next it reads the length of the
+message to be sent with the event (a four-byte integer).  Next it reads
+that many characters from the read socket.  The LINK operation then
+sends out the return value (a four-byte integer) on the HBS's write socket.
+Then if the return value is equal to 0 it sends the entity number of `From'
+entity.  If the `To' entity is a {\bf Node} then a new {\bf Link} is
+created and the {\bf Link's} entity number, which is always odd, is
+returned.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/link1.eps,width=4.5in}}
+  \caption{{\bf Packet Expected by Link}}
+  \label{fig:Link1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/link2.eps,width=1.5in}}
+  \caption{{\bf Packet Sent Out by Link, If a new Link is created}}
+  \label{fig:Link2}
+\end{figure}
+
+\newpage
+\subsection{Move Link}
+
+This operation changes the destination node for an existing link.  
+
+The HBS reads the operation MOVE LINK (the four-byte integer 8) from its
+read socket.  Next it reads the {\bf Link} number (a four-byte integer)
+from its read socket.  Next it reads the `To' {\bf Node} number (a
+four-byte integer) from its read socket.  Next it reads the length of
+the message to be sent with the event (a four-byte integer).  Next it reads
+that many characters from the read socket.  The MOVE LINK operation then
+sends out the return value (a four-byte integer) on the HBS's write socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/movelink1.eps,width=4.5in}}
+  \caption{{\bf Packet Expected by MoveLink}}
+  \label{fig:MoveLink1}
+\end{figure}
+
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/write2.eps,width=1.25in}}
+  \caption{{\bf Packet Returned by MoveLink}}
+  \label{fig:MoveLink2}
+\end{figure}
+
+\newpage
+\subsection{Remove Link}
+
+This operation destroys the conceptual connection between a given node and
+one of its outgoing links.  Note that no nodes or links are deleted.  Use
+Delete for deleting nodes and links.  
+
+The HBS reads the operation REMOVE LINK (the four-byte integer 9) from its
+read socket.  Next it reads the {\bf Node} number (a four-byte integer)
+from its read socket.  Next it reads the {\bf Link} number (a four-byte
+integer) from its read socket.  Next it reads the length of the
+message to be sent with the event (a four-byte integer).  Next it reads
+that many characters from the read socket.  The REMOVE LINK operation
+then sends out the return value (a four-byte integer) on the HBS's write
+socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/removelink1.eps,width=4.5in}}
+  \caption{{\bf Packet Expected by ReMoveLink}}
+  \label{fig:ReMoveLink1}
+\end{figure}
+
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/write2.eps,width=1.25in}}
+  \caption{{\bf Packet Returned by RemoveLink}}
+  \label{fig:ReMoveLink2}
+\end{figure}
+
+\newpage
+\subsection{Event}
+
+This operation allows the client to subscribe to a particular event
+involving an entity and the operation on that entity at a given key.  Each
+combination of an event must be subscribed to separately.  However, it is
+possible to subscribe to mass entities, operations or keys using the `ALL'
+code represented by the number 0.  
+
+The HBS reads the operation EVENT (the four-byte integer 10) from its read
+socket.  Next it reads the entity number (a four-byte integer) from its
+read socket.  Next it reads the operation number (a four-byte integer).
+Next it reads the key number (an integer).  Next it reads the length
+of the message to be sent with the event (a four-byte integer).  Next it
+reads that many characters from the read socket.  The EVENT operation
+then sends out the return value (a four-byte integer) on the HBS's write
+socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/event1.eps,width=5.25in}}
+  \caption{{\bf Packet Expected by Event}}
+  \label{fig:Event1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/write2.eps,width=1.25in}}
+  \caption{{\bf Packet Returned by Event}}
+  \label{fig:Event2}
+\end{figure}
+
+\newpage
+\subsection{UnEvent}
+
+This operation allows the client to unsubscribe himself from a particular
+event involving an entity and the operation on that entity at a given key.
+The one restriction here is that once a client subscribes to all nodes for
+any combination of operation or key, he can only unsubscribe himself from
+all nodes.  Unsubscribing in this fashion will not cause an error.  It will
+simply be ignored.  
+
+The HBS reads the operation UNEVENT (the four-byte integer 11) from its
+read socket.  Next it reads the entity number (a four-byte integer) from
+its read socket.  Next it reads the operation number (a four-byte integer).
+Next it reads the key number (an integer).  Next it reads the length
+of the message to be sent with the event (a four-byte integer).  Next it
+reads that many characters from the read socket.  The UNEVENT operation
+then sends out the return value (a four-byte integer) on the HBS's write
+socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/unevent1.eps,width=5.25in}}
+  \caption{{\bf Packet Expected by UnEvent}}
+  \label{fig:UnEvent1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/write2.eps,width=1.25in}}
+  \caption{{\bf Packet Returned by UnEvent}}
+  \label{fig:UnEvent2}
+\end{figure}
+
+\newpage
+\subsection{Show Event}
+
+This operation displays a list of clients subscribing to a particular event
+involving an entity and the operation on that entity at a given key.  
+
+The HBS reads the operation SHOW EVENT (the four-byte integer 12) from its
+read socket.  Next it reads the entity number (a four-byte integer) from
+its read socket.  Next it reads the operation number (a four-byte integer).
+Next it reads the key number (an integer).  Next it reads the length
+of the message to be sent with the event (a four-byte integer).  Next it
+reads that many characters from the read socket.  The SHOW EVENT
+operation then sends out the return value (an integer) on the HBS's write
+socket.  Then if the return value is equal to 0 it sends the length of the
+string containing a list of users subscribed to the event (a four-byte
+integer).  Next it sends that many characters to the write socket.  Note
+that the string contains a list of one or more names delimited by a newline
+character.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/showevent1.eps,width=5.25in}}
+  \caption{{\bf Packet Expected by ShowEvent}}
+  \label{fig:ShowEvent1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/read2.eps,width=3.0in}}
+  \caption{{\bf Packet Sent Out by ShowEvent}}
+  \label{fig:ShowEvent2}
+\end{figure}
+
+
+\newpage
+\subsection{Lock}
+
+This operation allows the client to lock any writable key at the given
+entity.  Once a client obtains a lock, no other client may perform the
+write operation on the locked key.  
+
+The HBS reads the operation LOCK (the four-byte integer 13) from its read
+socket.  Next it reads the entity number (a four-byte integer) from its
+read socket.  Next it reads the key number (a four-byte integer).  
+Next it reads the length of the message to be sent with the event (a
+four-byte integer).  Next it reads that many characters from the read
+socket.  The LOCK operation then sends out the return value (a four-byte
+integer) on the HBS's write socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/lock1.eps,width=5.25in}}
+  \caption{{\bf Packet Expected by Lock}}
+  \label{fig:Lock1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/write2.eps,width=1.25in}}
+  \caption{{\bf Packet Returned by Lock}}
+  \label{fig:Lock2}
+\end{figure}
+
+\newpage
+\subsection{UnLock}
+
+This operation allows the client to unlock a particular key at the given
+entity.  
+
+The HBS reads the operation UNLOCK (the four-byte integer 14) from its read
+socket.  Next it reads the entity number (a four-byte integer) from its
+read socket.  Next it reads the key number (a four-byte integer).  Next it
+reads the length of the message to be sent with the event (a 
+four-byte integer).  Next it reads that many characters from the read
+socket.  The UNLOCK operation then sends out the return value (a
+four-byte integer) on the HBS's write socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/unlock1.eps,width=5.25in}}
+  \caption{{\bf Packet Expected by UnLock}}
+  \label{fig:UnLock1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/write2.eps,width=1.25in}}
+  \caption{{\bf Packet Returned by UnLock}}
+  \label{fig:UnLock2}
+\end{figure}
+
+
+\newpage
+\subsection{Show Lock}
+
+This operation displays the client that currently holds a lock on a
+particular key at a given entity.  
+
+The HBS reads the operation SHOW LOCK (the four-byte integer 15) from its
+read socket.  Next it reads the entity number (a four-byte integer) from
+its read socket.  Next it reads the key number (a four-byte integer).  Next
+it reads the length of the message to be sent with the event (a four-byte
+integer).  Next it reads that many characters from the read socket.  The
+SHOW LOCK operation then sends out the return value (a four-byte integer)
+on the HBS's write socket.  Then it sends the length of the user's name or
+an error message (a four-byte integer) to the write socket.  Next it sends
+that many characters to the write socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/showlock1.eps,width=5.25in}}
+  \caption{{\bf Packet Expected by ShowLock}}
+  \label{fig:ShowLock1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/read2.eps,width=2.25in}}
+  \caption{{\bf Packet Sent Out by ShowLock}}
+  \label{fig:ShowLock2}
+\end{figure}
+
+
+\newpage
+\subsection{Disconnect}
+
+This operation disconnects the client from the server process.  In doing so,
+the client is automatically unsubscribed from all events and all the client's
+locks are released.  
+
+The HBS reads the operation DISCONNECT (the four-byte integer 17) from its
+read socket.  Next it reads the length of the message to be sent with
+the event (a four-byte integer).  Next it reads that many characters from
+the read socket.  The DISCONNECT operation then sends out the return
+value (a four-byte integer) on the HBS's write socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/disconnect1.eps,width=3.0in}}
+  \caption{{\bf Packet Expected by Disconnect}}
+  \label{fig:Disconnect1}
+\end{figure}
+
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/write2.eps,width=1.25in}}
+  \caption{{\bf Packet Returned by Disconnect}}
+  \label{fig:Disconnect2}
+\end{figure}
+
+
+\newpage
+\subsection{Browse}
+
+This operation allows the client to obtain a list of all node or link IDs
+currently in the database.  The client specifies the node type (data or
+link) and a list of nodes or links is returned respectively.  
+
+The HBS reads the operation BROWSE (the four-byte integer 18) from its read
+socket.  Next it reads the type of entity (a four-byte integer, 0 for {\bf
+Node}, 1 for {\bf Link}).  Next it reads the length of the message to
+be sent with the event (a four-byte integer).  Next it reads that many
+characters from the read socket.  The BROWSE operation then sends out
+the return value (a four-byte integer) on the HBS's write socket.  Then if
+the return value is equal to 0 it sends the length of the string of
+entities (a four-byte integer).  Next it sends that many four-byte integers
+followed by a four-byte zero to the write socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/browse1.eps,width=3.75in}}
+  \caption{{\bf Packet Expected by Browse}}
+  \label{fig:Browse1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/browse2.eps,width=3.0in}}
+  \caption{{\bf Packet Sent Out by Browse}}
+  \label{fig:Browse2}
+\end{figure}
+
+
+\newpage
+\subsection{Shut Down Server}
+
+This operation allows a client to shut down the server.  However, the
+server will only shut down if the requesting client is the last client
+connected to the server or send an error code if unsuccessful.  
+
+The HBS reads the operation SHUT DOWN (the four-byte integer 19) from its
+read socket.  The SHUT DOWN operation then sends out the return value on
+the HBS's write socket.
+
+\begin{itemize}
+\item{This operation is a new addition of version 2.0}
+\end{itemize}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/shutdown1.eps,width=1.25in}}
+  \caption{{\bf Packet Expected by ShutDown}}
+  \label{fig:ShutDown1}
+\end{figure}
+
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/write2.eps,width=1.25in}}
+  \caption{{\bf Packet Returned by ShutDown}}
+  \label{fig:ShutDown2}
+\end{figure}
+
+\newpage
+\subsection{Show Users}
+
+This operation returns the number of clients currently connected followed
+by a list of names of those clients.  
+
+The HBS reads the operation SHOW USERS (the four-byte integer 20) from its
+read socket. Next it reads the length of the message to be sent with
+the event (a four-byte integer).  Next it reads that many characters from
+the read socket.  The SHOW USERS operation then sends out the return
+value (a four-byte integer) on the HBS's write socket.  Next HBS sends the
+user count (a four-byte integer) to its write socket.  For each user, it
+sends the length of the user name (a four-byte integer) and that many
+characters to its write socket.
+
+\begin{itemize}
+\item{This operation is a new addition of version 2.0}
+\end{itemize}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/showusers1.eps,width=3.0in}}
+  \caption{{\bf Packet Expected by ShowUsers}}
+  \label{fig:ShowUsers1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/showusers2.eps,width=4.5in}}
+  \caption{{\bf Packet Sent Out by ShowUsers}}
+  \label{fig:ShowUsers2}
+\end{figure}
+
+\newpage
+\subsection{Append}
+
+This operation appends text to the data field in a given entity.  
+
+The HBS reads the operation APPEND (the four-byte integer 21) from its read
+socket.  Next it reads the entity number (a four-byte integer) from its
+read socket.  Next it reads from the read socket the length of the data to
+be appended to the node (a four-byte integer).  Next it reads that many
+characters from the read socket.  Next it reads the length of the
+message to be sent with the event (a four-byte integer).  Next it reads
+that many characters from the read socket.  The APPEND operation then
+sends out the return value (a four-byte integer) on the HBS's write socket.
+
+\begin{itemize}
+\item{This operation is a new addition of version 2.0}
+\end{itemize}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/append1.eps,width=3.75in}}
+  \caption{{\bf Packet Expected by Append}}
+  \label{fig:append1}
+\end{figure}
+
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/write2.eps,width=1.25in}}
+  \caption{{\bf Packet Returned by Append}}
+  \label{fig:Append2}
+\end{figure}
+
+\newpage
+\subsection{Create Node with Name}
+
+This operation creates a new node and writes a given name to the name
+field.  If successful, it returns the even-numbered ID of the newly
+created node.  
+
+The HBS reads the operation CREATE\_NODE\_W\_NAME (the four-byte integer
+24) from its read socket. Next it reads the length of the name (a four-byte
+integer) to be written to the name field.  Then it reads in that many
+characters from the read socket.  Next it reads the length of the
+message to be sent with the event (a four-byte integer).  Next it read that
+many characters from the read socket.  The CREATE\_NODE\_W\_NAME
+operation then sends out the return value (a four-byte integer) on the
+HBS's write socket.  If the return value is equal to 0 it sends the new
+entity number (a four-byte integer) to its write socket.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/createnodewithname1.eps,width=5.25in}}
+  \caption{{\bf Packet Expected by CreateNodeWithName}}
+  \label{fig:CreateNodeWithName1}
+\end{figure}
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/createnode2.eps,width=1.5in}}
+  \caption{{\bf Packet Returned by CreateNodeWithName}}
+  \label{fig:CreateNodeWithName2}
+\end{figure}
+
+
+\newpage
+\subsection{Create Link with Name}
+
+This operation creates a new link, writes a given name to its name field
+and establishes a connection with its `From' node and its `To' node.  If
+successful, it returns the odd-numbered ID of the newly created link.  
+
+The HBS reads the operation CREATE\_LINK\_W\_NAME (the four-byte integer
+25) from its read socket.  Next it reads the `From' entity number (a
+four-byte integer) from its read socket.  Next it reads the `To' entity
+number (a four-byte integer) from its read socket. Next it reads the length
+of the name (a four-byte integer) to be written to the name field.  Next it
+reads that many characters from the read socket.  Next it reads the
+length of the message to be sent with the event (a four-byte integer).
+Next it reads that many characters from the read socket.  The
+CREATE\_LINK\_W\_\_NAME operation then sends out the return value (a
+four-byte integer) on the HBS's write socket.  Then if the return value is
+equal to 0 it sends the entity number of the newly created link.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/completelink1.eps,width=4.5in}}
+  \caption{{\bf Packet Expected by Create Link with Name}}
+  \label{fig:completelink1}
+\end{figure}
+
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/link2.eps,width=1.5in}}
+  \caption{{\bf Packet Returned by Create Link with Name}}
+  \label{fig:completelink2}
+\end{figure}
+
+\subsection{Message}
+
+This operation allows a client to send a message to all clients that have
+subscribed to the events for the particular node and key.
+
+The HBS reads the operation MESSAGE (the four-byte integer 26) from its
+read socket.  Next it reads the entity number (a four-byte integer), the
+key (a four-byte integer), the length of the message (a four-byte integer)
+and finally message length bytes (the message) from the read socket.  The
+HBS creates a MESSAGE event and sends it to all clients that have
+subscribed to events for the given node and key. The HBS returns OK through
+the write socket.
+
+\subsection{Connected}
+
+This operation tells the HBS to listen to other clients and end the special
+connect mode.
+
+The HBS reads the operation CONNECTED (the four-byte integer 27) from the
+read socket.  It then reads in the length of the message (a four-byte
+integer) and that many bytes (the message) from the read socket.  The HBS
+returns OK on the write socket.
+
+\subsection{Create Node with Name and Data}
+
+This operation creates a new node, writes a given name to the name field
+and writes the given data to the data field.  If successful, it returns the
+even-numbered ID of the newly created node.
+
+The HBS reads the operation CREATE\_NAME\_DATA (the four-byte integer 28)
+from its read socket. Next it reads the length of the name (a four-byte
+integer) to be written to the name field.  Then it reads in that many
+characters from the read socket.  Next it reads the length of the data to
+be placed in the node (a four-byte integer).  Next it read that many
+characters from the read socket.  Next it reads the length of the message
+to be sent with the event (a four-byte integer).  Next it read that many
+characters from the read socket.  The CREATE\_NAME\_DATA operation then
+sends out the return value (a four-byte integer) on the HBS's write socket.
+If the return value is equal to 0 it sends the new entity number (a
+four-byte integer) to its write socket.
+
+\subsection{Create Node with Name, Data and Lock}
+
+This operation creates a new node, writes a given name to the name
+field, writes the given data to the data field and acquires the lock for
+the data field.  If successful, it returns the even-numbered ID of the newly
+created node.  
+
+The HBS reads the operation CREATE\_NAME\_DATA\_LOCK (the four-byte integer
+29) from its read socket. Next it reads the length of the name (a four-byte
+integer) to be written to the name field.  Then it reads in that many
+characters from the read socket.  Next it reads the length of the data to
+be placed in the node (a four-byte integer).  Next it read that many
+characters from the read socket.  Next it reads the length of the message
+to be sent with the event (a four-byte integer).  Next it read that many
+characters from the read socket.  The CREATE\_NAME\_DATA\_LOCK operation
+then sends out the return value (a four-byte integer) on the HBS's write
+socket.  It acquires the lock on the data field.  If the return value is
+equal to 0 it sends the new entity number (a four-byte integer) to its
+write socket.
+
+\subsection{Delete Link}
+
+This operation deletes a link and removes the reference to that link from
+the data node that points to the link.
+
+The HBS reads in the operation DELETE\_LINK (the four-byte integer 31) from
+the read socket.  It then reads in the source node number (a four-byte
+integer), the link node number (a four-byte integer), the length of the
+message (a four-byte integer), then message length bytes (the message) from
+the read socket.  The HBS sends out the return value (a four-byte integer)
+out the write socket.
+
+
+\subsection{Create a Link to a New Node}
+
+This operation creates a new node, with the supplied name and data, then
+creates a new link, with the supplied name, to that new node from the
+supplied source node.
+
+The HBS reads in the operation LINK\_NEW\_NODE (the four-byte integer 32)
+from the read socket.  It then read in the source node number (a four-byte
+integer), the length of the new node's name (a four-byte integer), that
+many bytes (the new node's name), the length of the new link's name (a
+four-byte integer), that many bytes (the new link's name), the length of
+the data for the new node (a four-byte integer), that many bytes (the new
+node's data), the length of the message (a four-byte integer), then that
+many bytes (the message) all from the read socket. The HBS sends out the
+return value (a four-byte integer) out the write socket.  If the return
+value is zero (every thing was successful) then the HBS sends out the new
+link ID (a four-byte integer) and the new node ID (a four-byte integer) to
+the write socket.
+
+
+\subsection{Create a Link to a New Locked Node}
+
+This operation creates a new node, with the supplied name and data, then
+creates a new link, with the supplied name, to that new node from the
+supplied source node, then it locks the new node.
+
+The HBS reads in the operation LINK\_NEW\_NODE (the four-byte integer 33)
+from the read socket.  It then read in the source node number (a four-byte
+integer), the length of the new node's name (a four-byte integer), that
+many bytes (the new node's name), the length of the new link's name (a
+four-byte integer), that many bytes (the new link's name), the length of
+the data for the new node (a four-byte integer), that many bytes (the new
+node's data), the length of the message (a four-byte integer), then that
+many bytes (the message) all from the read socket. The HBS sends out the
+return value (a four-byte integer) out the write socket.  If the return
+value is zero (every thing was successful) then the HBS sends out the new
+link ID (a four-byte integer) and the new node ID (a four-byte integer) to
+the write socket.
+
+\subsection{Write and Unlock the Node}
+
+This operation writes out to disk the field of the node determined by the
+key.  It then unlocks that field of the node.
+
+The HBS reads the operation WRITE\_UNLOCK (the four-byte integer 34) from
+its read socket.  Next it reads the entity number (a four-byte integer)
+from its read socket.  Next it reads the key number (a four-byte integer).
+Next it reads from the read socket the length of the data to be written in
+the node (a four-byte integer).  Next it reads that many characters from
+the read socket.  Next it reads the length of the message to be sent with
+the event (a four-byte integer).  Next it reads that many characters from
+the read socket.  The WRITE operation then sends out the return value (a
+four-byte integer) on the HBS's write socket.
+
+\newpage
+\section{Events}
+
+Once a client subscribes to Events, by using the EVENT operation, the HBS
+will automatically send the client events.  The HBS screens all activity in
+the Hyperbase and sends the client all events that the client has
+subscribed to.  The HBS sends the events to the event socket for that
+client.  The client then just has to read from the socket to get the event.
+If the HBS sends more than one event to the client, the events just form a
+queue in the socket.  The format of each event is as follows: the user's
+name (a `null' terminated string), the entity number on which the event
+occurred (a four-byte integer), the operation number (a four-byte integer),
+the key on which the operation occurred (a four-byte integer), the length of
+a message (a four-byte integer), the message from the user who performed
+the operation.
+
+
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Figures/event2.eps,width=4.5in}}
+  \caption{{\bf Event Packet sent out HBS}}
+  \label{fig:Event3}
+\end{figure}
+
+
+\section{Operations}
+Figure \ref{ops} list all possible Operations
+\small
+
+\begin{figure}[htpb]
+  \begin{center}
+    \begin{tabular} {|c|l|} \hline
+      \multicolumn{2}{|c|}{{\bf Operations}} \\ \hline {\em Operation
+      Number} & {Operation}\\  \hline \hline
+      0 & All Operations (for use with Lock/Event only)\\ \hline
+      1 & Read \\ \hline
+      2 & Write \\ \hline
+      3 & Data Node Read (Not fully implemented) \\ \hline
+      4 & Data Node Write (Not fully implemented) \\ \hline
+      5 & Create Node \\ \hline
+      6 & Delete \\ \hline
+      7 & Link \\ \hline
+      8 & Move Link \\ \hline
+      9 & Remove Link \\ \hline
+      10 & Subscribe to Events \\ \hline
+      11 & Unsubscribe from Events \\ \hline
+      12 & Show Event subscriptions \\ \hline
+      13 & Lock a Key(s) of a Node \\ \hline
+      14 & Unlock a Key(s) of a Node \\ \hline
+      15 & Show the locks on a Key(s) of a Node \\ \hline
+      16 & Connect to the Server \\ \hline
+      17 & Disconnect from the Server \\ \hline
+      18 & Browse the Nodes or Links \\ \hline
+      19 & Shut down the Server \\ \hline
+      20 & Show Users \\ \hline
+      21 & Append data to a Data Node \\ \hline
+      22 & Link Node Read (Not fully implemented) \\ \hline
+      23 & Link Node Write (Not fully implemented) \\ \hline
+      24 & Create Node With Name \\ \hline
+      25 & Create Link With Name \\ \hline
+      26 & Message \\ \hline
+      27 & Connected \\ \hline
+      28 & Create with Name and Data \\ \hline
+      29 & Create with Name, Data and Lock \\ \hline
+      30 & Abnomal Disconnect \\ \hline
+      31 & Delete Link \\ \hline
+      32 & Create Link to New Node \\ \hline
+      33 & Create Link to New Locked Node \\ \hline
+      34 & Write Contents and Unlock \\ \hline
+    \end{tabular}
+  \end{center}
+  \caption{\label{ops}Operations. }
+\end{figure}
+\normalsize
+
+\section{Key Values}
+
+Figure \ref{keyVal} list all possible key values
+\small
+
+\begin{figure}[htpb]
+  \begin{center}
+    \begin{tabular} {|c|l|} \hline
+      \multicolumn{2}{|c|}{{\bf Key Values}} \\ \hline {\em Key
+      Value} & {\em Meaning}\\  \hline 
+      0 & All Keys (for use with Lock/Event only) \\ \hline \hline
+      \multicolumn{2}{|c|}{{User Defined Keys for Data Nodes}} \\ \hline
+      1 & Geometry  \\ \hline
+      2 & Font  \\ \hline
+      3 & Node Last Modified Date  \\ \hline
+      4 & Node Last Modified By  \\ \hline
+      5 & Node Created Date  \\ \hline
+      6 & Node Created By  \\ \hline
+      7 & Node Name  \\ \hline
+      8 & Node Version  \\ \hline
+      9 & Node Reference Number  \\ \hline \hline
+      \multicolumn{2}{|c|}{{Server Defined Keys for Data Nodes}} \\ \hline
+      512 & All Data Node elements  \\ \hline
+      513 & Data Node Number  \\ \hline
+      514 & Data Node Data Size  \\ \hline
+      515 & Number of Links to the Data Node  \\ \hline
+      516 & Array of Links leaving the Data Node \\ \hline
+      517 & The Data stored in the Data Node \\ \hline \hline
+      \multicolumn{2}{|c|}{{User Defined Keys for Link Nodes}} \\ \hline
+      256 & Link Last Modified Date  \\ \hline
+      257 & Link Last Modified By  \\ \hline
+      258 & Link Created Date  \\ \hline
+      259 & Link Created By  \\ \hline
+      260 & Link Name  \\ \hline
+      261 & Link Reference Number  \\ \hline \hline
+      \multicolumn{2}{|c|}{{Server Defined Keys for Link Nodes}} \\ \hline
+      1024 & All Link Node elements \\ \hline
+      1025 & Link Node Number \\ \hline
+      1026 & Number of Data Nodes that point to the Link Node \\ \hline
+      1027 & The Data Node Number the Link points to \\ \hline
+    \end{tabular}
+  \end{center}
+  \caption{\label{keyVal}Possible Key Values. }
+\end{figure}
+\normalsize
+
+
+\section{Return Values}
+
+Figure \ref{returnVal} lists all possible return values.
+\small
+
+\begin{figure}[htpb]
+  \begin{center}
+    \begin{tabular} {|c|l|} \hline
+      \multicolumn{2}{|c|}{{\bf Return Values}} \\ \hline {\em Return
+      Value} & {\em Meaning}\\ \hline 
+      0 & Okay \\ \hline 
+      208 & Direct write not allowed \\ \hline 
+      207 & Link not found \\ \hline 
+      206 & Can't use data keys in link node \\ \hline 
+      205 & Can't use link keys in data node \\ \hline 
+      204 & Wrong arguments in call \\ \hline 
+      203 & Unable to open entity \\ \hline 
+      202 & Pointed entity not found \\ \hline 
+      201 & key not recognized \\ \hline
+      -201 & Could not open/close entity \\ \hline 
+      -202 & Entity not found \\ \hline 
+      -203 & Unable to write links \\ \hline 
+      -204 & There are still pointers to entity \\ \hline 
+      301 & No event \\ \hline 
+      302 & No send event \\ \hline 
+      350 & Locked \\ \hline 
+      351 & Locked by other \\ \hline 
+      352 & Not locked \\ \hline 
+      353 & Not all nodes \\ \hline 
+      356 & Invalid Key Number \\ \hline 
+      357 & Invalid Lock Key \\ \hline 
+      401 & HBS is already connected \\ \hline 
+      -402 & There is no machine by that name, gethostbyname failed \\
+      \hline 
+      -403 & The socket call failed, could not make a file descriptor \\
+      \hline 
+      -404 & Could not connect to the host with that port, or no more \\
+           & room for clients at server \\ \hline 
+      -405 & Can't disconnect from server \\ \hline 
+      -406 & fcntl() can't change readfd \\ \hline
+      -407 & The bind call failed \\ \hline 
+      -408 & The call getsockname failed \\ \hline 
+      -411 & There is no event in event buffer or an error \\ \hline 
+      -412 & Can't shut down server \\ \hline 
+      -502 & No such key or wrong key \\ 
+      -503 & \\ \hline 
+      -504 & No such operation \\ \hline 
+      -505 & No such type or wrong type \\ 
+      -507 & \\ \hline 
+      -506 & Already connected \\ \hline 
+      -508 & Not disconnected \\ \hline
+    \end{tabular}
+  \end{center}
+  \caption{\label{returnVal}Possible Return Values. }
+\end{figure}
+\normalsize
+
+
+\newpage
+\section{Proposed Changes}
+
+
+
+
+\bibliography{hbserverInterface}
+\bibliographystyle{plain}
+
+
+
+\end{document}

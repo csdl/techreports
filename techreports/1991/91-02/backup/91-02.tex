@@ -1,0 +1,1471 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 91-02.tex -- 
+%% Author          : Philip M Johnson
+%% Created On      : Thu Nov  7 09:52:47 1991
+%% Last Modified By: Philip Johnson
+%% Last Modified On: Tue Jun 30 12:18:53 1992
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentstyle [/home/13/csdl/tex/definemargins,
+                /home/13/csdl/tex/description,
+                     /home/13/csdl/tex/named-citations,
+                     /home/13/csdl/tex/psfig,
+                     /home/13/csdl/tex/lmacros]{report}  
+\begin{document}
+
+\newcommand{\STAR}{\mbox{$\ast$}}  %% the public delimiter symbol
+
+\vspace*{1in}
+\begin{center}
+  
+{\Huge\bf Egret 2.0 Design Specification}\foot{Support for this
+research was provided in part by the National Science Foundation
+Research Initiation Award CCR-9110861 and the University of Hawaii
+Research Council Seed Money Award R-91-867-F-728-B-270.}
+  
+\bigskip\par
+
+Collaborative Software Development Laboratory\\
+Department of Information and Computer Sciences\\
+University of Hawaii\\
+Honolulu, HI 96822\\
+(808) 956-3489\\
+{\tt johnson@uhics.ics.hawaii.edu}                  \medskip\par
+
+{\bf CSDL-TR-91-02}                                 \medskip\par
+
+Last Revised: \today                                \bigskip\par
+\end{center}
+
+\newpage
+\tableofcontents         
+\newpage
+
+\ls{1.2}
+\part{Design Background and Requirements}
+\chapter{Overview}
+\section{Introduction}
+
+This document is one component of the architectural and functional
+specification of Egret 2.0. It is a companion and introduction to the
+more detailed functional specification of the system maintained in two
+on-line collaborative databases, the DesignBase and the TestBase.
+Recent snapshots of these on-line databases appear in the Appendix to
+this document, though the on-line versions are considered the
+authorative source for specification information.
+
+Egret 2.0 is a framework for implementing exploratory collaborative
+hypertext applications \cite{csdl-91-03,csdl-92-01}.  Egret provides
+mechanisms for the integration of an underlying database server
+application process, and an intermediate, highly expressive
+exploratory type system, with a top-level editor and graphical display
+applications.  In doing so, it provides a language and environment for
+implementation of domain-specific collaborative systems, such as for
+research review \cite{csdl-92-03,csdl-92-05}, or code inspection
+\cite{csdl-92-04}.  This document contains little description of the
+research concepts and motivations for Egret 2.0. For this form of
+broad overview, we point the reader to any of the above references,
+although \cite{csdl-92-01} and \cite{csdl-92-03} are particularly good
+starting points.
+
+The next section of this document discusses architecture-level
+requirements for Egret 2.0.  The following two sections provide
+important background information about our notation and view of object
+orientation necessary to understanding the remainder of this document
+as well as the on-line class specifications.  Following these sections
+is an overview of the four major subsystems in Egret 2.0.  Appendices
+contain supplemental information about the system and some of its
+differences with respect to CoReView 1.2.
+
+\section{Architectural Requirements}
+
+This section briefly overviews some of the important requirements for 
+Egret 2.0 at the architectural level.  
+
+\subsection{Extensibility}  
+
+Egret 2.0 has a defined architecture, including specified
+responsibilities and a documented public interface for each primary
+subsystem.  Each of these subsystems is internally organized as a set
+of classes with public and private interfaces.  Egret 2.0 also defines
+naming conventions for program entities that simplify the
+identification and understanding of their behavior.
+
+One goal of this architectural structure is to facilitate migration of
+system functionality across different application processes.  For
+example, certain database functions that are now implemented in Emacs
+might migrate to the database server, if we find a better server
+platform.  Our current choices for editor, window interface, or
+graphical browser may change over time.  A second goal is to
+facilitate the the implementation of new applications, such as
+mechanisms for sophisticated impact analysis.  Clear specification of
+components and interfaces is required to meet these goals.
+
+\subsection{Verification} 
+
+A design goal for Egret 2.0 is completely automated regression
+testing: a suite of tests that can be run on the system to test
+whether or not major functionality is present and correct after making
+changes.  While setting up these tests will involve significant
+additional effort, the benefits will more than offset this investment.
+
+The design of Egret 2.0 supports this goal by providing a layered
+architecture as well as a strict separation between the Interface
+subsystem, where user interaction with the system occurs, and other
+subsystems, where the structure of the collaborative network is
+physically manipulated.  It should be possible to test most of Egret
+2.0 by ``simulating'' the Interface subsystem interactions
+programmatically.  The layered architecture supports incremental
+integration and well as unit testing.
+
+Regression testing is supported through the TestBase, an system for
+declaratively specifying test cases and expected results.  These tests
+can be run in background on a release of Egret and the results sent to
+a log file.
+
+\subsection{Information Replication and Recoverability}
+
+A fundamental architectural feature of Egret 2.0 is local replication,
+or caching, of globally maintained information.  Local caching
+improves performance but requires mechanisms to maintain consistency.
+Egret 2.0 addresses this problem by {\em recovery operations}. 
+
+Recovery operations are required from all classes that create or
+manipulate replicated information.  These operations ensure that that
+internal data structures corrupted by hardware or software crashes can
+be rebuilt.  
+
+
+\subsection{Support for Exploratory Groupwork}
+
+Support for exploratory groupwork in Egret 2.0 centers on its
+mechanism for defining structure, called the Exploratory
+Collaboration Type System (ECTS), and a process model called EXCON, for 
+Exploration-Consolidation Cycle.
+
+The EXCON model views exploratory collaboration as cycling between two
+modes: exploration and consolidation.  During exploration,
+collaborators are discovering new structural features of the domain
+and reifying these features into the structure of the artifact under
+construction.  During consolidation, collaborators compare and
+contrast the structural features they have individually discovered
+during exploration, and build consensual structures that embody the
+mutually agreed upon features.
+
+ECTS is designed to support these features of the
+exploration-consolidation cycle.  In ECTS, collaborators can define
+typed classes of nodes and links, and specify their internal
+structure.  Once defined, classes form templates from which
+collaborators create instances with common structure and behavior.
+
+While this aspect of ECTS is completely similar to conventional
+object-oriented database schema mechanisms, ECTS departs from this
+model in a singular way: while classes can be used to create instances
+with shared structure and behavior, instances are not constrained
+to the structure and behavior as defined by their parent class.
+Collaborators are free to modify instances by adding to, deleting, or
+modifying the properties of its internal structure.
+
+To support this process, ECTS also provides a structural variance tool
+that indicates, for a specific node or link class, the degree to which
+its instances depart from the class-level structure, and summarizes
+how that variance is expressed in terms of added fields, deleted
+fields, and changes to the properties of the class-level defined
+fields.  This information can be aggregated over the entire database
+to determine an overall measure of variance for the database.
+
+Beyond this static snapshot of structural uniformity, the variance
+tool also maintains historical information about this information.  In
+order to provide a useful representation of the design history, Egret
+2.0 provides the concept of layers.
+
+\section{Notational Conventions}
+
+\subsection{Identifier Syntax}
+
+Function and variable names in Egret 2.0 have a standard format.
+Each name must adhere to the following template:
+
+\small\begin{verbatim}
+<subsys-name><subsys-vis><class-name><class-vis><op-or-att-name>
+\end{verbatim}\normalsize
+
+\noindent where:
+\begin{itemize}
+  
+\item {\tt <subsys-name>} is a single character that identifies the
+  subsystem membership of the object (currently {\bf u} for the
+  utilities subsystem, {\bf i} for the interface subsystem, {\bf t}
+  for the type subsystem, and {\bf s} for the server subsystem.
+  
+\item {\tt <class-name>} is either the full class name or a nickname.
+  
+\item {\tt <subsys-vis>} and {\tt <class-vis>} are single characters
+  indicating the external visibility of the object. The character
+  \STAR\ indicates that the object is public, the character {\bf !}
+  indicates that the object is private, and the character {\bf @}
+  indicates that the object is a system administration function to be
+  manipulated only by distinguished users at special times (such as
+  database initialization, recovery, and so forth).  
+
+  
+\item {\tt <op-or-att-name>} is the actual name of the operation or
+  attribute.
+\end{itemize}
+
+For example, the function {\bf i\STAR cmd\STAR find-node} is the
+interface subsystem public operation {\sf find-node} from the class
+{\sf command}, which has the nickname {\bf cmd}.  Nicknames are used
+to shorten the total length of function names.  By prefixing
+operations with their class name, the operation's class membership is
+automatically documented, as well as allowing the same operation name
+to be defined for different classes (for example, {\bf node\STAR
+find-node}.)
+
+In this document, boldface font is used when referring to a specific Egret 
+operation or attribute, such as {\bf s\STAR hbserver!connect}.  Sans serif 
+font is used when referring to class names or operation names in general, 
+such as {\sf command} or {\sf delete}.  The typewriter font is used when
+referring to Emacs or Epoch functions, such as {\tt title}, or when 
+displaying sections of code that may include Egret and Emacs functions, such
+as:
+\small\begin{verbatim}
+(foobar (n!screen*name scrn) "New Screen")
+\end{verbatim}\normalsize
+
+
+\section{Object Orientation in Egret 2.0}
+
+The Egret 2.0 design is object-oriented.  However, ``object oriented''
+means very different things to different people.  This section
+clarifies our use of object orientation by describing the major
+entities in our design: classes, objects, attributes, operations, and
+collections.  It also describes how public and private interfaces for
+class attributes and operations are defined\foot{The mechanisms for 
+inheritance and visibility control do not attempt to extend the state
+of the art: inheritance is implemented ``manually'' and does not 
+provide for multiple inheritance as in CLOS, and visibility control is not as 
+sophisticated as, for example, the Precise Interface Control preprocessor
+for Ada. The goal here is to introduce a set of concepts for object
+orientation and visibility that provide the greatest benefit for the 
+lowest overhead.}.
+
+
+\subsection{Classes}  
+
+A {\em class}\/ is a collection of objects with related structure and
+behavior.  {\sf Node} and {\sf link} are obvious classes in Egret 2.0.
+Each class has associated with it a set of superclasses, a
+set of subclasses, a set of attributes, and a set of operations.  The
+design of Egret 2.0 is  neutral on the issue of single vs. 
+multiple inheritance, although no occurrences of multiple inheritance
+in the design currently exist.
+
+Classes frequently have constructor and destructor operations for the objects
+associated with them.  These operations are always called {\sf make}
+and {\sf delete}. If these operations are not specified, then the class is an 
+{\em abstract class}. Abstract classes exist to collect together related
+structure that is inherited by other classes that do have constructor
+and destructor operations.  For example, the {\sf button} class is an
+abstract class that is inherited by the {\sf field-label} and {\sf
+link-label} classes. No instances of buttons exist directly---only
+field-labels and link-labels.
+
+Classes are, in some sense, purely a design-level representation. No
+explicit Emacs Lisp support for defining classes exists.  The
+reification of classes in Emacs Lisp occurs purely through the use of
+naming conventions for functions and variables, and voluntary
+observance by programmers of the visibility constraints.  However, designing and 
+programming
+in an object oriented fashion will greatly ease understanding of the system architecture,
+as well as supporting migration to other languages providing direct support
+for these concepts.
+
+\subsection{Objects} 
+
+Classes are an organizational entity--what actually exists during
+execution are particular instances of classes, or {\em objects}.
+
+Each object has a unique identifier associated with it, and this
+unique identifier (or the object itself) is normally the first
+argument to the operations associated with a class.  This convention
+implements a simple kind of message passing behavior, where the first
+argument to a function call indicates the particular object that the
+message (the function) is sent to.  For example, the {\bf
+n\STAR node\STAR lock} operation takes a node-ID as its first argument, which
+can be interpreted as having the effect of sending a message to that
+particular node to lock itself.
+
+A rough design heuristic is that if an entity does not have a
+distinguishing unique ID, or if one is never needed to implement its
+behavior, then the entity should probably exist as a part of another
+class.  Similarly, deciding the primary home for an object operation
+can sometimes be resolved by considering the most appropriate first
+argument to it.
+
+\subsection{Attributes}  
+
+Each class instance has a set of characteristics, or {\em
+attributes}\/ associated with it.  For example, each screen has a
+geometry, color, name, and so forth.  These are attributes of the
+class.  If a class has an attribute defined for it, then there exists
+a function that returns the value of the attribute.  For example, {\bf
+n!screen\STAR name} returns the {\sf name} attribute for an instance of the
+class {\sf screen}.
+
+Attributes need not be ``static''.  For example, a reasonable
+attribute of the class {\sf node-buffer} is {\sf
+link-under-mouse}---an attribute that returns the link ID of the link
+label currently under the mouse cursor (or {\tt nil} if the mouse
+cursor is not currently over any link label).
+
+Attribute functions take a single argument, the object whose attribute
+value is to be retrieved.  This argument is either the object itself
+(for example, the Emacs screen object), or the unique ID of the object
+(for example, a node ID).
+
+Some attributes are {\em setable}.  This means that an operation
+corresponding to the attribute is defined to change its value. This
+operation is named by prefixing the attribute name with {\bf set-}.
+For example, if the {\bf n!screen\STAR name} attribute is setable,
+then the operation {\bf n!screen\STAR set-name} is defined to change
+the value of that operation.
+
+Not all attributes should be setable.  For example, it probably
+doesn't make sense to have the {\bf node-buffer\STAR link-under-mouse}
+attribute mentioned above be setable\foot{Although, you could
+conceivably argue for making that attribute setable as a way of
+warping the mouse cursor to a particular link label.  But we won't.}.
+
+Attributes can be private or public.  Public attributes are indicated
+notationally by the use of \STAR\ as the visibility token; {\bf !} as
+the visibility token indicates a private attribute.  If an attribute is
+private, then functions outside the implementation of the class should
+not access or set the attribute's value.  This, of course, is not
+enforced in Emacs Lisp, but is rather a way of helping programmers to 
+understand what parts of a subsystem are internal details and can thus
+be safely ignored.  If you find yourself as a class implementor needing 
+access to a private attribute of another class, you should publicize this
+observation immediately.  It may be the case that there is a public mechanism
+that you are aware of and should use instead.  Alternatively, it may be
+the case that the private attribute should be changed to public.
+
+It is common to have an attribute be publically accessable but only 
+privately setable.  To do this, define both the \STAR\ and {\bf !} 
+forms of the attribute, but only define the set operation for the {\bf !} form.
+For example, one could define two accessors for screen names, 
+{\bf n!screen\STAR name} and {\bf n!screen!name}, the first public for use
+by any class, and the second private to the implementation of the screen
+class.  By defining the set operation for {\bf n!screen!name}, you provide
+a consistent mechanism for updating the screen title internally without
+making this capability public. 
+
+\subsection{Operations}
+
+While attributes refer to characteristics of classes, {\em operations}
+refer to the behaviors of the instances of the class.  For example,
+one behavior of a node is to be written out or retrieved from the
+hyperbase.  These behaviors are represented by the operations
+{\sf write} and {\sf retrieve}, with corresponding Emacs functions {\bf
+n\STAR node\STAR write} and {\bf n\STAR node\STAR retrieve}.
+
+Operations may take any number of arguments, but the first argument
+is, by convention, an object representing the class instance.  In the
+case of objects like nodes or links, the first argument is their
+unique ID.  In the case of objects like buffers or screens, the first
+argument may be the actual buffer or screen object itself.  Operations
+must always document what form their first (as well as the other)
+argument must take. The operation may take additional required or
+optional arguments depending upon the nature of the behavior.
+
+
+Operations can be public, indicated by the visibility token ``\STAR '',
+or private, indicated by ``{\bf !}''.  Public operations are accessable to
+other classes, while private operations are only accessable to the
+internal implementation of the class. As noted above, this is purely
+convention, and unfortunately Emacs Lisp does not enforce this
+encapsulation.  To repeat, if you find yourself as a class implementor
+needing access to a private operation of another class, you should
+publicize this observation immediately.  It may be the case that there
+is a public mechanism that you are aware of and should use instead.
+Alternatively, it may be the case that the private operation should be
+changed to public.
+
+All instantiable (i.e. non-abstract) classes have a constructor and a
+destructor operation associated with them.  By convention, these
+operations are named {\sf make} and {\sf delete}, and are normally
+public.  (It is often useful to implement two constructor operations,
+for example {\bf n\STAR node\STAR make} and {\bf n!node!make}.  The first is
+the public operation with publically-supplied arguments; the second is
+the internal, down-and-dirty constructor that may take many more
+arguments or return an internal object that should be hidden from the
+external interface.
+
+\subsection{Collections}
+
+Operations, as defined above, operate on individual instances of the
+class. There is another kind of operation, however, that operates on
+the set of all objects that exist in the class. These are called {\em
+collection operations}.  For example, an operation that returns a list
+of all nodes of a specified type is a collection operation.  These
+operations, taken together, represent many of the classical database
+query and retrieval operations supported in Egret 2.0.
+
+Collection operations are always defined relative to a class, and are
+named by wrapping {\bf \{} and {\bf \}} around the class name.  Unlike
+conventional class arguments, collection operations do not have a
+distinguished first argument, since their name indicates which
+collection the function operates on\foot{Future revisions to this design
+may lead to the presence of a first argument that is passed a collection
+object, consisting of some subset of objects of the named type.}.  For example, the collection
+operation for finding all nodes of a specified type might be called
+{\bf n\STAR \{node\}\STAR type-of}, which takes a single argument whose value is a
+valid node type, and which returns a list of node IDs that are of the 
+specified type.
+
+Collection operations can be public or private, and their visibility is
+indicated in the standard manner by \STAR\ or {\bf !}.
+
+\chapter{Architecture}
+\section{Overview}
+
+The top-level architecture of Egret 2.0 currently consists of the following
+major subsystems:  Utilities, Server, Type, and Interface.  Each of these
+are briefly introduced below, and detailed in subsequent sections.
+
+\begin{itemizenoindent}
+  
+\item {\bf Utilities.} The utilities subsystem provides functions
+  that are useful across all other classes. Object classes defined in this
+  module typically represent extensions of Emacs Lisp built-in constructs.
+  For example, {\sf u*hook\/} and {\sf u*error\/} are built directly on top
+  of the Emacs error and hook facilities. {\sf u*hash\/} extend Emacs Lisp
+  to support hashtables, a data structure that is supported by the Common
+  Lisp environment. 
+  
+\item {\bf Server.} The server subsystem is the basis upon which all
+  other components of Egret 2.0 are built.  It implements classes that
+  are specialized to the needs of particular database server
+  applications.  For example, the server subsystem currently implements
+  {\sf s*process-server}, {\sf s*node}, and {\sf s*link} classes whose
+  structure and behavior are specialized for use with the hbserver
+  database server application.  Future work could include, for example,
+  the implementation of an alternate set of classes to work with the
+  POSTGRES database server. Regardless of the specific server chosen,
+  this subsystem encapsulates details of network access and low-level
+  retrieval operations from the other subsystems, and provides
+  operations implementing a persistant, fixed, monotyped, lockable
+  record structure and other database facilities to other subsystems.
+  
+\item {\bf Type.} This subsystem uses the server subsystem's node
+  and link definition facilities to implement a more flexible mechanism
+  termed the {\em exploratory collaborative type system} (ECTS).  ECTS
+  allows first-class definition of internal structure at the {\em
+  instance}, as well as the class level.  
+  
+  In addition, the type subsystem provides a ``defeatable''
+  encapsulation of the ECTS.  As discussed further below, the public
+  classes of this subsystem provide other systems with a ``pure''
+  logical view of the database with flexibly typed nodes and links.
+  However, operating upon the server in this fashion can sometimes
+  incur high overhead, and so this subsystem also allows other systems
+  to exploit knowledge about the internal representation to improve
+  efficiency.
+  
+  While the type subsystem implements properties of single classes
+  or instances, the type subsystem implements properties of groups
+  of classes and instances.  This includes composite objects,
+  aggregation definition mechanisms such as layers and surfaces, and
+  impact analysis mechanisms for ECTS that operate across groups of
+  instances.  For example, these impact analysis mechanisms will
+  support the migration of type level information between the class
+  and instance levels.
+  
+  The particular semantics chosen for composite objects and
+  aggregates normally depends upon to a certain extent upon the
+  domain.  Therefore, some domain-specific functionality may be
+  implemented within the type subsystem.
+
+  
+\item {\bf Interface.} This subsystem provides various forms of input
+  and output to and from the system.  Textual and graphical interfaces
+  are current targets for interface-level functionality.
+  
+  The interface level also contains domain-specific specializations for
+  collaborative object oriented design, collaborative research,
+  collaborative code inspection, and so forth.  These specializations
+  are implemented in terms of calls to operations of the type subsystem
+  to define domain-specific types, calls to operations of the type
+  subsystem to define domain-specific aggregations, as well as
+  functionality defined in this level for traversal, creation,
+  modification, and communication in a domain-specific fashion.
+
+\end{itemizenoindent}
+
+The motivation for this top-level decomposition is to isolate those
+parts of the system that appear most volatile, while still providing
+high performance.  For example, the use of the hbserver application as
+the underlying database server may be reconsidered in the near future
+if a high quality object oriented database mechanism becomes
+available. Such a database change will obviate the need for some of
+the type subsystem mechanisms.  Similarly, current interface choices
+and domain specializations will evolve over time.
+
+The following sections provide more detail about each of these subsystems. 
+\subsection{Utilities Subsystem}
+
+\subsubsection{Services}
+
+The utility subsystem provides a collection of general utilities to be used
+by other EGRET modules. Similar to the server subsystem which extends the
+functionality of the remote database server, the utility subsystem adds
+richness to the Emacs Lisp environment. For example, Elisp does not have
+built-in support for hashtable, which is available in other environments
+such as the Common Lisp. The utility subsystem implements hashtable using
+Elisp primitive, i.e., {\it obarray\/}.
+
+There are also utility classes which are specifically tailored to the Egret
+environment. For examples, class {\it table\/} is designed to support data
+caching from the remote database server. It implements both hashtable and
+alist structures, and allows the user to choose between the two based on
+the type of data to be stored and the type of operations to be performed on
+that data. Despite such specificity, existing operations on {\it tables\/}
+can still be easily generalized and used in applications beyond Egret.
+
+
+\subsubsection{Representations}
+
+One unique feature of the utility subsystem is that its object classes are
+relatively uncoupled with one another. For example, {\it error \/} is
+totally orthogonal to {\it hook\/}. The main reason for this {\it
+discreteness\/} is the general nature of these classes, which normally
+appear first in one of the other Egret subsystems (e.g., server), and are
+later generalized and moved to the utility subsystem. 
+
+The utility subsystem currently consists of four object classes: {\it
+hashtable\/}, {\it table\/}, {\it error\/}, and {\it hook\/}. The hashtable
+is an efficient random-access data structure. It is implemented using
+obarray and Elisp symbol primitive operations {\it intern\/} and {\it
+intern-soft\/}. The rationale behind this choice is that symbol operations
+are highly optimized in Elisp. At the low-level, in fact, they are
+implemented using hashtable. On the other hand, the overhead of adopting
+any hashing algorithm and maintaining the hashtable structure at the Elisp
+level can be tremendous.
+
+The {\it table \/} class supports both hashtable and alist, and the
+implementator is given the choice of which structure to use. Alist is
+hardly a viable solution for any reasonable sized table, because it
+requires linear search. On the other hand, it does possess certain nice
+properties which other structures (e.g., hashtable) do not have. A good
+example is the pairing of {\it assoc\/} and {\it rassq\/}, which allows
+both forward (i.e., key to data) and reverse matching (i.e., from data to
+key).  Hashtable, in contrast, permits only one-way (i.e., key to data)
+lookup. Since elements in a hashtable are stored in a random fashion, it is
+also difficult to generate a sorted list of items. 
+
+To overcome the above two problems and to provide the necessary degree of
+equivalence between alist and hashtable, the utility subsystem uses
+auxiliary tables in addition to hashtable. Together, they can support
+functions such as generating a completion list and table lookup using both
+entity ID and name, without too much sacrifice on the efficiency given by
+the hashtable.
+
+Both {\it error \/} and {\it hook \/} are extensions of built-in Elisp
+constructs. Like their predecessors, error objects in Egret are represented
+as symbols, and their attributes as property lists. Extension to the native
+construct involve mainly additions of new operations, including tracking
+error objects defined, executing a list of forms with error protection.
+Similarly, extensions to the built-in hook facility include support for
+ordering functions on a given hook.
+
+
+\subsubsection{Interfaces}
+The utility subsystem provides a number of public operations, which are
+listed below. For detailed descriptions of these functions and their
+arguments, refer to the online designbase:
+
+\begin{enumerate}
+\item {\bf Hashtable.} Makehash, gethash, sethash, remhash, and
+  hash-existp.
+  
+\item {\bf Table.} Define table, which in turn defines a set of
+  functions, including get, put, delete, existp, initialize,
+  get-completion-list, and get-key.
+  
+\item {\bf Error.} Retrieve attribute values (e.g., name, error
+  conditions, error message), define error object, and execute code with
+  error protection.
+
+\item {\bf Hook.} Install a function on designated hook.
+\end{enumerate}
+
+
+
+\subsection{Server Subsystem}
+
+\subsubsection{Services}
+
+The server subsystem interfaces to as well as extends the functionality of
+the remote database server. As an interface, it acts like the server
+itself, allowing transparent access to the functions of the remote server.
+As an extension, the server implements services to improve the performance
+via local caching of the remote data. More specifically, the server
+subsystem provides the following services:
+
+\begin{itemize}
+\item  Persistent data storage, retrieval and update. 
+  
+\item ``Atomic'' node and link objects. The server subsystem implements
+  primitive entities for data storage (nodes) and relations between them
+  (links).
+  
+\item An event-based mechanism for two-way communication 
+  between the local clients and the global database server mechanism.
+  
+\item Session management, e.g., connect and disconnect, and local
+  structure initialization; etc.
+\end{itemize}
+
+
+\subsubsection{Internal Representations}
+
+\paragraph {Domain Independence.}
+A key property of the server subsystem is it makes no assumptions
+about the kind of information being stored in nodes, nor the semantics
+of the relationship represented by a link between two nodes.
+Most of the server subsystem functionality is implemented directly within
+the subsystem, with the exception of event and hook functions.
+
+\paragraph{Event Handling.}
+The server subsystem relies on the event mechanism to communicate with the
+remote server, to synchronize the local and global states, and to control
+concurrent access to the centralized database by multiple users. Event
+handling is thus one of primary functions of the server subsystem. Its
+dealings with events are, however, restricted to the mechanism level. The
+semantics of event handlers are imposed and interpreted by the outer
+subsystems. For example, Egret maintains a number of distinguished nodes
+containing information necessary for implementing its high-level functions.
+Associated with each of these distinguished nodes are a set of event
+handlers supplied by the type subsystem for handling various situations
+such as node update, deletion, etc. It is the server subsystem's
+responsibility to install all event handlers properly and make sure they
+are invoked in the right order. However, the server does not know what the
+effect of these event handlers will be to the local or global state.
+
+\paragraph{HyperBase Dependence.}
+Currently, the server subsystem implements an interface to one database
+server application---the HyperBase system from the University of Aalborg.
+The internal structure of the server subsystem is therefore somewhat
+specialized to this application.  The rationale for this decision is
+that the appropriate generalization of the server subsystem to accommodate
+multiple applications must arise from generalization of appropriate 
+application-specific class structures.  Premature generalization of the 
+class structure based upon a single application is inappropriate and 
+ultimately harmful. 
+
+The server subsystem consists of six classes: {\it node\/}, {\it link\/},
+{\it server-process\/}, {\it snode\/}, {\it serror\/}, and {\it hook\/}.
+The {\it node\/} and {\it link\/} classes provide a set of primitive
+operations on nodes and links. {\it Server-process \/} maintains
+information on individual servers, and manages sessions and synchronizes
+the states of the remote and local data. {\it Snode\/} provides operations
+on a set of special nodes which contain data used by various Egret modules
+for internal purposes. the {\it error \/} class keeps tracks of all error
+objects, and {\it hook\/}, all public hooks in the server subsystem.
+
+The structure of the node and link classes follows directly from the fixed
+(at compilation time) structure of nodes and links. For example, each field
+in the server's node structure corresponds to an attribute of the node
+class.  Operations on nodes include individual operations to set as well as
+to lock the contents of each field.  Additional collection operations are
+provided to define event handlers for the set of all nodes.
+
+The drawback of this design is the fact that the class-level structure
+of the server subsystem must change in the event that the fixed
+structure of nodes, links, or events changes.  This can also be viewed
+as a benefit, in that it clearly reifies within the design the obvious
+dependencies that the structure of the system as a whole has upon the
+atomic, internal structure of the server application.  Such dependencies
+will always exist, and it is simply a question of where they are made
+explicit.  At this initial stage, it appears that a clearer, more
+robust, and hopefully more reliable implementation will result from this
+decision.  
+
+The server-process class provides attributes helpful in identifying the
+database being connected to, the location of the data files, and so forth.
+It also contains attributes providing information about the state of 
+the global database, such as a list of all currently defined node-IDs.
+
+At the server subsystem level, the contents of fields are uniformly
+represented as either strings or integers. Such a decision is made for
+performance reasons and to clearly delineate the responsibilities of the
+server subsystem.  It is not the responsibility of this subsystem to 
+process the internal contents of node DATA fields, for example. 
+
+Retrieval in the server subsystem is accomplished purely on a
+field-by-field basis; no aggregate retrieval operations for multiple
+node fields are provided.  This eliminates the need to provide local
+caching of node state within the server layer, and makes performance
+considerations purely the responsibility of higher subsystems.  Upper
+subsystems must balance the benefits of aggregating information into
+the DATA field (in order to retrieve multiple items of information
+with one network access) against the costs of unpacking each item from
+the DATA field (which may become significant when a single item of
+information in the DATA field is required on a frequent basis, such as
+during a lengthy traversal of the database).  Since this cost-benefit
+analysis is domain-specific, it should be resolved in a higher level,
+more domain-specific subsystem.
+
+
+\subsubsection{Interfaces}
+
+The server subsystem provides a number of public operations, which are
+listed below. For detailed descriptions of these functions and their
+arguments, refer to the online designbase:
+
+\begin{enumerate}
+\item {\bf Node.} Create, delete, retrieve field value (i.e., name, data,
+  creation date, modification date, author, modifier, font, geometry,
+  incoming links, outgoing links, status), set field value, lock, and
+  unlock.
+  
+\item {\bf Link.} Create, delete, retrieve attribute value (i.e.,
+  name, source node, destination node, creation date, modification
+  date, author, last modifier), and set attribute value (i.e., name,
+  destination node)
+  
+\item {\bf Server-process.} Retrieve attribute value (i.e., name,
+  description, data-path, and ip address), connect, and disconnect.
+
+\item {\bf System node.} Define a node, with-system-node, and
+  with-system-node-locked. 
+
+\item {\bf Error.} Retrieve attribute value (i.e., name, conditions,
+  message), define error object, and with-error-protected. 
+
+\item {\bf Hook.} Install function on to a hook object.
+\end{enumerate}
+
+
+\subsection {Type Subsystem}
+
+\subsubsection{Services}
+
+The type subsystem implements a typed, flexibly structured data
+model called ECTS on top of the monotyped, fixed structure data model
+provided by the server subsystem. 
+
+ECTS departs from traditional type systems by allowing first class
+definition of fields at the instance as well as at the class level.
+Traditionally, the set of fields associated with any instance is
+determined by its type. In other words, the type specification serves
+as a template for creating instances, and all instances are
+constrained to exactly the structure indicated by the type
+specification.  While ECTS class definition facilities do provide a
+template for instance creation, instances are not subsequently
+constrained to that structure. Instead, individual instances of typed
+nodes can dynamically define new fields, or delete some of its
+original fields.
+
+To make ECTS work in a collaborative context, impact analysis and
+other mechanisms must also be provided in order to control the
+proliferation of instance-level variants.  Some of these mechanisms
+are operations for the inspection and modification of individual
+instances and classes.  Other operations analyze the state of the
+entire database with respect to its type level structure.
+
+To support the more mundane aspects of exploratory development, the
+type subsystem is constructed to facilitate ease in renaming or
+modifying other attributes of of the constituant objects (i.e. nodes,
+links, fields, and schemas).  Thus, node contents always store
+references to attributes of links, fields, and schemas
+symbolically---by their corresponding ID.  After retrieving a node,
+the local client has the responsibility of mapping the ID to the
+corresponding name.  This allows changes to field or link names to be
+instantly reflected in all nodes referencing them without requiring a
+traversal of the entire database looking for instances and textually
+changing them.  The cost is that local tables for node, schema, field,
+and link instances that associates their ID with all relevent
+attributes must be maintained.
+
+\subsubsection{Representations}
+
+\paragraph{Node Representation.}
+
+Type nodes are represented as an aggregration of field instances.  
+
+\paragraph{Field Representation.}
+
+The representation for type subsystem fields within the server subsystem DATA 
+field will follow along the lines discussed in our last meeting, for example:
+
+\begin{verbatim}
+(s*node*restore-field :name 'reference :contents "the contents...")
+\end{verbatim}
+
+While this is an evaluable Lisp form, it could simply be textually
+parsed by non-Lisp applications.  Note that the representation of
+embedded links is not a part of the type subsystem.
+
+\subsubsection{Interface}
+
+\paragraph{Class Node-Schema.}
+
+The purpose of this class is to specify the organization and
+operations available upon the "consensual" structures of EGRET.  The
+set of instances of this class are structure-specifying entities for
+which there is (more or less) consensual agreement during
+collaboration.  Obvious operations upon schema instances include those
+to add or delete the set of fields comprising the schema. Another
+operation available upon a consensual structure is "instantiate",
+which creates a new instance of a node with an internal field
+structure corresponding to the consensual structure.
+
+Conceptually, therefore, the instances of the class SCHEMA could be
+plausibly viewed as "classes" from which node instances with a
+particular structure are created.  However, this only a conceptual
+correspondence: the *actual* class NODE is not an instance of a SCHEMA
+class object.
+
+
+\paragraph {Class Node-Instance.}
+
+This purpose of this class is to specify the organization and
+operations upon individual node instances appropriate to the
+evolutionary concerns of EGRET. The set of node instances are both
+structure-specifying (since they have locally associated field
+instances) and content-holding (since they will hold the values
+associated with fields.)
+  
+Like schemas, operations upon node instances include those to add and
+subtract fields.  Similar to schema instantiation, the "clone"
+operation upon a node instance results in the creation of a new node
+instance with the same internal structure, but without any content.
+
+Each node instance corresponds to an actual Hyperbase node.
+(Just to be perfectly clear, the converse is not true: not every
+hyperbase node corresponds to an instance of the node class.)
+
+\paragraph {Class Field.}
+
+Fields are the primitive structure-specifying entity of EGRET.
+However, they do not exist independently, but rather only as a
+component of a schema or node instance.  The same field instance could
+be a component of multiple schemas and node instances, since field
+instances are only structure-specifying, not content-holding.
+
+
+\paragraph {Class Link-Schema.}
+
+Analogous to Node-Schema, this class specifies the consensual link
+structures. 
+
+\paragraph{Class Link-Instance.}
+
+Analogous to Node-Instance, this class specifies the contents and 
+structural properties of individual links. 
+
+
+\paragraph {Class Layer.}
+
+Layers are the aggregation mechanism for representing and supporting
+the exploration and consolidation phases of exploration collaboration.
+The contents of each instance of a layer contains links to each member
+node and link instance contained within it.\foot{Currently, we believe
+that maintaining schema and field information outside of layers leads
+to greater clarity in understanding exploratory phenomena.} Other
+contents of a layer represent its relationship to prior and subsequent
+defined layers.  The operations upon a layer include computations of
+convergence and divergence for the layer.
+
+Each layer instance corresponds to an actual Hyperbase node. 
+
+Layers do *not* support functional partitions of the database, nor do
+they support versioning of particular nodes, fields, or schemas.
+Their sole purpose is to reflect the cyclic periods of exploration
+followed by consolidation.  Thus, they tend to partition the database
+into something like a temporally ordered set of "onion skins", where
+each onion skin reflects a single period of exploration followed by
+consolidation for a particular portion of the database. The current,
+or "outermost" layer can always be referred to symbolically by the
+alias "active". (Thus, no layer can be explicitly named "active")
+
+Individual node, field, and schema instances can be members of more than
+one layer.  This occurs when an instance is both actively used and 
+structurally stable, so that it is relevent across multiple phases
+of exploration and consolidation.
+
+\chapter{Verification and Validation}
+\section{Test Plan for Egret 2.0}
+
+\subsection{Concepts}
+
+Standard software engineering practice for testing involves several
+interrelated components. These components are briefly defined below:
+
+The {\em test framework} describes and implements the set of functions
+and procedures that support definition of the test plan, test cases,
+test data, and test log.
+
+The {\em test environment} specifies the required state of the environment
+that must exist in order to start running the test.
+
+The {\em test plan} specifies the flow of control to be followed during 
+the running of the test. In particular, it specifies the sequence of test
+cases to be run, and how this sequence changes in response to positive or 
+negative results of previous test cases.  The test plan also specifies the 
+results of the test in terms of the format of the test log.
+
+Each {\em test case} specifies a test of some particular behavior, 
+function, or other aspect of the system.  For example, each public operation
+and attribute of the system will have a corresponding test case.  Test
+cases can be further broken down into sets of test data.
+
+Each {\em test data} item specifies (a) input to the system, (b) the
+state of the system during the test, and (c) the expected output.  For
+example, the server subsystem test case might have a test data item
+that requests connection to a particular server while the system is already
+connected to a server, and which expects the connection function to return 
+a specific value that indicates this particular error. 
+
+
+\subsection{Requirements}
+
+The testing of Egret 2.0 should satisfy the following requirements:
+
+\begin{itemize}
+\item {\bf Background, batch operation.}  The testing of Egret 2.0 must support
+the ability for testers to invoke it with a single command and then leave it to 
+run all test cases unattended.  The results of each test run should be recorded
+in a log file.
+
+\item {\bf Testing of all public operations and attributes.}  All public operations for a 
+given class and subsystem must be tested.  In particular, all 
+arguments to all public operations will be tested with valid values,
+invalid values, and invalid types of values.
+
+\item {\bf Independence from private operations.}  Test cases are implemented
+without knowledge of the internal implementation of a class or subsystem. 
+
+\item {\bf Verification, not diagnosis.} The primary goal of the test plan is
+determine that the system either (a) passes testing, or (b) fails
+testing.  Diagnosis of the problem is not a primary goal of the test plan.
+In particular, determining which aspect of the implementation is in error 
+is useful only when all other requirements can be simultaneously satisfied.
+
+\item {\bf Object orientation.}  The test plan is organized in an object
+oriented manner, with classes such as {\sf test-plan}, {\sf test-case}, 
+and {\sf test-data}.
+\end{itemize}
+
+There are a number of additional, general comments to make about testing.
+First, a test case for one public operation can implicitly presume that all other
+public operations are implemented correctly.   This is mandated by the lack
+of access by the test system to the private operations of the subsystem under
+test, and the need to avoid re-implementing a parallel system just for testing.
+
+The test plan should write results out to a log buffer, including the
+date and time of each test case, the test case being conducted, the
+specific test data, and the expected and actual results.  Some sort of
+cumulative statistics about the test run should be written to the
+buffer as well, including at a minimum a listing of all failing test
+data items.  This log buffer should be saved to a file after every
+test data item is run, in order to preserve the results of the test in
+the event of the system crashing Emacs.
+
+Some specific hints about test data item creation:
+
+\begin{itemizenoindent}
+
+\item Invoke each operation with invalid data at the type and the value level.
+    For example, the attribute {\bf s\STAR node\STAR name} accepts a node-ID as its
+    argument.  This attribute should be tested by passing {\bf s\STAR node\STAR name}
+    both a string (i.e. the wrong type of argument) and an integer that
+    is guaranteed not to be a valid node-ID (such as -1).  
+
+\item Set, then test the explicit state of the system.  For example,
+    invoke {\bf s\STAR node\STAR set-name} on a newly created node to change its name, then use 
+    {\bf s\STAR node\STAR name} to see if the name was actually changed.
+
+\item Set, then test the implicit state of the system.  For example,
+    an implicit result of creating a node should be a change in the list of 
+    node-IDs.  Disconnecting should also change the list of node-IDs.
+
+\item Test the recovery operations.  This is difficult, since corrupting 
+    the tested state normally requires access to the internal, private state.
+    Instead, assume the state is correct, invoke the recovery operations,
+    and see if the prior state still exists.  
+
+\item Test concurrent and cooperative access. This kind of test requires a 
+    shell script that starts up two Emacs processes, changes the user-name of
+    one of them, then tests locking, event propogation, and so forth.
+
+\end{itemizenoindent}
+
+
+\subsection{Server Subsystem Testing}
+
+Testing of the server subsystem can be broken down into the following
+major categories of tests:
+
+\begin{enumerate}
+
+\item {\bf Connection and Disconnection.}  These tests involve checking
+the ability of the system to connect and disconnect successfully from
+a database application server process.   The ability to sequentially connect
+to different servers will be tested.  Connecting to both new and previously
+constructed databases will be tested.  The state of the server-process class
+attributes and operations will be tested when both connected and disconnected
+from a database server.
+
+\item  {\bf Node operations.}  All public node operations will be tested, 
+including node creation and deletion, and reading, writing, and
+updating of all node fields.  
+
+\item {\bf Link operations.}  All link operations will be tested on
+representative nodes and links.   
+
+\item {\bf Lock operations.}  The ability to lock and unlock nodes will
+be tested, and the correct maintenance of relevent state information (such 
+as {\bf s*node*locked-by}) will be tested.
+
+\item {\bf Event operations.}  The ability of the server layer to 
+correctly set up, disable, and order event handling will be tested.
+
+\end{enumerate}
+
+More specific documentation on each test case and its associated test data
+will be forthcoming. 
+
+
+%%% \part{Design Specification}
+%%% \twocolumn \renewcommand{\horizontalline} {\rule{\textwidth}{.01in}}
+%%% \ls{1.0} \small
+%%% \include{designbase1}
+%%% \normalsize \onecolumn
+
+\appendix
+\chapter{Miscellaneous Addenda}
+\section{Design Issues and Rationale for ECTS}
+\label{app:ects}
+
+The capabilities of ECTS to define and modify database structure
+at both class and instance level raises many important and complex issues.
+
+The first issue is the classic database schema modification impact analysis
+problem.  Given a class (which can be thought of as corresponding to a database
+schema) and a set of instances created from that class, what is the effect of 
+making changes to the class structure?   There is a growing body of literature 
+addressing the types of schema modifications that can be made without impact 
+upon existing instances, as well as literature proposing mechanisms that 
+dynamically and automatically restructure existing instances to bring them into
+conformance with the changed schema. (Staudt-Lerner, Skarra).   
+
+ECTS differs from this research by rejecting two of the premises upon which the
+work is based: (1) that instances must necessarily be constrained to the 
+structure of their parent classes' schema, and (2) that structure can only be 
+defined at the class and not at the instance level.   Admittedly, these extra 
+degrees of freedom can be tolerated only in exploratory domains, where their 
+benefits to design experimentation outweigh their costs in reduced reliabilty 
+and consistency.   The result is while this classic problem certainly exists in
+ECTS, we address the problem in a different way that reflects the differences in
+our domain.  This answer will be developed in more detail below.
+
+A second issue concerns inheritance vs. copying of structural information.  In 
+classic database schema data models, structural information is always inherited.
+Conceptually, the structure of all instances conforms to a single structural 
+description that is maintained within the schema for the parent class.  As a 
+result, changes to the structure of the class' structural information must 
+necessarily change the structure of all its instances. 
+
+In ECTS, copying as well as inheritance of structural information is
+needed.  Inheritance is needed for all the usual reasons: structural
+specification, structural consistency, and code sharing. Copying is
+also needed in order to experiment with changes to a structure without
+making an impact upon previously created structures. Thus, if an
+instance copies structural information from a class (or another
+instance), then any changes it makes to that structural description
+will be local to the instance.  Conversely, changes to the original
+structural description from which the copy was made will not affect
+the copying instance.
+
+Given the ability to change structural attributes at both the class
+and the instance level, and the ability to both inherit and copy
+attributes, a wide variety of models for the structural relationships
+between classes and instances are possible.
+
+To facilitate this discussion, we adopt the following notation.  Let upper case A, B,
+and C denote different classes, and let lower case a1, a2, a3...,  b1, b2, b3, 
+and so forth denote instances of these classes.  Let p denote a 
+structural property, and let p' denote a copy of property p.   Let -> indicate 
+either an inheritance relationship or a copying relationship between two 
+classes/instances.  If the relationship is inheritance, then p appears on both 
+sides; if copying, then p' appears on the right hand side.   Finally, let A/p 
+indicate that class A has property p.
+
+The set of possible relationships can then be summarized as follows:
+\small\begin{verbatim}
+A/p -> B/p                (class B inherits property p from class A)
+A/p -> B/p                (class B copies property p from class A)
+A/p -> a1/p               (instance a1 inherits property p from class A)
+A/p -> a1/p'              (instance a1 copies property p from class A)
+a1/p  -> b1/p             (instance b1 inherits property p from instance a1)
+a1/p  -> a2/p             (instance a2 inherits property p from instance a1)
+a1/p  -> b1/p'            (instance b1 copies property p from instance a1)
+a1/p  -> a2/p'            (instance a2 copies property p from instance a1)
+\end{verbatim}\normalsize
+
+The true set of possible relationships is much more complex, since it is the 
+transitive closure of these relationships over finite sets of properties, 
+classes, and instances.  However, this summarization provides an idea of the 
+complexity of relationships between classes and instances that could be 
+supported in the ECTS model.
+
+It is our assertion, in fact, that this set of possible relationships is too 
+general for exploratory purposes.  
+
+First, allowing unrestricted possibilities for inheritance and copying of 
+properties essentially eliminates the distinction between classes and instances
+entirely.  Thus, it allows users to essentially set up parallel, first class 
+schema systems within a single database system, a situation we explicitly wish 
+to avoid.  
+
+Second, it very easy for users to create databases with complicated mixtures of
+inheritance and copying within and between classes and instances that make 
+effective impact analysis and subsequent "rationalization" of the database
+during consolidation extremely difficult.   
+
+Third, supporting this generality will impose representational and computational
+overhead that we would like to avoid.
+
+Instead, ECTS supports only the following forms of copying and inheritance:
+
+\small\begin{verbatim}
+A/p -> B/p                (class B inherits property p from class A)
+A/p -> a1/p               (instance a1 inherits property p from class A)
+a1/p  -> b1/p'            (instance b1 copies property p from instance a1)
+a1/p  -> a2/p'            (instance a2 copies property p from instance a1)
+\end{verbatim}\normalsize
+
+To motivate this decision, recall that the requirements for the ECTS is to allow
+exploration, or deviation from the consensus representation embodied by the 
+class schema, while still providing the means necessary to bring some or all of
+the instances and classes back into consistency through modifications to both 
+the class schema and the instances.
+
+These restrictions are easily understood by the simple three-part rule: classes
+only inherit; instances only inherit from their class, and instances can copy 
+from any other instance.  They preserve the separate statue of classes as the 
+sole manner to obtain structural sharing and economy of expression; building a 
+separate hierarchy at the instance level is not economical.  Finally, it 
+provides a crucial aid to experimentation by allowing users to create an 
+instance of a class, then freely import interesting structural ideas from any 
+other existing instance.  Once a suitable instance structure has been generated,
+it can be easily ``cloned" for further experimentation in different contexts.  
+When the utility of this experimental structure has been proven and agreed upon,
+it can be reified within the class hierarchy itself.
+
+ECTS also recognizes that in exploratory situations, it is not
+critical for all instances of a class to be consistent with the
+current schema structure, since exploratory domains generate
+significant amounts of ``archivable garbage"---i.e. outmoded instances
+that should be retained in order to preserve the historical evolution
+of the system, but which are no longer current to the task at hand.
+
+ECTS represents this distinction between ``active" instances and
+classes and ``historical" instances and classes by the aggregation
+constructs of layers and surfaces.  Collaborative exploratory
+development consists of a current, top-level surface upon which new
+activities takes place.  The tools for assessing variance between
+classes and instances are normally confined to the structures on the
+current surface.  (In standard software engineering terms, surface
+corresponds most closely to a configuration.)  Surfaces are made up of
+a set of layers, within which semantically cohesive sets of classes
+and instances are aggregated.  (Layers correspond most closely to the
+concept of a framework in object oriented terminology combined with
+the concept of version from change control terminology.)
+
+
+\section{Efficient Type-level Node Retrieval}
+\label{app:net}
+
+The ability to dynamically define new fields at the class or instance
+level leads to an important efficiency problem.  First, remember that
+server subsystem retrieves information on a field-by-field basis.
+This behavior is maintained at the type subsystem, except that these
+retrieval operations allow uniform transparent access to either the
+fixed server node fields or the dynamic type node fields.
+
+Unfortunately, the straightforward implementation of this design leads
+to one of two situations: (1) The presentation of a node's contents by
+interface mechanisms involves multiple retrieval operations for each
+field in the node, each resulting in a separate type access and
+unpacking operation; or (2) The presentation of a node's contents by
+interface mechanisms involves a single retrieval operation on the DATA
+field.  This latter approach has the advantage of retrieving an entire
+group of node fields with a single network access.  However, it has
+the disadvantages that the interface mechanism now is given knowledge
+of the internal representation of nodes (in order to know that the
+DATA field contains the required information to begin with), as well
+as requiring the interface mechanism to know how to unpack the DATA
+field in order to get at the desired information.
+
+To partially overcome this disadvantage, the type subsystem not only
+exports to other subsystems the basic retrieval operation for any
+field defined on a particular node instance, but a set of unpacking
+operations for the DATA field as well.  These unpacking operations
+take a node-ID, its DATA field contents, and a field-name. They return
+the field-name's contents, or a (continuable) error if the field-name
+does not exist in the DATA field.  \foot{Note that the node-ID is required
+since the unpacking operation might be type dependent.}  These
+unpacking operations hide the actual representation of fields inside
+the server subsystem DATA fields, allowing this design decision
+(though not the design decision as to whether to store the field
+within the DATA field or someplace else) to remain encapsulated in the
+type subsystem.
+
+The advantage of this design is that if another subsystem just needs
+to know the value of a single field in a node instance, they can
+simply invoke the standard type subsystem retrieval operation with
+the field name and get that information without needing to know
+whether the field was fixed or dynamic, without having to unpack it,
+and without paying any performance penalty.  This design also allows 
+prototypes to be constructed and later optimized with additional code
+for DATA field handling.
+
+On the other hand, if another subsystem needs to efficiently retrieve
+the value of several fields in a node instance, it can go through the
+slightly more complicated procedure of retrieving the DATA field and
+manually invoking the unpacking operations to get the values.  In this
+latter case, the higher subsystem needs to know somewhat more about
+the internal representation (for example, it needs to know that the
+fields it wants are actually in the DATA field), but it still doesn't
+need to know exactly how the field contents are represented in the
+DATA field.  And, most importantly, this avoids paying any performance
+penalty for the information.
+
+\section{Information Replication in Egret 2.0}
+
+A fundamental architectural feature of Egret 2.0 is local replication,
+or caching, of globally maintained information.  Local caching
+improves performance but requires mechanisms to maintain consistency.
+Egret 2.0 addresses this problem by {\em recovery operations}. We
+first discuss the nature of information replication in Egret 2.0,
+followed by the recovery operations designed to preserve their
+consistency.
+
+Global replication occurs when information in the global, shared
+database is represented in more than one way.  For example, the set of
+node and link instances in the database forms a network. Aspects of
+this network might be redundantly represented, such as via a ``special
+node'' that maintains, for each node, the set of links pointing to
+that node.  Such a special node greatly speeds the computation of a
+query such as ``Determine all the nodes that are linked to this
+node'', which might otherwise require a complete traversal of the
+entire network to answer.
+
+Local replication occurs when information in the database is copied to
+each local client during its connection to the database.  For example,
+at connect time, a list of all node-IDs and their names in the
+database is transmitted to the connecting client. As other
+simultaneously connected clients create and delete nodes, the local
+copy of this list is updated via events. Thus, if five clients are
+connected to a database server, there are six copies of this information
+in use: the physical copy represented by the database itself, plus the
+five representations that are locally maintained by each connected
+client.
+
+It is important to note that consulting local information maintained
+via the event mechanism leads to the possibility of presenting
+erroneous information to a client.  As a simple example, suppose one
+client queries Egret 2.0 for the total number of nodes in the database
+just after another client deletes a node. If the local
+client process determines the answer to this query by computing the length of the
+local list of node-IDs, and if this computation is performed before the
+event updating this list is received, then the query result will be
+off by one.  Therefore, local information should not be used when this
+event propogation delay could produce significant problems (for
+example, a locally maintained list of locked nodes should not be
+consulted in order to determine whether to grant a lock.)
+ 
+If Egret 2.0 could be perfectly implemented and if its supporting
+network and workstation environment could function without failure,
+consistency maintenance would not be an issue.  Unfortunately, client
+connections fail unpredictably, implementation errors prevent
+propogation of updated information, and local and global state become
+corrupted on a regular basis.  For this reason, it is the
+responsibility of the implementor of any mechanism that holds either: state
+information (such as an ``unread nodes'' facility); locally maintained
+information (such as the ``cv-nodes'' list);  or globally maintained
+information (such as the ``type database'' facility) to also implement
+recovery operations.
+
+Recovery operations repair replicated information that
+has somehow gotten out of sync, or corrupted. For example, the 
+recovery operation for the locally maintained list of node-IDs would
+send the database server a request to re-transmit a fresh copy of this list
+to the client requesting it.  The recovery operation would then replace
+the corrupted list with the newly received one. 
+
+The actual repair mechanism depends upon the nature of the replication
+information, and may not entirely restore the system to its state
+prior to the moment of corruption. For example, a recovery operation
+for a corrupted unread nodes information might simple re-initialize
+the unread nodes list for a given user (or all users) to the empty
+list. 
+
+Recovery operation names are by convention prefixed with {\bf reset-},
+and whenever possible suffixed with the name of the attribute or
+operation whose functioning they repair.  For example, the server
+subsystem node class attribute {\bf s\STAR node\STAR incoming-links}
+has a corresponding recovery operation called {\bf s\STAR
+node!reset-incoming-links}.
+
+Recovery operations are normally designated as private operations of
+their class.  This is to encapsulate the decision as to whether
+information will be maintained locally or globally within the class
+implementation.  However, these operations are not entirely hidden,
+since the knowledge of corruption may only become known within other
+subsystems (most notably, the user interface subsystems).  Therefore,
+the designer of a class must be responsible for publishing in the
+public interface to the class these private operations.  They form
+a special, distinguished class of private operations: operations
+only to be used under exceptional conditions. 
+
+
+\section{Implementation Changes to CoReView 1.2}
+\label{app:coreview}
+
+This section presents a potpourri of some of the open questions and challenges 
+confronting us in the implementation of Egret 2.0.
+
+\begin{itemizenoindent}
+
+\item {\bf Design maintenance.}  The implementation of Egret 2.0 now 
+contains four discrete parts:  this document, which provides an overview
+of the design; the CoReView 1.2 hyperbase that actually contains the 
+documentation of the individual classes, attributes, and operations; 
+the testing framework and database; and the actual code implementing the system.
+Keeping these descriptions consistent and up-to-date will require new
+procedures.  Hopefully, this issue will be one that Danu's research will 
+provide solutions for.
+
+\item {\bf The test framework.}  While better testing is a major design
+goal for Egret 2.0, work needs to be done in establishing just what a 
+declarative specification of the test cases looks like, and how an 
+automated database will work.
+
+\item {\bf Instance-level field creation.}  A new behavior in Egret 2.0
+is the ability to define new fields at the instance, as well as the type,
+level.
+
+\item {\bf Type-level status object for operation return values.}
+Every Type level operation needs to return information about the 
+success of the operation.  It may potentially need to return a range 
+of error values providing details on why the operation did not succeed.
+This argues for some kind of generic ``status'' object.  Error checking
+must be done at the Type-level in order to allow full programmatic
+access to type operations.
+
+\item {\bf The arg-check mechanism.}  For my thesis, I implemented a 
+Common Lisp macro that performed run-time checking of the argument
+types to functions, signalling an error if an incorrect argument type
+was provided. (This macro had a compile-time switch that allowed it to
+be compiled out of the code, so that only the development version of
+the system suffered from time and space overhead.) I found this
+mechanism {\em very}\/ useful in debugging my thesis system. As an
+additional reliability enhancement measure, I would like to arg-check
+all of the functions in Egret 2.0.
+
+\item {\bf Generalizing the link mechanism.}  I would like to propose that
+we re-evaluate the current restrictive interpretation of links as
+relations between two nodes.  For one thing, I find the current naming
+conventions, such as ``is-a-reference-of'', to be user-hostile: I
+find this notation difficult to parse and understand.  I would much
+rather see such links labeled something like: ``To: Reference Node
+(pmj)'' which gives me a much clearer notion of what is going on.  In
+addition, this form of link also goes away from the notion of relation
+and toward the notion of operation, which is a more general
+interpretation of what can happen when a link-label is clicked on by
+the mouse.
+
+\item {\bf Separating node display and node retrieval.} The new design
+allows a node to be retrieved from the hyperbase and put into its own buffer
+without it necessarily being displayed.  The old design could only do
+this within the context of a ``system node.''  
+
+\item {\bf System nodes.}  The system node processing can be 
+implemented by the Type-level operations to programmatically get at the 
+contents of nodes.  In particular, system node processing should no longer
+create a node implicitly if it doesn't exist (this could be an optional
+switch, however.)  System nodes could be implemented in one of two 
+ways: first, by requiring that the contents of all system nodes be
+an evaluable lisp expression and then simply eval the string that is
+returned from the HB call, or second, by putting the contents into a 
+buffer but not displaying it.  In either of these situations, the notion
+of a distinguished system node buffer should go away.
+
+\item {\bf Locking.}  CoReView 1.2 has a big problem with locking nodes
+programmatically but never unlocking them (due to aborting.)  There needs
+to be a with-locked-node wrapper that wraps an unwind-protect form around
+the lock operation to guarantee that unlocking takes place.
+
+\item {\bf Generic Hidden Fields.}  I propose that we have a single 
+``Hidden Field'' in the node contents which is evaluated in its entirety
+when the node is being set up for display.  A set of language constructs
+will be provided to put a lisp form into this hidden field area. There
+seems to be needless duplication of code and effort in the current
+implementation, when each subsystem has to set up and maintain its own
+hidden fields.
+
+\item {\bf Fixing bad modularity in CoReView 1.2.}  The current system
+is structured very differently in some places.  For example, the
+single function cv-user-delete-link contains code from the Interface, 
+Type, and HB levels.  Be on the lookout for these situations.
+
+\item {\bf Egret vs. CoReView Mode.}  We should design a separate
+mode for Egret and CoReView in this next release.  
+
+\item {\bf Concurrency issues.}  One concurrency problem that is not
+handled in CoReView 1.2 arises in the following scenario:
+\begin{enumerate}
+\item cv-create-node checks cv-nodes to see if ``foo'' is an already existing name.
+\item a new node event arrives that defines a new node ``foo''
+\item cv-create-node calls the HB function to create node ``foo''.
+\end{enumerate}
+Clearly, checking cv-nodes in this way is not sufficient to see if ``foo'' already
+exists.  Since the hyperbase does not require node names to be unique, we
+need some kind of roll-back mechanism, or at least the ability to signal an
+error if a new node event arrives with a node name that already exists.
+
+\item {\bf Link-button and region-button bidirectional pointers.} Note that
+in the new design, this bidirectionality exists between a ``region'' and
+a ``link'', not between two buttons.
+
+\item {\bf Regions as nodes.}  Future designs may lead to the current concept
+of ``region'' being elevated to first class status as a ``node''.  This would
+provide a natural concept of composite object not currently present in the 
+design.  Future research is needed to determine the impact of this design
+change.
+
+\item {\bf Node name uniqueness.}  In Coreview 1.2, the node names are 
+required to be unique, mostly in order to allow completion, but also because
+many functions accepted a node name as a unique ID.  In Egret 2.0, the 
+uniform use of node IDs to distinguish nodes makes it much easier to 
+relax this restriction on node names.   
+
+\end{itemizenoindent}
+
+
+\bibliography{csdl-trs}
+\bibliographystyle{/home/13/csdl/tex/named-citations}
+
+
+\end{document}
+
+
+
+
+
+
+

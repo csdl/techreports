@@ -1,0 +1,662 @@
+\documentstyle [chin-times,
+                chi94,
+                plain-citations]{article}
+
+%\input{/home/3/dxw/c/tex/psfig}
+
+\input{/usr/uh/lib/tex/TeXPS/macros/psfig}
+
+\begin{document}
+
+\title {Studying Formal Technical Review Methods using CSRS}
+
+\authorname {Danu Tjahjono}
+\authoraddr{
+  Collaborative Software Development Laboratory\\
+  Department of Information and Computer Sciences\\
+  University of Hawaii\\
+  Honolulu, HI 96822\\
+  Tel: (808) 956-6920\\
+  Email: dat@uhics.ics.hawaii.edu}
+  
+
+\maketitle
+
+
+\begin{abstract}
+The importance of formal technical review and its benefits have been
+well documented, and yet there is a proliferation of methods in
+practice with varying degrees of success.
+
+This paper discusses a new approach to assess and study various
+aspects associated with the effectiveness of current review methods.
+Our basic approach is to use a computer assisted review system (CSRS)
+equipped with mechanisms to model different review methods and 
+at the same time capture fine-grained measurements
+about the product and the process of the review.
+Through suitable experimental design, these data can be used to
+compare the different methods to each other.
+
+\end{abstract}
+\paragraph{KEYWORDS:}
+technical reviews, inspection, walkthrough, software engineering, software
+quality, csrs.
+
+\section {INTRODUCTION}
+
+The importance of formal technical review and its benefits is well
+understood by software engineers.  It is cited as a powerful way to
+improve the quality and productivity of the software process
+\cite{Humphrey90,Freedman90}. It can be so effective in finding errors
+that Myers \cite{Myers79} suggests that one or more of these
+techniques should be employed in every programming project.
+Basili\cite{Basili85} and Gilb\cite{Gilb88} even claim that review is
+more effective than testing.  In the case where no automatic support
+is currently feasible, it is the only technique available for
+assessing the readability and understandability of software product.
+When applied early in the development cycle, it can save a significant
+amount of development resources because errors are detected early and
+prevented from propagating to subsequent phases of the development
+cycle \cite{Fagan76}.
+
+Despite the overwhelming documented benefits of current review
+practices, there are many questions associated with them, especially
+those that may affect the effectiveness of the review.
+This paper describes our approach to investigate these questions
+using CSRS. 
+
+
+\section {RESEARCH PROBLEM}
+This research is motivated by the following problems in the
+current practice of formal technical review:
+
+\begin {itemize}
+
+\item {\sl Ill defined review process.}
+
+Although there is a well published literature on how to
+effectively conduct software review or inspection \cite{Fagan76}, in
+practice there are many variations in performing it, some even show
+conflicting review procedures.  For example, some researchers
+\cite{Fagan76,Russell91} explicitly advocate the use of paraphrasing
+for effective review, while others \cite{Humphrey90} consider it
+optional. Still others prefer to include no group process
+\cite{Knight91}, or to advocate the use of checklists
+\cite{Fagan76,Humphrey90,Freedman90} or selective test cases
+\cite{Ackerman89,Dunn84}.  Unfortunately, most studies using the
+latter methods do not specify the actual activities that occurred in
+precise detail, leaving unanswered such questions as whether reviewers
+strictly followed the checklist, whether the same checklist was used
+during the meeting, whether the reader applied the test cases prepared
+by reviewers or producer, and so forth.
+
+
+\item {\sl Lack of understanding of review factors.}
+
+The problems associated with ill defined review process arise due to
+the lack of understanding of what factors can be attributed to the
+success of formal technical review. Current studies provide
+conflicting and/or anecdotal explanations of the causal factors
+underlying review outcomes.  For example, Basili \cite{Basili85}
+attributes review effectiveness to a technique called stepwise
+abstraction. Dunn \cite{Dunn84} and Peele \cite{Peele82} attribute the
+success of software review to the presence of group synergy and yet
+Humphrey \cite{Humphrey90} finds that 75\% of errors are found during
+private preparation rather than in the public meeting. Myers
+\cite{Myers79} and Parnas \cite{Parnas85} attribute the success of
+review to the synergy effect between producer and reviewers, yet
+others discourage active participation of the producer during the
+meeting \cite{Ackerman89,Russell91}. Finally, as described earlier,
+some people \cite{Russell91,Ackerman89,Freedman90} attribute review
+effectiveness to paraphrasing, the use of selective test cases or
+checklists.
+
+
+In addition to the lack of understanding about review factors, the
+relationships between various review factors are also not fully
+understood.  Only a few studies have formally investigated these
+relationships \cite{Bisant89}. Many studies simply describe anecdotal
+experiences.  For example, Humphrey \cite{Humphrey90} suggests that
+there is a positive relationship between review preparation and the
+effectiveness of review, or inspection rates correlate negatively with
+the number of errors found \cite{Gilb88}.  Other interesting
+relationships that have not yet been explored include the effect of
+program size, program complexity, or programming language on review
+effectiveness, and the change of review effectiveness over time.
+
+\item {\sl Lack of computational supports and instrumentation.}
+
+Most current software reviews or inspections are entirely manual and
+clerical in nature. Reviewers flip through a stack of printout paper
+and record issues on a piece of paper or inspection form. The
+moderator then goes through each of the forms, merges similar issues
+and rewrites them (if necessary) so that they can be presented
+properly during the meeting. During and after the meeting, the
+moderator must recheck the forms to ensure all issues have been
+discussed and actions have been specified.  Finally, he or she must
+rewrite the results to generate the final report.  With respect to
+metrics collection, the reviewers have to manually and regularly log
+their activities on a provided time-sheet, and this often results in
+coarse and inaccurate measurements.  The expensive nature of manual
+review process makes it unsuitable for performing an in-depth study of
+review activity.
+
+Existing computer-based review systems such as Icicle
+\cite{Brothers90}, Inspeq \cite{Knight91}, Scrutiny \cite{Gintell93}
+provide very limited computational supports and are often influenced
+strongly by a specific review method, such as Fagan's inspection, that
+make the systems unsuitable for comparing different review methods.
+
+\end {itemize}
+
+\section {RESEARCH APPROACH}
+Our basic approach to studying software review methods is to use CSRS 
+which addresses the above problems as follows:
+\begin {itemize}
+\item {\sl Provides computer assisted review.}
+
+Instead of doing manual review, the participants use computers to
+review the materials on-line. This approach allows automation of most
+clerical tasks associated with the review process and at the same time
+provides significant assistance or computational tools which makes the
+review process more productive. For example, instead of flipping
+through the stack of review materials, the reviewers simply {\it point
+and click} the requested module; instead of searching through a stack
+of inspection forms to consolidate a specific issue, they can simply
+invoke a command to generate the corresponding consolidated report,
+and so forth.
+
+This computer based review also allows us to model various review
+activities and to instrument the activities in a more accurate
+fashion.
+
+\item {\sl Provides well defined data and process models.}
+
+CSRS is both a review tool and a review method that operates on a well
+defined data and process model.
+
+In general, the data model is used to model review products, and the
+process model is used to model review steps or phases in order to
+formally conclude the review activity.  In terms of data collection,
+the data model allows one to capture various metrics associated with
+review artifact that the participants used or generated. The process
+model is to capture various metrics associated with specific steps
+that the participants take during the review.  For experimental
+purposes, the data and the process model can be used to decide which
+review aspects should be included during the review.  For example,
+whether checklist should be used, whether issue resolution should be
+discussed during or after the group meeting, and so forth.
+
+\item {\sl Operates on a well-defined framework.}
+
+As mentioned earlier, one of the problems associated with current
+review methods is a lack of understanding of what factors can
+be attributed to the success of a review process. Although there are
+many factors involved, only a few of them deserve thorough
+investigation. Based on the current review methods, we developed a
+framework shown in figure \ref{fig:research-framework} that allows us
+to differentiate various aspects of review methods. 
+
+
+\begin{figure}[tb]
+  {\centerline{\psfig{figure=framework.epsi}}}
+  \caption{Research Framework}
+  \label{fig:research-framework}
+\end{figure}
+
+
+In general, any review method usually incorporates one or more of
+the following review aspects:
+
+\begin {enumerate}
+\item {\sl Basic review activity: comprehension vs. examination}.
+Comprehension is the review activity that focuses on understanding the
+review materials; examination focuses on finding errors.  In practice
+comprehension and examination are often mixed: the reviewers are not
+required to perform separate comprehension before proceeding to
+examination.  For example, the preparation phase (i.e., comprehension
+activity) in Fagan's inspection is optional \cite{Fagan86}, while
+others \cite{Humphrey90,Ackerman89,Russell91} require a separate
+preparation phase in order to make the examination activity more
+effective.
+
+There are also two formats to perform examination activity in
+practice: reading/inspecting the source materials and discussing
+errors or issues found during previous session.  Many review practices
+adopt the former format during individual preparation and the latter
+during group meeting \cite{Humphrey90}.  Several studies also show
+that discussing errors or even seeking solution often leads to
+discovery of more errors \cite{Doolan92,Gilb88}. This, however, is
+often discouraged in practice \cite{Fagan76}.
+
+\item {\sl Group composition: individual vs. group}.  
+Any formal review method usually includes individual and group
+activities.  When the review method operates solely on the individual
+level, the final result is a consolidated report from individual
+reviewers.  Some examples of this individual review method include
+desk-checking, phased inspection \cite{Knight91} and verification
+based inspection \cite{Dyer90}.  Many current review methods (namely,
+Fagan's code inspection and its variations) usually include some
+combination of individual and group processes.
+
+Group composition can be further classified into basic review
+activities such as whether individual or reviewers as a group perform
+the comprehension or the examination activities.
+
+A slight variation to individual review mode is one-to-one interaction
+between individual reviewers and the producer, such as in active
+design review \cite{Parnas85}. The final outcome is a consolidated
+report from this interaction.
+
+Other variations of group activity include face-to-face or non
+face-to-face meeting format, and differences in participant roles
+during the meeting (for example, whether the producer or someone else
+should play the role of reader).
+
+\item {\sl Technique or strategy}.  
+Many review methods suggest a specific technique that the reviewers
+should follow during comprehension or examination activities, and
+during the individual or group process.  For example, in Fagan's
+inspection, the individual examination process uses a checklist of
+common errors (i.e., classes of software errors) while group
+examination is based on paraphrasing of selective test cases. Basili's
+review method \cite{Basili85} uses stepwise abstraction technique
+during individual examination.
+
+\end{enumerate}
+
+This framework allows one to see similarities and differences among
+various review methods. Thus, instead of stating what review method
+one is using, one should rephrase the question as to whether there is
+a separate comprehension and examination activity, whether there is a
+group process or simply integration of individual process, and whether
+there is a specific strategy or technique used for comprehension or
+examination and for individual or group process. For example, Fagan's
+code inspection \cite{Fagan76} starts with overview phase which is the
+group comprehension activity. There is no particular technique used
+for this comprehension activity other than active interaction between
+the producer and the reviewers. The next phase is preparation which is
+both individual comprehension and individual examination activities
+combined. There is no technique used for the individual comprehension,
+but the individual examination technique is based on checklists. The
+following phase is inspection meeting which is the face-to-face group
+examination activity. The primary technique used during this phase is
+paraphrasing; the reader paraphrases the source materials piece by
+piece and the participants are expected to raise questions that may
+eventually lead to discovery of errors.
+
+With respect to performing formal experiment, one can now rephrase the
+research questions in a more focused and narrower way while
+controlling non-interesting factors.  For example, one can now
+investigate whether the checklist based technique for individual
+examination is indeed more effective than no technique at all, or
+better than the stepwise abstraction technique, and whether the result
+is still the same when the group (not individual) performs that
+activity; given the same technique whether group activity is better
+than individual activity, namely, to check whether group synergy plays
+an important role; given the same technique and group process whether
+separate comprehension followed by examination activities do impact
+review outcomes, and so forth.
+
+Finally, when comparing different review methods using this framework,
+one should also consider the differences in computational supports
+used in each of the review activities above. In CSRS, these levels of
+support can be enacted and controlled through the data and the process
+model.
+
+\item {\sl Collects fine-grained review metrics automatically.} 
+Review metrics are commonly used in review activity to assess the
+effectiveness of review process and the quality of review products.
+CSRS collects these metrics automatically and unobtrusively and at a
+fine-grained level; it can measure the amount of time that a specific
+artifact is used during review session, or the amount of time a
+specific phase lasts.  In fact, CSRS metrics can be used to
+reconstruct the interaction between the user and the system during the
+entire review session.  Fine-grained collection is possible because
+all product and process of the review are captured through the data
+and process model. The following section discusses CSRS in more
+detail.
+  
+\end{itemize}
+
+\section {CSRS}
+
+CSRS is a collaborative software review system that assists review
+participants in conducting formal review process. The system follows
+a specific process and data model corresponding to the product and the
+process of review activity.
+
+\subsection {Data Model}
+The CSRS data model describes what artifacts are produced and consumed
+by review activity, namely, during comprehension and examination
+activities and by individual or group process.  The model also
+facilitates reasoning about the artifacts.  For example, it can
+display all source nodes that have not been reviewed, checklists that
+have been inspected, questions and issues that have not been
+followed-up, or highlight similarities and differences among issues
+raised by different reviewers, etc.
+
+The data model also allows reviewers to express their opinions and
+argue about their positions in a more productive manner than
+conventional meeting format. With respect to this feature, the CSRS
+data model is similar to gIBIS\cite{Conklin88} for issue exploration
+and deliberation.  Finally, the data model allows automatic
+fine-grained instrumentation. For example, the system can easily
+capture how long the reviewers read particular source nodes, discussed
+particular issue nodes, or determine how source nodes are traversed by
+the reviewers.
+
+In general, the CSRS data model consists of a set of typed nodes and
+links where the nodes correspond to review artifacts and the links
+correspond to relationship among these artifacts.  Figure
+\ref{fig:data-model} shows the details of the model.  It differs from
+the one in the initial release of the system \cite{Johnson93} in that
+it models various comprehension and examination strategies not
+available in the earlier version. This also illustrates how one can
+extend the model to support various review methods.
+
+
+\begin{figure}[tb]
+  {\centerline{\psfig{figure=data-model.epsi}}}
+  \caption{CSRS Data Model}
+  \label{fig:data-model}
+\end{figure}
+
+
+Source nodes are input materials to be reviewed.  They can be
+annotated with other source nodes. For example, a piece of code is
+annotated with its detailed design.  Annotation can also be defined on
+a specific region in the source.  This feature allows, for example,
+the code to be systematically abstracted into its detailed design
+section by section similar to the stepwise abstraction technique for
+code reading \cite{Linger79}.  For code review, the source nodes are
+further classified into their program objects such as function, macro,
+structure, etc. These objects are language dependent and can be
+defined dynamically as the input source files are read and parsed into
+the CSRS database. The parsing is performed automatically by the
+system; the user simply provides a set of regular expressions that
+describes how the parsing should be done and what type of artifacts
+are to be generated.  The system will also report unparsed objects at
+the end of the process so that they can be inputed manually.  For
+source materials that are not appropriate to be presented on-line, the
+surrogate documents can be inputed instead.
+
+Standard-issue nodes contain common errors that have been identified
+by the organization, for example, from a previous review process.  In
+manual code inspection these are normally known as checklists
+\cite{Fagan76}. In CSRS, however, checklists are items that need to be
+checked off before the respective source node is considered {\it
+reviewed}, and these may include other artifacts besides
+standard-issues that will be described later.  Emergent-issue are
+issues similar to standard issues except that they emerge during a
+particular review session.  Any participant may raise emergent issues
+as they review the source and the system will automatically add them
+to the checklists.  This node type is added to the data model to
+accommodate the need for the reviewer or the producer to notify others
+regarding a specific class of errors that need to be examined.  Both
+standard and emergent issues can be applied to source nodes with
+specific patterns and the system will automatically include the item
+in the checklists whenever the source currently being displayed
+contains the matched patterns.  Furthermore, standard or emergent
+issues can be made optional or required. The latter forces reviewers
+to check off the item before the corresponding source node can be
+considered reviewed.
+
+Assessment nodes are used to assess reviewers comprehension about
+particular source nodes. This technique has been shown effective in
+active design review \cite{Parnas85}. Assessment nodes can also be
+included as optional or required checklist items for particular source
+nodes.
+
+Case nodes are used to record test cases or test data that are raised
+by participants during review. Running selective test cases is common
+in code inspection practices as described earlier
+\cite{Dunn84,Ackerman89}.
+
+Correctness nodes are used to record program properties or correctness
+proofs of the corresponding source.  In general, the producer uses
+this node to state assumption or correctness specification about the
+source.  Correctness or verification based inspection has been shown
+effective in several studies \cite{Dyer90,Basili85}.  Correctness
+nodes may also be designated as checklist items so that the reviewers
+cannot overlook these nodes.
+
+The rest of the nodes in the data model are commentary nodes. They are
+similar to inspection forms in manual review methods except that
+commentary nodes can be processed by the system to facilitate the
+review process.  All commentary nodes also have consensus field to
+indicate the level of agreement among review participants.  The detail
+description of these nodes can be found in \cite{Johnson93}.
+
+Again, one does not need to include all of these node types if the
+review process does not require them. For example, if one has no
+intention of using verification based review, the correctness node
+type can be excluded. Even action nodes can be excluded if the review
+process strictly prohibits issue resolution.  In general, the process
+model will determine what artifacts/ nodes need to be included in a
+particular review cycle.
+
+Despite the many different types of nodes and links, reviewers do not
+need to memorize them, they are all transparent in CSRS.  The CSRS
+user interface is based on Lucid Emacs which implements pull-down and
+context-sensitive pop-up menus.  The CSRS engine is based on EGRET, a
+multi-user distributed hypertext-based collaborative environment
+\cite{Johnson92}. Figure \ref{fig:csrs-screen} shows a sample of CSRS
+screen.
+
+\begin{figure*}[tb]
+  {\centerline{\psfig{figure=csrs-screen-blank.epsi}}}
+  \caption{CSRS Screen}
+  \label{fig:csrs-screen}
+\end{figure*}
+
+
+
+\subsection {Process Model}
+The CSRS process model describes specific steps or phases that the
+review participants must follow to complete a review activity.  In
+manual code inspection, the process model is well documented
+\cite{Fagan76}. However, there is no evidence yet that indicates this
+model is the most effective one, especially when it involves computer
+supports such as CSRS.  In fact, one of our research goals is to
+experiment with different review phases and find the most productive
+one, if any.
+
+The process model also constrains what review artifacts can be
+manipulated during a given phase, or what nodes and links defined in
+the data model are legal for a given phase.  For example,
+consolidation nodes cannot be created during the private review phase.
+It also ensures that each phase is executed properly and completely by
+each participant and the group.  Another benefit of the process model
+is fine-grained process measurement.  It allows instrumentation of sub
+activities within a phase.
+
+In general, the CSRS process model supports the research framework
+depicted in figure \ref{fig:research-framework}.  Specifically, it can
+model and capture comprehension and examination activities, individual
+versus group process and various strategies associated with
+comprehension and examination activities.
+
+With respect to group process, it can model both asynchronous (non
+face-to-face) and synchronous (face-to-face) meeting formats. In both
+formats, each participant works in front of his or her workstation
+reviewing source materials on-line.  When operating under the
+asynchronous mode, the participants access the shared database and
+perform those activities in a non face-to-face mode at their own
+convenience.
+
+In the synchronous meeting mode, CSRS allows the participants to focus
+and to synchronize their attention (i.e., workstation screen) on the
+group leader currently presenting review materials (i.e, the reader)
+as well as allowing them to temporarily shift from the shared focus if
+necessary.  This latter has been shown effective in overcoming
+attenuation, concentration and attention blocking during face-to-face
+meetings \cite{Nunamaker91}.  The system also allows the reader's role
+to be changed dynamically during the meeting to let other participants
+present their viewpoints as desired; this feature can only be granted
+by the moderator.  The system also provides consensus building
+mechanism used in both face-to-face or non face-to-face mode to
+further speed up the group process.
+
+Our first experience with the process model has been described in
+\cite{Johnson93,Johnson93b} and also shown here in Figure
+\ref{fig:process-model} for reference.
+
+\begin{figure}[tb]
+  {\centerline{\psfig{figure=process-model.epsi}}}
+  \caption{CSRS Process Model}
+  \label{fig:process-model}
+\end{figure}
+
+In this model, CSRS operates mainly in the asynchronous mode.  The
+group meeting is carried out manually without computer support.  The
+orientation phase corresponds to the group comprehension activity. The
+private review corresponds to both individual and group comprehension
+as well as individual examination. The public review corresponds to
+the non face-to-face group examination activity.  And the group
+meeting corresponds to the face-to-face group examination. The rest of
+the phases are primarily administrative tasks.  The comprehension
+strategy is based on the interaction between the producer and the
+reviewers (i.e., questions and answers technique) during orientation
+and during private review phases. The examination strategy is based on
+{\it free-review} (i.e., no specific technique) during private review
+and error discussion during public review.
+
+Similar to the data model, the process model can be modified or
+extended to support various review processes. In general, when
+defining a new phase, one needs to specify what artifacts are to be
+processed (i.e., the nodes and links described in the corresponding
+data model), what activities are to be followed (individual or group),
+and what the entry and exit conditions are for the phase.
+
+
+\section {CURRENT STATUS AND FUTURE DIRECTION}
+
+The current version of CSRS implements most of the functions described
+in the previous sections. The data and process models, however, are
+currently hard-coded into the program and cannot be dynamically
+configured. The synchronous mode of support has just recently been
+added, and has not been used in a review yet.
+
+At the present time, our review experiences using CSRS are primarily
+with the process model shown in Figure \ref{fig:process-model}. Some
+of these experiences are described in \cite{Johnson93b} and summarized
+in Figure \ref{fig:review-experiences}.  In this section, we present
+additional observations from our experiences.
+
+\small
+\begin{figure}[tb]
+  \begin{center}
+    \begin{tabular} {|l|l|l|l|l|l|} 
+      \hline
+      {\bf Name} & {\bf Duration} & {\bf People} & 
+      {\bf Size} & {\bf Nodes} & {\bf Rate} \\
+        & & & (loc) & & (loc/hr) \\
+      \hline
+      NbuffI & 3 weeks & 5 & 450 & 104 & 200 \\
+      URN & 10 days & 4 & 475 & 75 & 350 \\
+      NbuffII & 5 weeks & 5 & 750 & 50 & 500 \\
+      \hline
+    \end{tabular}
+  \end{center}
+  \caption{Review experiences with CSRS to date}
+  \label{fig:review-experiences}
+\end{figure}
+\normalsize
+
+In general, review participants are pleased with the asynchronous
+review mode.  We usually give the participants one week to complete
+the private review and another week for the public review. The actual
+review time, however, is much shorter (see review-rate in Figure
+\ref{fig:review-experiences}).  The orientation phase is generally
+short (15 minutes), we expect the reviewers to carry out the
+comprehension activity during private review through the use of
+comment nodes (i.e., posting questions and soliciting answers).  The
+data, however, shows that only a few of these nodes are actually
+created. The reviewers tend to resolve any difficulty they have in
+understanding source materials by themselves instead of asking the
+producer or other group members.  A brief questionnaire after the
+review showed that the reviewers had not fully understood the
+materials even after the review (only about 80\%).  This poses a
+significant problem as to whether private review is indeed effective
+when there is a lack of understanding of the materials.  It may also
+indicate that the comprehension activity is less effective when
+combined with the examination activity or perhaps because of the
+asynchronous nature of the review. We plan to investigate these issues
+further.
+
+Another related observation is that the reviewers tend not to spend
+enough time reviewing complicated algorithms.  This leads us to
+question whether current strategy that uses a {\it status-flag} to
+indicate review completion is sufficient (i.e., to decide when the
+private review is completed, the moderator simply checks whether all
+source nodes have been marked {\it reviewed}).  We plan to investigate
+this by looking at possible correlation between complexity and {\it
+effective} review-time.
+
+Although the primary purpose of public review is error discussion and
+confirmation, we expect that the discussion may lead to discovery of
+additional errors\cite{Doolan92}. Our data, however, shows that no
+issue were created during public review.  This indicates that our
+examination activity takes place primarily during the individual phase
+as opposed to the group phase.
+
+Despite the many benefits of asynchronous mode
+\cite{Johnson93,Johnson93b}, we also observe several drawbacks.  First
+of all, most of the reviewers feel irritated during public review
+phase as they have to constantly login to the system to check for new
+issues or other commentary nodes. We plan to provide automatic
+electronic mail notification to resolve this problem. Another more
+serious problem is related to the limited bandwidth of the
+asynchronous mode itself. People often fail to express their thought
+in a written statement, and this often leads to unproductive
+discussion. For example, on several occasions we notice that the
+discussion thread contains a relatively large number of commentary
+nodes and their follow-up links. Basically, one reviewer raises an
+issue which is then disconfirmed by the producer and which is then
+reconfirmed by the reviewer by slightly modifying his previous
+statement. Then, it is disconfirmed again by the producer by
+reaffirming his previous statement, and so forth. When this issue is
+finally brought to the meeting (face-to-face mode), it often takes
+less than one minute to reach a consensus.  One way to resolve this
+problem is to have the moderator monitor this unproductive discussion,
+force them to refrain from further discussion and bring the issue to
+the meeting instead. Another way currently implemented, is simply to
+tell the reviewer to not agree on the issue and stop arguing about it
+(i.e., set the consensus flag to {\it disconfirm}). This issue will be
+brought to the meeting by default when the moderator consolidates all
+issues.
+
+Our future goals are to continue working on the current data and
+process model to collect more experimental data regarding various
+review factors described earlier, as well as conducting several formal
+experiments to test specific hypotheses about current review methods
+and their techniques. One experiment that we plan for the Spring 1994
+is to study three different examination techniques: free, selective
+test cases and verification based techniques. These techniques differ
+from each other in their amount of structure: free technique being the
+least structured while verification based technique being the most
+structured.  Our hypothesis is that there are significant differences
+in the error detection capability among these three techniques with
+the lesser structured techniques detecting fewer errors. This study
+will be carried out as part of a Ph.D. thesis currently under way.
+
+\section {CONCLUSION}
+We have described CSRS, a computer assisted review that provides a
+viable environment for studying different review methods. Our basic
+approach is to model the methods and investigate the underlying review
+factors that characterize those methods. 
+
+\section{ACKNOWLEDGMENTS}
+I would like to thank my advisor, Dr Philip Johnson, for his
+continuing support and guidance in this research and other members of 
+Collaborative Software Development Lab: Dadong Wan, Robert Brewer,
+Carleton Moore, and Rosemary Andrada for their assistance in preparing
+this manuscript as well as in the development of
+Egret\cite{Johnson92}. 
+
+
+\bibliography{csrs}
+\bibliographystyle{plain}
+
+\end{document}

@@ -1,0 +1,869 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% objective.tex -- 
+%% Author          : Carleton Moore
+%% Created On      : Mon Sep 19 11:14:03 1994
+%% Last Modified By: Carleton Moore
+%% Last Modified On: Tue Dec 27 16:48:11 1994
+%% Status          : Unknown
+%% RCS: $Id: objective.tex,v 1.1 1994/09/20 01:40:15 cmoore Exp cmoore $
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1994 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\documentstyle [11pt,/group/csdl/tex/definemargins]{article}      % Unix
+\input{/home/3/cmoore/tex/psfig}
+\begin{document}
+
+\title{Supporting authoring and learning\\ in a collaborative hypertext
+system:\\ The Annotated Egret Navigator.}
+
+\author {Carleton Moore\\
+\\ Collaborative Software Development Laboratory\\ Department of
+Information and Computer Sciences\\ 2565 The Mall\\ University of Hawaii\\
+Honolulu, Hawaii 96822\\ (808) 956-6920\\ {\tt
+cmoore@uhics.ics.Hawaii.edu}} \date{Techreport CSDL-TR-94-16\\ \today}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+\label{sec:introduction}
+
+
+%\subsection{Background}
+%\subsection{Issues}
+This research is concerned with how people collaboratively author and
+learn.  More specifically, it is concerned with how to design and implement
+a hypertext system to support collaborative authoring and learning. It will
+provide information on the following questions:\begin{enumerate}
+\item{What breakdowns occur in collaborative authoring and learning?}
+  \begin{enumerate}
+  \item{What types of breakdowns are due to moving collaboration on line?}
+  \item{What types of breakdowns are due to our collaborative methods?}
+  \end{enumerate} 
+\item{How does hypertext support collaborative learning?}
+  \begin{enumerate}
+  \item{What kinds of hypertext structure are necessary for collaborative learning?}
+  \item{What additional tools are needed for collaborative learning?}
+  \end{enumerate} 
+\item{How do authors create hypertext documents?}
+  \begin{enumerate}
+  \item{What kinds of hypertext structure are necessary for collaborative authoring?}
+  \item{What additional tools are needed for collaborative authoring?}
+  \end{enumerate} 
+\item{What are the reading patterns of hypertext users?}
+\item{What tools help the readers navigate in the hypertext document?}
+\end{enumerate}
+
+We are investigating these issues through the design, implementation, and
+evaluation of AEN \footnote{Annotated Egret Navigator}, a hypertext collaborative authoring and learning tool.
+
+These issues are becoming more and more important each day.  The use of
+hypertext as a structuring mechanism for richly interdependent information
+is becoming more widespread, and finds application in many areas of
+software engineering and other fields.
+
+The remainder of this paper is structured as follows, Section
+\ref{sec:collaborative-l} introduces collaborative learning and authoring
+in AEN. Section \ref{sec:evaluation} is a discussion of how we are going to
+answer the issues raised above.  Section \ref{sec:related-work} examines
+other collaborative learning and authoring systems and how they compare to
+AEN. Section \ref{sec:future} discusses future directions for AEN.
+
+
+\section{Collaborative Learning and Authoring in AEN}
+\label{sec:collaborative-l}
+Over the past five months, we have experimented with and redesigned AEN, a
+reader and authoring system for hypertext, that places equal weight on
+supporting the following: (1) on-line collaborative learning, (2)
+collaborative authoring facilities and (3) collecting data about user
+interaction with the hypertext document.  A fourth requirement of the
+system is rapid response time. This system has undergone extensive
+evolution as we learned more about the implications of these requirements
+and their often conflicting natures.
+
+AEN is a collaborative, instrumented learning/authoring tool built upon the
+Egret hypertext database system \cite{csdl-93-09}.  AEN consists of a
+hypertext document and several tools to support collaboration.  The
+hypertext document represents the text from which the students learn and
+the product of collaboration among the participants in the class.
+
+The initial requirements of AEN were to create a virtual classroom and move
+nearly all of the lectures for a class on-line into a hypertext document
+called {\em The Annotated Egret}.  The class' subject is how to design and
+construct collaborative systems using Egret.  This class would meet both
+on-line and off-line for discussions about issues.  Most of the interaction
+in the class would occur through annotation of the lecture material with
+new hypertext links to questions, comments, and insights.  A few actual
+classroom meetings would be supplementary forums to discuss things learned
+or questioned through on-line activities \cite{John94}.  The Fall 94 ICS613
+class is currently using AEN as the priciple learning environment.
+
+The following three sections provide a detailed look at AEN's data model,
+tool support and process model for collaborative authoring and learning.
+
+\subsection{Structure of Data in AEN}
+
+\subsubsection{Node Types}
+AEN has two different classes of nodes: artifact
+nodes and figure nodes.  Artifact nodes represent textual information in
+the hypertext document.  Figure nodes represent graphical information. 
+
+Artifact nodes contain HTML code that provides formating directives and
+inter-node links.  There are four subclasses of artifacts:
+\begin{itemize}
+\item{\bf document:} Nodes that contain the text of the document created by
+the participants.
+\item{\bf comment:} Nodes containing the reactions of the participants to
+the contents of other nodes.
+\item{\bf quicky quiz:} Nodes that contain exercises for the participants
+to complete.
+\item{\bf quicky quiz answer:} Nodes that contain the participant's
+solutions to the quicky quiz nodes.
+\end{itemize}
+
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=Data.eps,width=6in}}
+  \caption{{\bf Data Relationships in AEN}}
+  \label{fig:Data}
+\end{figure}
+
+Figure nodes contain the graphics used by xview to display the figures.
+Users can link figure nodes into artifact nodes.  Since figure nodes
+contain graphical information rather than HTML code, users cannot annotate
+them like artifact nodes.  Figure \ref{fig:Data} shows the relationships
+between the node types.
+
+\subsubsection{Link Types}
+AEN also has 6 types of links: Include, Xref,
+see\_Quicky\_Quiz, see\_Quicky\_Quiz\_Answer, see\_Comment, and
+see\_Figure.  AEN restricts the type of the source and destination nodes
+for each type of link. Table \ref{table:link types} describes the different
+links.  These restrictions allow AEN to support a structure known as the
+AEN Backbone.
+
+\begin{table}
+\begin{tabular}{|l|l|l|l|}
+\hline
+Link Type&Source Node&Destination Node&Description\\ \hline \hline
+Include&document&document&Backbone structure \\
+&&&of hypertext document\\ \hline
+Xref&document&document&Cross reference\\ \hline
+See\_Comment&Any&comment&Points to a Comment\\ \hline
+See\_Quicky\_Quiz&Any&Quicky Quiz&Points to a Quicky Quiz\\ \hline
+See\_Quicky\_Quiz\_Answer&Quicky Quiz&Quicky Quiz Answer&Points to a \\
+&&&Quicky Quiz Answer\\ \hline
+See\_Figure&Any&Figure&Points to a Figure\\ \hline
+\end{tabular}
+\label{table:link types}
+\caption{Link Types}
+\end{table}
+
+
+\subsubsection{The AEN Backbone}
+The AEN Backbone is the basic structure that defines {\em The Annotated
+Egret} document.  It begins with a Document node that contains Include links to the
+different ``chapters'' in {\em The Annotated Egret} document.  The Backbone
+is the skeleton on which {\em The Annotated Egret} is built.  It provides a
+spine for the hypertext.
+
+
+\subsection{Mechanisms for Data Manipulation in AEN}
+The previous section discussed the Data Model for AEN.  This section
+discusses mechanisms to manipulate artifacts: access control, table of
+contents, and nodelist.  The section concludes with two mechanisms to
+support real time communication in AEN, Snoopy and Partyline.
+
+\subsubsection{Access Control}
+AEN's access control mechanisms implement three forms of access to
+individual nodes: read access, write access, and annotation access. Users
+can set each form of access for individual users or for all users.
+When a user has read access for a specific node, they can retrieve and view
+it.  Similarly, when a user has annotation access they can comment on the
+node and make links from the node, but not edit its contents. Finally, when
+a user has write access to a node, they can change the text in the node.
+
+The read access mechanism is the primary access control mechanism.  The
+owner of a node can restrict all access by denying other users read
+access.  Users cannot annotate, or change the contents of nodes they cannot
+read.
+%, even if they have annotate or write access to the node.
+
+
+\subsubsection{Table of Contents}
+The access control mechanism determines which nodes a user may read, but it
+provides no navigational aids to the user.  To help the user navigate
+through the hypertext document AEN has a dynamically generated table of
+contents (TOC).  The user can ask for a new TOC at any time.  AEN
+calculates the new TOC from a starting node that the user chooses.  The TOC
+generation algorithm only looks at document nodes the user has read access
+to and include links.  It will only visit the children of
+a node once.  This rule breaks any cycles in the traversal of a hypertext
+network.  Once the TOC is displayed the user can decide what level of
+detail they want to view.  Figure \ref{fig:TOC} shows what an example TOC
+looks like.  The user can create multiple TOCs starting from different
+document nodes.  The table of contents should help users find their way
+through the hypertext document.  The TOC provides orienting
+information about the hypertext network and prevents the
+``lost-in-hyperspace'' phenomenon.  Another mechanism AEN has to help the
+user navigate in the hypertext document is node lists.
+
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=TOC.eps,height=4in}}
+  \caption{{\bf AEN's Table of Contents}}
+  \label{fig:TOC}
+\end{figure}
+
+
+\subsubsection{Node Lists}
+Node lists are a list of nodes based upon certain
+criteria.  AEN provides the user with several built in criteria for
+building these lists.  First, AEN allows the user to get a list of all the
+nodes of any type.  Second, the user can get a list of all the nodes they
+have not read yet or that have changed since the last time they were on
+AEN.  Finally, AEN allows the user to get a list of all the nodes they own.
+All of the node lists provide the user with a list of nodes from which 
+they may select and view. Figure \ref{fig:nodelist} shows what a node list
+of unread document nodes would look like.
+
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=nodelist2.eps,height=2.5in}}
+  \caption{{\bf Unread Document Node List}}
+  \label{fig:nodelist}
+\end{figure}
+
+
+
+All of the above mechanisms build upon the basic hypertext document, but we
+believe that a plain hypertext document is not good enough for effective
+collaboration.  To fully support collaboration there should be a
+``physical'' presence in the hypertext document.  Users can
+see who else is reading the document, what section they are in and
+communicate to any one else using AEN.  These features are difficult to
+support by just using hypertext.  The following two mechanisms provide
+these features in AEN.
+
+%With out real time communications we feel
+%that a virtual classroom is not possible.  Virtual classrooms with out real
+%time communications seem foreign to the us and we believe the lack of
+%communication will be a hindrance.  For the classroom we also want a way of
+%``seeing'' who was present and what they were doing.  This allows the user
+%to ask questions of the people that are present and that have been looking
+%at the same piece of the hypertext.  For collaborative authoring we also
+%want to be able to see who else is using AEN.  This way authors will be
+%able to meet other authors and talk to them. We have added two tools to
+%provide this presence and communication in AEN, Snoopy and Partyline.
+
+\subsubsection{Snoopy}
+The Snoopy mechanism allows the user to see who else is at work and have an
+idea of what they are working on.  It displays basic information about the
+connection status and last read node of the users of AEN.  Figure
+\ref{fig:snoopy} shows a view of the snoopy buffer.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=snoopy.eps,height=2in}}
+  \caption{{\bf AEN's Snoopy Buffer}}
+  \label{fig:snoopy}
+\end{figure}
+
+\newpage
+\subsubsection{Partyline}
+Partyline is a mechanism for passing real time messages to other users of
+AEN.  Partyline allows the user to send a textual message to all the users
+currently connected to AEN or send a private message to one other user
+currently connected to Partyline.  Figure \ref{fig:Partyline} shows a view
+of the Partyline buffer.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=partyline.eps,height=2in}}
+  \caption{{\bf AEN's Partyline}}
+  \label{fig:Partyline}
+\end{figure}
+
+Both facilities provide services that are similar to walking into
+a room containing the other people using AEN.  There are some significant
+differences between AEN's Snoopy/Partyline and the walking into a room.
+When you walk into a room, you can only see the people in the room.  You
+have no idea how long the people have been in the room and when people left
+the room.  Snoopy gives you this information.  You can see how long ago
+people left the room and how long people have been working on their current
+task.
+
+In a room many conversations can go on simultaneously and you can listen to
+any of the conversations in the room.  Partyline allows you to ``listen''
+to conversations that are sent to the entire room. In a real room it is
+easy to have two conversations at the same time since we can tune out other
+noises.  Partyline does not support two ``global'' conversations well.
+Since Partyline is text-based, users have to read the messages.  When the
+user receives a message they have to see who sent it.  This does not allow
+them to totally ignore the other conversations in the room.  If they
+actually read the message they focus their attention on the other
+conversation and may loose their train of thought of their conversation.
+
+One special feature that Partyline does allow is to have private
+conversations.  In a real room you can tell when people are ``whispering''
+to each other.  In Partyline there is no indication that two people are
+``whispering''.
+
+Another special feature of Partyline is that it keeps track of
+conversations.  If a user leaves their workstation and don't log out of AEN
+the Partyline buffer records the Partyline conversations.  When they return,
+the conversations are still accessible in the Partyline buffer.  The other
+users in AEN will know that they still can ``hear'' the conversations
+since Snoopy tells them that the user is asleep.  Snoopy displays the
+asleep message if the user has not done anything in a while.  Partyline
+allows a user to be paged.  Even though the user might be asleep the
+persistence of Partyline will tell them they have been paged.  They can
+respond to the page when they return.
+
+\subsection{AEN's Process Model}
+All of the above mechanisms are used by AEN to support collaborative
+learning and authoring.  The next sections discuss how these mechanisms
+are used for collaborative learning and authoring.
+
+\subsubsection{Collaborative Learning}
+For collaborative learning the hypertext document represents the textbook
+for the class and the instructor's lectures. When students have questions
+about the textbook or ``lectures'', they can ask their questions by
+annotating the text.  The instructor or other students can answer
+the questions by making annotations on the original question.  This way
+``in-class discussions'' can take place about different topics.  By using the
+access control mechanism students or instructors can decide who gets to
+read the node and who can participate in the discussions.  This allows
+groups to collaborate on a question or project easily.  When the group is
+ready, they can allow the rest of the class to view their answer or project.
+To find out if anything has changed on their project the students can use
+the node lists to see what nodes have changed.  This way they will waste
+less time searching for new information.
+
+The Snoopy and Partyline features expand AEN's textbook by providing
+synchronous communications. Students can get together in AEN and discuss the
+concepts presented in the text.  They can work together on solving the
+quizzes or projects presented in AEN.  Snoopy and Partyline allow the
+instructor to hold office hours by being ``present'' in AEN at given
+times.  The students can ask the instructor questions and receive
+answers immediately.  The instructor could have a group discussion with all
+the students present in AEN. If anyone decides that they want to save the
+discussion they can create a node in the hypertext document and paste the
+conversation into it.  This way a permanent record of the discussion can
+be kept. 
+
+The combination of hypertext document and synchronous communications allows
+the students to learn in many ways.  They can learn by exploring the text,
+asking questions, answering questions raised by their fellow students,
+building their own hypertext sections or by answering the exams and quizzes
+added by the instructor.  As the students learn, the hypertext document
+will be evolving.  The instructor will change the text to answer the
+questions raised by the students.  The students will be creating
+sub-documents in the hypertext document to explore the subject.  
+ 
+
+\subsubsection{Collaborative Authoring}
+
+AEN supports two methods for collaborative authoring: {\em proofreading \&
+trading the lock}.  In the proofreading method the author can create a node
+and ``publish'' it by changing the read and annotate access for the
+document.  Then other co-authors can make comments as simple as
+proofreading comments or as complex as philosophical discussions.  These
+comments could be thought of as marginal notes suggesting changes, new
+ideas, or just general comments on the subject.  The author can read the
+comments and make changes to the document or comment on the comments.  This
+can lead to discussions on the contents of the document.
+
+In the trading the lock method the author can create a node and
+allow other authors to edit the node by giving them read and write access to the
+node.  When a node is saved, all connected users viewing the node
+see the changes.  In this way two or more co-authors could trade the lock and
+make changes that all the co-authors will see.  
+
+%Philip wants to collaboratively author a document with Dadong.  To do this
+%Philip would create a new node to store part of the text for the document.
+%Philip then must decide how he wants to collaborate with Dadong.  
+%
+%If he want to get Dadong's comments on the document he could write the
+%document and then give Dadong read and annotate access to the node.  Philip
+%should then inform Dadong that he can read the node.  Dadong's Table of
+%Contents will reflect the change in read access if Dadong refreshes the
+%TOC.  Dadong then could read the node and create as many comments as he
+%wants.  When Dadong is finished making a comment he should set the read and
+%annotate access of the comment to allow Philip to read the comment.  Philip
+%can look at the document node and see what comments Dadong has made.  If
+%Dadong has finished the comment Philip will be able to read the comment.
+%If Philip agrees with the comment he can change the text of the document
+%node.  If Philip does not agree with the comment he can make a comment
+%about the comment.  If Philip and Dadong are using AEN at the same time
+%they could discuss their differences using Partyline.
+%
+%Another way Philip could collaborate with Dadong is to start the document
+%node and then give Dadong read and write access.  Then when Philip wants
+%Dadong to be able to edit the node he could unlock the node.  Dadong then
+%could get the lock and edit the node.  Each time Dadong saves the node
+%Philip will see the changes if he is viewing that node.  They could again
+%have a conversation about the contents of the node using Partyline.
+%
+%A third method of collaboration is a combination of these two.  Philip
+%could give Dadong read, write and annotation access to the node.  Then
+%Dadong could make changes and/or comments on the text.  This is the most
+%flexible method AEN supports for collaborative authoring.  In all of these
+%methods Dadong cannot change the access of the node.  If Dadong wanted
+%someone else to see the node he would have to ask Philip to change the read
+%access for the node.  Philip could add Dadong to the owner's list of the
+%node.  This way Dadong also has control over the access of the node.
+%Owners cannot lose their access to a node.  This is the most powerful way
+%of collaboratively authoring available in AEN.
+
+\section{Evaluation}
+\label{sec:evaluation}
+In order to provide data to address the questions raised in Section
+\ref{sec:introduction}, the following case study in the usage of AEN is
+being performed.
+
+\subsection{Duration}
+Starting in the Fall of 1994 12 students in the graduate seminar ICS 613
+are using AEN to learn about designing and implementing collaborative
+systems using Egret.  The experiment started in September 1994 and is
+continuing through December 1994.  Which corresponds to the Fall semester.
+During this period the contents of the hypertext document will be
+incrementally constructed while the system is in use.
+
+\subsection{Method}
+
+The method for this experiment is to collect metrics data generated by both
+authors and readers of the hypertext, collect bug reports and suggestions,
+and conduct a user survey.  The data will be analyzed both during and at
+the end of the experiment.  The metrics will be collected
+on:\begin{itemize}
+\item{node creation}
+\item{reading the contents of a node}
+\item{changing the contents of a node}
+\item{locking of nodes}
+\item{changing the access privileges for a node}
+\item{using different tools (ie Table of Contents, Node list, Unread
+  Nodes)}
+\end{itemize}
+
+A questionnaire will be developed to gain information about the users of the
+systems and their evaluation of the system.  More
+specifically:\begin{itemize}
+\item{How much hypertext experience the users had before the class}
+\item{Which tools were the most helpful}
+\item{How much each student learned from the class}
+\item{Which features were the most convenient to use}
+\end{itemize}
+
+AEN has a Feedback menu that allows the users to send suggestions and bug
+reports.  These suggestions and bug reports will be analyzed to help answer
+the research questions.  The ICS 613 class has periodic meetings.
+Suggestions or comments raised in these meetings will also be used to help
+answer the research questions.  These suggestions and bug reports will be
+classified in the following manner.\begin{itemize}
+\item{Are they inside or outside our paradigm.}
+\item{Do they involve a major or minor redesign of the system to
+implement.}
+\item{Are they important or nonessential.}
+\end{itemize}
+
+\subsection{Data Analysis}
+The data collected will consist of metrics data, user suggestions, bug
+reports and user questionnaires.  Let's revisit the central questions of
+this research objective, and discuss how this data can be used to assess
+them.
+\begin{enumerate}
+\item{\em What breakdowns occur in collaborative authoring and learning?}
+
+  By looking at the questionnaires we can see how the users feel about
+  AEN as a collaborative learning and authoring tool.  The user's input
+  will help us understand which tools provided by AEN they disliked.
+  The bug reports and suggestions will also tell us what problems they
+  had using AEN.  We can also look at the answers to the exercises and
+  projects to guage the knowledge learned by the users.  By looking at the
+  metrics we will see what patterns the users used and what patterns lead
+  to difficulties.
+
+  \begin{enumerate}
+  \item{\em What types of breakdowns are due to moving collaboration on
+    line?}
+
+  The comments raised in class will help us find out if face to face
+  meetings are required for collaboration.  The questionnaire will also ask
+  about how much time was spent in face to face meetings outside the
+  context of the class.  By looking at the bug reports and the suggestions
+  we can get an idea what the users liked and what the users did not like
+  about AEN.  This should give us an idea of what problems the users had in
+  collaborating on line.
+\item{\em What types of breakdowns are due to our collaborative methods?}
+
+  The user questionnaires and suggestions made by the users will help us
+  determine if our methods are correct for this group of students.  The
+  suggestions will tell us what features the users want to have.  The
+  questionnaires will tell us which features of AEN were not helpful or were
+  misleading.
+\end{enumerate} 
+\item{\em How does hypertext support collaborative learning?}  
+
+  The metrics will help us find out what types of nodes are used.  The
+  metrics will also tell us how the users answered ``collaborative''
+  assignments.  We can tell how a group answered the question.
+  Some of the possible ways they could collaboratively solve problems
+  are:\begin{itemize}
+\item{Alternatively Edit: They could create a solution and then take turns
+  editing the solution.}
+\item{Proof Read: They could create a solution and then proof read the
+  solution}
+\item{Discuss and Solve: They could create a discussion tree about the
+  solution then create the solution based upon the discussion}
+\item{Combination of the above methods}
+\end{itemize}
+\begin{enumerate}
+\item{\em What kinds of hypertext structure are necessary for collaborative
+  learning?}
+
+  By looking at the metrics and the types of nodes created we can see how
+  the users collaborated.  Did they create discussions through comments
+  or did they create separate collaborative documents?
+
+\item{\em What additional tools are needed for collaborative learning?}
+
+  The questionnaire and suggestions will give us an idea of how much the
+  other tools like Partyline and Snoopy were used to aid collaboration.
+  The user's suggestions will give us a good idea of what tools are missing
+  or are not necessary in AEN.  The classifications of the suggestions
+  should help us determine how good AEN's paradigm is.
+\end{enumerate} 
+\item{\em How do authors create hypertext documents?}
+
+  The metrics data will tells us how the users created new nodes and when
+  they changed the access privileges to allow the other users to read the
+  nodes.  We should be able to determine general strategies for authoring
+  hypertext document.  Some possible strategies are:\begin{itemize}
+\item{Build content then structure: The author creates the contents of the
+  nodes in a single node then creates the separate nodes in the network and
+  cuts and pastes the data into them.}
+\item{Build structure then fill content: The author could ``outline'' the
+  document by creating the structure of the nodes and then fill in their
+  contents.}
+\item{Iterative: The author could start filling the contents of a node
+  then build another node when the contents dictate a new node and then
+  start filling the contents of the new node.}\end{itemize}  The user's suggestions will also give us insight
+  into what tools they want to aid in the authoring process.
+
+  \begin{enumerate}
+  \item{\em What kinds of hypertext structure are necessary for
+    collaborative authoring?}  The metrics will tell us how authors
+    collaboratively created a document.  Did they take turns editing the
+    document or did they use the proof reading method?
+
+  \item{\em What additional tools are needed for collaborative
+    authoring?}
+
+    The metrics data will tell us which tools were used the most.  The
+    user questionnaires will tell us which tools the author's liked the
+    most.  The user's suggestions will show us what addtional tools to
+    include in AEN's design. The metrics and questionnaires should
+    correlate well.  If they do then we can conclude that those tools
+    are helpful in authoring a hypertext document.
+
+  \end{enumerate} 
+\item{\em What are the reading patterns of hypertext users?}
+
+  The metrics data will tell us exactly in what order the users read the
+  individual nodes in the hypertext document.  We will generate a ``map''
+  of activity for each user.  We hope to determine general patterns for
+  the users.  Some general patterns might be,
+  
+  \begin{itemize}
+  \item{Linear: The user generally reads through the document once from
+    one node to the next.}
+
+  \item{Hunt and peck: The user jumps from one node to another that is
+    not connected by a link.}
+
+  \item{Combination: The user might hunt and peck until a particular area
+    of the hypertext network is found then read linearly.}
+  \end{itemize}
+
+    
+\item{\em What tools help the readers navigate in the hypertext document?}
+
+  The metrics data will tell us which tools were used the most.  The user
+  questionnaires will tell us which tools the user's liked the most.  The
+  user's suggestions will tell us what new tools to include in AEN's
+  design.  The metrics and questionnaire should correlate well.  If they
+  do then we can conclude that those tools are helpful in navigating in a
+  hypertext document.
+
+\end{enumerate}
+
+
+\section{Related Work}
+%\subsection{Collaborative Systems}
+\label{sec:related-work}
+AEN's set of features were designed to explore the issues presented in the
+introduction.  AEN provides a typed hypertext document, dynamic user
+defined table of contents, real-time communications with other users of the
+system, real-time knowledge of what the other users of the system are doing
+and access control for each node.  Other hypertext or collaborative editors
+provide different combinations of these features.  The final thesis will
+look closely at the following collaborative or hypertext
+systems abilities to explore the issues raised in Section \ref{sec:introduction}.:\begin{itemize}
+\item{SEPIA \cite{Haak92}: a collaborative hypermedia authoring environment.}
+\item{ShrEdit \cite{Cogn90}: a collaborative editor.}
+\item{HyperCard: a Hypertext system that does not support collaboration.}
+\item{WWW \cite{WWW94}: a global Hypertext system.}
+\item{Intermedia: one of the largest and oldest hypermedia systems designed
+to support learning.}
+\item{GROVE \cite{Elli88}:}
+\item{Quilt \cite{Fish88}:}
+\item{NodeCards \cite{Hal87,Tri88,MI89}:}
+\item{ENFI \cite{BPB93}:}
+\item{PREP \cite{NKCM90,NCK+92}:}
+\item{SASE \cite{BNPM93}:}
+\item{WE \cite{SWF87}:}
+\end{itemize}
+
+%\subsection{Collaborative Learning}
+
+
+%
+%\subsection{SEPIA}
+%SEPIA is an exception to this.  It is a collaborative hypermedia authoring
+%environment.  It provides support for synchronous as well as asynchronous
+%authoring.  It uses a graphical interface to represent the hypermedia
+%document.  I provides support for collaboration by informing the user when
+%another user is in the same area of the hypermedia network.  SEPIA provides
+%both audio and video communications between users.  In the synchronous mode
+%the users can see each others mouse cursors.  The controller controlls the
+%scrolling and node selection for the group in closely coupled mode.  The
+%users of SEPIA can change the structure of the hypermedia document
+%collaboratively.  I do not know if they are able to lock a node and edit
+%the individual nodes or not.  I know that if one user does change the
+%contents of a graphics node all other users see the change immediately.
+%The goals of SEPIA are more oriented toward supporting collaboration not
+%collaborative editing of hypertext.  SEPIA was not built to study
+%collaborative learning.\cite{Haak92}
+%
+%\subsection{ShrEdit}
+%\subsection{USENET}
+%\subsection{WWW}
+%\subsection{Lotus Notes}
+%\subsection{HyperCard}
+%
+%
+%With out the support for collaborative authoring or changing the hypertext
+%document collaborative learning cannot take place.
+%
+%In today's rapidly changing world the ability to author new hypertext
+%documents or modify existing hypertext documents is becoming more
+%important.  
+
+
+%\section{New insights to collaborative learning and authoring}
+%
+%AEN has been evolving over the course of the experiment.  As users are
+%using the system we have been making ``improvements'' to the system.  This
+%has lead to some significant problems.  The ``improvements'' have often
+%lead to consistency errors in the database.  The changes made have to be
+%propagated through the database.  One significant change has been the
+%complete re-design of AEN's class system.  This re-design caused major
+%changes in the nodes of the database.  We were able to minimize the cost by
+%just adding information to the nodes.  This allowed us to use the old
+%representation and create new nodes with out much difficulty.  These
+%changes have lead to some problems also.  Several times the users were
+%unable to read old comments because they had not been updated to the newest
+%version of AEN.  This evolution has allowed the users to continue to use
+%AEN while the developers have been able to modify the system.  
+%
+%%AENs design/implementation cycle has been significantly different than most
+%%of CSDL's other projects.  The typical CSDL project goes through intensive
+%%design for a few months then a short usage to test the application.  After
+%%the user's testing the application goes through more re-design and
+%%implementation.  After the fixes have been implemented the application is
+%%given to the users to test for a short period.  This cycle is repeated
+%%several times.  
+%
+%AENs cycle has been very different.  There was an intense
+%design/implementation period that lasted for about three months.  Then the
+%application was ``released'' and used by ICS613.  While it was in use
+%re-design and bug fixes were continually happening.  AEN has had only one
+%``cycle'' of pure design/implementation.  The rest of the changes are due
+%to user input.  They were implemented as the users used the system.
+%
+%{\em This section is under development.  It does not belong in the
+%proposal.}
+%\subsection{AEN's Current Data Model}
+%\subsection{AEN's Current Process Model}
+%
+%%\subsubsection{Collaborative Learning}
+%%\subsubsection{Collaborative Authoring}
+%%\subsection{AEN's Current Tools for Real Time Collaboration Support}
+%\subsection{Specific support for Process Model}
+%
+%Another feature added to AEN during the semester is the ability to create a
+%collection of nodes by type.  The user can ask to see a list of all of the
+%comment nodes in the hypertext document.  The user is then able to select
+%the comment they want to read and the comment will be displayed.
+%
+%%\item{Unread Nodes,}  Records the status of the nodes.  It keeps track of
+%%which nodes the user has read and which ones have been changed since the
+%%last time the user was logged on.
+%%\item{History,}  Records what nodes have been visited.  This allows the user
+%%to easily return to a node they had visited.
+%%\item{Node List,}  Displays different lists of nodes such as unread and
+%%types.  This allows AEN to display customized list of nodes.  
+
+\section{Future Directions}
+\label{sec:future}
+
+An area that this research does not look at is the difference between
+collaboration in the small and collaboration in the large.  Also the
+difference between a static hypertext reader like Mosaic and AEN is not
+investigated.  AEN dynamically generates many navigation aids that Mosaic
+cannot at this time.  What is the effect of these navigation aids on the
+reader and author of hypertext?
+
+
+\appendix
+\newpage
+\section{User Questionnaire}
+
+The following questionnaire will be given to each of the users of AEN
+during the experiment.  The questionnaires will be anonymous.
+
+Please circle the answer or number which most appropriately reflect your
+impressions.  Not Applicable = NA.  There is room on the last page for your
+written comments.\\
+\begin{tabular}{llcll}\\
+\hline
+Previous Experience:&&\\
+Emacs:&\underline{    } $ < $ 3 months&  &Hypertext:&\underline{    } $ < $ 3 months\\\
+&\underline{    } 3 -  $ < $ 6 months&  &&\underline{    } 3 -  $ < $ 6 months\\
+&\underline{    } 6 - $ < $ 1 year&  &&\underline{    } 6 - $ < $ 1 year\\
+&\underline{    } 1 year - $ < $ 2 years&  &&\underline{    } 1 year - $ < $ 2 years\\
+&\underline{    } 1 year - $ < $ 2 years&  &&\underline{    } 1 year - $ <
+$ 2 years\\
+& NA&&&NA\\
+\\
+Collaborative Systems:&\underline{    } $ < $ 3 months&  &&\\
+&\underline{    } 3 -  $ < $ 6 months&  &&\\
+&\underline{    } 6 - $ < $ 1 year&  &&\\
+&\underline{    } 1 year - $ < $ 2 years&  &&\\
+&\underline{    } 1 year - $ < $ 2 years&  &&\\
+&NA&&&\\
+\end{tabular} \\
+
+\begin{tabular}{lrccccccccclc}\\
+\hline
+Overall reactions to AEN:&terrible&1 &2 &3 &4 &5 &6 &7 &8 &9 &wonderful&NA\\
+&frustrating&1 &2 &3 &4 &5 &6 &7 &8 &9 &satisfying&NA\\
+&dull&1 &2 &3 &4 &5 &6 &7 &8 &9 &stimulating&NA\\
+&difficult&1 &2 &3 &4 &5 &6 &7 &8 &9 &easy&NA\\
+&rigid&1 &2 &3 &4 &5 &6 &7 &8 &9 &flexible&NA\\
+\hline
+Learning to operate AEN:&difficult&1 &2 &3 &4 &5 &6 &7 &8 &9 &easy&NA\\
+\hline
+Getting Started&difficult&1 &2 &3 &4 &5 &6 &7 &8 &9 &easy&NA\\
+\hline
+Learning advanced features&difficult&1 &2 &3 &4 &5 &6 &7 &8 &9 &easy&NA\\
+\hline
+Time to learn to use AEN&slow&1 &2 &3 &4 &5 &6 &7 &8 &9 &fast&NA\\
+\hline
+Exploration of features\\
+ by trial and error:&discouraging&1 &2 &3 &4 &5 &6 &7 &8 &9 &encouraging&NA\\
+\hline
+Exploration of features&risky&1 &2 &3 &4 &5 &6 &7 &8 &9 &safe&NA\\
+\hline
+Discovering new features&difficult&1 &2 &3 &4 &5 &6 &7 &8 &9 &easy&NA\\
+\hline
+Remembering names and\\
+ use of commands:&difficult&1 &2 &3 &4 &5 &6 &7 &8 &9 &easy&NA\\
+\hline
+Can tasks be performed in\\
+ a straight-forward manner?&never&1 &2 &3 &4 &5 &6 &7 &8 &9 &always&NA\\
+\hline
+Are the needs of both&never&1 &2 &3 &4 &5 &6 &7 &8 &9 &always&NA\\
+ experienced and\\
+ inexperienced\\
+ users taken into\\
+ consideration?
+\end{tabular}
+\newpage
+Please rank the following tools:
+
+\begin{tabular}{lrccccccccclc}\\
+\hline
+I used the Table of Contents&never&1 &2 &3 &4 &5 &6 &7 &8 &9 &always&NA\\
+\hline
+I used Unread Nodes&never&1 &2 &3 &4 &5 &6 &7 &8 &9 &always&NA\\
+\hline
+I used Nodes by type&never&1 &2 &3 &4 &5 &6 &7 &8 &9 &always&NA\\
+\hline
+I used Owned Nodes&never&1 &2 &3 &4 &5 &6 &7 &8 &9 &always&NA\\
+\hline
+I used the Back \& &&&&&&&&&&&&\\Navigation Menu&never&1 &2 &3 &4 &5 &6 &7 &8 &9 &always&NA\\
+\hline
+I used History List&never&1 &2 &3 &4 &5 &6 &7 &8 &9 &always&NA\\
+\hline
+I used Snoopy&never&1 &2 &3 &4 &5 &6 &7 &8 &9 &always&NA\\
+\hline
+I used Partyline&never&1 &2 &3 &4 &5 &6 &7 &8 &9 &always&NA\\
+\hline
+\\
+The Table of Contents&&&&&&&&&&&&\\ is helpful&not at all&1 &2 &3 &4 &5 &6 &7 &8 &9 &very helpful&NA\\
+\hline
+Unread Nodes is helpful&not at all&1 &2 &3 &4 &5 &6 &7 &8 &9 &very helpful&NA\\
+\hline
+Nodes by type is helpful&not at all&1 &2 &3 &4 &5 &6 &7 &8 &9 &very helpful&NA\\
+\hline
+Owned Nodes is helpful&not at all&1 &2 &3 &4 &5 &6 &7 &8 &9 &very helpful&NA\\
+\hline
+The Back \& Navigation Menu&&&&&&&&&&&&\\
+ is helpful&not at all&1 &2 &3 &4 &5 &6 &7 &8 &9
+&very helpful&NA\\
+\hline
+History List is helpful&not at all&1 &2 &3 &4 &5 &6 &7 &8 &9 &very helpful&NA\\
+\hline
+Snoopy is helpful&not at all&1 &2 &3 &4 &5 &6 &7 &8 &9 &very helpful&NA\\
+\hline
+Partyline is helpful&not at all&1 &2 &3 &4 &5 &6 &7 &8 &9 &very helpful&NA\\
+\hline
+
+\end{tabular}
+
+Please add any additional comments here:
+\newpage
+\addcontentsline{toc}{section}{References}
+
+
+\nocite{Baecker93}
+\nocite{Berners-Lee94}
+\nocite{Bruce93}
+\nocite{Buxton90}
+\nocite{Cogn90}
+\nocite{Conklin87}
+\nocite{Conklin88}
+\nocite{Ellis88}
+\nocite{Ellis91}
+\nocite{Fish88}
+\nocite{Haake92}
+\nocite{Halasz87}
+\nocite{Marshall89}
+\nocite{Neuwirth90}
+\nocite{Neuwirth92}
+\nocite{Smith87}
+\nocite{Trigg88}
+
+\bibliography{/group/csdl/bib/aen}
+\bibliographystyle{plain}
+
+
+\end{document}
+
+
+
