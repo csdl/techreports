@@ -1,0 +1,63 @@
+#! /usr/local/bin/wish -f
+
+# Copyright 1995, 1996 Andrew Worsley
+# May not be redistributed 
+
+# main program of psptool
+set debug 0
+set savestate 0
+
+# translate a relative name to an absolute name
+# using the psp directory name if it exists otherwise use absolute name
+proc rel2gblfname fname {
+    global pspdir
+    if {[regexp {^/} $fname]} {
+	return $fname
+    }
+    if {$pspdir != ""} {
+	return "$pspdir/$fname"
+    }
+    return [rel2absfname $fname]
+}
+# translate a relative name to an absolute name
+proc rel2absfname fname {
+    if {[regexp {^/} $fname] == 0} {
+	global env
+	return "$env(HOME)/$fname"
+    }
+    return $fname
+}
+
+set pspdir [rel2absfname .psp]
+
+
+# read in OS specific procedures
+set ostk [rel2gblfname "os.tk"]
+source $ostk
+
+# read in supporting procedures
+set psptk [rel2gblfname "psp.tk"]
+source $psptk
+
+# read in supporting report routines
+set pspreports [rel2gblfname "reports.tk"]
+source $pspreports
+
+# read in configuration information
+init_globals [ getcnfile .pspcnf]
+
+# Initialise main window
+wm title . "psptool $pspversion"
+wm withdraw .
+
+# initialise our state to that of last time we ran
+#set statefile [rel2gblfname $statefile]
+rd_state $statefile
+
+# Either a new project button or start up inside the project
+if {$phase == ""} {
+    newprojbut
+} else {
+    setupsp $project $psp $phase
+}
+set savestate 1

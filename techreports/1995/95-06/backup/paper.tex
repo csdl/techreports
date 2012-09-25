@@ -1,0 +1,690 @@
+\documentstyle [12pt,twoside,epsf,ecscw95]{article}
+
+%%\input{/group/csdl/tex/psfig/psfig}
+
+\begin{document}
+\title {Building Software Review Systems\\
+ Using CSRS}
+\author{ Danu Tjahjono\\
+Department of Information and Computer Sciences \\
+University of Hawaii, U.S.A.}
+
+\maketitle
+
+\thispagestyle{empty}
+\begin{abstract}
+The importance of Software Review and its benefits have been well
+documented. However, there are many variations of the method in
+practice. This paper discusses a new approach to how organizations can 
+build their own review systems that are most suitable to them.
+Our basic approach is to use CSRS modeling languages
+to characterize the review method descriptively. 
+The language descriptions are then compiled to generate the
+corresponding review systems.
+CSRS modeling languages are developed based on FTR framework, that is,
+a classification of current FTR practices.
+\end{abstract}
+
+\section{Introduction}
+
+Software Reviews or Formal Technical Reviews (FTR) play
+an important role in software development as a means to
+improve the quality of software products. Unfortunately, many
+software organizations have not employed the full potential of
+this technique.  One problem that hinders its adoption to an
+organization is the labor intensive nature of the technique,
+especially when practiced manually. Another serious problem is related
+to  the current proliferation of FTR methods and ambiguities in their 
+practices. The same review method is often practiced differently by
+different organizations. 
+%Furthermore, there are many conflicting theories as to
+%what factors can be attributed to the success or failure of a
+%particular review method. 
+
+Our CSRS (Collaborative Software Review System) version 3 addresses
+these problems. Instead of implementing a specific review 
+method, we developed a generic review system with enactable review
+methods. The review method is first described using the CSRS modeling 
+languages. The language descriptions are then compiled to generate the
+review system that runs the prescribed review method. 
+
+This approach allows the organizations to implement their own computer
+based review systems using the review methods that most suitable to their
+organizations. Furthermore, we provide 
+automatic metrics collection that allows the organization to
+evaluate their review methods and improve them over time.
+
+
+\section {Research Problems}
+Formal Technical Review is a well-defined and well-executed activity
+where a group of people meet together to evaluate software products.
+Although there is a well published literature on how to
+effectively conduct this review \cite{Fagan76}, in
+practice there are many variations in performing it.
+For example, some researchers
+\cite{Fagan76,Russell91} explicitly advocate the use of paraphrasing
+for effective review, while others \cite{Humphrey90} consider it
+optional. Still others prefer to include no group process (i.e.,
+primarily the collection of individual efforts)
+\cite{Votta93}, or discourage active participation of the producer
+during group meeting \cite{Ackerman89,Russell91},  or to advocate the
+use of checklists \cite{Fagan76,Humphrey90,Freedman90} or selective
+test cases \cite{Ackerman89,Dunn84}. 
+
+Similarly, the same review method is often 
+implemented differently by different review systems. For example, both
+ICICLE \cite{Brothers90} and Scrutiny \cite{Gintell93} implement
+Fagan's inspection.  As a result, the users of these systems are no
+longer practicing the same method.
+
+To address these problems, we developed a framework that
+characterizes a FTR process. As such, it will not only expose the
+similarities and differences in current FTR practices, but also remove
+any ambiguities concerning how to conduct the review.
+
+
+\section {FTR Framework}
+
+The framework looks into the underlying review factors or review
+dimensions that characterize a review process. In general, a review
+process consists of a set of review phases, each has its own
+objective(s), interaction mode and technique or strategy.
+
+\begin{enumerate}
+\item {\bf Review Objective.} This dimension describes the goal
+of a given review phase. This normally includes comprehension,
+examination and/or collection/consolidation. Comprehension is the
+review activity that focuses on understanding review materials;
+examination is the activity that focuses on finding errors or other
+anomalies in the software products; and collection is the activity
+with the goal of collecting or consolidating issues
+raised by individual reviewers (e.g., from previous phase). 
+For example, the meeting phase in Fagan's
+inspection \cite{Fagan76} has the objective of examination, while the
+meeting phase in Humphrey's inspection \cite{Humphrey90} has the
+objective of collection. 
+In practice, a review phase can include more than one objective (e.g.,
+the preparation phase in Humphrey's inspection has the
+objectives of both comprehension and examination).
+
+\item {\bf Interaction Mode.} This dimension describes how the
+participants collaborate to realize the objective. This includes three
+sub-factors: degree of collaboration, synchronicity, and role. The
+degree or type of collaboration refers to whether the participants
+perform the 
+assigned task as a group, or as  individuals (i.e., collection of
+individual efforts).  
+Synchronicity refers to whether the group meeting takes place
+synchronously (at the same time) or asynchronously (can be at
+different time). Role refers to 
+individual participant roles (e.g., Moderator, Reviewer, Reader,
+Recorder, Producer, etc.). 
+All of these factors have been shown to shape a review method.
+For example, in Fagan's code inspection, the preparation phase is
+basically individual mode, where the participants perform the task
+individually and asynchronously; the meeting phase is
+group-synchronous mode where the participants meet face to face at the
+same time.
+Likewise, the group meeting normally includes different participant
+roles (e.g., the Moderator who moderates group discussion, the
+Reader who presents 
+review materials, the Recorder who records meeting results, etc).
+
+
+\item {\bf Technique.}
+This dimension describes a specific technique or strategy that the
+participants use to accomplish the objective of a given phase.
+For example, the use of checklist during individual examination
+activity, or paraphrasing during group examination activity
+\cite{Fagan76}, or stepwise abstraction technique during individual
+examination \cite{Basili85}.
+
+\end{enumerate}
+
+With this framework, a review process can now be described in terms
+of phases, where each phase has a specific objective, interaction mode
+and technique. Using this approach, we are able to characterize and
+classify most major current review methods \cite{Tjahjono94}.
+
+\section {CSRS (Collaborative Software Review System)}
+
+CSRS version 3 is a review system that implement this framework. As
+such, it can model and run various review methods. The basic approach
+is to provide generic modeling languages to implement the framework,
+specifically, the data and the process modeling languages.
+The data modeling language allows one to describe the artifacts
+manipulated by the review method, and the process modeling language
+allows one to construct a review method by 
+prescribing the review phases, the objective, the interaction mode and
+the review strategy to be used within each phase.
+These language descriptions are then compiled to generate the
+corresponding review system. 
+
+
+\subsection{CSRS Data Modeling Language}
+
+The data modeling language describes what artifacts are manipulated by
+the review method. It defines various types of review
+artifacts, their field structures, and the relationships among the
+artifacts. In CSRS terminology, review artifacts are called nodes.
+Each node may contain multiple fields, and each field may store
+various types of object, such as 
+textual string, function definitions, and link definitions.
+Relationships among the nodes are represented by links.   
+Nodes and links are typed, that is, different review artifacts and
+their relationships can be represented by different node and link types. 
+A set of computational supports can also be provided for different
+artifact types.
+
+One may also define a set of attributes to node instances (with or
+without specific node types), such as node names, creation-date,
+creator, etc. 
+
+A node can also have {\it state}. This state allows one to
+keep track various review status, such as whether the user has read
+and reviewed specific source nodes during specific phases, or has
+reviewed all the checklist, etc.
+
+CSRS data language defines four {\it base} node
+types: Source, Commentary, Checklist and Administrative. The
+applications can inherit from these types to implement their own
+specific sub-types.
+
+Source nodes contain input artifacts to be reviewed. For code review,
+the users typically want to differentiate source nodes into function,
+macro, procedure, etc.  CSRS also provides built-in parsing mechanisms
+that allow input files to be automatically parsed into source nodes. 
+
+Commentary nodes contain output artifacts generated during the
+review. Similarly, one can define different commentary types,
+such as, {\it issue} nodes to record defects in the source,
+{\it action} nodes to record proposal in resolving the issue, 
+{\it consolidated-issue} nodes to consolidate similar issue nodes, etc.
+
+Checklist nodes contain verification aids. In manual review practices,
+such as Fagan's method \cite{Fagan76}, the reviewers are often required
+to consult this checklist when examining source nodes. CSRS language
+system allows checklist items to be defined for a specific source
+node, and/or a specific participant role.
+This checklist can also be stated as {\it required} or {\it optional}. 
+For the required checklist, the reviewers
+must explicitly check the item off when examining the corresponding
+source. 
+
+Administrative nodes contain administrative information about the
+review process and project related information, such as participant names
+and roles, the starting and ending review date, etc.
+
+Figure \ref{fig:data-language} 
+shows an example of the data modeling language for describing
+{\sl Issue} node, its fields (Subject, Category, etc),
+and the link ({\sl derives}) originated from {\sl Source} node to this
+Issue node. 
+
+\begin{figure}[tp]
+  \footnotesize
+  \begin{verbatim}
+(l*data*define-node-schema
+  :name "Issue"
+  :superschema "Commentary"
+  :fields (("Subject")
+           ("Category")
+           ("Criticality")
+           ("Source-node" :init-fn e*issue*set-source)
+           ("Lines")
+           ("Description")
+           ("Consensus" :init-fn (e*node*set-consensus "confirm"))
+           ("Related-issues")
+           ("Proposed-actions")
+           )
+  :make-link-fn e*derives*make
+  )
+
+(l*data*define-field-schema
+  :name "Subject"
+  :type text
+  )
+
+(l*data*define-field-schema
+  :name "Source-node"
+  :type lisp
+  :display-fn e*node*name
+  )
+
+(l*data*define-link-schema
+ :name "derives"
+ :documentation "Derives issue node from any source nodes"
+ :from-nodes ("Source")
+ :to-nodes ("Issue" "Consolidated-issue")
+ :label "csrs-link-label"
+ :at-fields  '((:from-node "Source" :to-node "Commentary" :field "Issues")
+              )
+ )
+
+  \end{verbatim}
+  \normalsize
+  \caption{Example of CSRS data language}
+  \label{fig:data-language}
+\end{figure}
+
+
+
+\subsection{CSRS Process Modeling Language}
+
+The process modeling language describes specific phases that
+review participants must go through in order to complete the review
+process. 
+Each phase  may involve one or more objectives to be
+achieved, specific interaction mode, and specific strategy or
+technique to be used in order to achieve the objective. 
+
+To describe the objective of a phase using this language, the user
+defines a predicate function that specifies the entry and/or the exit
+condition of a phase. The system will check these conditions to
+determine whether the current phase can be ended (i.e., exit
+condition of current phase) and the next phase can be started (i.e.,
+entry condition of the next phase). 
+
+The interaction mode of a phase is specified by defining the
+synchronicity mode, the roles and the type of collaboration within the
+phase. 
+
+CSRS provides two built-in synchronicity modes: asynchronous
+and synchronous review mode. In the asynchronous mode, the
+participants manipulate review artifacts (nodes) asynchronously.
+Group discussion (if it is allowed by the review method) is done
+through the creation of follow-up links to the appropriate nodes. 
+Additional computational supports can
+also be provided to automatically consolidate the discussion by 
+traversing the proper links. For example, to display all arguments that
+support a proposal mentioned in a node, one can write the operation
+that traverses all links of type {\it confirm} originating from the
+node. 
+
+The synchronous mode allows all participants' screens to be
+synchronized or locked with the presenter.
+Thus, when the presenter displays a node, the node will also be
+displayed in all participants' screens. 
+The language construct allows one to define what node types to be
+synchronized, and with whom they are to be synchronized. In
+synchronous mode, one needs also to define a meeting leader (for
+example, Moderator). The meeting leader will be granted additional 
+operations not available to other participants during the
+corresponding phase. One of them includes the operation to 
+temporarily reassign the presenter to other participants during the
+meeting. 
+
+Participant roles are defined using the {\it define-role} construct. 
+This construct itself does not specify the participants who will
+assume the corresponding roles. Roles assignment is  done during system
+initialization when all participants have been given specific
+roles by the meeting administrator.
+
+The type of collaboration among participants is defined through access
+control privileges of the artifacts. This access control specifies
+what artifacts can be 
+accessed (read/write) by whom (what role) during what phase.
+
+The review technique or strategy to be used in a phase is review
+method specific. They have to be implemented
+separately and later to be included into the system using {\it
+define-operations} construct. 
+CSRS only provides one built-in review technique, i.e., the
+checklist based review technique.
+
+CSRS implements a sequential process workflow, that is, a
+review process consists of a sequential ordering of review phases.
+CSRS provides both manual and automatic
+activation of these phases. In the manual mode, a designated participant
+(e.g., moderator) will check the status of the review periodically (or
+program the system to notify him/her when the status changes) and activate
+the next phase accordingly. In the automatic mode, an autonomous agent
+(background process) will monitor the status of the review
+periodically by checking the exit condition of the current phase, and/or
+the entry conditions of the next phase, and activate the next phase
+accordingly when the conditions have been met.
+
+Within a phase, the process workflow is enforced through menu
+selections. The operations installed in the menu are
+not only sensitive to the current phase, but also to the current role that
+the participant is assuming and the current node type and field type.
+When installing the user-defined operations (i.e., using the
+define-operations construct), one must specify
+whether the operations are applied to specific 
+phases, roles, node types and/or field types. The system can then
+figure out whether to install the operations as pop-up menu,
+or pull-down menu.
+
+The operations can also be installed to be automatically invoked by the
+system right after the participants successfully connect to a phase.
+This feature allows the process work flow to be initiated. It can
+guide the participants to what they have to do when they first
+start the phase.
+
+Figure \ref{fig:process-language} shows a partial  example of process
+language for describing the review process of FTArm
+\cite{Johnson93,CSDL-93-17}.  The method defines 6 review phases:
+Orientation, Private, Public, Consolidation, Meeting, and Conclusion.
+The Private phase defines Reviewer and Producer roles, that is, only
+participants with these roles can login to Private phase.
+
+The define-access-privilege construct specifies
+that the participants with the Reviewer role 
+may create Issue, Action and Comment nodes during 
+Private review phase. They may also read Source
+and Checklist nodes, but can only read their own Issue, Action and
+Comment nodes (i.e., commentary nodes created by other reviewers are
+not visible).
+
+Finally, the last language construct installs the operation
+to list all source nodes. This operation is intended for the
+participants with the roles of Producer, Reviewer, and/or Moderator
+and to be used in Orientation phase. Furthermore, it will be
+automatically invoked when the participants first connect or login to
+this phase.  
+
+
+\begin{figure}[tp]
+  \footnotesize
+  \begin{verbatim}
+(l*process*define-method       ;define process model of FTR method
+  :name "FTArm"                
+  :phases ("Orientation" "Private" "Public" "Consolidation" "Meeting" "Conclusion")
+  )
+
+(l*process*define-phase
+ :name "Private"
+ :documentation "Individual reviewers examine source nodes"
+ :objective "Finding issues in the source nodes."
+ :roles ("Reviewer" "Producer")
+ :synchronicity "Asynchronous"
+ :technique "Free Review"
+ :exit-condition-fn e*private*sources-reviewed-p
+ :display-status-fn e*private*display-status
+ :metrics-collection-p t
+ )
+
+(l*process*define-role         ;define valid role
+ :name "Reviewer"
+ :documentation "Participants who review source nodes."
+ )
+
+(l*process*define-access-privilege 
+  :roles ("Reviewer")
+  :phases ("Private")
+  :privilege ((:operation create-node 
+               :access private 
+               :node-schemas ("Issue" "Action" "Comment"))
+              (:operation read-node 
+               :access public 
+               :node-schemas ("Source" "Checklist"))
+              (:operation read-node
+               :access private
+               :node-schemas ("Issue" "Action" "Comment"))
+              )
+  )
+
+(l*process*define-operations
+ :operation-specs 
+ (("List all source nodes" (i*sbuff*sources-orientation 'i*sbuff*sort-sources))
+  )
+ :roles ("Producer" "Reviewer" "Moderator")
+ :phases ("Orientation")
+ :connect-p t
+ )
+
+  \end{verbatim}
+  \normalsize
+  \caption{Example of CSRS process language}
+  \label{fig:process-language}
+\end{figure}
+
+
+\section{User Interface}
+
+CSRS user interface is built on top of Lucid Emacs, an X-Window
+version of Emacs editor that supports pull-down menu, pop-up menu, and
+scroll bar. A node is displayed as an instance of Emacs
+buffer, with its fields as distinguished regions in the buffer. A link
+will appear as link-label in the buffer. To follow the link, the user
+simply clicks the {\it mouse} on the corresponding label. The
+user may also annotate a 
+specific text region in a node with another node.
+
+Different node buffers can also be displayed on different Emacs screens. 
+CSRS also provides language constructs to define screen real estate,
+such as where to put the Emacs screen on the workstation display and
+what node types should be displayed on it.
+The interface language also allows one to define
+{\it summary-buffers} to display summarized views of node instances. 
+The specific items to be displayed on this buffer and their display
+format can be specified in advance. 
+
+Figure \ref{fig:csrs-screen} shows typical CSRS screens: the left
+side displays source nodes, the upper right side displays summary
+nodes and the lower right side displays commentary nodes.
+
+\begin{figure}[h]
+%  {\centerline{\psfig{figure=csrs-screen.ps}}}
+  \begin{center}
+  \epsffile{csrs-screen.ps}
+  \end{center}
+  \caption{CSRS Screen}
+  \label{fig:csrs-screen}
+\end{figure}
+
+\section{Review Metrics}
+Metrics collection is always part of a well executed review activity.
+CSRS collect these metrics automatically and at a
+fine-grain level. There are two types of metrics collected by
+the system: the ones associated with review artifacts and their
+attributes, and the ones associated with review efforts (time spent by
+participants).  The first type can be obtained directly
+from the corresponding nodes/links generated during the review
+(e.g., counting the number of issue nodes generated by a
+particular participant). To obtain the second type of metrics, we
+instrument the primitive CSRS commands with time-stamp
+mechanisms. When the user 
+invokes the command, the system will record the starting time of the
+command, the artifact type upon which the command is operated on, and the
+current selected screen. 
+The time-stamp mechanism allows one to obtain various kinds of
+review metrics that relate to the user's efforts, such as, how long the
+user reads particular nodes, the order of nodes traversal,
+or even the order of command invocations from the beginning to
+the end of the review session.
+
+\section{System Architecture}
+CSRS implements a client-server architecture. Multiple clients send
+commands to a shared server. 
+The server implements basic hypertext operations,
+such as creating, retrieving and deleting nodes and links.
+The server also implements event mechanisms
+that allow different clients to synchronize their states (e.g., when one
+client updates the node, the updates will be propagated to other clients
+currently displaying the nodes). This  feature is used to
+implement synchronous meeting mode.
+
+The clients are implemented on top of Egret, a generic hypertext system
+that provides session management to the server as well as typing
+mechanism \cite{csdl-92-01,csdl-93-09}. The next layer is CSRS engine
+that provides internal 
+operations of the system, and the language subsystem that provides
+enactable review methods.
+
+One may also add special client running as a background process,
+called {\it Agent}, that performs specific 
+tasks by listening to specific events from the server.
+Some examples of agents include GAgent (which updates internal global
+tables of the system), Magent (which listens to review state
+and informs the participants through electronic mail messages
+accordingly), etc.  
+The system architecture is shown in Figure \ref{fig:csrs-architecture}
+
+\begin{figure}[h]
+%  {\centerline{\psfig{figure=csrs-arch.epsi}}}
+  \begin{center}
+  \epsffile{csrs-arch.epsi}
+  \end{center}
+  \caption{CSRS Architecture}
+  \label{fig:csrs-architecture}
+\end{figure}
+
+
+\section{Experiences with CSRS and Current Status}
+
+Our first prototype of CSRS (version 1)
+has been around for a while. It implements an asynchronous review
+method \cite{Johnson93}. 
+The experience we gained from this system was generally positive.
+However, it made us realize the need
+for generalizing CSRS to implement other review methods.  
+This leads to the development of CSRS version 3 that support generic
+modeling capability as discussed above. This version has just recently
+been completed. 
+
+Since its completion, we have been experimenting with several different
+review methods/review systems. The first review method we implemented
+in CSRS version 3 is called {\it Hello-World} (i.e., famous term to 
+describe simplicity or trivial). It is based on
+one phase review process, which we call {\it Private-Review}
+where individual review participants inspect the code privately. The
+phase is concluded when all participants have declare the review state
+of all artifacts to {\it reviewed}. The latter is also defined as the exit
+condition of the phase. The 
+synchronicity mode being implemented is asynchronous (i.e.,
+participants can do their 
+review at their own time). Furthermore, all participants assume the
+role of {\it Reviewer}, and no review technique is used (i.e.,
+free technique: the participants use their knowledge and intuition to
+find errors). 
+
+The data model includes primarily
+source artifacts of type {\it Function}, commentary artifacts of
+type {\it Issue}, and links of type {\it derives}.
+Thus, errors discovered in the {\it Function} nodes are recorded in
+{\it Issue} nodes. 
+
+Soon after the participants used the system, they
+felt that they needed to see
+the issues raised by others and be able to comment on them. We then
+implemented the 
+second review method, called {\it Csdl-Method} (named after our
+research group). This review method is almost the same as {\it
+Hello-World} except that it uses {\it Public-Review} instead of {\it
+Private-Review}, where
+individual participants can see the issues raised by other
+reviewers. They can also type their comments into the corresponding 
+issue nodes. 
+
+As we started to use Csdl-Method,
+some participants felt that they had difficulty understanding the
+artifacts. They wanted the producer to explain the code beforehand.
+We then added a new role  {\it Producer}, and a new 
+phase called {\it Orientation} where the producer must present the
+code before the reviewers to Csdl-Method.
+The Orientation phase implements synchronous
+mode, in which the Producer assumes the role of presenter. As such, all
+reviewers' screen are locked to the Producer. We also added the role
+{\it Moderator} to lead this synchronous phase.
+The objective of this phase is solely to understand review
+artifacts. To indicate whether we have achieved this objective,
+we defined the exit condition to ensure all artifacts have been 
+presented by the presenter.
+
+After completing one review session with this new method, we noticed
+that during Orientation 
+phase, some reviewers did not pay close attention to the
+presenter. They looked for errors and created issue nodes on their own.
+We then deinstalled the operation to create issue nodes during this
+phase. 
+During Public-Review phase, some participants also felt the need to
+express their opinions and argue about their 
+positions using separate commentary nodes instead of putting their
+comments in the issue nodes. 
+We then extended the data model to include a new node of type {\it
+Comment} and  and a new link of type {\it is-commented-by/follow-up}. 
+With this extension, the system can also display
+unread comment nodes per participant separately.
+We also noticed that during Public-Review phase, one
+individual contributed a large number of issues ($>$90\%), while the
+rest of the group contributed very few issues. We suspect that the
+Public-Review phase promotes free-riding. The participants tend to
+agree with what others have said. They spend more time reading
+existing issues than finding new issues. We felt
+that we needed to add a private review phase before proceeding to the
+public review phase. 
+
+As a result of this experience, we decided
+to implement the final Csdl-Method which is similar to
+the FTArm review method \cite{Johnson93,CSDL-93-17}.
+This method not only addresses all our concerns above, but also
+has rich data and process models. Unlike in the earlier FTArm version,
+the new Csdl-Method provides computational supports to all
+review phases. 
+
+Currently, we are using CSRS as an experimental testbed to investigate
+various Formal Technical Review factors. 
+Specifically, we are planning to compare the review effectiveness and
+review cost of group based review method and individual based review
+method. The former method is basically a face-to-face synchronous
+review, while the latter is a private asynchronous review.
+Two review methods are developed for this purpose: EGSM (Experimental
+Group Synchronous Method) and EIAM (Experimental Individual
+Asynchronous Method). Both methods include only one phase where the 
+participants search for program errors. In EGSM, this task is done as
+a group with one participant assumes the role of presenter and uses
+paraphrasing technique, while  in EIAM, the review is done by
+individuals privately with all participants assume the role of reviewer.
+We also provide electronic voting supports to record the degree of
+consensus among group members in EGSM.
+We expect to complete the study at the end of Spring 1995.
+
+%We also plan to use the system as an experimental testbed to
+%investigate various Formal Technical Review factors \cite{CSDL-94-07}. 
+
+
+\section{Conclusions}
+
+We have described CSRS (version 3), a computer assisted review that
+provides generic modeling languages to implement many variations of
+review methods. This capability is not only useful for organizations
+to implement their own review methods, but also to incrementally
+improve their methods as demonstrated by our experience in using the
+system. 
+
+The development of a new review method using these languages 
+can take several hours to several days depending upon how extensive new
+operations need to be added. 
+In general, the language constructs  will
+expand into a set 
+of standard operations when they are compiled. The user
+then needs to install these operations appropriately (for example, for
+a particular phase, a particular role, etc). However, in case
+of defining a new strategy, the user needs to implement the
+operations from scratch.
+
+In the future, we plan to maintain a database of reusable operations
+to implement specific review techniques used by different review
+methods. As such, it can take much shorter 
+time to develop a new review method that use similar techniques
+already present in other review methods.
+
+Finally, CSRS can also be used as an experimental testbed for
+empirically comparing different FTR methods, and/or evaluating the
+underlying review factors. One of our future goals is to remodel
+existing review methods using CSRS and perform empirical studies on
+them. 
+
+
+\section{Acknowledgments}
+
+I would like to thank my advisor, Dr Philip Johnson, for his
+continuing supports and guidance in this research,
+and Carleton Moore for his assistance in preparing this manuscript.
+
+\bibliography{/group/csdl/bib/csdl-trs,/group/csdl/bib/ftr}
+\bibliographystyle{plain}
+
+\end{document}
+

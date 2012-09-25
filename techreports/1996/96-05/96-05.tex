@@ -1,0 +1,924 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 96-05.tex -- 
+%% Author          : Philip Johnson
+%% Created On      : Mon Mar 12 07:25:52 1996
+%% Last Modified By: Philip Johnson
+%% Last Modified On: Fri May 31 10:31:27 1996
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1996 Philip Johnson
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\documentstyle[nftimes,/group/csdl/tex/CHI95]{article}
+\input{/group/csdl/tex/psfig/psfig}
+
+\begin{document}
+
+\title{State as an Organizing Principle for CSCW Architectures}
+
+\author{
+Philip Johnson\\
+Collaborative Software Development Laboratory\\
+Department of Information and Computer Sciences\\
+University of Hawaii\\
+Honolulu, Hawaii 96822\\
+(808) 956-3489\\
+johnson@hawaii.edu}
+
+\maketitle
+
+\abstract 
+
+A useful way to gain insight into collaborative architectures is by
+analyzing how they collect, represent, store, analyze, and distribute state
+information.  This paper presents state as an organizing principle for
+collaborative architectures. It uses a framework with eight dimensions to
+analyze four systems: WWW, GroupKit, Lotus Notes, and Egret. The analysis
+illuminates similarities and differences between these architectures, and
+yields two conjectures: that no single collaborative architecture can fully
+support both collaboration-in-the-small and collaboration-in-the-large, and
+that flexible and efficient support for state management requires
+architectural support for agents as first-class users.
+
+\section{INTRODUCTION}
+
+Over the past five years, the Collaborative Software Development Laboratory
+at the University of Hawaii has designed, implemented, and evaluated a
+variety of CSCW systems.  This work includes CLARE, a collaborative
+learning environment \cite{csdl-93-21}; CSRS, a collaborative software
+review environment \cite{csdl-92-07}; AEN, a collaborative hypertext
+authoring environment \cite{csdl-94-20}, HI-TIME, a collaborative system
+for telecommunications policy planning; Shemacs, a collaborative editor
+\cite{csdl-95-16}; and Flashmail, a collaborative messaging facility.  All
+of these environments were built using Egret \cite{csdl-92-01}, an architecture
+and development environment for CSCW applications. 
+
+
+As we built these systems, we accumulated general requirements for
+collaboration from these various domains that we pushed downward into the
+framework.  Egret's current design and implementation results from three
+complete redesigns and over a hundred separate releases during its five
+years of active development to date.  The current architecture of Egret
+embodies much of what we find to be essential for computer-mediated
+collaboration across our chosen application domains.
+
+Although the specifics differ, we find that there are general classes of
+questions that our collaborative applications must often answer.  For
+example: Who are the other users?  What artifacts are involved in this
+collaborative activity?  What has changed since yesterday?  What is
+important for me to focus on right now?  Who should be informed about this
+change?  Is the information in the system up to date?  Does user X know
+about event Y yet? What is user Z doing right now?  We also find that the
+usability of our applications often depends upon the efficiency with which
+it answers one or more of these types of questions, although which types of
+questions are time-critical and their specific form vary from application
+to application.
+
+
+In general, answering these questions requires an application to collect,
+represent, store, modify, analyze, and distribute state information.  In
+fact, Egret's development history can be profitably viewed as an
+exploration of the architectural services required for a CSCW application
+to manage state information appropriately.  In Egret, state is an
+organizing principle.
+
+This paper presents state as an organizing principle for CSCW
+architectures, and illustrates this perspective using four exemplary
+systems: the World Wide Web, GroupKit, Lotus Notes and Egret.  The next
+section presents a framework to aid in understanding the role of state in
+CSCW architectures.  Subsequent sections apply this framework to the chosen
+architectures. The paper concludes with two conjectures supported
+by this viewpoint.  First, that the requirements for architectures
+supporting ``collaboration-in-the-small'', such as Egret, are fundamentally
+different from those supporting ``collaboration-in-the-large'', such as
+WWW. Thus, a single system can provide effective support for one but not
+both of these extremes.  Second, that collaborative architectures must
+support autonomous agents as ``first class'' users if both flexible and
+efficient support for state management is desired.
+
+
+\section{STATE AS AN ORGANIZING PRINCIPLE}
+
+If a system is to effectively support answers to a question like ``Who
+should be informed about this change?'', it must potentially represent
+information about users, artifacts, types of changes, the context of
+collaboration, and communication mechanisms.  To aid in understanding
+the various aspects of state management, we identified a useful set 
+of characteristics, or dimensions of state management.
+The following table summarizes them:  
+
+
+\begin{center}
+\begin{tabular} {|p{1in}|p{2in}|} \hline   
+{\em Dimension} & {\em Exemplary Attributes} \\ \hline
+Producer & Artifacts,  Individuals,  Process, Environment     \\ \hline
+Consumer & Artifacts,  Individuals,  Process, Environment     \\ \hline
+Trigger & User actions, Artifact content, External events   \\ \hline
+Representation & Forms, Text, Arbitrary data structures      \\ \hline
+Persistence & Non-persistent, In-session, Between-session    \\ \hline
+Location & Local, Central, Distributed, Replicated           \\ \hline
+Distribution & Queries, Signals                              \\ \hline
+Time         & Current, Past, Future                         \\ \hline
+\end{tabular}
+\end{center}
+
+\subsection{Producer}
+
+The producer dimension focuses on what classes of objects in the
+collaborative system have state information collected about them.
+
+One producer of state information is the artifacts, or work
+products of the collaborative system. For example, state information can
+be represented about the structure of artifacts or their relationship to
+each other, or the manner in which the artifact evolved to its current
+state.
+
+The individuals engaging in collaboration also produce state information,
+which can model each individual's capabilities, their prior involvement in
+the collaboration, or their future commitments.
+
+
+The collaborative process itself can also produce state information.  For
+example, some systems represent a plan for collaboration, and collect
+state information concerning where in the plan the collaboration has
+reached, any exceptions or problems with the plan, and so forth.
+
+Finally, the context surrounding the use of the system can produce state
+information. For example, some systems collect data on the organizational
+environment in which the group works that affects the productivity and
+quality of collaboration. Others collect network
+statistics on message transmission latency and its effects on
+collaboration.
+
+\subsection{Consumer}
+
+The consumer dimension parallels the producer dimension except
+that it characterizes what objects can be affected in the 
+system by state information collected from the producers. 
+
+For example, a process object can be affected by the state of artifacts in
+the system. Systems supporting software engineering process modeling
+typically include rules such as: the testing phase cannot be entered until
+the state of the code artifact includes ``clean compile.''
+
+
+\subsection{Trigger}
+
+The trigger dimension focuses on what events or constructs in the system 
+trigger the collection of state information.  
+
+The most obvious trigger is a user action. Examples of user actions
+that can trigger the collection of state information include mouse
+clicks, artifact retrieval, artifact creation, interaction with another
+user, and so forth. 
+
+Another potential trigger is the structure and/or content of artifacts.
+For example, a system can react to the creation of an artifact of type
+``e-mail'' by creating state information concerning when, where, and by who
+this e-mail was created, and what it's intent was. (Such state information
+is useful to a system implementing a ``speech act'' paradigm, in
+which the state of the system must include a representation of communication
+between users and the state of the conversation, though not the actual
+e-mail itself.)
+
+External events also serve as triggers to state information collection.
+For example, some systems ``wake up'' each day at midnight to perform
+certain supportive analyses on the state of collaboration. 
+
+\subsection{Representation}
+
+The representation dimension provides perspective on how state
+information, once collected, is represented.  Some 
+systems, for example, have no mechanisms to represent state 
+explicitly: state is represented and manipulated implicitly (such
+as when the artifacts under collaboration themselves are the 
+only representation of the state of the system).  
+
+Other systems support construction of state information
+separate from the artifacts themselves.  Depending upon the 
+paradigm for collaboration and the underlying infrastructure,
+these representations are restricted to text, or structured
+forms, or other data structures. 
+
+\subsection{Persistence}
+
+The persistence dimension specifies whether and for what period of time the
+system preserves state information.  A system that is totally
+non-persistent with respect to state can nevertheless collect a great deal
+of state information, but the information is either used immediately or
+discarded.
+
+Other systems differ with respect to persistence of state information
+across sessions.  Some systems collect state only within a session: when a
+user logs out of the system, any state information collected about that
+user is lost. Others preserve state information across sessions.
+
+\subsection{Location}
+
+The location dimension indicates where in the system state information is
+held.  
+
+Some systems store all state information on a central server, and
+require clients to request each value individually.  Other systems
+store state information in a distributed manner, where each client
+maintains its own state information locally. Still others replicate state
+information across the clients and servers.
+
+In our experience, the ability to control where state information
+is located is a major determinant of whether or not the system
+can be simultaneously expressive and responsive. 
+
+\subsection{Distribution}
+
+The distribution dimensions characterizes how a system communicates state
+information from a producer to its consumer or consumers.  There are two
+basic mechanisms: queries, in which the consumer requests state information
+explicitly, and signals, in which the system distributes state information
+to clients without their having asked for it.
+
+In general, the query distribution mechanism is better for 
+rarely used but frequently changing state information, since
+the cost of sending signals to maintain the correct value 
+at a client is not justified by the use of this information.
+For example, the idle time value associated with a user
+tends to vary frequently, but this state information might
+be rarely useful to other clients. 
+
+Conversely, state information which changes infrequently and
+unpredictably, but is used often by clients is a good candidate for
+signals. For example, state information concerning the set of users
+currently connected to a client might be used every few seconds by
+a system, though it changes only every few minutes or hours.
+Such information is best communicated through signals.
+
+CSCW architectures can support just one or both of these
+distribution mechanisms.  A further distinction can be made
+between those systems that hardwire the distribution mechanism
+for a particular type of state information, and those that
+allow applications to choose the distribution mechanism best
+suited to their purposes for the state information in question.
+
+\subsection{Time}
+
+The final dimension is time.  This dimension characterizes the period over
+which state information is preserved and manipulated.
+
+Some architectures provide an explicit representation of time, and can thus
+represent change in state over time. Other systems support only a
+representation of the current state.  Finally, an architecture can provide
+explicit support for predictive state, where the possible future state or
+states of the system are represented and used to influence its current
+behavior.
+
+
+\section{STATE IN CSCW ARCHITECTURES} 
+
+The dimensions of state identified above are not a checklist, such that the
+more facilities for state representation and manipulation an architecture
+supports, the better and more generic it is.  In fact, we have found the
+opposite: the inclusion of certain state mechanisms appears to make an
+architecture more specialized and less generic. Further, the ultimate
+utility and value of a system depends upon much more than its state
+representation mechanisms.  A CSCW architecture may consciously and
+correctly sacrifice certain state facilities to increase its overall
+utility, as we shall see below.
+
+The benefit of using state as an organizing principle for CSCW
+architectures is that it helps illuminate the tradeoffs between
+expressiveness, responsiveness, scalability, and usability that must be
+made.  It also provides insight into opportunities for improvement, by
+illuminating mechanisms in one architecture that may prove valuable to
+another. Finally, it tends to shed light onto the underlying, often
+implicit assumptions about the types of applications, process, or users
+that guided the designers of the architecture.
+
+This section revisits the dimensions of state, this time using them as a
+mechanism for focused inquiry into the nature of several CSCW
+architectures: WWW, GroupKit, Lotus Notes, and Egret.  These architectures
+were chosen because they form an interesting cross-section of design
+choices; analysis of the state properties of other CSCW architectures, such
+as Hyper-G \cite{Andrews95}, would also be interesting and useful.
+
+
+The WWW needs no introduction for the CSCW community, of course.  In this
+discussion, however, the architectural model of WWW is viewed in a somewhat
+narrow fashion.  For example, although many agents (a.k.a. ``spiders'') run
+over the WWW, we do not view this architecture as agent-based. The WWW is
+unlike Egret, for example, which requires autonomous agents as part of its
+core implementation.  Agents in WWW are incidental, not essential to its
+architecture. Most interestingly, the http protocol underlying the WWW is
+defined as ``stateless'' \cite{Berners-Lee94}.  This design decision
+provides superb scalability, but greatly constrains the possibilities for
+state collection and manipulation.
+
+GroupKit is ``a groupware toolkit that lets developers build applications
+for synchronous and distributed computer-based conferencing''
+\cite{Roseman95}. This CSCW architecture includes a run-time infrastructure
+for process management, groupware programming abstractions, user
+interface widgets, and session management mechanisms.
+
+Lotus Notes is a toolkit for building distributed, primarily
+asynchronous conferences \cite{LotusNotes}.  In this architecture,
+developers build structured forms (or ``notes'') which members of the
+collaborating group create, view, and modify.  The database of notes can be fully
+replicated to remote sites, or accessed via a centralized server in a
+client-server architecture. Version 4.0 of Lotus Notes is expected to
+support agents for both servers and clients.
+
+Egret is a ``multi-client, multi-server, multi-agent'' architecture for
+building collaborative systems. The Egret architecture
+includes six major subsystems, including: a server subsystem for
+inter-process communication and low-level storage; a type subsystem for
+building domain-specific typed hypertext nodes and links; a generic
+interface subsystem implementing facilities for manipulating ETML (the
+Egret analogue to HTML); an applets subsystem providing small, reusable,
+Egret devices; and a metrics subsystem providing instrumentation facilities.
+
+
+The following sections take a closer look at these systems, using 
+state as an organizing principle.
+
+\subsection{Production and Consumption of State Information} 
+
+Some very useful CSCW architectures provide little explicit support for
+either production or consumption of explicit state information.  The WWW is
+an excellent example.  At the architectural level, the WWW is
+a mechanism allowing users to make documents that are globally
+accessible via servers, and that may contain embedded links to other
+documents. At this level, there is no explicit support for collection or
+manipulation of state information.  The WWW architecture does not build in
+mechanisms, for example, to represent which people are currently using a
+document, which documents have been created by a particular user, why a
+document is being manipulated by a user, and so forth.  The cgi script
+mechanism does enable primitive support for state production and
+consumption, since it creates a kind of ``trap door'' in the architecture
+for incorporation of external storage, retrieval, and information 
+processing mechanisms. 
+
+The paucity of WWW mechanisms for state production and consumption should
+not be construed as a bug, but rather as a feature. By eliminating all
+requirements for state representation and manipulation, explosive growth of
+WWW servers, documents, and use can occur without a corresponding explosion
+in state information processing.  The WWW represents a canonical form of
+``collaboration-in-the-large'', and has enabled an unprecedented number of
+people of divergent backgrounds and interests to collaborate 
+together. 
+
+Lotus Notes and GroupKit both provide greater support for production and
+consumption of state information.  The Lotus Notes architecture
+provides a document repository that supports wide-area distribution in
+the presence of potentially unreliable and/or intermittent network
+connections.  It also provides mechanisms to collect basic forms of
+state information about the artifacts under development, the people
+involved in collaboration, and the process of collaboration itself.
+Architecturally, however, Lotus Notes does not distinguish between state
+information and the artifacts of collaboration.
+
+In GroupKit, there is such a distinction: there is the shared artifact
+under construction (such as an illustration in a shared white board) as well
+as a separate, shared data structure called an ``environment'' that allows
+an explicit and independent representation of state information.
+
+Egret provides extensive architectural support for production and
+consumption of state information concerning artifacts, individuals,
+process, and the external environment.  Egret makes an architectural
+distinction between the artifacts involved in collaboration and state
+information by partitioning storage into separate areas. Some of these
+areas for designed for ``user-level'' storage and manipulation of
+artifacts, while other areas are designed for management of state
+information.  Each of these latter areas differ along the dimensions of
+representation, persistence, location, distribution, and time.
+
+\subsection{Triggers and Agents}
+
+Analyzing architectural support for the trigger dimension in a
+CSCW architecture tends to illuminate its support for autonomous
+software agents.  If an architecture provides any support for state
+production at all, then it supports at least triggering based upon 
+user action. More advanced forms of triggering require agents. 
+
+Within architectures supporting user action triggers, there is wide
+variation in the spectrum of user actions that trigger state collection.
+For example, the cgi script mechanism in WWW allows essentially arbitrary
+actions to be carried out based upon the contents of a web form.  This
+allows a single, simple user action trigger---pressing the infamous
+``submit'' button---that supports the collection of any state information
+present on the form.
+
+Lotus Notes provides more support for user action triggers than the WWW.
+In Notes (when using the centralized server mechanism), virtually any
+change to the database can trigger an event, which can communicate
+information back to that client or any other connected client. However, the
+architecture of Lotus Notes does not provide explicit support for user
+action triggers that do not modify the database.  For example, one client
+cannot be notified in real-time whenever another client pulls down a 
+specific menu, since this user action does not affect the database in 
+any fashion.
+
+GroupKit and Egret provide more comprehensive support for user action
+triggers. Both GroupKit and Egret can attach state collection functions to
+most user gestures, such as key presses, menu pulls, mouse clicks, and so
+forth, regardless of whether the gesture modifies the central server
+process. In both GroupKit and Egret, user action triggers are limited to
+those user gestures occurring while the system is the active process.
+
+There is more to architectural support for fine-grained user action
+triggers (such as menu pulls or mouse drags) than simply allowing
+invocation of an application-specific function when these events occur.  As
+we learned with Egret, fine-grained user action triggers can produce a
+great deal of state information quite quickly, with a potential for
+substantially negative impact upon the system's responsiveness.
+
+For example, in an application built using the original design of Egret, we
+associated various attributes, such as the user's name and a time-stamp,
+with several fine-grained user actions.  Each time we used it, the
+application's performance and responsiveness would degrade terribly after
+only a few days.  The problem was that the stored state information would
+quickly overwhelm the actual artifact information in the database.
+This situation eventually led us to a complete redesign of Egret in which
+many forms of high volume, fine-grained state information could be
+collected with minimal impact upon the responsiveness of the
+application. (As a humorous aside, while evaluating that early application,
+we discovered that over 70\% of the database was occupied by time-stamps
+alone! This occurred because we represented time using the Emacs {\tt
+current-time-string} function, which produced very space-inefficient
+time-stamps such as ``Wed Mar 13 08:18:50 1996''. We solved this particular
+problem with a custom date package that reduced time-stamps to a fraction
+of their former size.)
+
+To support triggers based upon anything other than user action, agents
+are necessary.  For example, the Egret application AEN has an agent that
+composes and delivers a ``daily newspaper'' by e-mail to the group members
+each morning summarizing the changes to the document since the day
+before. The e-mail also contains a customized to-do list for each member
+containing, for example, which parts of the artifact were changed by some
+other group member since the last time the recipient looked at them.  This
+state manipulation is triggered by several factors: the time of day (an
+external trigger) begins the process, and the outcome is influenced by the
+structure of the artifact as well as the state information associated with
+each component.  
+
+\subsection{Representing State}
+
+CSCW architectures provide a great variety of sophisticated representations
+for the {\em products} of collaboration. For example, GroupKit represents a
+graphical image constructed by a group as the sequence of Tcl commands used
+to construct it. (When a new user joins a group in-progress, the system
+``replays'' the commands used to construct the artifact for the new user,
+synchronizing them with the group.) The WWW architecture supports an
+extensible set of representations for artifacts, including HTML,
+postscript, audio, and so forth. Lotus Notes also supports many different
+representations for the products of collaboration.
+
+However, CSCW architectures provide much less variety in representations
+for the {\em state} of collaboration.  The WWW architecture, for example,
+defines no representations for state.  Most http servers do support log
+files, which provide a kind of ad-hoc state representation, but the
+provision and use of this state information falls well outside the province
+of the Web's architecture.
+
+Similarly, Lotus Notes does not provide explicit mechanisms or support for
+state representation independent from artifact data.  State information
+is represented and manipulated exactly like artifact information: as a Lotus
+Note or Note field.  Further, a Lotus Note is a restricted kind of data structure
+implementing a kind of ``form''.  The Notes architecture does not provide
+explicit support for common data abstractions (such as lists, sets, trees,
+graphs, etc.)  useful for state representation and manipulation.  While
+Notes developers demonstrate great ingenuity in simulating
+higher-level data abstractions using interconnected collections of Notes,
+they succeed in spite of the architecture, not because of it.
+
+GroupKit provides a single, yet sophisticated mechanism to represent state,
+called an environment. Environments are table-based data structures that
+allow users to associate keys with values (which in turn may be another
+environment object).  Furthermore, functions can be attached to the add,
+change, and delete operations on an environment. These functions can be
+used to implement shared environments which maintain common values across
+all clients, or support other forms of coordination.  Environments provide
+better support for arbitrary state data structure definition than that
+provided in Notes, although certain data structures require some twisting
+to fit within the table representation.
+
+The Egret architecture implements state storage and retrieval mechanisms
+that provide explicit and high-level support for common patterns across our
+various application development efforts. For example, the gtable class
+implements a shared, persistent global table which is locally
+replicated. Gtables are similar to GroupKit's environments, except that
+gtables are persistent across sessions while environments are not.  Gtables
+provide high-level support for situations in which each client needs fast
+access to state data (thus the local replication), some of which may be
+produced or used by other clients as well (thus the shared structure), and
+which must persist across sessions.
+
+However, gtables are not always the right answer. In other situations,
+clients require fast access to state data that they themselves generate
+(perhaps from previous sessions), but which other clients need rarely or
+never.  In this case, gtables are inappropriate: each client will suffer
+the overhead of real-time maintenance of (potentially large amounts) of
+useless state information concerning other clients. For this situation,
+Egret provides the ptable class, which implements a separate table for each
+client that is locally cached and persistent across sessions.  In addition
+to gtables and ptables, Egret provides other state storage facilities,
+including server nodes, system nodes, personal nodes, and system tables.
+Yet others result from the combination of these primitive building blocks.
+
+Finally, in addition to the above mechanisms, Egret supports any data
+structure that can be easily passed to a Lisp reader.  Thus, linked lists,
+sets, trees, and so forth are simple to construct and manipulate in Egret.
+
+\subsection{State persistence across sessions and conferences}
+
+In this paper, a ``session'' is the contiguous period of time that
+a user is ``connected'' to a system. A ``conference'' is the period of time
+during which a group of interacting users are connected simultaneously.
+Interestingly, CSCW architectures interpret sessions and conferences quite
+differently, which affects their support for state persistence.
+
+In the WWW architecture, a session is best viewed as a single http request,
+which is typically less than a second long. (Server push/client pull
+mechanisms enable much longer sessions, of course.) This interpretation of
+a session as a single http request aligns well with the intent of the
+designers of the WWW architecture, who state:
+
+
+{\em 
+[HTTP] is stateless... The stateless model is efficient when a link
+from one object may lead equally well to an object stored on the same
+server, or to another distant object.  [A URI] should always refer
+to the ``same'' object. This also makes a stateless protocol appropriate,
+as it returns results based on the URI that are irrelevant of any previous
+operations performed by the client. \cite{Berners-Lee94}
+}
+
+More colloquially speaking, the WWW architecture has no explicit
+representation of users who ``visit'' a single web site and ``surf''
+through the artifacts provided by its server over the course of minutes or hours.
+Similarly, the WWW architecture does not represent or support conferences.
+Given the clear intents of the WWW designers with respect to state (and its
+lack thereof), and the paucity of support for sessions and conferences,
+there is obviously no support for persistent state across sessions or
+conferences.
+
+In the replicated database version of Lotus Notes, a session
+logically consists of the period of contiguous time during which the user
+is connected to the Notes database.  Any state changes stored in
+this database will persist until the next session. However, the fact
+that databases are locally replicated eliminates the possibility of 
+conferences, and also means that state information collected on one 
+database from one user is not available to another user until 
+synchronization occurs.  The central server database version of Notes
+does support sessions, conferences, and persistent state across 
+sessions and conferences. 
+
+Computer-based conferencing is the raison d'\^{e}tre of GroupKit, so the
+architecture naturally includes well-defined and explicit representations
+and support for both sessions and conferences.  However, users, artifacts,
+sessions, and conferences are ephemeral in GroupKit: nothing persists
+beyond or between conferences. ``The concept of users exists only within
+the current real-time conference session.  No information is held about
+past users in a conference, nor any notion of a long term community
+\cite{Roseman95a}.''
+
+The Egret architecture provides both representations and support for
+sessions, and support (such as chat tools) but no explicit representations
+for conferences of simultaneously connected, interacting users.  State
+persists across sessions and conferences. 
+
+In our experience, support for state manipulation within and between
+sessions and conferences involves the following four requirements:
+
+\begin{itemize}
+
+\item Users need to be aware of and react to the state of other users
+  within a session and/or conference.
+
+\item  Users joining a conference need to get ``caught up'' to other
+  users.  (In other words, the state of the conference needs to be shared
+  and synchronized between all participating users.)
+
+\item  Users need to be able to ``pick up where they left off last time.''
+  In other words, they need to be able to recover their final state from
+  the last session or conference. 
+
+\item  Users need to be aware of and react to the state changes of other
+  users that occurred since their last session and/or conference.
+
+\end{itemize}
+
+
+The WWW architecture supports none of these requirements; GroupKit supports
+the first two; Lotus Notes and Egret support all four.  The last
+requirement, informing users of what happened of interest while they were
+absent, can be particularly problematic to support in an efficient and
+responsive fashion.  In Egret, some of our architectural support for agents
+came specifically from the fourth requirement, because it is much simpler to satisfy with
+an agent that remains continuously connected and serves as a kind of
+``virtual participant'' in all sessions and conferences. Figure
+\ref{fig:snoopy} illustrates one agent-based mechanism in Egret that maintains
+state information within and between sessions. 
+
+\begin{figure}[t]
+  \centerline{\psfig{figure=aen-snoopy.ps}} 
+\caption{The ``Snoopy'' mechanism in Egret. This simple agent-based mechanism
+observes the collaborative process, collects state information about each
+participant, and posts a summary periodically to each connected user.}
+\label{fig:snoopy}
+\end{figure}
+
+
+
+\subsection{Location of state information}
+
+One lesson from our experiences with CSCW application development is that
+it is possible to collect a lot of {\em potentially} useful state information
+about the artifacts, individuals, processes, and the external environment
+surrounding collaboration. Whether this state information is {\em actually}
+useful depends upon whether it is located at the right place at the right
+time.  The right place, for some users at some points in time, may be the
+server, while the right place for other users at other times may be the
+client.  Different CSCW architectures make different choices about where
+state information is maintained, and whether or not the decision can be
+changed dynamically as circumstances require.
+
+An example from our development experiences may make these issues more
+clear. The AEN collaborative hypertext authoring application supports a
+dynamically generated table of contents that represents a linear traversal of
+the accessible portions of a document's sectional structure.
+(The sectional, or logical structure of the document is not usually
+isomorphic to the document's hypertext storage structure.)  The TOC is
+context-sensitive to both the state of the artifact and the state of the
+user.  First, only those sections for which the user has read access are
+displayed in the TOC. Second, the sections which are newly created or which
+have been modified since the last time this user retrieved them are
+represented in bold font.  This sensitivity to the state of the artifact
+and the state of the user means that the TOC can potentially change each
+time any node is written by any user or an access control value is changed.
+Figure \ref{fig:toc} illustrates one such table of contents.
+
+\begin{figure}[t]
+  \centerline{\psfig{figure=aen-toc4.ps}} 
+\caption{The ``TOC'' mechanism in AEN displaying the hierarchical section-based
+structure 
+of a sample document. Each hypertext node can contain an arbitrary number
+of sections, which could be actual text or links to other nodes. 
+Each user sees only those sections for which they have read access, and 
+sections which have changed since this user last read them are bold faced.}
+\label{fig:toc}
+\end{figure}
+
+A responsive TOC mechanism requires a CSCW architecture to provide flexible
+support for location of state information.  For example, if state
+information is located only on the server side, then each time a node is
+written by one user, all other users must retrieve the node from the
+server, parse it to determine the logical structure, and finally rebuild
+their TOC.  (Due to embedded links, the logical structure of an AEN
+document can change almost arbitrarily when a hypertext node is written.)
+The overhead of these three activities on clients is unacceptable during
+active collaboration.
+
+
+AEN solves this using Egret facilities that allow portions of the document
+structure state to be replicated at the clients.  When an AEN client writes
+out a document node, it also parses the document to determine if any
+structural changes have occurred since it was last written.  If changes
+occurred, it ``piggy-backs'' information onto the write event broadcast to
+all clients that adds information specifying exactly what structural
+changes occurred in this node.  This approach reduces the overhead of table of contents
+maintenance for non-authoring clients to only the third activity:
+rebuilding the table.  Furthermore, rebuilding occurs only when the
+TOC has actually changed. There is a minor amount of new overhead on
+the authoring client to parse the node for structural changes, but this
+activity can be done quite efficiently because the node is already local to
+the client.  Were the parsing overhead substantial, it could be off-loaded
+to an agent quite easily.
+
+The TOC facility demonstrates a situation in which the
+availability of a context-sensitive, time-dependent service depends upon
+whether or not the architecture can support locating ``just the right
+amount'' of state information at each client, keeping the rest on the
+server. We hypothesize that neither the WWW, nor GroupKit, nor Lotus Notes
+architectures can support this mechanism responsively.  The WWW cannot
+because it does not support local state replication. GroupKit cannot
+because it does not support persistent state across sessions.  Lotus Notes
+cannot because it lacks the state data abstraction mechanisms required to
+collect, process and represent this information efficiently.
+
+
+\subsection{Distributing state}
+
+Distributing state information is conceptually straightforward: clients
+can either query (poll) for data or changes,  or else be signaled
+(interrupted) with new data or modifications which are sent by other 
+clients. 
+
+As should be obvious by now, the WWW does not support either queries or
+signals with respect to state information. GroupKit, Lotus Notes, and 
+Egret all support both.  
+
+The GroupKit architecture differs from both Lotus Notes and Egret by
+supporting both peer-to-peer inter-process communication as well as the
+more traditional centralized server paradigm.  Peer-to-peer communication
+can prevent server bottlenecks, as well as removing a source of single
+point failure.  
+
+Lotus Notes, as noted before, supports both a replicated server and
+centralized server mechanism.  
+
+Egret supports only the centralized server mechanism.
+
+\subsection{Time}
+
+The final dimension concerns time.  Does the CSCW architecture provide
+explicit support for representing both current, past, and future state 
+information?  
+
+Egret is alone among the CSCW architectures discussed here with
+respect to explicit support for characterizing time of state. Egret
+provides a ``metrics'' subsystem that supports efficient, low-overhead
+collection and storage of time-stamped event data that allows applications
+to generate a historical record of the state of the system over time.
+While Lotus Notes supports storage of state information, the architecture
+provides no explicit facilities for the time-based state representation and
+manipulation.  As noted above, GroupKit does not store state information
+between conferences at all, so it naturally does not manipulate the time
+dimension. The WWW architecture also does not support this dimension.
+
+\section{CONJECTURES}
+
+A discussion of the collection, representation, storage, modification, and
+distribution of state information in CSCW architectures may be useful from
+a purely intellectual standpoint for some, but others may desire some more
+practical outcome.  Even though Egret ``scores high'' with respect to state
+manipulation, one would certainly not conclude that it is the ``best'' CSCW
+architecture.  Conversely, the WWW architecture exhibits extremely poor
+facilities for state management, yet this architecture has produced global
+changes in who uses computers and the way in which they are used.  
+Other CSCW architectures have produced little more than a ripple compared
+to the collaborative tidal wave of the Web.
+
+While state does not serve to differentiate the utility of CSCW
+architectures, it still has great value as a means to illuminate certain
+fundamental issues and trade-offs made by any design.  We conclude by
+offering two conjectures to the CSCW community for reflection and debate.
+First, that ``collaboration-in-the-small'' requires fundamentally different
+support at the architectural level from ``collaboration-in-the-large''.
+Second, that collaborative architectures should be designed with the view
+that the interface and processing requirements of autonomous software
+agents are just as important than those of human users. Both of these
+conjectures arise directly from consideration of state as an organizing
+principle.
+
+\subsection{CITS vs. CITL}
+
+To gain a visceral sense for the differences between
+collaboration-the-large (CITL) and collaboration-in-the-small (CITS),
+consider the following two activities of the Collaborative Software
+Development Laboratory, which are typical in many organizations.  
+
+First, we maintain the WWW Archive on Formal Technical Review (FTR), which
+is a structured software engineering group process for improving software
+quality.  This archive receives a substantial amount of traffic and
+receives contributions from many groups world-wide.  The mode of
+collaboration for the FTR Archive is one of collaboration-in-the-large:
+while we gather occasional statistics on aggregate usage, it is unimportant
+(in fact, it would be distracting) for us to be continuously aware of who
+is using the archive, where they are in it, what they have seen before,
+what they should look at next, what their reaction is to the current
+material they are looking at, and so forth.  For systems such as the FTR
+Archive, collecting, representing, and responsively presenting state
+information about users, artifacts, and processes would not only be
+computationally expensive, it would be counter-productive to the
+collaborative activity for both us and our users.  For a broadly popular
+web-site, such as Yahoo, such state processing would be prohibitive.
+
+In contrast, consider Flashmail, a very simple collaborative system used
+extensively by members of CSDL. Flashmail attaches a menu to an editor
+window which, when pulled down, displays a list of members, whether they're
+logged on, which workstation they're using, and the idle time associated
+with that workstation. For any logged in member, one can send a textual
+message that appears immediately in a window covering their current screen,
+regardless of which application it is. Flashmail is thus a deliberately
+intrusive communication facility based upon real-time awareness of the
+location and activity of others in a group. The canonical Flashmail message
+is, ``I'm hungry. Do you want to go to lunch?''  Flashmail is an excellent
+example of collaboration-in-the-small, because there is an intrinsically
+limited number of people for whom a user might desire such real-time
+awareness, much less allowing them to interrupt in the midst of other
+activities. 
+
+Our experiences with state lead us to conjecture that there is a
+fundamental difference between systems designed to support
+collaboration-in-the-large, involving thousands or millions of people, and
+collaboration-in-the-small, involving from a handful to dozens of people.
+This difference manifests itself at both the conceptual and architectural
+levels. Conceptually, CITL appears to demand a ``collaborative open world
+assumption''. Users cannot know, with any level of accuracy, the boundaries
+and contents of the system (including users, artifacts, and processes) at
+any single point in time. CITS, on the other hand, appears to demand the
+opposite: a closed world in which relatively complete knowledge about
+users, artifacts, and processes is explicitly represented and immediately
+accessible.  The closed world assumption permeates the Egret architecture
+at every level, as does the open world assumption in the WWW's. We
+conjecture that this relationship is not incidental, but essential. We
+invite the CSCW community to consider with us the following question: what
+would constitute appropriate architectural support for
+collaboration-in-the-medium?
+
+\subsection{Agents as First Class Users}
+
+A second outcome from our reflections upon the role of state is that
+architectures must be designed with as much concern for the needs of
+autonomous agents as for the needs of human users.  This conjecture results
+from our finding that state information tends to be very expensive to
+collect, manage, and distribute, and placing this computational load on
+either user-level clients or the server often degrades system
+responsiveness to an acceptable level.  In addition, the storage allocated
+for state information can far exceed that of the artifacts themselves.
+
+It is not enough, in our experience, to simply enable basic autonomous
+interaction, such as the ability of the WWW to support spiders.  While
+the WWW architecture was not designed with the needs of its agents in mind,
+the current architecture of Egret reflects evolution driven as much by the
+needs of its agents as its users.
+
+For example, URN, a collaborative news reader, was built using the second
+major release of Egret. It utilized an agent that woke up each night to
+``read'' news articles and prepare them for the users. Unfortunately, the
+high-level Egret {\em user} interface used by the agent formatted each
+article for human readability, even though the agent treated it as simple
+ASCII text. The formatting, unfortunately, slowed the agent down by a
+factor of 10 to 100, and placed an artificially low upper limit on the
+number of articles that a single agent could process in a night.  This
+architectural flaw forced the designer of the agent to choose between using
+a low-level system interface and reprogramming a great deal of higher level
+functionality, or using the high-level user interface and sacrificing time
+to unnecessary processing. The flaw occurred because we had neglected to
+take into account the differences between agents and users. 
+
+Eliciting requirements from software agents is a poorly understood area of
+systems design.  We have, nevertheless, found the following heuristics to
+be useful during application design. We invite the CSCW community to 
+contribute additional insights into requirements for agent-based systems:
+
+\begin{itemize}
+\item {\em Agents should be able to do virtually anything a user is
+  expected to do.}
+
+  If the CSCW application is primarily textual, does it provide an
+  interface to allow an agent to contribute new text?  If the application
+  is primarily graphical, is an interface provided that allows an agent to
+  draw?  In other words, a CSCW architecture should  make as few {\em a
+  priori} assumptions as possible about which behaviors can only be
+  provided by humans.  Agents can be surprisingly capable, if they are
+  provided with an opportunity.
+
+\item {\em The agent and user interfaces, if different, should be based
+  upon a common, software/wetware-independent substrate.}
+
+  Although agents should be able to do anything users do, they might do
+  it in a slightly different way. For example, most software agents
+  cannot physically move a mouse, so an agent that contributes to a
+  drawing must be provided with an interface that allows it to create
+  graphical elements on the screen.  For basic software engineering reasons, 
+  these interfaces should merge as quickly as possible in the architecture.  
+
+\item {\em Even though agents can mimic humans, don't disregard their
+  special properties.}
+
+  As the example of agent-based processing in URN illustrates, the system
+  may need to support behaviors from agents that might never be required
+  for a system whose users are always humans. When designing interfaces and
+  subsystems, after ensuring that they are both human and agent accessible,
+  consider whether a supplemental interface designed purely around the 
+  agent might not provide useful additional capabilities. 
+
+\end{itemize}
+
+
+\section{ACKNOWLEDGMENTS}
+
+The Egret architecture and these insights into state as an organizing
+principle have emerged from hard work by the members of CSDL over the
+years, including: Dadong Wan, Danu Tjahjono, Cam Moore, Rosemary Andrada,
+Robert Brewer, Julio Polo, Russ Tokuyama, and Jennifer Geis.
+
+Research on the Egret Framework has been supported by funding from National
+Science Foundation, Tektronix, Inc., the University of Hawaii, and the
+Pacific International Center for High Technology Research.
+
+\section{EGRET AVAILABILITY}
+
+The Egret source, binaries, and documentation are available free of charge.
+To obtain the latest information
+on the Egret release, and to obtain downloading instructions, please 
+consult our WWW page at: \newline 
+http://www.ics.hawaii.edu/$\sim$csdl/egret/release-notes.html
+
+
+\newpage
+\bibliography{/group/csdl/bib/csdl-trs,96-05}
+\bibliographystyle{plain}
+
+\end{document}
+

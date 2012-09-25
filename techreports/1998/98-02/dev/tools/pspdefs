@@ -1,0 +1,332 @@
+# Default psp definition file
+
+# definition for standard PSP
+pspdef= PSP0
+
+# phases of PSP
+phase_list: design design-review code code-review compile test
+#phase_list: design code compile test
+
+# features supported
+support(loc): 1
+support(time): 1
+support(DefIn): 1
+support(DefOut): 1
+support(sum): 1
+support(dre): 1
+# neccessary for add_log to log defects
+support(Bug): 1
+
+# Lines of Code Block - loc
+block= loc
+{Program Size (LOC)} Plan Actual {To Date}
+{Base (B)} Dd dd bbb
+{Deleted (D)} Dd dd bbb
+{Modified (M)} Dd dd bbb
+{Added (A)} rd rd bbb
+{Reused (R)} Dd dd rd
+{New & Changed (N)} Dd rd rd
+{Total LOC (T)} rD dd rd
+{Total New Reused} DE dd rd
+#{Total LOC UPI(70%)} DdE bbb bbb
+#{Total LOC LPI(70%)} DdE bbb bbb
+.
+block(loc,total): 6
+block(loc,N): 5
+block(loc,td): 2
+block(loc,calc): calc_loc
+block(loc,rsz): 8
+
+commands=
+proc calc_loc {} {
+    global pd td
+    # define the meaning of positions in loc block
+
+    # to date indices
+    set Ri 4
+    set Ni 5
+    set Ti 6
+    set NRi 7
+    # Base 
+    set B loc,0
+    # Deleted
+    set D loc,1
+    # Modified
+    set M loc,2
+    #Added = N-M ; T-B+D-R
+    set A loc,3
+    # Reused
+    set R loc,4
+    set pd($R,2) ""
+    catch {set pd($R,2) [lindex $td(loc) $Ri]}
+    set pd($R,2) [ssum $pd($R,2) $pd($R,1)]
+    # New ; A+M
+    set N loc,5
+    # Total N+B-M-D+R
+    set T loc,6
+    # Added(Plan)
+    if [catch {set pd($A,0) [expr $pd($N,0)-$pd($M,0)]}] {
+	set pd($A,0) ""
+    }
+    # Total(Plan)
+    if [catch {set pd($T,0) [expr $pd($N,0)+$pd($B,0)-$pd($M,0)-$pd($D,0)+$pd($R,0)]} msg] {
+	set pd($T,0) ""
+    }
+    set pd($T,2) ""
+    catch {set pd($T,2) [lindex $td(loc) $Ti]}
+    set pd($T,2) [ssum $pd($T,1) $pd($T,2)]
+    # Added(Actual)
+    if [catch {set pd($A,1) [expr $pd($T,1)-$pd($B,1)+$pd($D,1)-$pd($R,1)]}] {
+	set pd($A,1) ""
+    }
+    # New(Actual)
+    if [catch {set pd($N,1) [expr $pd($A,1)+$pd($M,1)]}] {
+	set pd($N,1) ""
+    }
+    set pd($N,2) ""
+    catch {set pd($N,2) [lindex $td(loc) $Ni]}
+    catch {set pd($N,2) [ssum $pd($N,2) $pd($N,1)]}
+    set NR loc,$NRi
+    set pd($NR,2) ""
+    catch {set pd($NR,2) [lindex $td(loc) $NRi]}
+    set pd($NR,2) [ssum $pd($NR,1) $pd($NR,2)]
+}
+.
+
+# Time in phase block
+block= time
+{Time in Phase(min)} Plan Actual {To Date} {To Date %}
+f= @ rE rd rdt rd%
+l=phases
+Total Rd rs rst rsp
+#{Total Time UPI(70%)} DdE bbb bbb bbb
+#{Total Time LPI(70%)} DdE bbb bbb bbb
+.
+block(time,total): 8
+block(time,td): 2
+block(time,out): s_time_out
+block(time,in): s_time_in
+block(time,calc): calc_est time
+
+# Defects Injected 
+block= DefIn
+{Defects injected in Phase} Plan Actual {To Date} {To Date %}
+f= @ rE rd rdt rd%
+l=cphases
+Total Rd rs rst rsp
+.
+block(DefIn,total):= [global phase_list; expr [llength $phase_list]+1]
+block(DefIn,td): 2
+block(DefIn,out): identity
+block(DefIn,in): identity
+block(DefIn,calc): calc_est DefIn
+
+# Defects Removed 
+block= DefOut
+{Defects Removed in Phase} Plan Actual {To Date} {To Date %}
+f= @ rE rd rdt rd%
+l=cphases
+Total rd rs rst rsp
+.
+commands=
+# if not to date data exists merely copy the total from the DefIn value
+proc calc_defout { } {
+    global td pd block
+    if {[info exists td(DefOut)] == 0} {
+	catch {set pd(DefOut,$block(DefOut,total),0) $pd(DefIn,$block(DefIn,total),0)}
+    }
+    calc_est DefOut
+}
+.
+block(DefOut,total):= [global phase_list; expr [llength $phase_list]+1]
+block(DefOut,td): 2
+block(DefOut,out): identity
+block(DefOut,in): identity
+block(DefOut,calc): calc_defout
+
+block= sum
+"Summary           " Plan Actual "To Date"
+Loc/hr rd rd rd
+"Planned Time" rd bbb rdt
+"Actual Time" bbb rd rdt
+CPI bbb bbb rd
+"% Reused" rd rd rd
+"% New Reused" rd rd rd
+"Test Defects/KLOC" rd rd rd
+"Total Defects/KLOC" rd rd rd
+Yield rd rd rd
+"% Appraisal COQ" rd rd rd
+"% Failure COQ" rd rd rd
+"COQ A/F Ratio" rd rd rd
+.
+commands=
+# Calculate values in summary
+proc calc_sum {} {
+global word pd vd block td
+# New and changed lines
+set N loc,5
+# total program size
+set T loc,6
+# Time Total row no.
+set Timtol $block(time,total)
+# convience variable 
+set s sum
+# LOC/hr = N/Total time
+set Loc_hr $s,0
+foreach i {0 1 2} {
+    set pd($Loc_hr,$i) ""
+    catch {set pd($Loc_hr,$i) [expr $pd($N,$i)*60./$vd(time,$Timtol,$i)] }
+}
+# Planned Time = vd(time,$Timtol,0)
+set PTi 1
+set PT $s,$PTi
+set pd($PT,0) ""
+set pd($PT,2) ""
+catch {set pd($PT,0) $vd(time,$Timtol,0)}
+catch {set pd($PT,2) [lindex $td(sum) $PTi]}
+set pd($PT,2) [ssum $pd($PT,0) $pd($PT,2)]
+# Actual Time = vd(time,$Timtol,1)
+set AT $s,2
+set pd($AT,1) ""
+catch {set pd($AT,1) $vd(time,$Timtol,1)}
+catch {set pd($AT,2) $vd(time,$Timtol,2)}
+# CPI (Cost Performance Index) = Total Planned / Total Actual time
+set CPI $s,3
+# too hard to calculate at the moment
+set pd($CPI,2) ""
+catch {set pd($CPI,2) [expr 1.0*$pd($PT,2)/$pd($AT,2)]}
+# % Reused = 100*pd(loc,R,x)/pd(loc,T,x)
+set PR $s,4
+# Reused
+set R loc,4
+foreach i {0 1 2} {
+    set pd($PR,$i) ""
+    catch {set pd($PR,$i) [expr $pd($R,$i)*100./$pd($T,$i)]}
+}
+# Percentage New Reused - Not calc. yet
+set NR loc,7
+set PNR $s,5
+foreach i {0 1 2} {
+    catch {set pd($PNR,$i) [expr 100.*$pd($NR,$i)/$pd($N,$i)]}
+}
+# Test Defects/KLOC = 1000.*(Test Defects)/N
+set TD $s,6
+set Test [phase2row $word(test)]
+foreach i {0 1 2} {
+    set defs 0
+    catch {set defs [expr $defs+$vd(DefOut,$Test,$i)]}
+    set pd($TD,$i) ""
+    catch {set pd($TD,$i) [expr 1000.*$defs/$pd($N,$i)]}
+}
+# Total Defects (Removed) per KLOC
+set D $s,7
+set Total $block(DefOut,total)
+foreach i {0 1 2} {
+    set pd($D,$i) ""
+    catch {set pd($D,$i) [expr 1000.*$vd(DefOut,$Total,$i)/$pd($N,$i)]}
+}
+# Yield = 100*(Defects injected)/(Defects Removed) before compile
+set Y $s,8
+set BComp [phase2row $word(compile)]
+incr BComp -1
+foreach i {0 1 2} {
+    set def_in [sumcol DefIn $i 0 $BComp]
+    set def_rm [sumcol DefOut $i 0 $BComp]
+    if {$i == 2} {
+	catch {set def_in [expr $def_in + [sumcol DefIn 1 0 $BComp]]}
+	catch {set def_rm [expr $def_rm + [sumcol DefOut 1 0 $BComp]]}
+    }
+    set pd($Y,$i) ""
+    catch {set pd($Y,$i) [expr 100.*$def_rm/$def_in]}
+}
+# % Appraisal COQ = 100*(DR+CR)/Total time
+set PACOQ $s,9
+set DR [phase2row $word(DR)]
+set CR [phase2row $word(CR)]
+# use vd to get the todate fields right for time
+foreach i {0 1 2} {
+    set ACOQ 0
+    catch {set ACOQ [expr $ACOQ+$vd(time,$CR,$i)]}
+    catch {set ACOQ expr [$ACOQ+$vd(time,$DR,$i)]}
+    catch {set pd($PACOQ,$i) [expr 100.*$ACOQ/$vd(time,$Timtol,$i)]}
+}
+# % Failure COQ = 100*(compile + test)/total time
+set PFCOQ $s,10
+set Comp [phase2row $word(compile)]
+foreach i {0 1 2} {
+    set pd($PFCOQ,$i) ""
+    set FCOQ 0
+    catch {set FCOQ [expr $FCOQ+$vd(time,$Test,$i)]}
+    catch {set FCOQ [expr $FCOQ+$vd(time,$Comp,$i)]}
+    catch {set pd($PFCOQ,$i) [expr 100.*$FCOQ/$vd(time,$Timtol,$i)]}
+}
+# COQ A/FR = % Appraisal / % Failure Costs
+set AFR $s,11
+foreach i {0 1 2} {
+    set pd($AFR,$i) ""
+    catch {set pd($AFR,$i) [expr $pd($PACOQ,$i)/$pd($PFCOQ,$i)]}
+}
+}
+.
+
+block(sum,total): 11
+block(sum,calc): calc_sum
+block(sum,td): 2
+
+# Refect Removal Efficiency
+block= dre
+{Defect Removal Efficiency   } Plan Actual {To Date}
+"Defects/Hour - Design Review" rd rd rd
+"Defects/Hour - Code Review" rd rd rd
+"Defects/Hour - Compile" rd rd rd
+"Defects/Hour - Test" rd rd rd
+DRL(DLDR/UT) rd rd rd
+DRL(CodeReview) rd rd rd
+DRL(Compile/UT) rd rd rd
+.
+
+block(dre,total): 8
+block(dre,calc): calc_dre
+block(dre,td): 2
+
+commands=
+# calculate the DRLs (Defect Removal Leverages)
+proc calc_dre {} {
+    global pd vd word
+
+# Defects/Hour - 60.*vd(DefOut,DR,$i)/vd(time,DR,$i)
+set DR [phase2row $word(DR)]
+foreach i {0 1 2} {
+    catch {set pd(dre,0,$i) [expr 60.*$vd(DefOut,$DR,$i)/$vd(time,$DR,$i)]}
+}
+
+set CR [phase2row $word(CR)]
+foreach i {0 1 2} {
+    catch {set pd(dre,1,$i) [expr 60.*$vd(DefOut,$CR,$i)/$vd(time,$CR,$i)]}
+}
+set Compile [phase2row $word(compile)]
+foreach i {0 1 2} {
+    catch {set pd(dre,2,$i) [expr 60.*$vd(DefOut,$Compile,$i)/$vd(time,$Compile,$i)]}
+}
+set Test [phase2row $word(test)]
+foreach i {0 1 2} {
+    catch {set pd(dre,3,$i) [expr 60.*$vd(DefOut,$Test,$i)/$vd(time,$Test,$i)]}
+}
+#Unit Test
+# if unit test has no defects uses to date values - see page 635 of SDE book
+set UT 3
+foreach dre_j {0 1 2} {
+    set dl_dre [expr $dre_j + 4]
+    foreach i {0 1 2} {
+	set dr_ut $pd(dre,$UT,$i)
+	if {$dr_ut == "" || $dr_ut <= 0.0} {
+	    set dr_ut $pd(dre,$UT,2)
+	}
+	catch {set pd(dre,$dl_dre,$i) [expr $pd(dre,$dre_j,$i)/$dr_ut]}
+    }
+}
+}
+.
+
+blocks: loc time DefIn DefOut sum dre
+

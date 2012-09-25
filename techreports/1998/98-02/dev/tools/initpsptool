@@ -1,0 +1,69 @@
+#! /usr/local/bin/wish -f
+
+# main program of psptool
+set debug 0
+
+# translate a relative name to an absolute name
+# using the psp directory name if it exists otherwise use absolute name
+proc rel2gblfname fname {
+    global pspdir
+    puts stderr "fname = $fname"
+    if {[regexp {^/} $fname]} {
+	return $fname
+    }
+    if {$pspdir != ""} {
+	return "$pspdir/$fname"
+    }
+    return [rel2absfname $fname]
+}
+# translate a relative name to an absolute name
+proc rel2absfname fname {
+    if {[regexp {^/} $fname] == 0} {
+	global env
+	return "$env(HOME)/$fname"
+    }
+    return $fname
+}
+
+set pspdir [rel2absfname .psp]
+
+# read in OS specific procedures
+set ostk "os.tk"
+source $ostk
+
+# read in supporting procedures
+set psptk "psp.tk"
+source $psptk
+
+# report routines
+set pspreports "reports.tk"
+
+# set default configuration information
+init_globals [ getcnfile .pspcnf]
+
+#set up default state files
+#rd_state $statefile
+
+# initial list bug files
+#rdbugtypes
+
+proc stripath { path } {
+    set i [string last / $path]
+    if {$i < 0} {
+	return $path
+    }
+    incr i
+    return [string range $path $i end]
+}
+
+# install given scripts in the psp directory
+proc installfiles args {
+    foreach f $args {
+	puts stderr "Installing $f..."
+	exec cp $f [rel2gblfname $f]
+    }
+}
+
+installfiles $psptk $ostk $pspreports [stripath $pspdefile]
+
+exit 0

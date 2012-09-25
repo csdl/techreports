@@ -1,0 +1,273 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% primer-tools.tex -- 
+%% Author          : Philip Johnson
+%% Created On      : Mon May 15 13:56:44 1995
+%% Last Modified By: Philip Johnson
+%% Last Modified On: Tue Sep 26 09:25:39 1995
+%% Status          : Unknown
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1995 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\section{The Primer Tools Menu}
+\label{sec:primer-tools}
+
+\subsection{Motivation}
+To work through an exercise in this Primer, you must first bring up an HBS
+server, a Gagent, and one or more client processes.  In most cases, you
+must then load the implementation of one or more predefined primer classes
+which serve as the foundation for the exercises.
+
+Next, you often gain a better feel for the example by invoking some or all
+of the forms in the ``Example Usage'' section, perhaps varying the
+arguments slightly from those provided. 
+
+Simply working through the mechanics of these actions can take quite a bit
+of time.  To eliminate the tedium associated with each of these ``startup''
+activities, we've developed an XEmacs menu called ``Primer'' containing
+some simple, but useful tools to facilitate:
+\begin{itemize}
+\item Bringing an HBS server up and down.
+\item Bringing the Gagent and clients up and down.
+\item Loading and viewing Primer example class implementations.
+\item Viewing your own primer working files.
+\item Viewing the example session log files. 
+\end{itemize}
+
+\subsection{Loading the Primer Tools Menu}
+
+To load the Primer tools menu, you must load the primer-tools menu 
+implementation and invoke the p*env*make form.  Here is an example:
+
+\begin{code}
+(load "/group/csdl/ecs/primer-examples/dot.emacs-primer.el")
+(p*env*make :hbs-directory "/home/4/johnson/HBS/Primer/" 
+            :hbs-socketID 10003 
+            :password "kdk87bhda"
+            :examples-directory "/group/csdl/ecs/primer-examples/"
+            :working-directory "/home/4/johnson/Primer-workspace/")
+\end{code}
+
+The first form loads the implementation. Edit its argument to the correct
+path for the dot.emacs-primer.el file in the primer-examples subdirectory.
+
+The second form calls p*env*make with some arguments that simplify Primer
+activities. 
+\begin{itemize}
+\item The :hbs-directory keyword argument specifies the directory in
+  which *.hb files will be created when the Primer menu item for creating
+  a new HBS server is invoked.  Replace the example
+  ``/home/4/johnson/HBS/Primer'' subdirectory by one accessable to you.
+\item The :hbs-socketID argument indicates the socket number to be
+  used. Replace ``10003'' by some other integer if you prefer your Primer
+  HBS to listen on a different socket for connect requests.
+\item The :password argument supplies a password to be used by the Gagent
+  and all user clients for your personal primer sessions.  For security's
+  sake, make sure that the file containing this call to p*env*make is not
+  readable by others!  In CSDL, we typically create a file called
+  ``.primer'' in our home directory containing these two forms, set the
+  permissions to rw owner only, then call {\tt (load ".primer")} within 
+  our .emacs file.  
+\item The :examples-directory argument specifies where the example files
+  are located.  Change this path only if the ecs/primer-examples subdirectory
+  is located elsewhere on your system.
+\item The :working-directory argument specifies a path to a subdirectory
+  where you keep your personal files created while working on Primer
+  exercises.  Replace the example ``/home/4/johnson/Primer-workspace/'' by a
+  subdirectory in your own home directory.  (This argument is optional but 
+  highly recommended.)
+\end{itemize} 
+
+Once this form is edited appropriately and placed in your .emacs file, 
+you should find that a menu called ``Primer'' appears when you bring up 
+XEmacs.   An example screen dump of this Primer tools menu appears in 
+Figure \ref{fig:primer-tools}.
+
+\begin{figure}[htbp]
+\centerline{\psfig{figure=/group/csdl/techreports/95-10/primer-tools.ps}}
+\caption{The Primer Tools menu.  The window behind displays the output
+from starting up a Primer HBS process.}  
+\label{fig:primer-tools}
+\end{figure}
+
+\subsection{Using the Primer Tools Menu}
+
+\subsubsection{Starting up an HBS Server}
+
+
+The first menu selection in the Primer menu brings up a new HBS server.
+This server will place its *.hb files in the subdirectory specified in the
+call to p*env*make, and use the connect socket number specified in
+p*env*make.  It creates a db-ID for this database by concatenating together
+``Primer-'' with the current username, and this db-ID appears in this 
+first menu selection. 
+
+When the ``Start HBS''  menu item is selected, the window splits in half
+and a new Emacs subprocess is started to run the server.  Here is an
+example of the output obtained from a successful Start HBS command:
+
+\begin{code}
+--- working directory: /home/4/johnson/HBS/Primer/
+% /group/csdl/bin/hbs -socketid 10003 -dbID Primer-johnson
+
+HBS version 3.2.8 (Feb 26, 1995)
+Collaborative Software Development Laboratory 
+The University of Hawaii, 1994
+Mon May 15 15:21:18 1995
+Socketid is: 10003
+\end{code}
+
+You do not have to keep this buffer displayed, of course, but do not delete
+it. 
+
+There are three possibilities for error during starting: the chosen
+socketid could be in use, the hbs executable may not be found, or 
+the *.hb files could be corrupted. 
+
+\paragraph{Startup error: socket in use.}  If the HBS fails to start up
+because the socket is already in use, there are two possibilities.  
+
+First, the most likely reason is because an HBS server is already running
+on that socket.  You can check this via ``ps -ef'' (on Solaris) or ``ps
+-aux'' (on SunOS).  If there is an HBS on that socket, you normally connect
+to that one instead of starting up a new one.
+
+Second, the socket may be in use even though there is {\em no} HBS running.
+This can happen because XEmacs and/or Unix are fairly conservative about
+cleaning up killed subprocesses and allocated sockets.  Thus, if you (a)
+start up HBS within XEmacs, then kill the HBS, then try to startup HBS
+again within the {\em same} XEmacs, you will often get this ``socket in
+use'' error, even though there is no HBS server running.  Here are the
+workarounds: 
+
+\begin{enumerate}
+
+\item Start up HBS manually at the command line, outside of XEmacs.  Unix
+  seems to clean up the sockets almost immediately in this case.
+
+\item Start up HBS within XEmacs using the Primer menu, but if you need to
+  kill HBS {\em and} restart it again, you must first exit XEmacs, wait until
+  the socket is deallocated, then start up a fresh XEmacs to restart HBS.  You
+  can check to see if the socket is still allocated via:
+  \begin{code}
+    netstat -a | grep <socketid>
+  \end{code}
+\end{enumerate} 
+
+Since it is typically rare to startup HBS, kill it, and restart it within a
+single XEmacs session, you will typically run into this problem only
+rarely. However, it's very confusing if you don't understand what's going
+on when it does happen, thus this brief explanation.
+
+\paragraph{Startup error: HBS executable not found.}  If you are running
+this primer outside the UH ICS environment, then the default pathname for
+the HBS executable in the Primer Tools implementation will need to be
+changed.  The pathname used is the value of the variable 
+p*env*hbs-command, which defaults to ``/group/csdl/bin/hbs''.  You can 
+setq this variable to the appropriate value for your site. 
+
+\paragraph{Startup error: hb file opening problems.}  Under rare
+circumstances, one of the *.hb files containing the database can get
+corrupted, which prevents HBS from starting up correctly. In this case, you
+need to go to the Primer hbs-directory and delete the files manually, 
+then try again. 
+
+
+
+\subsubsection{Starting a Gagent}
+
+The next step in bringing up Egret is to start up a Gagent.  The second
+menu item in the Primer menu allows you to ``Connect as Gagent''.
+Selecting that menu item connects this process as the Gagent, and resets
+the screen name to ``PRIMER: GAgent ({\em db-ID})'', where {\em db-ID} is
+replaced by the actual db-ID used by your primer HBS.
+
+If the Gagent does not connect successfully when invoked from the Primer
+menu, it is most likely due to corrupted *.hb files.  In this case, you
+must bring down the HBS server, delete the *.hb files manually, and bring
+up the HBS server and the Gagent again. 
+
+After successfully connecting this XEmacs process as a Gagent, you will 
+notice that all of the ``Connect'' menu items have been deselected, and 
+the menu item ``Disconnect (Gagent or Client)'' is now selectable.  This
+is done, of course, since you cannot connect to the same db-ID twice from 
+one XEmacs process.  
+
+At this point, you typically iconify this screen and bring up a new 
+XEmacs process to connect as a user. 
+
+\subsubsection{Connecting as a user}
+
+First, bring up a fresh XEmacs process. Second, pull down the Primer menu
+and select one of the four user ``Connect As'' menu items.  The Primer
+provides you with four automatically defined user names, created by
+concatenating your username with the numbers 1, 2, 3, and 4. As with the ``Connect
+as Gagent'' menu item, once you have connected as a user, the connect menu
+items are deselected and the disconnect menu item becomes selectable.
+
+\subsubsection{Loading and viewing files}
+
+At this point, you should have one XEmacs process connected as the Gagent
+(with the HBS server running as a subprocess of this process), and another
+XEmacs process connected as a user.   You will use this latter user process to 
+load, view, and complete your Primer exercises.  
+
+The ``Load Primer Implementations'' menu cascades into a set of file names 
+that, when selected, automatically load the corresponding files.  Each of
+these files corresponds to the implementation of a class or system from
+one section of the Primer.  In addition to these files, there appears a file
+called dot.emacs-primer.el, which contains the source for this Primer tools
+implementation.  You don't normally need to load this file (since it is 
+already loaded by your .emacs file), but reloading it will do no harm. 
+
+The ``View Primer Implementations'' menu cascades into the same set of file
+names as the the ``Load Primer Implementations'' menu, but when these are
+selected, the corresponding file is brought into a buffer.  These files
+should all be read-only, since you should not edit the primer example
+files.  Again, the dot.emacs-primer.el file appears in this list, which
+allows you to easily peruse the implementation of these tools. 
+
+The ``View Primer Sessions'' menu cascades into a set of file
+names with the same prefix as the implementations, but with a suffix of
+``.log''.  These files contain the example sessions found in the Primer, 
+and allow you to easily replicate their results.  Again, these files are
+read-only, so you cannot edit them, but you can still place the point
+after any of the forms and type c-x c-e to evaluate them.  
+
+The ``View Personal Work Files'' cascades into a set of all
+the files currently located in the subdirectory specified in the
+:working-directory argument to p*env*make, as documented above.  
+
+When files are added and subtracted from your personal working directory (or
+from the Primer subdirectories), the cascading menu items above do not
+automatically update themselves.  (Sorry, I'm not an XEmacs Menu Wizard
+yet.)  The ``Refresh Directory Entries'' menu item rebuilds these 
+cascading menus with the current contents of the subdirectories. 
+
+
+\subsubsection{Disconnecting clients and bringing down the server}
+
+The final set of menu items allows you to easily disconnect the current
+client from the HBS server, or bring down the HBS server entirely.  Since
+the HBS server runs as a subprocess of an XEmacs process, bringing down
+that XEmacs process automatically kills the associated HBS process. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

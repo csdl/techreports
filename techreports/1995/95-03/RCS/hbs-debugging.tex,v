@@ -1,0 +1,222 @@
+head	1.3;
+access;
+symbols;
+locks; strict;
+comment	@% @;
+
+
+1.3
+date	95.07.21.01.12.10;	author cmoore;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	95.02.09.22.25.09;	author johnson;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	95.02.03.21.02.14;	author cmoore;	state Exp;
+branches;
+next	;
+
+
+desc
+@@
+
+
+1.3
+log
+@minor changes about security
+@
+text
+@%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% hbs-debugging.tex -- 
+%% Author          : Carleton Moore
+%% Created On      : Fri Jan 20 17:16:00 1995
+%% Last Modified By: Carleton Moore
+%% Last Modified On: Thu Jul 20 14:57:59 1995
+%% Status          : Unknown
+%% RCS: $Id: hbs-debugging.tex,v 1.2 1995/02/09 22:25:09 johnson Exp cmoore $
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1995 University of Hawaii
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+\section{Debugging Tools}
+\label{sec:debugging}
+
+The HBS code has two types of debugging tools built into it: memory leak
+detection and control flow tracing.  For efficiency, the memory
+leak detection code is commented out of the source.  To enable the memory
+leak detection HBS will have to be recompiled.  The control flow tool
+is active in the current release of HBS.  Each debugging tool is discussed
+in turn.
+
+\subsection{Memory Leak Detection.}
+
+There are two different Memory Leak packages available in the HyperBase
+{\bf HeapStats} and {\bf MemoryCheck}.  Both packages output their messages
+to standard error.
+
+\subsubsection{HeapStats Package.}
+
+The simplest package is {\bf HeapStats}\cite{Cargill92}.  {\bf HeapStats}
+provides a count of all calls to {\tt new} and {\tt delete}.  To initialize
+the {\bf HeapStats} counters call the function {\tt HeapStats::reset()}.
+To get a display of all the {\tt new}s and {\tt delete}s use the function
+{\tt HeapStats::report()}.
+
+To use the {\bf HeapStats} package do the following:
+
+\begin{enumerate}
+\item{Un-comment the {\tt HeapStats::reset();} and {\tt HeapStats::report();}
+lines in the files you are interested in.}
+\item{Add {\tt HeapStats::reset();} and {\tt HeapStats::report();} to the
+files you are interested in.}
+\item{Re-compile HBS with the {\tt -D HEAPSTATS} option in the command line.}
+\end{enumerate}
+\subsubsection{MemoryCheck Package.}
+
+The second Memory Leak package is {\bf MemoryCheck}\cite{Kanze94}  {\bf
+MemoryCheck} is similar to {\bf HeapStats} in that it keeps track of all
+{\tt new}s and {\tt delete}s.  {\bf MemoryCheck} is more sophisticated than
+{\bf HeapStats}.  It keeps track of the number of bytes allocated and
+deallocated.  It can tell you if there is an memory leaks and the number of
+bytes that were leaked.  It tells you the location in the code where the
+memory was allocated.  To initialize the {\bf MemoryCheck} routines call
+the function {\tt MemoryCheck::mark()}.  To check for any memory leaks call
+{\tt MemoryCheck::check()}.
+
+To use the {\bf MemoryCheck} package do the following:
+
+\begin{enumerate}
+\item{Un-comment the {\tt MemoryCheck::mark();} and \\
+{\tt MemoryCheck::check();} lines in the files you are interested in.}
+\item{Add {\tt MemoryCheck::mark();} and \\
+{\tt MemoryCheck::check();} to the files you are interested in.}
+\item{Re-compile HBS with the {\tt -D MEMORYCHECK} option in the command line.}
+\end{enumerate}
+
+
+\subsection{Control Flow Tracing.}
+
+Control Flow is built in to HBS. The control flow instrumentation sends its
+output to standard error.  There are four levels of control flow
+
+\begin{enumerate}
+\item{Client Interface Commands.}
+\item{Event Level Functions.}
+%\item{File Level Function Calls.*}
+%\item{Low Level System Calls.*}
+\item{Strings received by/sent from HBS.}
+\end{enumerate}
+
+You can select any of the control flow tracings you wish.  You may select
+more than one level of control flow tracing just by adding the switch to
+the command line.
+
+\subsubsection{Client Interface Commands.}
+
+This level of control flow tracing reports which client requested an
+operation, what the operation was and the return value for the operation.
+The format for the message is: \\ ``{\tt $<userName> `<'  <operation>
+<parameters> `>' <return value> at <time>$}''.
+
+To enable this level of control flow instrumentation just use the command
+switch {\tt -d1} or {\tt -debug1}  when you start HBS. (i.e. {\tt \% HBS
+-d1} or {\tt \% HBS -debug1})
+\subsection{Event Level Functions.}
+This level of control flow tracing reports all the events the HBS sends
+out.  The format for the message is: \\  ``{\tt Event: $<userName> <nodeNumber>,
+<operation>, <key>, <concatenated message>$}''
+
+To enable this level of control flow instrumentation just use the command
+switch {\tt -d2} or {\tt -debug2}  when you start HBS. (i.e. {\tt \% HBS
+-d2} or {\tt \% HBS -debug2})
+%\subsection{File Level Function Calls.*}
+%
+%To enable this level of control flow instrumentation just use the command
+%switch {\tt -d3} or {\tt -debug3}  when you start HBS. (i.e. {\tt \% HBS
+%-d3} or {\tt \% HBS -debug3})
+%\subsection{Low Level System Calls.*}
+%
+%To enable this level of control flow instrumentation just use the command
+%switch {\tt -d4} or {\tt -debug4}  when you start HBS. (i.e. {\tt \% HBS
+%-d4} or {\tt \% HBS -debug4})
+\subsubsection{Strings received by/sent from HBS.}
+This level of control flow tracing reports all the Strings the HBS sends
+out or receives.  The format for the message is: \\ ``{\tt Sending $<length> bytes
+. done! at <time> \\  Sent: <String>$}'' or \\ ``{\tt Receiving $<length>
+bytes . done! at <time> \\ Received : <String>$}''
+
+To enable this level of control flow instrumentation just use the command
+switch {\tt -d5} or {\tt -debug5}  when you start HBS. (i.e. {\tt \% HBS
+-d5} or {\tt \% HBS -debug5})
+
+
+Now that the debugging tools have been described, the next section
+discusses how to extend the HBS.
+
+
+
+
+
+
+
+@
+
+
+1.2
+log
+@*** empty log message ***
+@
+text
+@d5 2
+a6 2
+%% Last Modified By: Philip Johnson
+%% Last Modified On: Thu Feb  9 12:08:00 1995
+d8 1
+a8 1
+%% RCS: $Id: hbs-debugging.tex,v 1.1 1995/02/03 21:02:14 cmoore Exp johnson $
+d126 1
+a126 2
+discusses some of the known bugs
+and limitations in HBS.
+@
+
+
+1.1
+log
+@initial turnin
+@
+text
+@d5 2
+a6 2
+%% Last Modified By: Carleton Moore
+%% Last Modified On: Tue Jan 24 11:36:18 1995
+d8 1
+a8 1
+%% RCS: $Id$
+d15 3
+a17 2
+The HBS code has two types of debugging tools built into it, memory leak
+detection, and control flow tracing.  For efficiency purposes the memory
+d19 1
+a19 1
+leak detection the HBS will have to be recompiled.  The control flow tool
+d22 1
+d24 1
+d28 1
+d30 1
+d38 1
+d47 1
+d59 1
+d70 1
+d73 1
+d81 1
+d87 1
+d125 3
+a127 2
+Now that the debugging tools have been described, some of the known bugs
+and limitations in HBS are described.
+@

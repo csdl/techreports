@@ -1,0 +1,186 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% eval.tex -- 
+%% Author          : Joe Dane
+%% Created On      : Tue Oct  5 16:18:53 1999
+%% Last Modified By: Joe Dane
+%% Last Modified On: Wed Oct 20 14:50:59 1999
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1999 Joe Dane
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+
+\chapter{Evaluation}
+\label{chap:eval}
+
+How well has LOCC lived up to the claims presented earlier in this
+thesis?  There have been both successes and failures, but on balance
+LOCC seems to have lived up to its claims.  LOCC has been evaluated
+using three methods. First, LOCC has been run on a large Java code base to
+confirm that it can calculate size data for a wide variety of source code.
+Selected output from LOCC's
+default {\sc javaline} metric has been checked against manually
+counted size data and has been found to be accurate.  Second,
+current users of LOCC have been surveyed.  Their answers, while
+qualitative, have indicated that LOCC is useful.
+Finally, I have tried to objectively evaluate the process of adding
+and extending size measures within LOCC.  The responses from the user
+survey provided information as to what could be changed in the {\sc
+  javaline} size metric, and I have attempted to evaluate the ease
+with which these changes were made.
+
+\section{Baseline functionality}
+
+LOCC has been used to measure the sizes of several systems developed
+at the CSDL, including the AWT library from Sun (99 classes, 1468 methods,
+13080 lines), the Leap toolkit (308 classes, 2328 methods, 49082 lines) and
+LOCC itself (76 classes, 555 methods, 8116 lines).  It has been
+used successfully in a graduate-level software engineering course.
+
+A subset of the output from these uses of LOCC has been compared to
+manually counted size data.  In all cases, the output from LOCC
+has been identical to the hand-counted cases.
+
+\section{User survey}
+
+All known users of LOCC were given a brief survey and asked for both
+their general impression of LOCC and specific problems they
+encountered while using it.  I received five responses to the survey.
+The responses were mostly positive, with all respondents indicating that
+they had found LOCC useful.  While the general attitude was favorable,
+there were some suggestions as to how LOCC could be improved.
+
+The most commonly mentioned problem was with the {\sc javaline} size
+metric.  The metric, as it was originally defined, made an effort to
+do a ``structural difference'' when comparing two versions of a
+program.  That is, {\sc javaline} would try to find exactly how many
+lines had been added to each package, class, and method in a file.  It 
+did this by trying to match old and new versions of the package,
+class, or method, by using the algorithm described in Section
+\ref{sect:whats-diff}.  It was noted in that section that if the developer
+made a simple change to the source code that interfered with {\sc
+  javaline\/}'s matching algorithm, such as renaming a class or adding 
+a parameter to a method, then the class or method would be counted as
+new code.  At the time of {\sc javaline\/}'s initial design, it was
+not know how much this would affect people.
+
+After reviewing the responses of the user survey, it was clear that
+many people had encountered this problem.  The students in the
+software engineering class especially, who were developing projects on 
+their own and had little reason to maintain interface consistency
+across versions, had problems with this.  The changes enacted to
+alleviate the problem are described below, in Section \ref{eval:add}.
+
+Several people mentioned features they wished existed in the user
+interface.  One feature mentioned more than once was the ability to
+recursively measure files in a directory and its subdirectories.  This 
+feature is planned for the next revision of LOCC.
+
+Despite the problems with {\sc javaline}, most respondents felt that
+LOCC has been successful, and had significantly helped them in
+collection of their process data.
+
+\section{Evaluation of LOCC extension}
+\label{eval:add}
+
+Probably the most interesting aspect of LOCC is how it allows, even
+encourages, experimentation with size metrics.  As described in
+Chapter \ref{chap:add}, adding a new size measure to LOCC is only as
+difficult as designing and implementing the metric itself.  For a
+simple metric, this may be a matter of a few hours.  
+
+The situation with the {\sc javaline} metric is itself interesting.
+The problems involved in the syntax tree node matching algorithm were
+apparent, and yet it still seemed that a diff that was aware of the
+structure of the language shouldn't be thrown away.  The Leap toolkit, 
+for one thing, prefers that size measures, total and difference, be
+expressed in this way.  Also, it can be worthwhile after working on
+modifying a program for some time to take a look at where the changes
+have been made.  A diff which can distinguish changes made to one
+method from changes made to another can provide this.
+
+\singlespace
+\begin{figure}
+  \centering
+  \begin{verbatim}
+public class aClass {
+    int i, j;
+    public String methodOne() {
+        return "methodOne";
+    }
+    public String methodTwo() {
+        return "methodTwo";
+    }
+}
+\end{verbatim}
+  \caption{Old program version}
+  \label{old-version2}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \begin{verbatim}
+public class aClass {
+    int i, j;
+    public String methodOne(int k) {
+        return "methodOne";
+    }
+    public String methodTwo() {
+        return "methodTwo";
+    }
+}
+\end{verbatim}
+  \caption{New program version}
+  \label{new-version2}
+\end{figure}
+\doublespace
+
+Therefore, the {\sc javaline} metric was split in two.  The original
+metric would be modified to try to be a bit smarter in its matching.
+The new metric, called {\sc simple-javaline}, was identical to the
+original in total size counting, but for size difference counting
+considered only file level differences.  That is, a diff in {\sc
+  simple-javaline} compares two files, without regard for program
+structure, returning the number of new or changed lines in the new
+file.
+
+{\sc javaline} was improved by adding some logic to its matching
+algorithm.  Matching would begin as in the original metric.  After a
+failure to find a match, a special search for a matching node would be
+undertaken.  This search proceeded by sequentially examining each of a 
+number of candidate nodes.  The candidate nodes were those at the same
+level in the old syntax tree as the new node being matched.
+
+
+For example, consider the program versions in Figures
+\ref{old-version2} and \ref{new-version2}.  Assume that the metric has 
+proceeded to the point where it is counting the contents of {\tt
+  aClass}, and it is looking for a match in the old syntax tree for
+the method with signature {\tt String methodOne(int)}.  After failing
+to find a match, it will examine every child node of the old {\tt
+  aClass} node.  For each of these nodes, a textual comparison will be 
+made with the new {\tt methodOne} method.  If we find a node in the
+old tree which ``looks like'' the new method node, then we consider
+the two nodes a match.  If more than one node in the old tree looks
+like the new node, we take the old node which looks most like the new
+one as the match.  We say a node looks like another if the ratio of
+new and changed lines to total lines is less than 0.25.  In other
+words, if fewer than 1/4 of the lines in a method are new or changed,
+we should be able to find a match.
+
+Much of the code to implement the new and improved {\sc javaline} was
+taken without change from the original version.\footnote{Only 12 lines were 
+  added.  If we counted deleted lines, the count would have been higher.}
+In particular, the entire parser was reused.  The process of
+making the changes and testing the new metric took 120 minutes.  The
+construction of the {\sc simple-javaline} metric took 30 minutes.  The 
+fact that these changes could be made and incorporated into a working
+product so quickly is the most convincing evidence that LOCC has
+succeeded in its goals.
+
+
+
+
+
+

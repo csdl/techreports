@@ -1,0 +1,591 @@
+%%% \documentstyle[11pt,/group/csdl/tex/definemargins,
+%%%                        /group/csdl/tex/lmacros]{article} 
+%%% 
+%%%           \begin{document}
+%%%           \begin{center}
+%%%           {\large\bf CSRS Experiment -- Source Listing \\
+%%%             Source: Pass1 }
+%%% \end{center}
+%%% 
+\chapter {CSRS Experiment (ICS411): Source Listing -- Pass1}
+\small
+	  
+
+\section{Type and var declarations}
+\subsection*{Specification:}
+
+\subsection*{Source-code:}
+\begin{verbatim}
+001:/* 
+002:THIS IS A SIMPLE ASSEMBLER FOR SIC (STANDARD VERSION) PASS 1. 
+003:IT READS SOURCE PROGRAM INPUT AND WRITES INTO INTERMEDIATE FILE.
+004:
+005:THE SOURCE PROGRAM TO BE ASSEMBLED MUST BE IN FIXED FORMAT AS 
+006:FOLLOWS:
+007:      BYTES  0-7  LABEL
+008:               8  BLANK
+009:             9-14 OPERATION CODE
+010:            15-16 BLANK
+011:            17-34 OPERAND
+012:            35-65 COMMENT
+013:
+014:IF A SOURCE LINE CONTAINS "." IN THE FIRST BYTE, THE ENTIRE LINE IS
+015:TREATED AS A COMMENT. 
+016:*/
+017:
+018:#ifndef true
+019:# define true    1
+020:# define false   0
+021:#endif
+022:
+023:#define EXIT_SUCCESS  0
+024:#define EXIT_FAILURE  1
+025:#define QUOTE           '\''
+026:#define MAXERRORS       25   /* SIZE OF ARRAY OF ERROR FLAGS */
+027:#define MAXOPS          25   /* SIZE OF OPCODE TABLE */
+028:#define SYMTABLIMIT     100   /* SIZE OF SYMBOL TABLE */
+029:#define BLANK6          "      "
+030:#define BLANK8          "        "
+031:#define BLANK18         "                  "
+032:#define BLANK31         "                               "
+033:
+034:typedef unsigned char BOOLEAN;
+035:typedef char CHAR4 [4];
+036:typedef char CHAR6 [6];
+037:typedef char CHAR8 [8];
+038:typedef char CHAR18 [18];
+039:typedef char CHAR31 [31];
+040:typedef char CHAR50 [50];
+041:typedef char CHAR66 [66];
+042:
+043:typedef struct SOURCETYPE {
+044:  /* SOURCE LINE AND SUBFIELDS */
+045:  CHAR66 line;
+046:  BOOLEAN comline;
+047:  CHAR8 labl;
+048:  CHAR6 operation;
+049:  CHAR18 operand;
+050:  CHAR31 comment;
+051:} SOURCETYPE;
+052:
+053:typedef struct REC_SYMTABTYPE {
+054:  CHAR8 symbol;
+055:  int address;
+056:} REC_SYMTABTYPE;
+057:
+058:
+059:typedef enum {SEARCH, STORE} SYMREQTYPE;
+060:
+061:typedef enum {
+062:  FOUND, NOTFOUND, ADDED, DUPLICATE, TABLEFULL
+063:}SYMRETTYPE;
+064:
+065:/*SYMBOL TABLE is an array [0..SYMTABLIMIT] of REC_SYMTABTYPE*/
+066:/*ASSUME THIS TABLE IS INITIALIZED PROPERLY.                 */
+067:static REC_SYMTABTYPE SYMTAB[SYMTABLIMIT + 1];
+068:
+069:static FILE *srcfile, *objfile, *lisfile, *intfile;
+070:static int LOCCTR;
+071:static CHAR6 PROGNAME;
+072:static int PROGSTART;
+073:
+074:/* Error Messages */
+075:static CHAR50 ERRMSG[MAXERRORS] = {
+076:  "ILLEGAL FORMAT IN LABEL FIELD                     ",/*ERRMSG[0]*/
+077:  "MISSING OPERATION CODE                            ",/*ERRMSG[1]*/
+078:  "ILLEGAL FORMAT IN OPERATION FIELD                 ",/*ERRMSG[2]*/
+079:  "MISSING OR MISPLACED OPERAND IN START STATEMENT   ",/*ERRMSG[3]*/
+080:  "ILLEGAL OPERAND IN START STATEMENT                ",/*ERRMSG[4]*/
+081:  "ILLEGAL OPERAND IN BYTE STATEMENT                 ",/*ERRMSG[5]*/
+082:  "ODD LENGTH HEX STRING IN BYTE STATEMENT           ",/*ERRMSG[6]*/
+083:  "MISSING OR MISPLACED OPERAND IN BYTE STATEMENT    ",/*ERRMSG[7]*/
+084:  "MISSING OR MISPLACED OPERAND IN RESW STATEMENT    ",/*ERRMSG[8]*/
+085:  "ILLEGAL OPERAND IN RESW STATEMENT                 ",/*ERRMSG[9]*/
+086:  "MISSING OR MISPLACED OPERAND IN RESB STATEMENT    ",/*ERRMSG[10]*/
+087:  "ILLEGAL OPERAND IN RESB STATEMENT                 ",/*ERRMSG[11]*/
+088:  "DUPLICATE LABEL DEFINITION                        ",/*ERRMSG[12]*/
+089:  "TOO MANY SYMBOLS IN SOURCE PROGRAM                ",/*ERRMSG[13]*/
+090:  "DUPLICATE OR MISPLACED START STATEMENT            ",/*ERRMSG[14]*/
+091:  "MISSING OR MISPLACED START STATEMENT              ",/*ERRMSG[15]*/
+092:  "ILLEGAL OPERAND IN WORD STATEMENT                 ",/*ERRMSG[16]*/
+093:  "MISSING OR MISPLACED OPERAND IN WORD STATEMENT    ",/*ERRMSG[17]*/
+094:  "MISSING OR MISPLACED OPERAND IN END STATEMENT     ",/*ERRMSG[18]*/
+095:  "ILLEGAL OPERAND IN END STATEMENT                  ",/*ERRMSG[19]*/
+096:  "UNDEFINED SYMBOL IN OPERAND                       ",/*ERRMSG[20]*/
+097:  "STATEMENT SHOULD NOT FOLLOW END STATEMENT         ",/*ERRMSG[21]*/
+098:  "ILLEGAL OPERAND FIELD                             ",/*ERRMSG[22]*/
+099:  "UNRECOGNIZED OPERATION CODE                       ",/*ERRMSG[23]*/
+100:  "MISSING OR MISPLACED OPERAND IN INSTRUCTION       "/*ERRMSG[24]*/
+101:};
+102:
+103:
+104:
+\end{verbatim}
+\section{hextonum}
+\subsection*{Specification:}
+THIS FUNCTION EXAMINES THE STRING STR, BEGINNING WITH THE BYTE POSITION
+INDICATED BY FIRST, FOR A HEXADECIMAL VALUE. THIS VALUE, CONVERTED TO AN
+INTEGER, IS RETURNED AS THE VALUE OF THE FUNCTION AND LAST IS SET TO INDICATE
+THE NEXT CHARACTER IN STR AFTER THE HEX VALUE THAT WAS FOUND. IF ANY SCANNING
+OR CONVERSION ERRORS ARE DETECTED, CONVERROR IS SET TO TRUE. THE MAXIMUM
+LENGTH OF THE HEX VALUE TO BE SCANNED IS 4 HEX DIGITS.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:int hextonum (char *str,int first,int *last,BOOLEAN *converror)
+002:
+003:{
+004:
+005:  int n, i;
+006:  BOOLEAN scanning;
+007:
+008:  n = 0;
+009:  i = 0;
+010:  scanning = true;
+011:  *converror = false;
+012:  while (scanning) {
+013:    if (str[first + i] >= '0' && str[first + i] <= '9')
+014:      n = n * 16 + str[first + i] - '0';
+015:    else if (str[first + i] >= 'A' && str[first + i] <= 'F')
+016:      n = n * 16 + str[first + i] - 'A' + 10;
+017:    else {
+018:      *converror = true;
+019:      scanning = false;
+020:    }
+021:    i++;
+022:    if (i > first + 3)
+023:      scanning = false;
+024:  }
+025:  *last = first + i;
+026:  return n;
+027:}
+028:
+029:
+030:
+031:
+\end{verbatim}
+\section{Access\_Symtab}
+\subsection*{Specification:}
+THIS PROCEDURE IS USED TO ACCESS THE SYMBOL TABLE FOR THE ASSEMBLY.  IF
+REQUESTCODE = SEARCH, THE SYMBOL PASSED AS A PARAMETER IS SEARCHED FOR IN THE
+TABLE. IF THIS SYMBOL IS FOUND, RETURNCODE IS SET TO FOUND, AND ADDRESS IS
+SET TO THE VALUE OF THE SYMBOL (FROM THE SYMBOL TABLE). IF THE SYMBOL IS NOT
+FOUND IN THE TABLE, RETURNCODE IS SET TO NOTFOUND.
+
+IF REQUESTCODE = STORE, THE SYMBOL IS ADDED TO THE TABLE, WITH VALUE GIVEN BY
+ADDRESS. IF THE SYMBOL IS ADDED NORMALLY, RETURNCODE IS SET TO ADDED. IF THE
+SYMBOL ALREADY EXISTS IN THE TABLE, RETURNCODE IS SET TO DUPLICATE (AND THE
+SYMBOL IS NOT ADDED). IF THE TABLE IS ALREADY FULL, RETURNCODE IS SET TO
+TABLEFULL.
+
+THE SYMBOL TABLE IS ORGANIZED AS A HASH TABLE. THE HASHING FUNCTION SIMPLY
+SUMS THE ORDINAL VALUES OF ALL OF THE CHARACTERS IN THE SYMBOL. COLLISIONS
+ARE HANDLED BY LINEAR PROBING.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void Access_Symtab(SYMREQTYPE requestcode,
+002:               SYMRETTYPE *returncode,
+003:               char *symbol,
+004:               int *address)
+005:
+006:{
+007:  BOOLEAN searching;
+008:  int i, hash, ptr;
+009:
+010:  for (i = 0; i <= 7; i++)
+011:    hash += symbol[i];
+012:  hash = hash % SYMTABLIMIT;
+013:  if (requestcode == SEARCH) {
+014:    searching = true;
+015:    ptr = hash;
+016:    while (searching) {
+017:      if (!strncmp(SYMTAB[ptr].symbol, symbol, sizeof(CHAR8))){
+018:    *returncode = FOUND;
+019:    *address = SYMTAB[ptr].address;
+020:    searching = false;
+021:      }
+022:      else if (strncmp(SYMTAB[ptr].symbol,BLANK8,sizeof(CHAR8))){ 
+023:    *returncode = NOTFOUND;
+024:    *address = 0;
+025:    searching = false;
+026:      }
+027:      else {
+028:    ptr = (ptr + 1) % SYMTABLIMIT;
+029:    if (ptr == hash) {
+030:      *returncode = NOTFOUND;
+031:      *address = 0;
+032:      searching = false;
+033:    }
+034:      }
+035:    }
+036:    return;
+037:  }
+038:  /*requestcode == STORE*/
+039:  searching = true;
+040:  ptr = hash;
+041:  while (searching) {
+042:    if (!strncmp(SYMTAB[ptr].symbol, symbol, sizeof(CHAR8))) {
+043:      *returncode = DUPLICATE;
+044:      searching = false;
+045:    }
+046:    else if (!strncmp(SYMTAB[ptr].symbol, BLANK8, sizeof(CHAR8))) { 
+047:      *returncode = ADDED;
+048:      memcpy(SYMTAB[ptr].symbol, symbol, sizeof(CHAR8));
+049:      SYMTAB[ptr].address = *address;
+050:      searching = false;
+051:    } 
+052:    else {
+053:      ptr = (ptr + 1) % SYMTABLIMIT;
+054:      if (ptr == hash)
+055:    *returncode = TABLEFULL;
+056:    }
+057:  } /*while*/
+058:}
+059:
+060:
+061:
+\end{verbatim}
+\section{Write\_Int\_File}
+\subsection*{Specification:}
+THIS PROCEDURE WRITES THE INTERMEDIATE FILE INTFILE.  THE CURRENT SOURCE
+PROGRAM LINE IS WRITTEN, FOLLOWED BY A BOOLEAN VALUE (T OR F) THAT INDICATES
+WHETHER THIS IS A COMMENT LINE, AND THE CURRENT LOCATION COUNTER VALUE. FOR
+NON-COMMENT LINES, THE SUBFIELDS ARE ALSO WRITTEN OUT, FOLLOWED BY THE VALUE
+OF ERRORSFOUND (T OR F). IF AND ONLY IF ERRORSFOUND WAS TRUE, THE VALUES IN
+ERRORFLAGS ARE ALSO WRITTEN.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void Write_Int_File (SOURCETYPE *source,
+002:                 BOOLEAN errorsfound,
+003:                 BOOLEAN *errorflags)
+004:
+005:{
+006:  int i;
+007:
+008:  for (i = 0; i <= 65; i++)
+009:    putc(source->line[i], intfile);
+010:  if (source->comline)
+011:    putc('T', intfile);
+012:  else
+013:    putc('F', intfile);
+014:  fprintf(intfile, "%d\n", LOCCTR);
+015:  if (source->comline)
+016:    return;
+017:  for (i = 0; i <= 7; i++)
+018:    putc(source->labl[i], intfile);
+019:  for (i = 0; i <= 5; i++)
+020:    putc(source->operation[i], intfile);
+021:  for (i = 0; i <= 17; i++)
+022:    putc(source->operand[i], intfile);
+023:  for (i = 0; i <= 30; i++)
+024:    putc(source->comment[i], intfile);
+025:  if (!errorsfound)
+026:    fprintf(intfile, "F\n");
+027:  fprintf(intfile, "T\n");
+028:
+029:  for (i = 0; i < MAXERRORS; i++) {
+030:    if (errorflags[i])
+031:      putc('T', intfile);
+032:    else
+033:      putc('F', intfile);
+034:  }
+035:  putc('\n', intfile);
+036:}
+037:
+038:
+039:
+\end{verbatim}
+\section{P1\_Read\_Source}
+\subsection*{Specification:}
+THIS PROCEDURE READS THE NEXT LINE FROM SRCFILE. IF THERE ARE NO MORE LINES
+ON SRCFILE, ENDOFINPUT IS SET TO TRUE.
+
+IF THE SOURCE STATEMENT CONTAINS A "." IN COLUMN 1, THEN SOURCE.COMLINE IS
+SET TO TRUE. OTHERWISE, THE SUBFIELDS OF THE STATEMENT (LABL, OPERATION,
+OPERAND, COMMENT) ARE SCANNED.
+
+ERRORS THAT MAY BE DETECTED: 0, 1, 2
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void P1_Read_Source (SOURCETYPE *source,
+002:                 BOOLEAN *endofinput, 
+003:                 BOOLEAN *errorsfound,
+004:                 BOOLEAN *errorflags)
+005:
+006:
+007:{
+008:  int i, j;
+009:  char ch;
+010:
+011:  if ((ch=getc(srcfile))==EOF){
+012:      *endofinput = true;
+013:      return;
+014:  }
+015:
+016:  ungetc(ch,srcfile);
+017:
+018:  for (i = 0; i <= 65; i++)
+019:    source->line[i] = ' ';
+020:  for (i = 0; i <= MAXERRORS; i++)
+021:    errorflags[i] = false;
+022:  *errorsfound = false;
+023:  
+024:  for(i = 0; i <= 65 && (ch=getc(srcfile))!='\n' && ch!=EOF; i++)
+025:    source->line[i] = ch;
+026:
+027:  /*discard remaining characters till newline
+028:   (implementation of readln in PASCAL) */ 
+029:  while (ch!=EOF || ch != '\n')
+030:    ch=getc(srcfile);
+031:  
+032:  if (source->line[0] == '.')
+033:    source->comline = true;
+034:  else
+035:    source->comline = false;
+036:  memcpy(source->labl, BLANK8, sizeof(CHAR8));
+037:  memcpy(source->operation, BLANK6, sizeof(CHAR6));
+038:  memcpy(source->operand, BLANK18, sizeof(CHAR18));
+039:  memcpy(source->comment, BLANK31, sizeof(CHAR31));
+040:
+041:  if (source->line[0] >= 'A' && source->line[0] <= 'Z' ) { 
+042:    /* THERE IS A LABEL */
+043:    while (i <= 7 && (isupper(source->line[i]) ||
+044:                  isdigit(source->line[i]))) {
+045:      source->labl[i] = source->line[i];
+046:      i++;
+047:    }
+048:  }
+049:  for (j = i; j <= 8; j++) {
+050:    if (source->line[j] != ' ') {
+051:      *errorsfound = true;
+052:      errorflags[0] = true;   /* ILLEGAL LABEL FIELD */
+053:    }
+054:  }
+055:  i = 9;
+056:  if (isupper(source->line[i])) {  /* THERE IS AN OPERATION CODE */
+057:    while (i <= 13 && (isupper(source->line[i]) ||
+058:                   isdigit(source->line[i]))) {
+059:      source->operation[i - 9] = source->line[i];
+060:      i++;
+061:    }
+062:  } else {
+063:    *errorsfound = true;
+064:    errorflags[1] = true;   /* MISSING OPERATION CODE */
+065:  }
+066:
+067:  for (j = i; j <= 16; j++) {
+068:    if (source->line[j] != ' ') {
+069:      *errorsfound = true;
+070:      errorflags[2] = true;   /* ILLEGAL OPERATION FIELD */
+071:    }
+072:  }
+073:
+074:  for (i = 35; i <= 65; i++)
+075:    source->comment[i - 35] = source->line[i];
+076:}  /* P1_Read_Source */
+077:
+078:
+079:
+\end{verbatim}
+\section{P1\_Proc\_START}
+\subsection*{Specification:}
+PROCESS START STATEMENT -- CONVERT STARTING ADDRESS AND STORE IN
+NEWLOCCTR. ERRORS DETECTED: 3, 4
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void P1_Proc_START (SOURCETYPE source,
+002:                int *newlocctr,
+003:                BOOLEAN *errorsfound,
+004:                BOOLEAN *errorflags)
+005:
+006:{
+007:  BOOLEAN converror;
+008:  int i, j, temploc;
+009:
+010:  if (source.operand[0] == ' ') {
+011:    *errorsfound = true;
+012:    errorflags[3] = true;
+013:    /* MISSING OR MISPLACED OPERAND IN START STATEMENT */
+014:    return;
+015:  }
+016:  temploc = hextonum(source.operand, 0, &i, &converror);
+017:  if (converror) {
+018:    *errorsfound = true;
+019:    errorflags[4] = true; /* ILLEGAL OPERAND IN START STATEMENT */
+020:  }
+021:  for (j = i; j <= 17; j++) {
+022:    if (source.operand[j] != ' ') {
+023:      *errorsfound = true;
+024:      errorflags[4] = true;
+025:      /* ILLEGAL OPERAND IN START STATEMENT */
+026:    }
+027:  }
+028:  if (!errorflags[3] && !errorflags[4])
+029:    *newlocctr = temploc;
+030:}
+031:
+032:
+\end{verbatim}
+\section{P1\_Proc\_RESW}
+\subsection*{Specification:}
+PROCESS RESW STATEMENT -- ADD THE NUMBER OF WORDS RESERVED TO LOCCTR. ERRORS
+DETECTED: 8, 9
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void P1_Proc_RESW (SOURCETYPE source,
+002:               int locctr,
+003:               int *newlocctr,
+004:               BOOLEAN *errorsfound,
+005:               BOOLEAN *errorflags)
+006:     
+007:
+008:{
+009:  BOOLEAN converror;
+010:  int i, j, nwords;
+011:
+012:  if (source.operand[0] == ' ') {
+013:    *errorsfound = true;
+014:    errorflags[8] = true;
+015:    /* MISSING OR MISPLACED OPERAND IN RESW STATEMENT */
+016:    return;
+017:  }
+018:  nwords = dectonum(source.operand, 0, &i, &converror);
+019:  if (converror) {
+020:    *errorsfound = true;
+021:    errorflags[9] = true;   /* ILLEGAL OPERAND IN RESW */
+022:  }
+023:  for (j = i; j <= 17; j++) {
+024:    if (source.operand[j] != ' ') {
+025:      *errorsfound = true;
+026:      errorflags[9] = true; /* ILLEGAL OPERAND IN RESW */
+027:    }
+028:  }
+029:  if (!errorflags[9])
+030:    *newlocctr = locctr + nwords;
+031:}
+032:
+033:
+\end{verbatim}
+\section{P1\_Assign\_Loc}
+\subsection*{Specification:}
+THIS PROCEDURE UPDATES THE LOCATION COUNTER VALUE BASED ON THE TYPE OF
+STATEMENT BEING PROCESSED, PLACING THE UPDATED VALUE IN NEWLOCCTR.
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void P1_Assign_Loc(SOURCETYPE source,
+002:               int locctr, 
+003:               int *newlocctr,
+004:               BOOLEAN *errorsfound,
+005:               BOOLEAN *errorflags)
+006:
+007:{
+008:  
+009:  *newlocctr = locctr;
+010:  if (!strncmp(source.operation, "START ", sizeof(CHAR6)))
+011:      P1_Proc_START(source, newlocctr, errorsfound, errorflags);
+012:
+013:  else if (!strncmp(source.operation, "WORD  ", sizeof(CHAR6)))
+014:    P1_Proc_WORD(locctr, newlocctr);
+015:
+016:  else if (!strncmp(source.operation, "BYTE  ", sizeof(CHAR6)))
+017:    P1_Proc_BYTE(source,locctr,newlocctr,errorsfound,errorflags);
+018:
+019:  else if (!strncmp(source.operation, "RESW  ", sizeof(CHAR6)))
+020:    P1_Proc_RESW(source,locctr,newlocctr,errorsfound,errorflags);
+021:  
+022:  else if (!strncmp(source.operation, "RESB  ", sizeof(CHAR6)))
+023:    P1_Proc_RESB(source,locctr,newlocctr,errorsfound,errorflags);
+024:  
+025:  else if (!strncmp(source.operation, "END   ", sizeof(CHAR6)))
+026:    ;    /* NO ACTION IN PASS 1 */
+027:  else
+028:    *newlocctr = locctr * 3;  /* ASSUME MACHINE INSTRUCTION */  
+029:}
+030:
+031:
+032:
+\end{verbatim}
+\section{P1\_Assign\_Sym}
+\subsection*{Specification:}
+THIS PROCEDURE ADDS THE LABEL FROM A SOURCE STATEMENT TO THE SYMBOL TABLE,
+USING THE CURRENT LOCATION COUNTER VALUE AS ITS ADDRESS.  ERRORS DETECTED:
+12,13
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void P1_Assign_Sym(SOURCETYPE source,
+002:               int locctr,
+003:               BOOLEAN *errorsfound,
+004:               BOOLEAN *errorflags)
+005:
+006:
+007:{
+008:  SYMRETTYPE symtabret;
+009:  int address;
+010:
+011:  if (!errorflags[0] && 
+012:      !strncmp(source.labl, BLANK8, sizeof(CHAR8))) {
+013:    Access_Symtab(SEARCH, &symtabret, source.labl, &address);
+014:    if (symtabret == NOTFOUND) {
+015:      address = locctr;
+016:      Access_Symtab(SEARCH, &symtabret, source.labl, &address);
+017:      if (symtabret = TABLEFULL) {
+018:    *errorsfound = true;
+019:    errorflags[13] = true;   /* SYMBOL TABLE OVERFLOW */
+020:      }      
+021:    }
+022:    else {
+023:      *errorsfound = true;
+024:      errorflags[12] = true;   /* DUPLICATE LABEL */
+025:    }
+026:  }
+027:}
+028:
+029:
+\end{verbatim}
+\section{Pass\_1}
+\subsection*{Specification:}
+THIS IS THE MAIN PROCEDURE FOR PASS 1. IT USES P1\_READ\_SOURCE TO READ EACH
+INPUT STATEMENT (UNTIL ENDOFINPUT = TRUE). FOR NON-COMMENT LINES, IT CALLS
+P1\_ASSIGN\_LOC AND P1\_ASSIGN\_SYM.  FOR ALL SOURCE LINES, IT USES
+WRITE\_INT\_FILE TO WRITE THE INTERMEDIATE FILE
+\subsection*{Source-code:}
+\begin{verbatim}
+001:void Pass_1()
+002:
+003:{     
+004:  SOURCETYPE source;   /* SOURCE LINE AND SUBFIELDS */
+005:  BOOLEAN endofinput;
+006:  BOOLEAN errorflags[MAXERRORS]; /* ERROR FLAGS FOR CURRENT STMT */
+007:  BOOLEAN errorsfound; /* TRUE IF ANY ERRORS IN CURRENT STMT */
+008:  int i;
+009:  int newlocctr;
+010:
+011:  rewind(srcfile);
+012:  LOCCTR = 0;
+013:
+014:  P1_Read_Source(&source, &endofinput, &errorsfound, errorflags);
+015:  while (!endofinput) {
+016:    if (source.comline)
+017:      newlocctr = LOCCTR;
+018:    else {
+019:      P1_Assign_Loc(source, LOCCTR, &newlocctr, 
+020:                &errorsfound, errorflags);
+021:      if (!strncmp(source.operation, "START ", sizeof(CHAR6))) {
+022:    LOCCTR = newlocctr;
+023:    PROGSTART = LOCCTR;
+024:    for (i = 0; i <= 5; i++)
+025:      PROGNAME[i] = source.labl[i];
+026:      }
+027:      P1_Assign_Sym (source, LOCCTR, &errorsfound, errorflags);
+028:    }
+029:    Write_Int_File(&source, errorsfound, errorflags);
+030:    LOCCTR = newlocctr;
+031:    P1_Read_Source(&source, &endofinput, &errorsfound, errorflags);
+032:  }
+033:  if (srcfile != NULL)
+034:    fclose(srcfile);
+035:  srcfile = NULL;
+036:}
+037:
+038:
+\end{verbatim}
+%%\end{document}

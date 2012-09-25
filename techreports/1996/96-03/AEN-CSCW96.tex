@@ -1,0 +1,1322 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% AEN-CSCW96.tex -- 
+%% Author          : Carleton Moore
+%% Created On      : Sun Oct 29 13:13:22 1995
+%% Last Modified By: Carleton Moore
+%% Last Modified On: Wed Mar  6 18:29:07 1996
+%% RCS: $Id: AEN-CSCW96.tex,v 1.1 1996/02/26 00:03:33 cmoore Exp cmoore $
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1995 Carleton Moore
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\documentstyle[nftimes,/group/csdl/tex/cscw]{article}
+\input{/group/csdl/tex/psfig/psfig}
+
+\begin{document}
+\title{Exploring Strong Collaboration with AEN}
+\author{Carleton Moore\\
+Collaborative Software Development Laboratory,\\
+Department of Information and Computer Sciences\\
+2565 The Mall\\
+University of Hawaii, Manoa\\
+Honolulu, Hawaii   96822\\
+{\tt cmoore@uhics.ics.hawaii.edu}}
+\maketitle
+\abstract
+
+This paper overviews the Annotated Egret Navigator (AEN), a system designed
+to support {\em strong collaboration} among a group as they cooperatively
+build, review, revise, improve and learn from a structured hypertext
+document.  AEN addresses how strong collaboration can be supported through
+computer mediation.  It is designed to support collaborative creation of
+hypertext and to instrument the actions of its users in order to understand
+how such creation occurs.
+
+\paragraph{KEYWORDS:} Hypertext, Strong Collaboration, Authoring
+\section{INTRODUCTION}
+
+With the rapid expansion of the World Wide Web (WWW) \cite{Berners-Lee94},
+the use of hypertext as a structuring mechanism for richly interdependent
+information is becoming widespread.  Indeed, hypertext is almost certain to
+be the `lingua franca' of the information superhighway.  The WWW allows
+authors to collaborate by including sections of other authors' documents.
+Unfortunately, WWW provides little support for collaborative authoring
+beyond including someone else's work.
+
+The issues associated with collaborative authoring have been investigated
+by many researchers.  Baecker et. al. \cite{Baecker93} provide several
+requirements for collaborative writing systems.  They include: preservation
+of identities, enhanced communications, enhanced collaborator awareness,
+annotations, undo, session control, explicit roles, variety of activities,
+transition between activities, several document access methods, separate
+document segments, version control, one or several writers, and synchronous
+and asynchronous writing.
+
+This paper reports on my investigation into the issues related to
+collaborative hypertext document construction.  Specifically, my
+investigation and my characterization of a form of collaboration termed
+{\em strong collaboration}.  In strong collaboration, each participant
+contributes to the construction of the document, and gains new knowledge as
+a direct result of this construction.  The constructed document is not
+simply a patchwork of individual contributions, but instead, an
+incremental, emergent synthesis that reflects the knowledge created by the
+group as a whole.  In general, strong collaboration most often (though not
+always) occurs in non-computer mediated, face-to-face contexts such as a
+group software design session or an interactive classroom setting.  A
+distinguishing characteristic of strong collaboration is a sense of
+collective authorship over most, if not all of the components of the
+document.  Documents produced in this way should be of higher quality,
+because more perspectives have combined to produce, review, and correct
+errors in it.
+
+Strong collaboration is at one end of a collaborative spectrum.  I call
+the other end of the spectrum {\em weak collaboration}.  Weak collaboration
+uses a divide and conquer process --- participants divide up the document
+and work independently on their section.  There is very little interaction
+between the participants.  When all of the sections are finished, the
+document is created by combining the sections into a whole.  A
+distinguishing characteristic of weak collaboration is distinct authorship
+of components of the document.  
+
+Computational support for weak collaboration is well established.  For
+example, word processors or editors allow different authors to create
+subsections of a document and combine them together.  E-mail can deliver
+different sections of a document to an editor who compiles them.  In
+contrast, the computational needs of strong collaboration are not well
+established.  For example, very few editors allow more than one author to
+edit the same document at the same time.  In order to understand strong
+collaboration, I implemented a collaborative hypertext authoring
+environment called the Annotated Egret\footnote{Exploratory Group Research
+EnvironmenT} Navigator (AEN).  This environment provides tools designed to
+encourage strong collaboration and measurement facilities designed to
+detect strong collaboration, if it were to occur.
+
+AEN is built upon Egret \cite{csdl-93-09}, a client-server hypertext
+database manager.  Authors/learners use AEN's typed nodes and links to give
+the hypertext document structure.  They also use an access control model to
+dynamically restrict the type of access to the individual nodes in the
+database.  Several autonomous agents help AEN manage all of the information
+needed to support strong collaboration.
+
+I conducted a case study during the Spring of 1995 to answer two questions:
+(1) Does AEN support strong collaboration? and (2) What computational
+support is needed for strong collaboration?
+
+One approach to answering these question would have been a controlled,
+experimental study where the interactions, and authoring styles of a group
+using AEN is compared to that of a group not using AEN.  However,
+methodological and resource problems prevented that approach.  Instead, I
+decided to first operationalize the definition of strong collaboration as a
+set of measurable collaborative behaviors, then test to see to what degree
+a group of AEN users exhibit those behaviors.  
+
+\section{Operationalized Definition of Strong Collaboration}
+\label{sec:operationalized-definition}
+ 
+The operationalized definition of strong collaboration consists of four
+classes of observable collaborative behaviors.  For each behavior, I have
+defined one or more metrics.
+
+\begin{enumerate}
+\item{\em Members read each other's nodes.}  Any form of collaboration
+  requires that the members of the group know what other members have
+  contributed. 
+  
+  % Without reading the other nodes members have no way of
+  %  contributing to the nodes.
+  
+  {\bf Metric:} {\em Readers per node (RPN)}.  This metric calculates the
+  average number of readers per node for a group. For example, for a
+  group of five, the lowest RPN value is one, indicating that no member
+  of the group read any nodes other than those he created.  The highest
+  possible RPN value for this group of five is five, indicating that every member
+  read every node.
+  
+  
+  
+%\item{\em Members edit nodes that were also edited by others.}  This
+%  is the most direct way that members can collaborate on a node.  One author
+%  creates a node, then another author adds to it.
+%  
+%  {\bf Metric:} {\em Member Co-editing (MCE)}.  This metric calculates
+%  the average number of members that each member co-edits with. For a
+%  group of five, the lowest MCE value is one, indicating that no member
+%  of the group edited nodes that any other member edited.  The highest
+%  possible MCE value for this group is five, indicating that every member
+%  edited every node with every other member.
+
+\item{\em Document nodes are edited by more than one person.}  This
+  component of the operationalized definition assesses the degree to
+  which multiple authorship occurs.  Only document nodes are included in
+  this assessment, since other node types (comment, quicky quiz, and
+  quicky quiz answers) are by definition singly authored.  
+
+  {\bf Metric:} {\em Editors per node (EPN)}.  This metric calculates the
+  average number of editors per node.  The lowest EPN value possible, for
+  a group of five, is one, indicating that each node was only edited by
+  one member.  The highest possible EPN value for this group is five,
+  indicating that every node was edited by all five group members.
+
+\item{\em Members create feedback nodes.}  This is another way for group
+  members to collaborate.  They can create feedback on the contents of a
+  node.
+
+  {\bf Metric:} {\em Feedback Node Creation (FNC)}.  This metric
+  calculates the percentage of document nodes that have been commented
+  on.  The lowest possible FNC value is 0\%, indicating that no document
+  nodes were commented on.  The highest FNC value is 100\%, indicating that
+  all document nodes were commented on.
+
+
+\item{\em Members manipulate access control to publish/protect documents
+  under development.}  By changing the access control members are able to
+  dynamically control the process of collaboration.  Changing the access
+  control from the default allows collaboration on a node.  Changing the
+  access control for a node more than once indicates that the mode of
+  collaboration changed for that node.
+
+  {\bf Metric:} {\em Non-default Access Control (NAC)}.  This metric
+  calculates the percentage of nodes that have had their access control
+  changed from the default.  The lowest NAC value possible is 0\%, indicating
+  that no nodes had their access control changed from the default.
+  This also indicates that there was no interaction among the members
+  since the default access control is no access for other members.  The
+  highest possible NAC value is 100\%, indicating that every node has had its
+  access control modified.
+
+  {\bf Metric:} {\em Evolving Access Control (EAC)}.  This metric
+  calculates the percentage of document nodes that have had their access
+  control changed more than once. This metric measures the degree to
+  which the groups' collaboration changed. The lowest EAC value possible
+  is 0\%, indicating that no nodes had their access control changed more
+  than once.  The highest possible EAC value is 100\%, indicating that
+  all nodes had their access control changed more than once.
+
+\end{enumerate}
+
+
+These metrics characterize many aspects of collaborative behaviors.
+Specifically, a group that exhibits uniformly high values for each of these
+metrics can be said to be exhibiting ``pure'' strong collaboration.  Of
+course, intermediate levels of these metrics still indicate at least a
+partial presence of strong collaboration.  In order to evaluate
+AEN's set of tools, tool use will be monitored and a post study survey will
+ask the participants their impressions of the tools.
+
+
+
+%\small
+%\begin{table}[htb]
+%  \caption{Summary of Operationalized Definitions and Metrics.}
+%  \begin{center}
+%    \begin{tabular}{|l|l|}
+%      \hline
+%      {\rule[-3mm]{0mm}{8mm}{\bf Operationalized
+%      Definition }}& {\rule[-3mm]{0mm}{8mm}{\bf Corresponding Metric(s)}}\\ \hline
+%      \hline
+%      Members read each other's nodes&Readers per node (RPN)\\ \hline
+%%      Members edit nodes that were also edited by others&Member Co-editing
+%%      (MCE)\\ \hline
+%      Document nodes are edited by more&Editors per node
+%      (EPN)\\
+%      than one person&\\\hline
+%      Members create feedback nodes&Feedback Node Creation (FNC)\\ \hline
+%      Members manipulate access control &Non-default
+%      Access Control (NAC) \&\\
+%      to publish/protect documents &Evolving Access Control (EAC)\\ 
+%      under development&\\\hline
+%    \end{tabular}
+%    \label{tab:op-metrics}
+%  \end{center}
+%\end{table}
+%\normalsize
+
+%In order to detect strong collaboration, I developed a metric for each
+%component of the operationalized definition of strong collaboration. Table
+%\ref{tab:op-metrics} summarizes the operationalized definitions and their
+%corresponding metrics.
+
+I used these collaborative metrics to detect occurrences of 
+collaborative behaviors.  In order to evaluate AEN's set of tools, tool use
+was monitored and a post study survey asked the participants their
+impressions of the tools.
+
+The data analysis reveals that a high score for each metric was recorded by
+at least one of the groups studied.  However, no single group scored high
+on all five metrics.  These results indicate that AEN does support the
+various components of strong collaboration, but the results do not
+demonstrate that AEN allows a single group to collaborate strongly with
+respect to all metrics simultaneously.  Section \ref{sec:evaluation} explores
+the results of the case study in detail.
+
+The remainder of this paper is organized as follows.  Section
+\ref{sec:related-work} examines other collaborative learning and authoring
+systems.  Section \ref{sec:AEN} introduces AEN.  Section
+\ref{sec:evaluation} is a discussion of how I evaluated AEN's design and
+its support for strong collaboration.  Section \ref{sec:conclusions}
+presents some conclusions and recommendations about strong collaboration.
+%Section \ref{sec:future} discusses future directions for AEN.
+
+
+\section{Related Work}
+\label{sec:related-work}
+
+This section surveys major existing hypertext or collaborative editors,
+with a comparison of AEN to these systems.  Subsection \ref{sec:collab-sys}
+discusses different collaborative writing systems.  Subsection
+\ref{sec:hypermedia} compares several hypermedia systems with AEN.
+
+AEN's set of features were designed to explore and support strong
+collaboration. Subsection \ref{sec:mechanisms} provides a detailed description
+of AEN's features.  AEN provides a typed hypertext document, dynamic user
+defined table of contents, real-time communications with other users of the
+system, real-time knowledge of what the other users of the system are doing,
+and access control for each node.  Other collaborative writing systems or
+hypermedia systems provide different combinations of features.
+
+\subsection{Collaborative Writing Systems}
+\label{sec:collab-sys}
+
+These systems support the process of collaborative writing.  Not all of the
+systems in this subsection are pure collaborative writing system, but they all
+support the process of collaborative writing.  I have divided the
+collaborative writing systems into three categories, weakly collaborative,
+additive, and synchronous.
+
+The weakly collaborative systems are MILO \cite{Jones93} and NSF Express
+\cite{Greenberg91}.  They appear to only support the combination of
+different types of documents from different authors.  They do not appear to
+support co-editing of other authors' work while they are still working on
+it.
+
+The additive systems are CLARE \cite{csdl-93-21}, ConversationBuilder
+\cite{Kaplan92}, ForComment \cite{Ellis91,Opper88}, InterNote
+\cite{Malcolm91}, gIBIS \cite{Conklin88}, and MarkUp! \cite{Allen93}.
+These systems allow authors to collaboratively add to a document.  Three
+different systems, CLARE, ConversationBuilder and gIBIS will be discussed
+briefly.  They provide a good cross section of these types of tools.
+
+The last category of collaborative writing systems, is synchronous.  The
+following are examples of this category of system: Aspects
+\cite{Allen93,Baecker93}, Augment \cite{Engelbart84}, CES
+\cite{Ellis91,Greif87}, CoAUTHOR \cite{Bowers91}, CoEd \cite{Ellis89},
+COOPerator \cite{Michels95}, EHTS: Emacs HyperText System \cite{Wiil92},
+GroupWriter \cite{Malcolm91,Malcolm93}, PREP \cite{Neuwirth90,Neuwirth92},
+Quilt \cite{Fish88}, SASE and SASSE \cite{Baecker93}, SEPIA \cite{Haake92},
+and ShrEdit \cite{Cogn92}.  All of these systems appear to support
+synchronous editing of documents by multiple authors.  In general, they do
+not support different modes of access control.  Many do have a presence for
+the authors of the document. 
+
+\subsection{Hypermedia Systems}
+\label{sec:hypermedia}
+
+This subsection reviews several other hypermedia systems that are not directly
+oriented toward collaborative writing.  These systems include: CoMEdiA
+\cite{Santos92a,Santos92b,Santos93a,Santos93b}, Intermedia
+\cite{Conklin87},  NoteCards \cite{Halasz87},  The
+Virtual Notebook System \cite{Shipman89}, and the World Wide Web
+\cite{Berners-Lee94}.
+
+\subsection{Summary}
+
+One key feature that distinguishes AEN from the other systems is its
+specific intent to support strong collaboration and to be a tool to help
+investigate collaborative construction of hypertext documents.  AEN's set of
+features is guided by the desire to support and explore collaboration.
+
+
+
+
+\section{AEN}
+\label{sec:AEN}
+
+
+\subsection{Architecture of AEN}
+\label{sec:architectureAEN}
+
+AEN is a collaborative, instrumented learning/authoring tool implemented
+with the Egret collaborative system development
+environment\cite{csdl-93-09}.  As with all Egret domain-specific
+applications, AEN is a client-server system running over TCP/IP, where
+clients (implemented as customized versions of XEmacs) interact with a
+central server called HBS (implemented in C++) to store and retrieve
+information or communicate with other clients.  AEN makes substantial use
+of Egret's facilities for agents, or autonomous client processes that
+extend the system's information processing capabilities beyond those
+provided by HBS or the clients.  Figure \ref{fig:aen-architecture}
+illustrates AEN's basic client-server architecture.
+
+\begin{figure}[htb]
+  \centerline{\psfig{figure=client-server.eps,width=3.5in}} 
+  {\em AEN consists of a central server called HBS that provides basic
+  storage and concurrency control mechanisms, augmented with several agent
+  processes to support strong collaboration.}
+ \caption{AEN's architecture from an OS process perspective.}
+\label{fig:aen-architecture}
+\end{figure}
+
+\subsection{The design of AEN}
+\label{sec:designAEN}
+\subsubsection{Structure of Data in AEN}
+
+AEN provides facilities for storage, retrieval, and analysis of a hypertext
+network of node and links. The hypertext network represents the text from
+which the students learn and the product of collaboration among the
+participants.  AEN provides a static, predefined set of node and link
+types.
+
+\paragraph{Node Types}
+
+At the user-level, AEN provides two type hierarchies of nodes: artifact
+nodes and figure nodes.  Nodes of type {\em artifact} represent textual
+information in the hypertext document.  Nodes of type {\em figure}
+represent graphical information.
+
+Artifact nodes contain ETML\footnote{A primary difference between the Egret
+Text Markup Language (ETML) and HTML is that ETML supports {\tt egret::}
+URL specifier for link and node objects within an HBS server.} code that
+provides formating directives and inter-node links.  There are four
+subclasses of artifacts:
+
+\begin{itemize}
+
+\item{\bf Document:} Nodes that contain the text of the document created by
+the participants.
+
+\item{\bf Comment:} Nodes containing the reactions of the participants to
+the contents of other nodes.
+
+\item{\bf Quicky Quiz:} Nodes that contain exercises for the participants
+to complete.
+
+\item{\bf Quicky Quiz Answer:} Nodes that contain the participant's
+solutions to the quicky quiz nodes.
+
+\end{itemize}
+
+Quicky Quiz and Quicky Quiz Answer nodes are used in AEN to support
+learning.  They can be ignored for collaborative authoring.
+
+%\begin{figure}[htb]
+%  \centerline{\psfig{figure=Data.eps,width=3.5in}}
+%  \caption{Data Relationships in AEN}
+%  \label{fig:Data}
+%\end{figure}
+
+Unlike artifact nodes, figure nodes contain the graphics data used by Xview
+to display the figures.  Users can create links from artifact nodes to
+figure nodes or other artifact nodes by a simple menu-based command.  Such
+an operation results in both the creation of a new link object within the
+server and the creation of an ETML link anchor as part of the contents of
+the artifact node.  However, since figure nodes contain graphical
+information, compatible with Xview, rather than ETML code, users cannot
+create links from figure nodes. % Figure \ref{fig:Data} shows the
+%relationships between the node types.
+
+\paragraph{Link Types}
+
+AEN defines six types of links: Include, Xref, see\_Quicky\_\-Quiz,
+see\_\-Quicky\_\-Quiz\_\-Answer, see\_\-Comment, and see\_Figure.  Include
+Links link two document nodes together and forms the Backbone structure of
+the hypertext document.  Xref Links also link two document nodes together
+but are used for cross references not Backbone structure.  See\_Comment
+Links link a comment node to a document node.  See\_Quicky\_Quiz Links link
+a Quicky Quiz node to a document node.  See\_Quicky\_Quiz\_Answer Links
+link Quicky Quiz Answers to Quicky Quizzes.  AEN restricts the type of the
+source and destination nodes for each type of link.  The different types of
+links allows the authors to create different
+structures in the hypertext document. 
+
+\paragraph{The AEN Backbone}
+\label{sec:aen-backbone}
+
+Given the set of node and link types in AEN, there are many possible ways
+to organize the resulting hypertext network.  However, given the intended
+usage of AEN, it is natural and appropriate to provide a fundamental
+organization of the hypertext as an ordered sequence of interlinked,
+hypertext ``chapters'', each hypertext chapter having as its root a single
+document node.
+
+Each document node with a link to it from a chapter node represents a
+``section'' within that chapter. In the same manner, each document node
+with a link to it from a section node represents a subsection within that
+section, and so forth ad infinitum.
+
+Any document node can, of course, have a link to it from more than one
+other document node in the hypertext, with the result that the same node
+can be a ``section'' with respect to one node, but a ``sub-subsection''
+with respect to another.  As a result, the AEN hypertext is organized as a
+directed, hierarchical, but potentially cyclic graph structure.
+
+So far, this description seems to indicate that there is a one-to-one
+correspondence between each document node and each chapter, section,
+subsection, and so forth in the document.  The reality is slightly more
+complex.  Each document node does contribute at least one new chapter, or
+section, or subsection, etc. to the hypertext.  However, if a document
+node contains the HTML {\em heading} formatting directive, then the label for
+this heading indicates a new section (or subsection, etc. depending upon
+context) within the node.
+
+To bootstrap this organization, some distinguished ``root'' document node
+is required, which I call the AEN Backbone.  This node contains a set of
+links to document nodes which define the set of top-level chapters in AEN.
+
+The AEN Backbone and the nested structure of document nodes defines the
+major organizing principle for the AEN hypertext, and leads to the first
+data manipulation tool: the table of contents screen, as shown in Figure
+\ref{fig:Screen1}.  The next section discusses the table of contents screen
+and the other data manipulation tools. 
+
+
+
+\begin{figure}[htb]
+ \centerline{\psfig{figure=screen1.ps,width=3.5in}}
+ {\em This screen shot shows a portion of this 
+ user's table of contents in the upper left screen, and a retrieved
+ document node called ``Design'' in the upper right screen.  The Design
+ node contains within it both a link to a figure called ``Figure 1'' and a
+ comment called ``Regions'' immediately after it (represented in the
+ Design node by the textual anchor ``[??]''.  Both the figure and the
+ comment are retrieved and displayed in the screens in the lower left and
+ lower right hand corners, respectively.}
+ \caption{Screen Shot of AEN's Main display, a comment node, a figure node,
+ and TOC.}
+ \label{fig:Screen1}
+\end{figure}
+
+
+\subsubsection{Mechanisms for Data Manipulation in AEN}
+\label{sec:mechanisms}
+
+For browsing, AEN emulates many of the facilities of WWW browsers such as
+Mosaic or Netscape.  Each node is displayed in a separate screen, and
+multiple nodes can be displayed simultaneously.  The contents of nodes are
+automatically reflowed to conform to the size of the screen.
+Middle-clicking over a link anchor retrieves the corresponding node from
+the server.  As noted above, AEN supports storage and retrieval of both
+text and graphics, and although audio is not currently available in AEN, it
+has been implemented in other Egret-based applications, and could be easily
+added.  Due to a limitation in the current release of XEmacs, in-line
+graphics are not currently available in AEN.
+
+Where AEN begins to depart from WWW systems is in its support for
+authoring and collaboration.  First, AEN provides an authoring mode
+for nodes, including menu and command key-based formatting directives
+for headings, lists, and fontification, link anchor creation, and so
+forth.  Second, all artifact nodes must be locked before they can be
+modified.  Locking preserves the integrity of information when
+multiple authors are working on a document, but provides only basic
+support for collaboration.  AEN augments locking with an access
+control mechanism, discussed next.
+
+\paragraph{Access Control}
+
+AEN implements three forms of access to individual nodes: read access,
+write access, and annotation access.  The administrator(s) of a node can set each
+form of access independently for each user of AEN.
+
+When no access is provided to a node, then that node is essentially
+private and can be retrieved and edited only by the administrator(s) of the
+node. (The creator of a node is given the status of ``administrator'', which
+has the effect of irrevocably providing all forms of access. Only the
+administrator[s] of a node can delete the node.)
+
+When a user has read access for a node, they can retrieve it but they
+cannot add a link to it or edit its contents. Providing only read access to
+a node to others indicates that the information is available for use, but
+not for review or feedback.
+
+When a user has both read and annotation access for a node, they can both
+retrieve it and add a link from the node to a newly created comment
+node. Providing both read and annotation access indicates that the
+information is available for use and that comments from others about the
+content of the node are welcomed.  Annotation access allows the administrator of
+the node to solicit suggestions for changes to the contents of the node,
+while still retaining control over whether those changes are actually
+applied to the document.
+
+When a user has both read and write access for a node, they can both
+retrieve it and lock it for editing.  Providing both read and write access
+signifies the desire for the closest form of collaborative development, in
+which those with write access can make arbitrary changes to the contents of
+a node.
+
+Of course, the administrator of a node may grant all three access rights to another
+user, which allows them to select which form of feedback to provide.  It is
+also interesting to note that without read access, neither annotation nor
+write access is useful, since one cannot annotate or lock a node without
+first retrieving it.  This is actually quite useful in practice, since it
+allows the administrator of a node to temporarily ``hide'' a node simply by
+disabling read access to the group.  By re-enabling read access, the
+previous annotation, and write access are all reinstated.
+
+
+\begin{figure}%[htb]
+ \centerline{\psfig{figure=screen2.ps,width=3.5in}}
+ {\em This screen shot illustrates some of the real-time support
+for strong collaboration in AEN.  The Snoopy window in the lower right hand
+corner shows, for each user of the system, whether or not they are logged
+in currently and if so, where they are working in the document.  Both user
+cmoore and user jeremyt are working on the document node called ``Shared
+Emacs''.  The Partyline screen, in the lower right hand corner, allows these
+users (as well as all others) to talk to each other while they work.  This
+figure also shows a local TOC for the Shared Emacs chapter, and a screen
+displaying the current set of unread document nodes for this user.}
+ \caption{Screen Shot of AEN's Main display, Snoopy, Partyline,  Node List
+ and TOC.}
+ \label{fig:Screen2}
+\end{figure}
+
+\paragraph{Context-Sensitive Table of Contents}
+
+The access control mechanism determines which nodes a user may read and
+what they may do to the node once they have read it, but it does not help
+the user determine which node they want to read.
+
+The primary navigation mechanism  provided by AEN is {\em tables of
+contents}.  Each table of contents (TOC) is a dynamically generated, linear
+traversal of document nodes in the database, organized according to the AEN
+Backbone structure described in Subsection \ref{sec:aen-backbone}.  Figures
+\ref{fig:Screen1} and \ref{fig:Screen2} each contain an example of a table
+of contents.  Each line in a TOC is mouse-sensitive, and middle-clicking on
+it retrieves the corresponding node (or section within a node) from the
+server.  The indentation of headings provides a visual cue to the
+hierarchical structure of the hypertext.  Once the TOC is displayed the
+user can collapse or expand the listing to reduce or enlarge the number of
+listings present.
+
+
+AEN generates a TOC based upon a starting node that the user chooses.  The
+TOC algorithm only analyzes document nodes for which the user has read
+access, thus, the TOC is both location and user-specific.  The algorithm
+only visits the children of a node once, which breaks cycles in the
+hypertext. Finally, each time a document node is written to the server,
+structural information relevant to the TOC is extracted, cached, and
+propagated to all clients if it has changed. Such a mechanism is crucial to
+the usability of the system; one cannot retrieve every document node from
+the database each time a TOC is generated.
+
+
+\paragraph{Node Lists}
+
+The tables of contents provide the most important perspective on the
+hypertext---that of the document-level structure, but other viewpoints are
+also useful.  Users can make queries for nodes satisfying various criteria
+with the node-list mechanism. In AEN, useful criteria so far include the
+type of nodes, whether or not the nodes have been retrieved by this user
+yet, and the nodes owned by the user.
+
+Each node-list returned from a query consists of a mouse-sensitive
+list of node names appearing in a single screen. Middle-clicking
+on the node retrieves it in the standard fashion for AEN navigation.
+
+The Hyperstar Bulletin \footnote{The name of this mechanism is a pun on the
+name of Honolulu's evening newspaper: the Honolulu Star-Bulletin.} is an
+agent-based mechanism intended to support collaboration via a daily
+``snapshot'' of what has changed in the database since each user last
+visited it.  The Hyperstar Bulletin consists of an agent process that wakes
+up at approximately 4 a.m. each morning and sends a daily electronic
+``newspaper'' to each participant containing a listing of which nodes (for
+which the user has read access) have been created or changed since the last
+time the user logged in.
+
+
+\paragraph{Snoopy and Partyline}
+
+The mechanisms described above support the construction of a hypertext by
+multiple authors, but falls short of support for strong collaboration in
+one crucial way.  With these above mechanisms alone, the actual people
+involved in the collaborative activity are ``invisible'' within the system:
+their effects upon hypertext document are visible, but they themselves are
+not.  To create a physical presence for participants within the system, AEN
+provides two additional facilities: Snoopy and Partyline, as illustrated in
+Figure \ref{fig:Screen2}.
+
+The Snoopy mechanism allows the user to see who else is at work and have an
+idea of what they are working on.  It displays basic information about the
+connection status and last read node of the users of AEN. A Snoopy screen
+is created automatically each time a user connects to AEN, and is updated
+every 30 seconds.  Through Snoopy, each user knows who else is currently in
+AEN and where they are in the hypertext.
+
+Partyline is a mechanism for passing real time messages to other users of
+AEN.  Partyline allows the user to send a textual message to all the users
+currently connected to AEN or send a private message to one other user
+currently connected to Partyline.  Partyline is similar to an Internet
+``chat'' mechanism.  Typically, users greet the other people when they
+log in to AEN with Partyline messages.
+
+Both facilities provide access to the users of AEN.  In order to help
+support strong collaboration, users of AEN need access to the other users.
+Snoopy and Partyline provide this service.
+
+
+\section{Evaluation of AEN}
+\label{sec:evaluation}
+
+
+AEN was used during the Fall semester of 1994 in a graduate seminar on
+collaborative systems in the Department of Information and Computer
+Sciences at the University of Hawaii. The initial requirements document for
+AEN \cite{csdl-94-06} was developed in June, 1994. Precise and accurate
+metrics data for only a small portion of the Fall semester was collected by
+AEN, due to volatility in both AEN and the metrics system.  Approximately
+285 hours of active use of AEN were logged during the second half of the
+Fall semester by ten participants.  Approximately 800 nodes and 800 links
+were created during the semester by the class.
+
+In Spring, 1995, I conducted an evaluation of AEN's support of strong
+collaboration for my Master's thesis.  Three groups of five undergraduate
+and graduate students used AEN to develop requirements documents for an
+undergraduate software engineering course.  Over the course of the study,
+the three groups spent over 180 hours using AEN. They created 100 document
+nodes, 111 comment nodes, and 5 figure nodes.  All of the groups in the
+study demonstrated some degree of strong collaboration in their
+requirements documents.
+
+
+
+This section presents the results from the evaluation of AEN during Spring,
+1995.  Subsection \ref{sec:data-overview} briefly overviews the results of the
+groups' usage of AEN.  Subsection \ref{sec:AEN-supports} presents the
+evaluation of AEN's support of strong collaboration.  Subsection
+\ref{sec:Tools} discusses the major features of AEN that were designed to
+support strong collaboration.  Subsection \ref{sec:eval-AEN} presents the
+evaluation of AEN as a collaborative tool.  Subsection \ref{sec:bottom-up}
+closes this section with a brief description of the three groups'
+procedures for collaboration.
+
+
+\subsection{Overview of the Collected Data}
+\label{sec:data-overview}
+
+
+At the end of the study, I analyzed the database, metrics, bug reports,
+user suggestions and user surveys.  Over the course of the study, the three
+groups spent over 180 hours using AEN. They created 100 document nodes, 111
+comment nodes, and 5 figure nodes.  There were large differences in how the
+different groups and members used AEN.  
+
+This study investigated two questions. First, does AEN support strong
+collaboration? Second, does AEN's set of tools promote collaboration?  The
+next section discusses how well AEN supports strong collaboration.
+
+\subsection{Does AEN support strong collaboration?}
+\label{sec:AEN-supports}
+
+To answer this question, each of the metrics for each component of the
+operationalized definition are examined in turn.  The analysis of each
+metric presents two sets of numbers, one relating to all of the nodes owned
+by the group, the other focusing on the only the nodes that appear in the
+group's final requirements document.  For the purpose of the this
+evaluation, I will look only at the groups' document nodes, since the
+comment nodes are for feedback purposes.  I do not expect collaborative
+editing on a comment intended as feedback.  In order to say that AEN does
+support the strongest collaboration possible, a single group must
+demonstrate all four components of the operationalized definition of strong
+collaboration presented in Subsection \ref{sec:operationalized-definition}.
+
+\subsubsection{RPN: Readers per Node}
+
+The first metric I will look at, is the readers per node (RPN) metric. For
+this study, the lowest RPN value is one, indicating that no member of the
+group read any nodes other than those he created.  The highest possible RPN
+value is five, indicating that every member read every node.  Each group
+in the study behaved differently with respect to RPN.
+
+
+\small
+\begin{table}[htb]
+  \caption{Summary of Groups RPN Metric.}
+  \begin{center}
+    \begin{tabular}{|c|c|c|}
+      \hline
+      \multicolumn{3}{|c|}{\rule[-3mm]{0mm}{8mm}\bf RPN metric}\\ \hline 
+      Group&All Nodes&Final Doc Nodes\\ \hline 
+      \hline
+      A&2.5 Readers/Node&3.6 Readers/Node\\ \hline
+      B&2.9 Readers/Node&4.8 Readers/Node\\ \hline
+      C&3.0 Readers/Node&5.0 Readers/Node\\ \hline
+    \end{tabular}
+  \end{center}
+  \label{tab:RPN}
+\end{table}
+\normalsize
+
+Table \ref{tab:RPN} shows the RPN values for the three groups.  Group A's
+RPN value for their final document is 3.6, the lowest RPN value for the
+three groups.  However, this value is still in the top half of the RPN
+range.  In Group B's final document, Group B did not use any nodes with
+fewer than four readers per node.  Their RPN value, for their final
+document, was 4.8.  Their RPN value is much higher than Group A's. It is in
+the top 4\% of the RPN range.  In their final document Broup C only chose
+nodes that had five readers per node.  They demonstrated the highest
+possible RPN value (5) in their final document.
+
+All three groups had RPN values in the top half of the RPN scale.
+The next metric looks at collaborative editing of nodes. 
+
+\subsubsection{EPN: Editors per Node}
+
+The Editors per node (EPN) metric calculates the average number of editors
+per node.  The lowest EPN value possible for this study is one, indicating
+that each node was only edited by one member.  The highest possible EPN
+value is five, indicating that every node was edited by all five group
+members.
+
+\small
+\begin{table}[htb]
+  \caption{Summary of Groups EPN Metric.}
+  \begin{center}
+    \begin{tabular}{|c|c|c|}
+      \hline
+      \multicolumn{3}{|c|}{\rule[-3mm]{0mm}{8mm}\bf RPN metric}\\ \hline 
+      Group&All Nodes&Final Doc Nodes\\ \hline 
+      \hline
+      A&1.7 Editors/Node&2.7 Editors/Node\\ \hline
+      B&2.2 Editors/Node&4.3 Editors/Node\\ \hline
+      C&2.3 Editors/Node&3.6 Editors/Node\\ \hline
+    \end{tabular}
+  \end{center}
+  \label{tab:EPN}
+\end{table}
+\normalsize
+
+
+Table \ref{tab:EPN} shows the EPN values for the three groups.  Even though
+Group A had the lowest EPN values their EPN value for the final document is
+in the top half of the EPN range.  In Group B's final requirements
+document, Group B had an EPN value of 4.3.  This value is in the top 20\%
+of the EPN range.  Group B's EPN value is the highest EPN value of all
+three groups.  Group C also had high values for their editors per node.
+Group C's EPN value for their final document was 3.8, which is in the upper
+half of the EPN range.  All three groups had EPN values in the top half of
+the EPN range.
+
+
+This subsection discussed one way to provide input on a node of the document ---
+direct editing.  Another way to provide input is to create feedback or
+comment nodes.  The next section discusses the feedback creation metric of strong
+collaboration, FNC.
+
+\subsubsection{FNC: Feedback Node Creation}
+
+The Feedback Node Creation (FNC) metric in combination with EPN helps define
+how much collaborative input occurred. The creation of feedback nodes gives
+an indication how much discussion is going on among the authors of the
+document.  FNC calculates the percentage of document nodes that have been
+commented on. The lowest possible FNC value is 0\%, indicating that no
+document nodes were commented on.  The highest FNC value is 100\%,
+indicating that all document nodes were commented on.  
+
+\small
+\begin{table}[htb]
+  \caption{Feedback Nodes.}
+  \begin{center}
+    \begin{tabular}{|c|c|c||c|c|}
+      \hline
+      \multicolumn{5}{|c|}{\rule[-3mm]{0mm}{8mm}\bf FNC metric for
+      all groups}\\ \hline
+      Group&All Nodes&FNC&Final Doc Nodes&FNC\\ \hline
+      \hline
+      A&10&29.4\%&8&50.0\%\\ \hline
+      B&8&19.5\%&6&42.9\%\\ \hline
+      C&4&16.0\%&2&20.0\%\\ \hline
+    \end{tabular}
+  \end{center}
+  \label{tab:feedback}
+\end{table}
+\normalsize
+
+Table \ref{tab:feedback} shows the number of comment nodes and the FNC
+values for each group.  Different collaboration styles can easily be seen
+in the different FNC values.  Group A, with an FNC of 50\%, used comments
+widely, while Group C, with an FNC of 20\%, hardly used any comments
+at all. 
+% These higher FNC values might explain group A's lower EPN scores
+
+The next component of the definition is how the users control the access to
+the nodes.
+
+\subsubsection{NAC: Non-default Access Control}
+
+The Non-default Access Control (NAC) metric is the first of two access
+control metrics.  It calculates the percentage of nodes that have had their
+access control changed from the default.  The lowest NAC value possible is
+0\%, indicating that no nodes had their access control changed from the
+default.  This also indicates that there was no interaction among the
+members since the default access control is no access for other members.
+The highest possible NAC value is 100\%, indicating that every node has had
+its access control modified.
+
+\small
+\begin{table}[htb]
+  \caption{NAC Breakdown.}
+  \begin{center}
+    \begin{tabular}{|c|c|c|c|c|}
+      \hline
+      \multicolumn{5}{|c|}{\rule[-3mm]{0mm}{8mm}\bf NAC metric by group}\\ \hline
+      Group&All Nodes&NAC&Final Doc Nodes&NAC\\ \hline
+      \hline
+      A&26&76.5\%&16&100.0\%\\ \hline
+      B&23&56.1\%&14&100.0\%\\ \hline
+      C&16&64.0\%&10&100.0\%\\ \hline
+    \end{tabular}
+  \end{center}
+  \label{tab:access-control}
+\end{table}
+\normalsize
+
+Table \ref{tab:access-control} shows the NAC values for each group.  In the
+final document, 100\% of the nodes for all groups had their access control
+changed.  This is not surprising.  Since all groups had RPN values for their
+final documents greater than one, the access control for all those nodes
+must have been changed to allow other members access to the node.  The
+relatively high NAC value for A's total document implies that they
+created fewer ``private'' nodes.  Private nodes are nodes whose access
+control does not let any one else read or change them.
+
+\subsubsection{EAC: Evolving Access Control}
+
+The second metric dealing with access control is Evolving Access Control
+(EAC). It calculates the percentage of document nodes that have had their
+access control changed more than once. This metric measures the degree to
+which the groups' collaboration changed. The lowest EAC value possible is
+0\%, indicating that no nodes had their access control changed more than
+once.  The highest possible EAC value is 100\%, indicating that all nodes
+had their access control changed more than once.
+
+\small
+\begin{table}[htb]
+  \caption{EAC Breakdown.}
+  \begin{center}
+    \begin{tabular}{|c|c|c||c|c|}
+      \hline
+      \multicolumn{5}{|c|}{\rule[-3mm]{0mm}{8mm}\bf EAC metric by group}\\ 
+      \hline
+      Group&All Nodes&NAC&Final Doc Nodes&NAC\\ \hline
+      \hline
+      A&7&21\%&7&44\%\\ \hline
+      B&2&5\%&1&7\%\\ \hline
+      C&2&8\%&1&10\%\\ \hline
+    \end{tabular}
+  \end{center}
+  \label{tab:d-access-control}
+\end{table}
+\normalsize
+
+Table \ref{tab:d-access-control} shows the results for the EAC metric.  All
+three groups evolved the access control for a few of their nodes.  Group
+A, which so far has had the lower metric scores in RPN and EPN, greatly
+out scores the other two groups in EAC.  The absolute values for EAC are
+low, 44\%, 7\%, and 10\%.  However, a high score in EAC represents a
+dynamic collaborative process.  I did not expect the three groups to have
+very dynamic collaborative process, because of their low experience with
+group collaboration and because they had never collaborated together.
+
+\subsubsection{Summary}
+
+
+Does AEN support strong collaboration?  In order to answer positively, at
+least one group must demonstrate strong collaboration in their hypertext
+document. Figure \ref{fig:op-def} shows a view of all the metrics for each
+group.
+
+\begin{figure}[htbp]
+  \centerline{\psfig{figure=metrics.eps,width=3.5in}}
+ \caption{Summary of Groups' Collaboration Metrics.}
+ \label{fig:op-def}
+\end{figure}
+
+Since no one group had uniformly high values for their five metrics, I
+cannot say that any group collaborated in a ``purely'' strong manner on their
+document.  This does not mean that AEN does not support strong
+collaboration. There could be some obscure interaction between the five
+major features of AEN that prevents a single group from having high scores
+in all five metrics, but I do not believe this is true.
+
+The one or more of the three groups showed high values for the RPN, EPN and
+NAC metrics.  For the FNC and EAC metrics, group A scored 50\% and 44\%,
+indicating that they used AEN to comment on and change the collaborative
+style of their document.  Based upon the high scores in RPN, EPN and NAC
+and Group A's ability to demonstrate the other two components of the
+operationalized definition of strong collaboration, I claim that AEN is
+capable of supporting strong collaboration.
+
+Let us look at the specific features that AEN uses to support strong
+collaboration.
+
+\subsection{AEN's Features}
+\label{sec:Tools}
+
+AEN's set of features was designed to support and encourage collaboration
+between members.  The features were developed during the Fall, 1994 semester
+and evaluated in the Spring, 1995 semester.  This section discusses the
+five major features provided by AEN in support of collaboration: access
+control, tables of contents, node lists, Snoopy and Partyline.
+
+
+\subsubsection{Access Control}
+
+As discussed above, each group used the access control mechanisms during
+the case study.  I hoped the design of access control would promote
+evolving access control.  In other words, the access to a node would change
+over the lifetime of the node reflecting the different states of
+completeness and collaboration.  AEN's access control model was a partial
+success.  All the groups did use the control mechanism to restrict access
+to the node, but they did not use its evolutionary nature to significantly
+change their mode of collaboration.
+
+
+For each of the remaining four major features, I will present the usage
+data and the survey results.  The usage data will compare the number of
+sessions each user had and the number of instances they used the tool (when
+this information is available).  The survey results indicate the tools'
+helpfulness and their frequency of use.  The survey questions asked the
+user to rate different aspects of AEN from a scale of one to nine, with one
+being poor and nine being good.
+
+The first two features, tables of contents and node lists, are
+navigation aids that help the users find their way around the hypertext
+document.  The tools should help the users get to the interesting nodes of
+their documents.  The last two tools, Snoopy and Partyline, are designed to
+provide a sense of physical presence in the hypertext.  Each will be
+discussed in turn.
+
+\small
+\begin{table}[htb]
+  \caption{Context-Sensitive Table of Contents}
+  \begin{center}
+    \begin{tabular}{|c|c|}
+      \hline
+      \multicolumn{2}{|c|}{\rule[-3mm]{0mm}{8mm}\bf Context-Sensitive TOC Creation by group}\\ 
+      \hline
+      Group&Ave \# TOCs/Session\\ \hline
+      \hline
+      A&1.24\\ \hline
+      B&1.17\\ \hline
+      C&1.17\\ \hline
+    \end{tabular}
+  \end{center}
+  \label{tab:TOC}
+\end{table}
+\normalsize
+
+The table of contents (TOC) was the most used tool provided by AEN.  Table
+\ref{tab:TOC} shows the average number of times each user created a TOC per
+session.  Since AEN does not automatically create a TOC, the metrics
+indicate that TOCs were widely used.  Each group usage pattern of the TOCs
+is different.  Group A created TOCs more often than the other groups.
+Group C and B are very close in their numbers.
+
+
+\small
+\begin{table}
+  \caption{Survey Questions about Table of Contents. (Scale 1 to 9)}
+  \begin{center}
+    \begin{tabular}{|l|c|c|}
+      \hline
+      \multicolumn{3}{|c|}{\rule[-3mm]{0mm}{8mm}\bf Survey Questions:
+      Table of Contents}\\ \hline
+      &Average&Std. Dev.\\ \hline
+      I used the Table of Contents:&8.7&0.7\\ \hline
+      The Table of Contents is helpful:&8.3&1.3\\ \hline
+    \end{tabular}
+  \end{center}
+  \label{tab:survey-TOC}
+\end{table}
+\normalsize
+
+The survey results in Table \ref{tab:survey-TOC} show that the users felt
+they used the TOC very often (8.7 out of 9, with a very small standard
+deviation).  The users also thought that the TOC was a very helpful tool,
+average score of 8.3.  
+
+The next feature, node lists, complements tables of contents as a navigation
+aid.
+
+\subsubsection{Node Lists}
+\small
+\begin{table}[htb]
+  \caption{Node List Creations}
+  \begin{center}
+    \begin{tabular}{|c|c|}
+      \hline
+      \multicolumn{2}{|c|}{\rule[-3mm]{0mm}{8mm}\bf Node List Creation by group}\\ 
+      \hline
+      Group&Ave \# Node Lists/Session\\ \hline
+      \hline
+      A&0.27\\ \hline
+      B&0.63\\ \hline
+      C&1.12\\ \hline
+    \end{tabular}
+  \end{center}
+  \label{tab:NL}
+\end{table}
+\normalsize
+
+The groups' use and feelings towards node lists vary greatly.  Some group
+members did not create any node lists, while others created more node lists
+than tables of contents.  Table \ref{tab:NL} shows the average number of
+node lists each member created per session.
+
+
+\small
+\begin{table}[htbp]
+  \caption{Survey Questions about Node Lists. (Scale 1 to 9)}
+  \begin{center}
+    \begin{tabular}{|l|c|c|}
+      \hline
+      \multicolumn{3}{|c|}{\rule[-3mm]{0mm}{8mm}\bf Survey Questions:
+      Node Lists}\\ \hline
+      &Average&Std. Dev.\\ \hline
+      I used the Unread Nodes:&5.6&2.8\\\hline
+      I used the Nodes by type:&4.9&2.6\\\hline
+      I used the Owned Nodes:&4.1&2.2\\\hline
+      Unread Nodes is helpful helpful:&6.8&2.2\\\hline
+      Nodes by type is helpful:&5.3&2.2\\\hline
+      Owned Nodes is helpful:&5.1&2.2\\\hline
+    \end{tabular}
+  \end{center}
+  \label{tab:survey-Nodelist}
+\end{table}
+\normalsize
+
+
+The survey results (see Table \ref{tab:survey-Nodelist}) reflect the wide
+variety in the metrics data.  The users did not feel that they had used the
+node lists as much as the table of contents (Avg. 5.6 vs. Avg. 8.7).  The
+metrics data shows that some users created more node lists than TOCs.  The
+standard deviations of the node list surveys show this large variation.
+The users thought that the Unread Nodes list was almost as helpful as the
+TOC (Avg. 6.8 vs. Avg. 8.3).
+
+
+
+The last two features, Snoopy and Partyline were designed to promote
+collaboration in AEN.  They are discussed next.
+
+\subsubsection{Snoopy}
+
+\small
+\begin{table}[htbp]
+  \caption{Survey Questions about Snoopy. (Scale 1 to 9)}
+  \begin{center}
+    \begin{tabular}{|l|c|c|}
+      \hline
+      \multicolumn{3}{|c|}{\rule[-3mm]{0mm}{8mm}\bf Survey Questions:
+      Snoopy}\\ \hline
+      &Average&Std. Dev.\\ \hline
+      I used Snoopy:&6.3&2.6\\\hline
+      Snoopy is helpful:&6.8&2.4\\\hline
+    \end{tabular}
+  \end{center}
+  \label{tab:survey-Snoopy}
+\end{table}
+\normalsize
+
+The Snoopy feature is started with each AEN session.  To use the tool, the
+user simply looks at a window that displays the usage information of all
+users.  Thus there were no meaningful metrics collected about Snoopy.  The
+survey results (see Table \ref{tab:survey-Snoopy}) show that the users
+generally used and liked Snoopy.  The large standard deviation might be
+attributed to the different user's method of collaboration.  Snoopy's
+information is not very interesting if there are no other users logged in
+or if the other members are present and accessible in the room.
+
+
+The last feature evaluated in AEN is Partyline.
+\subsubsection{Partyline} 
+
+\small
+\begin{table}[htb]
+  \caption{Partyline Messages}
+  \begin{center}
+    \begin{tabular}{|c|c|}
+      \hline
+      \multicolumn{2}{|c|}{\rule[-3mm]{0mm}{8mm}\bf Partyline Messages by group}\\ 
+      \hline
+      Group&Ave \# Partyline Messages/Session\\ \hline
+      \hline
+      A&2.71\\ \hline
+      B&1.67\\ \hline
+      C&0.53\\ \hline
+    \end{tabular}
+  \end{center}
+  \label{tab:Partyline}
+\end{table}
+\normalsize
+
+
+The metrics for Partyline use (see Table \ref{tab:Partyline}) show that
+there is a wide variety in the number of Partyline messages sent.
+Comparing the times Partyline messages were sent and when users were
+simultaneously editing node, it does not appear that Partyline was used
+more than 15 times to coordinate editing.
+
+\small
+\begin{table}
+  \caption{Survey Questions about Partyline. (Scale 1 to 9)}
+  \begin{center}
+    \begin{tabular}{|l|c|c|}
+      \hline
+      \multicolumn{3}{|c|}{\rule[-3mm]{0mm}{8mm}\bf Survey Questions:
+      Partyline}\\ \hline
+      &Average&Std. Dev.\\ \hline
+      I used Partyline:&5.2&2.6\\\hline
+      Partyline is helpful helpful:&6.2&2.4\\\hline
+    \end{tabular}
+  \end{center}
+  \label{tab:survey-Partyline}
+\end{table}
+\normalsize
+
+One possible reason for this low use of Partyline is referenced in the
+limitations section of the experimental design.  The users could only
+access AEN from two rooms.  This meant that they were frequently co-located
+in the same room, and thus able to speak directly to each other instead of
+using Partyline.  Since it is easier talk than type, I believe they
+collaborated verbally instead of using Partyline.  This could lead to the
+low score for Partyline use in the survey.  Table
+\ref{tab:survey-Partyline} shows the results of the survey for Partyline.
+The users felt that Partyline was fairly helpful even though the did not
+use it very often.
+
+
+\small
+\begin{table}[htbp]
+  \caption{Survey Question about Sense of Presence. (Scale 1 to 9)}
+  \begin{center}
+    \begin{tabular}{|l|c|c|}
+      \hline
+      \multicolumn{3}{|c|}{\rule[-3mm]{0mm}{8mm}\bf Survey Questions:
+      Sense of Presence}\\ \hline
+      &Average&Std. Dev.\\ \hline
+      AEN provides a sense of:&6.5&1.9\\
+      physical presence for&&\\
+      the other users.&&\\\hline
+    \end{tabular}
+  \end{center}
+  \label{tab:survey-Presence}
+\end{table}
+\normalsize
+
+The above two features are designed to promote a sense of physical presence
+for each of the users.  The survey asked the users about their sense of
+physical presence.  Table \ref{tab:survey-Presence} shows the results of
+the sense of presence survey question.  They felt that AEN does provide a
+sense of physical presence for the other users.
+
+\subsection{Evaluation of AEN}
+\label{sec:eval-AEN}
+
+The evaluation of the set of features provided by AEN shows that they
+generally were used and liked by the group members.  There was a wide
+variation in the feelings of the group members and different features were
+used to different degrees.  A goal of this research is to evaluate AEN as a
+collaborative editing tool.
+
+There are three different sets of evidence that lead me to believe AEN is a
+successful collaborative tool. One, all three groups collaboratively
+created quality requirements documents. Two groups received an A on their
+document and one received a B.  Two, all three requirements documents show
+high values in at least three of their collaborative metrics.  Three, the
+survey results show that the users liked AEN.  Table \ref{tab:survey-AEN}
+shows the results of the survey questions about AEN.
+
+\small
+\begin{table}[htb]
+  \caption{Survey Questions about AEN. (Scale 1 to 9)}
+  \begin{center}
+    \begin{tabular}{|l|c|c|}
+      \hline
+      \multicolumn{3}{|c|}{\rule[-3mm]{0mm}{8mm}\bf Survey Questions:
+      Overall reactions to AEN:}\\ \hline
+      &Average&Std. Dev.\\ \hline
+      terrible---wonderful&5.5&1.6\\\hline
+      frustrating---satisfying&5.0&1.8\\\hline
+      dull---stimulating&5.0&1.7\\\hline
+      difficult---easy&6.2&1.9\\\hline
+      rigid---flexible&5.2&1.9\\\hline\hline
+      AEN promotes collaboration:&7.2&2.0\\\hline
+    \end{tabular}
+  \end{center}
+  \label{tab:survey-AEN}
+\end{table}
+\normalsize
+
+The users felt that AEN promoted collaboration, but there was disagreement
+about that.  One user did not think AEN promoted collaboration.  That user
+rated AEN a two out of nine.
+
+
+\section{Recommendations}
+\label{sec:conclusions}
+
+
+Based upon the my experiences with AEN, I recommend the following to
+encourage strong collaboration: provide direct and indirect authoring
+mechanisms, provide access to intermediate work products, provide
+context-sensitive ``what's new,'' and provide mechanisms to allow users as
+well as documents to be visible.
+
+My first recommendation is to provide direct and indirect authoring
+mechanisms.  AEN supports two methods for collaborative authoring, which I
+term {\em proof-reading}(indirect) and {\em trading the lock}(direct).  In
+the proof-reading method, the author creates a node and publishes it by
+allowing read and annotate access.  This allows others to make comments
+suggesting changes, new ideas, or just general comments on the subject.
+The author can read the comments and make changes to the document or
+comment on the comments.  In the trading the lock method, the author
+creates a node and allows other authors to edit it by providing read and
+write access.  Each author can lock the node, make a change, save the node,
+and unlock it, which updates the contents of the node displayed on each
+author's screen.  Strong collaboration is enhanced by providing authors
+with these degrees of control over the document and styles of interaction
+with others.
+
+My second recommendation is to provide access to intermediate work
+products.  One of the strongest enablers of strong collaboration is easy
+accessibility to intermediate work products.  Synergy is nurtured by
+permission to review another's admittedly rough, first pass at an idea,
+where comments and suggestions are aimed at refining and enhancing, rather
+than confirming or denying, as is frequently the case with final, polished
+presentations.
+
+My third recommendation is to provide context-sensitive ``what's new.''
+When a group divides into subgroups and is actively and incrementally
+building hypertext documents, context-sensitive mechanisms to automatically
+inform users of what has changed are essential. Otherwise, the users will
+suffer from either lack of knowledge about what is changing (if no
+change-related mechanisms exist) or a low signal-to-noise ratio (if
+context-free change-related mechanisms are used, in which case users are
+informed of many changes that are irrelevant to them.)  In AEN, the
+combination of access control, unread nodes, and Hyperstar Bulletin
+provides a very nice means of selectively propagating change-related
+information across groups.  The daily Hyperstar Bulletin encourages users
+to log in to AEN only when necessary to see changes, and access control
+allows users to control the visibility of their changes.
+
+My last recommendation is to provide a mechanism to allow users as well as
+artifacts to be visible.  In AEN, providing knowledge of who was using AEN,
+where they were, and a means to communicate with them created many new
+opportunities for collaboration without requiring face-to-face interaction.
+
+%\section{Experiences}
+
+%\section{RECOMMENDATIONS}
+
+\section{Availability}
+
+The current release of AEN is publicly available through anonymous ftp from 
+ftp.ics.Hawaii.Edu/pub/csdl/egret/aen/.  The uncompressed distribution
+requires 2MB of disk space.  AEN requires XEmacs and EGRET to run.
+\bibliography{/group/csdl/bib/aen,/group/csdl/bib/csdl-trs}
+\bibliographystyle{plain}
+\end{document}
+
+
+
+

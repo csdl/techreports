@@ -1,0 +1,1395 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% thesis-main.tex -- 
+%% Author          : Jennifer Geis
+%% Created On      : Fri Sep  5 13:50:18 1997
+%% Last Modified By: Jennifer Geis
+%% Last Modified On: Wed Apr 29 11:33:08 1998
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1996 Jennifer Geis
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\chapter{Overview}
+\section{Debugging...Ugh}
+All programmers inject defects into their code. Even experienced developers
+typically inject a defect about every 10 lines of code\cite{Humphrey95}.  % pg.279
+Half of these defects are normally found by the compiler, while the rest
+must be found through reviews, testing, or by the users.
+
+Every programmer hates debugging their work.  If you were to guarantee a
+software developer that she would never have to spend another minute
+tracking down bugs in her code, she would probably worship you for life.
+In many cases, the most time consuming part of debugging usually isn't
+removing the defect, but tracking it down in the first place.  All
+programmers can remember that horrible night spent searching for the cause
+of some strange behavior in their program.  The night frequently ends with
+the programmer groaning in disgust when they finally spot the offending
+line.
+
+\section{The JavaWizard Solution}
+JavaWizard (JWiz) can't prevent those late nights, but it can make them
+happen a little less often.  JWiz is a Java source code analyzer.  It scans
+through code looking for common programming constructs which, though legal
+in the Java language, are still likely to cause errors.  Due to its nature,
+JWiz is intended for use after the first clean compile and before testing.
+JWiz requires the code to be compilable, and thus it does not concern
+itself with syntactic errors.  Instead, JWiz notifies the user of possible
+run-time problems.  For example, the following code prompts a warning from
+JWiz.
+
+\begin{verbatim}
+  public boolean isEqual(String stringIn){
+    String myString = "hi";
+    if (stringIn == myString){
+      return true;
+    }
+    return false;
+  }
+\end{verbatim}
+
+JWiz would give the warning ``Comparing strings using '==' instead of the
+'equals' method.''  Usually, programmers want to compare the {\em contents}
+of two strings while the above code compares the memory addresses of the
+strings.  Since the two strings do not reference the same object, the
+method will always return false.  This is the case even if the strings'
+contents are identical.  I refer to this as the ``String equals'' bug.
+
+Used in this fashion, JWiz serves as a kind of ``smart compiler'' that can
+inform the programmer about constructs that will likely cause your program
+to behave in unexpected ways, as opposed to the syntactic errors that a
+compiler normally captures.  Basically, JWiz is like a Lint\cite{Darwin88}
+for Java. What distinguishes JWiz from Lint, other than the programming
+language, is the way in which I have used it for this research.
+
+JWiz provided me with the opportunity to study, for the errors it catches,
+what kinds of programmers make them, what kinds of programs they are made
+in, and (ultimately) how the programmer and perhaps even the Java language
+itself could change so that these errors would not occur.
+
+One might ask, given a mechanism to catch these errors, why bother worrying
+about how to change programmers or the language?  Why not just use the tool
+to catch the errors?
+
+My response is that JWiz can be used that way, but the kinds of semantic
+errors JWiz catches are only a narrow subset of all the possible errors a
+programmer could make.  Although JWiz may signal that there are a lot of
+errors present that it knows about, that could mean that there are a lot of
+errors present that it doesn't know about.
+
+On the other hand, the kinds of improvements a programmer might make in
+response to JWiz feedback (such as changes to coding style, or the use of
+reviews), or the kinds of changes that could ultimately be made to the Java
+language (such as redesigns of the class libraries or interfaces) or
+environment could not only eliminate the JWiz errors, but also other errors
+not caught by JWiz.  For this reason, I believe JWiz has important
+potential for software quality improvement beyond its application as a Lint
+for Java programs.
+
+Another argument for programmer/language improvement is that JWiz is not
+infallible. JWiz is a new tool.  There are some circumstances I did not
+consider. I could not anticipate all the possible ways a programmer could
+make a particular error.  What happens if the developer gets a false sense
+of security?  They might run JWiz in the process of looking for a bug, and
+then think ``It can't be here since JWiz would have told me about it, so I
+won't waste my time looking.''
+
+\section{A Usage Scenario}
+In UNIX or DOS, JWiz can be run as an application invoked via the command
+line.  The user goes to the directory containing the files on which they
+wish to run JWiz and types the following command.
+\begin{verbatim}
+'jwiz *.java'
+\end{verbatim}
+JWiz scans the files and prints out a listing of the warnings generated.
+The listing might look like this:
+
+\begin{verbatim}
+TestFile.java:23: GUI component stopButton not added to a container. 
+TestFile.java:30: addActionListener not called on button 'goButton'.
+TestFile.java:89: Multiple objects added to same borderlayout area.
+TestFile.java:131: Local variable 'varString' overshadows field.
+TestFile.java:171: Local variable 'testString' not used.
+TestFile.java:228: Comparing strings with == instead of the 'equals'
+method. 
+TestFile.java:354: Comparing strings with == instead of the 'equals'
+method. 
+TestFile.java:357: Comparing strings with == instead of the 'equals'
+method. 
+\end{verbatim}
+
+I have also implemented a JWiz mode for XEmacs which allows the JWiz output
+to be mouse selectable as shown in Figure \ref{emacs} on page \pageref{emacs}.
+
+\begin{figure}[tbp]%tbp 
+  {\centerline{\psfig{figure=images/emacs.ps,width=6in}}}
+  \caption{\label{emacs} JWiz-mode in Emacs}
+\end{figure}
+
+Once the JWiz results are displayed, the user then goes through the list
+and determines which were ``real'' errors (which must be fixed in order for
+the program to function properly), which were ``maintenance'' errors (which
+do not cause problems in the running of the program, such as unused
+parameters, but which indicate ``bad style''), and which were ``false
+positives'' (where JWiz flagged something the programmer really intended to
+do as an error).
+
+When used with the intent of self improvement, the user may note that she
+has a number of errors where she compared two strings using two equals
+signs '==' instead of the 'equals' method. One possible step she might take
+at this time is to start a checklist of her common errors.  She might use
+this checklist for future code reviews.
+
+By saving the JWiz output into a log, she would be able to see patterns of
+errors.  For example, she might notice that where one error is found, more
+generally occur.  Or she might notice that she has a habit of making the
+same errors across multiple projects.
+
+\section{The Origins of JWiz}
+In 1995, I participated in a course on Watts Humphrey's Personal Software
+Process (PSP)\cite{Humphrey95}.  During this course, students followed a
+strict software development process consisting of the following phases:
+plan, design, code, compile, test, and postmortem.  Students were required
+to keep track of all defects they found in their programs.  For each
+defect, the data collected included a description of the defect, the phase
+of development during which the defect was injected into the program, the
+phase in which it was removed, and the amount of time it took the developer
+to find and remove it.
+
+In looking over the data, I noticed that the defects that took the most
+time to find and remove were the ones that made it past the compilation
+phase and didn't rear their ugly heads until the testing phase.  These were
+the defects that resulted in late nights for me.
+
+In the summer of 1997, I was invited to do an internship at Digital
+Equipment Corporation in Nashua, New Hampshire.  I found
+the description of JWiz among the list of possible projects that
+Digital offered me.  With my previously collected defect data, I figured
+this was the perfect project and accepted the offer.
+
+\section{Research Thesis} 
+The hypotheses of this research are:
+\begin{enumerate}
+\item The use of JWiz in the context of this research will reveal areas of
+  improvement for Java programmers and the Java language and/or
+  environment.
+\item JWiz uncovers certain classes of defects more efficiently than manual
+debugging.
+\end{enumerate}
+
+To test these hypotheses I performed a case study on several groups of
+software developers and obtained the results of running JWiz on their code.
+
+\section{Organization of this Document}
+Chapter Two provides an introduction to the JWiz program
+with a focus on user scenarios.  This chapter also covers some of the
+design decisions made during the course of the program's development and
+some of the problems I encountered.
+
+Chapter Three focuses on the experiment. There, I discuss the research
+hypotheses and how they were tested.  This chapter contains the results
+from a pilot study and how it affected the experimental design. 
+
+Chapter Four presents the experimental results. Sections include a
+break-down of data according to developer skill, program size, etc., along
+with answers to the questions raised during the pilot study.  I also relate
+some unanticipated results and anecdotal experiences.
+
+Chapter Five contains an overview of related work.  I describe a number of software
+engineering tools with capabilities or underlying theories similar to
+those of JWiz.  Each of these tools is compared and contrasted with JWiz.
+
+Chapter Six presents the conclusions of this research. I discuss the
+contributions of this research and some ideas for future research.
+
+\chapter{JavaWizard}
+
+\section{JWiz Example} 
+
+JWiz does static analysis on Java source code.  This is accomplished
+through the use of a parse tree and symbol table.  When JWiz is first
+invoked, it generates the parse tree and symbol table.  Next, JWiz
+begins a recursive descent through the parse tree.  The items in the tree
+are checked to see if they could be the starting element of any of the
+errors that JWiz knows about.
+
+The following is an extension of the ``String equals'' bug example given in
+the overview: the comparison of two strings using two equals signs instead
+of the equals method.
+
+
+\begin{verbatim}
+  public boolean isEqual(String string1, String string2){
+    if (string1 == string2){
+      return true;
+    }
+    return false;
+  }
+\end{verbatim}
+
+The above code results in the following parse tree.  The parse tree
+information given is somewhat condensed from what JWiz really uses, but all 
+the necessary information is intact.
+
+\begin{verbatim}
+  Method: boolean isEqual(String string1 String string2)
+    IfStatement
+      EqualityExpression
+        Primary prefix: string1
+        Primary prefix: string2
+      Block
+        ReturnStatement: boolean
+    ReturnStatement: boolean
+\end{verbatim}
+
+In this case, JWiz scans through the parse tree until it encounters the
+IfStatement node.  When this is found, the node's child is retrieved.  As
+this child node is an EqualityExpression it knows the user used two equals
+signs to compare something, however, it does not yet know what the user is
+comparing.  Next it gets the arguments of the EqualityExpression.  JWiz
+finds two variables called string1 and string2.  It uses the symbol table
+to obtain the types of these variables. Since both turn out to be Strings,
+JWiz issues the warning ``Comparing two strings using '==' instead of the
+'equals' method.
+
+\section{Usage Scenario}
+Assume that Anne is writing a program for a class project.  She uses Emacs
+enabled with JWiz mode.  She has finished coding and has obtained a clean
+compile.  At this point, Anne invokes JWiz.  She types the
+keystrokes ``C-c C-j,'' and a buffer appears with the mouse-selectable
+warnings as shown in Figure \ref{emacs} on page \pageref{emacs}.  She
+clicks on the warning ``Field 'newButton' is not added to a container,''
+and her cursor is moved to the line that generated the warning.  She
+realizes that the button isn't going to show up in her display, and fixes
+the defect.
+
+Another user, Joe, doesn't use Emacs.  When he gets his first clean
+compile, he types 'jwiz' and hits enter.  This causes a window to pop up
+and prompt him for the file to run JWiz on. He chooses to run JWiz on the
+file LeapGUI.java as shown in Figure \ref{FileSelected}.
+
+\begin{figure}[htp] %tbp
+  {\centerline{\psfig{figure=images/FileSelected.ps}}}
+  \caption{Selecting the File to Run JWiz on}
+  \label{FileSelected}
+\end{figure}
+
+He selects LeapGUI.java and hits the OK button.  JWiz examines the file and
+brings up another window listing any defects that it has found (Figure
+\ref{JWizResults1} on page \pageref{JWizResults1}).
+
+\begin{figure}[htb]
+  {\centerline{\psfig{figure=images/JWizResults1.ps}}}
+  \caption{Selectable Results of Running JWiz}
+  \label{JWizResults1}
+\end{figure}
+
+If Joe wanted to run JWiz on all his files he could have typed 
+\begin{verbatim}'jwiz *.java'\end{verbatim}
+He could also have bypassed the file selection window by using
+\begin{verbatim}'jwiz filename.java'\end{verbatim}
+
+\section{What JWiz Looks For}
+JWiz focuses on run time errors.  JWiz cannot look for syntactic errors by
+definition, since it uses a syntax tree that can only be built from a
+syntactically correct program.  Many of the JWiz defect checks were derived
+from the data collected during my previously mentioned Personal Software
+Process class experience.  I also obtained a significant number of warnings
+from the book ``Java AWT Reference'' by John Zukowski\cite{Zukowski97}.
+Appendix A contains a listing of all the defects JWiz currently tests for.
+
+\section{Design}
+JWiz is 100 percent pure Java code, so it should run on any operating
+system.  JWiz utilizes parse tree and symbol table generators that were
+developed in the summer of 1997 at Digital Equipment Corporation by Jeremy
+Lueck, Mitchell Goodman, and Dale Skrien.  JWiz runs the parser on the Java
+source code which generates the parse tree and the corresponding symbol
+table.  JWiz then recursively traverses the tree looking for specific
+nodes.  When one of these nodes are found, JWiz runs tests which check to
+see if this node is followed by others in a pattern which indicates the
+presence of a possible error.  The symbol table is used for variable
+lookups and is written exclusively in Java as well.
+
+\subsection{Class Structure}
+JWiz is composed of three separate packages: JWiz, Parser, and Test.  
+
+The user invokes JWiz from the command line.  JWiz then creates an instance
+of the Parser, passing it the name of the file to be analyzed.  The Parser
+scans the file, setting up the parse tree and symbol table for JWiz to use.
+
+JWiz then performs a recursive descent on the parse tree.  With each node
+retrieved from the tree, JWiz passes control to Test.  
+
+The Test package is actually a bunch of small programs (tests) that are
+invoked according to the type of the node received by the JWiz class.
+There are three types of tests: class level, method level, and node level.
+The type of the node that is given to Test determines what kinds of tests
+can be run.  For example, if the node is an instance of a class
+declaration, JWiz invokes the test that checks to see if there are any
+variables defined in the class' methods that overshadow the class
+variables.  Likewise, if the node is a method declaration, it checks to see
+that all the parameters are used.
+
+Below is a summary of the statistics of the three packages according to
+lines of code (LOC), number of classes, and number of methods.
+ 
+\begin{table}[htpb]
+  \caption{JWiz Package Statistics}
+  \begin{center}
+  \begin{tabular}{|l|c|c|c|}
+    \hline & JWiz & Test & Parser \\ \hline \hline
+    LOC & 235 & 4155 & 17355 \\ \hline
+    classes & 2 & 39 & 93  \\ \hline
+    methods & 20 & 264 & 1301 \\ \hline
+   \end{tabular}
+  \end{center}
+ \label{packageStats}
+\end{table}
+\newpage
+Altogether, the three packages that make up JWiz take just over 1.2 MB of
+space.  The application programming interface (API) for all three packages
+can be found under their respective package names at
+http://www.ics.hawaii.edu/$\sim$csdl/java/jwiz/.
+
+\section{Development Issues}
+Extensibility, performance, defect identity, and complexity were four of
+the major issues I confronted while developing JWiz.
+\subsection{Extensibility}
+Ideally, JWiz will be freely available through the Internet for all who are
+interested.  Should this happen, developers will want to add their own
+tests to JWiz to accommodate the defects that affect them the most.
+
+For this to happen, an intermediate layer will be required.  Currently, in
+order to add a new JWiz test, the developer must understand the Backus-Naur
+form (BNF) for the Java language.  Without knowing the patterns of the
+nodes in the parse tree, it is not possible to develop a test.
+
+The Parser package offers another problem for the test developer.  The
+developer would have to reference the API and become familiar with the
+methods used for the retrieval of variables and the like.
+
+Most developers would prefer less cognitive overhead.  This suggests the
+need for some layer of abstraction.  Perhaps a set of classes of methods
+could be developed as a future project.
+
+\subsection{Performance}
+JWiz takes roughly twice as long to run as the Java compiler.  For example,
+on a Sun Microsystems SPARCstation20, a 1,700 line program takes 32 seconds
+to compile, and 72 seconds to be checked by JWiz.  JWiz could be sped up a
+little by making the Parser class static.  The original version of the
+Parser was static, but in order to facilitate running JWiz through an
+applet, the Parser had to made non-static.  It would be a fairly simple
+task to revert the Parser back for anyone who wants an application-only
+version.
+
+I tend to think that speed of execution is not important.  Considering
+the amount of time a developer spends searching for code defects, it's
+worth taking the few extra seconds to run JWiz.
+
+\subsection{What Makes a Defect?} 
+As mentioned previously in the chapter, the defects that JWiz checks for
+were selected from a variety of sources, including PSP defect logs and
+books listing Java ``gotchas''.  I selected defect tests if they matched
+one of the following criteria.
+
+In the case of defects derived from PSP data, if they:
+\begin{itemize}
+\item Occurred in multiple PSP defect logs.
+\item Took an individual a non-trivial amount of time to fix.
+\item Represented a defect experienced by colleagues or myself.
+\end{itemize}
+
+In the case of defects derived from the ``Java AWT Reference'' book, if they:
+\begin{itemize}
+\item Represented a hard to find defect.
+\item Are relatively easy for JWiz to detect.
+\end{itemize}
+
+Originally, I intended to include only tests which checked for constructs
+which ``are almost always wrong.''  The problem with this plan is that I
+did not have any data on the likelihood that a construct was incorrect.
+Essentially, I had to guess the frequency of a construct representing an
+error.  As a consequence, I found that some of the defect checks which I
+included are frequently false-positives.  I have yet to decide on the
+future of these particular JWiz tests which offer little benefit.
+
+\subsection{Complexity: Number of Tests}
+I believe that there is an upper limit to the number of tests that JWiz can
+run on any given program.  Although the user can add as many tests as they
+desire, the time to run JWiz will grow with each test.  I believe JWiz
+could become too slow if it gets too large.  To solve this, I will equip
+JWiz with the ability to turn off tests.  The interface will show all
+available tests and permit the user to toggle the tests they wish to run.
+This will allow users to tailor the system to their own personal preference
+by selecting those defects which they frequently commit and omitting those
+tests which offer them little or no benefit.
+
+\chapter{Experimental Design}
+
+\section{Overview of Hypotheses}
+My research hypotheses are as follows:
+\begin{enumerate}
+\item The use of JWiz in the context of this research will reveal areas of
+  improvement both for Java programmers and the Java language and/or
+  environment.
+\item JWiz uncovers certain classes of defects more efficiently than manual
+debugging.
+\end{enumerate}
+
+The following four sections will discuss how the experiment was designed to 
+address the above hypotheses.
+
+\subsection{Improvement to the Java Language/Environment/ Programmers}
+In order to discover problem areas for Java developers and the Java
+language and/or environment, I needed to find out what defects were being
+made.  Since JWiz provided a mechanism for defect reporting, I recorded all
+the defects (JWiz functional errors) with the intent of answering the
+following questions:
+
+\begin{enumerate}
+\item What defects occurred most frequently?
+\item What defects could be avoided by changes to the Java language/environment?
+\item How can developers change their programming habits to avoid these
+  defects?
+\end{enumerate}
+
+\subsection{JWiz vs. Manual Debugging}
+In order to determine if JWiz is any more effective at locating defects
+than manual debugging, I needed to record data on how long it took people
+to find and remove the defects which JWiz can detect.  I accomplished this
+by having students send me a copy of their code after they got their first
+clean compile, but before they started doing any testing.  The students
+then went about their normal development.  They were required to record all
+the defects they made, what the defects were, and how long they took to
+find and fix.  After the programs were finished, I sent each student a
+listing of all the warnings that JWiz generated from their pre-test code.
+For each warning, they were asked to verify if it was a defect that they
+found, and if so, how long it took them to locate the source of the
+problem and fix it.
+
+As JWiz finds errors essentially instantly, I could look at the students'
+responses to the warnings and see if JWiz is any more efficient than their
+manual debugging efforts.
+
+\section{Experimental Procedures}
+For this research, I designed a case study.  A pilot study was followed by
+the experiment.  Over a period of four weeks, JWiz was given to two groups
+of students and one research group of 5 graduate students.
+
+\section{Pilot Study}
+\subsection{ICS 414 and CSDL}
+For the pilot study, data was collected from an upper level computer
+science course at the University of Hawaii.  The course, Introduction to
+Software Engineering (ICS 414), focused on the PSP.  As part of the
+students' activities, they were required to maintain a log of all the
+defects they detected during the development of nine Java programs. For
+each defect, the students would record a description of the defect, the
+phase in which the defect was injected into the program, the phase in which
+the defect was found and removed, and the amount of time it took to locate
+and remove it.
+
+The graduate students in the Collaborative Software Development Laboratory
+(CSDL) research group also adopted the PSP.  Since, all members of this
+software engineering group kept records of defects they made during program
+development, I utilized these records in my pilot study.
+
+\subsection{Initial Observations}
+The Defect Recording Logs (DRLs) from ICS414 and CSDL provided some
+interesting data.  I focused my attention on defects found and fixed during
+the testing phase.  I discovered that certain defects were popping up in
+multiple DRLs.  These defects ranged in severity (in terms of amount of
+time to find and fix).  As any software developer will tell you, the worst
+part of debugging is usually trying to find the location of the defect, not
+fixing it.  In many cases, I noticed that the time recorded to find and fix
+a defect was non-trivial, but the defect's description indicated that the
+fix itself could have taken no more than a few seconds.
+
+\subsubsection{Common Mistakes}
+If you were wondering why I use the example of comparing strings using two
+equals signs instead of the equals method to explain what JWiz does, it is
+because the pilot study indicated that the ``string equals bug'' seemed to
+be the most common error.  The severity of the defect varies according to
+the context in which it was made. The times spent removing this particular
+defect ranged from a minute or two to almost an hour.
+
+Some other defects were not common, but were time consuming to find so I
+included them in JWiz.  For example, the test ``division result assigned to
+an int instead of a float'' arose out of a student spending almost a half
+an hour on the same problem.
+
+\section{Data}
+Collecting the defects discovered by JWiz is not enough.  That would only
+tell me whether or not the program works, not if it is really a useful
+tool.  To understand more about the effectiveness of the tool, I decided to
+collect some other pieces of information as well, specifically, the size of
+the program, the phase of development at which JWiz was executed, and the
+developer's experience in terms of number of years of programming,
+experience with Java, and number of languages.  I also planned to track
+``false positives,'' warnings which the developer decided were not valid.
+
+\subsection{Size}
+The size of the program is useful in determining JWiz' effectiveness.  By
+effectiveness, I mean the number of defects found per thousand lines of
+code.  If JWiz reports only one valid error, the effectiveness of JWiz to
+that program's developer varies depending on whether the program was one
+thousand lines of code or ten.
+
+\subsection{Total Number of Errors in Test} 
+The effectiveness of JWiz also depends on the percentage of all errors
+found in the test phase that were detected by JWiz.  If there were 40
+errors found during test and JWiz caught only one, there is still much the
+developer must do.
+
+However, the thing to keep in mind regarding effectiveness is that even if
+JWiz finds only a small proportion of errors, the errors it does find can
+still save significant amounts of time in debugging.
+
+\subsection{Development Phase}
+The phase of development in which the developer uses JWiz can have a big
+impact on the number and types of defects JWiz finds.  If JWiz is used
+after compile and before test, it is probable that more warnings will be
+generated than if JWiz is used after testing is already completed.
+
+Whether a code review is performed before or after using JWiz can have an
+affect on JWiz' effectiveness as well.  If the developer has used JWiz
+before and noticed that there is a specific error that she makes
+frequently, than she might be watching out for it during a review, hence
+eliminating it before JWiz is run.
+
+\subsection{Developer Experience}
+There are a variety of things to consider regarding developer experience:
+amount of time doing programming in general, amount of time programming in
+Java, and the number of languages the developer has worked with.
+
+I believe that developer experience will be a factor in what kinds of
+errors JWiz is likely to find.  If the developer is a first year
+introductory student, she will probably not be using inheritance and
+inner-classes, so advanced defect checks are not likely to be invoked.  On
+the other hand, she will probably make the mistake of not creating a
+listener for events or adding multiple components to the same area in a
+BorderLayout.
+
+If the developer is experienced with Java, she could make the same mistakes
+as a novice, but she is more likely to make mistakes such as calling
+Thread.suspend() (this causes your program to hang).  A beginning student
+would probably not be using threads, so she is unlikely to encounter this
+problem.
+
+\subsection{False Positives}
+The accuracy of JWiz can be determined by comparing the number of
+functional errors, maintenance errors, and false positives.  If for every
+10 warnings that JWiz generates, half are functional errors, then JWiz is
+accurate 50 percent of the time (maintenance errors are not counted towards
+accuracy).  This measure of accuracy must be combined with effectiveness in
+order to find the usefulness of JWiz.  If JWiz generates 20 warnings for a
+one thousand line program, at 50 percent accuracy the result will be 10
+legitimate errors which the developer will not have to track down.
+
+Although false positives are a nuisance, they can not all be avoided.
+Occasionally, what JWiz identifies as an error is something the programmer
+meant to do.  The canonical error that I use to explain what JWiz does is
+the usage of '==' instead of the 'equals' method in comparing two strings.
+In some cases, the programmer really did mean to use the double equals
+sign.
+
+Other false positives are a result of a limitation in the current design of 
+JWiz.  JWiz runs on one file at a time, so if you have a package with
+multiple classes, JWiz may generate warnings for things which if the class
+was stand-alone, it would be an error, whereas in a package, it may not be
+an error.  For example, you might declare a variable in one class that
+isn't used in that class, but is used by another class in the package.
+Since JWiz does not check for interdependencies among classes in a package
+yet, erroneous warning messages will be produced.
+
+\subsection{Time}
+Time required for testing is another indicator of the effectiveness of
+JWiz.  I believe that developers will spend less time debugging the defects
+for which JWiz is designed.  If the developer runs JWiz after the first
+clean compile and before starting testing, JWiz will locate specific
+defects, saving the developer the time it would have taken to locate them
+manually.
+
+\section{Subjects}
+For this research, I collected Java code and/or the JWiz results from ICS
+311, ICS 613, and CSDL.  A variety of approaches for the use and data
+collection of JWiz was needed because of the different types of developers.
+
+\subsection{ICS 311}
+Algorithms and Data Structures (ICS 311), a class in which all assignments
+were done in Java, was taught by Dr.  Feng Gao at the University of Hawaii.
+I made a short presentation to the class regarding what JWiz was and how to
+use it.  JWiz was provided to the students in a GUI application, a
+text-only application, and an applet for them to use at will.
+
+\subsection{Collaborative Software Development Laboratory}
+The Collaborative Software Development Laboratory (CSDL) is a graduate
+student research group within the Information and Computer Sciences
+Department at the University of Hawaii.
+
+Being a member of this group, I had daily, immediate access to all of its
+members.  I was already familiar with the demographic data for each member
+and had the luxury of asking questions or soliciting opinions at any time.
+One feature of this group is that members have access to all code developed
+in the laboratory.
+
+The experimental design for this group involved several methods of data
+collection.  The first method was a result of the CSDL system
+release process.  CSDL developed a program called JDS to automate releasing
+Java software systems.  We added a JWiz run to this release process which
+would send me an email of the results.  
+
+This CSDL data was collected over a two month period.  I found a number of
+false positives which I had not anticipated and I received bug reports as
+well.  The release data provided me with a means of refining my system and
+building experience regarding the use of JWiz on the same system over
+consecutive releases.
+
+The second method of data collection within CSDL was manual.  I ran JWiz
+over all the Java source code in the CSDL archives.  The code was written
+by many different people with a variety of programming experience.  This
+code was already tested.  I ran JWiz to see what sort of errors may be left
+undetected and how useful it would be to run JWiz on tested code.  Due to
+the nature of the laboratory, I had access to all the code and the authors.
+In the interest of inconveniencing my fellow group members as little as
+possible, I ran the JWiz tests myself and then queried the authors as to
+the validity of JWiz warning messages as needed.
+
+\subsection{ICS 613} 
+ICS 613, Advanced Software Engineering, was a graduate course conducted by
+Dr. Philip Johnson at the University of Hawaii.  This course required the
+students to keep track of all defects made during the development cycle.
+For each defect, the students recorded when the defect was made, when it
+was found, a description of the defect, and the amount of time it took to
+find and remove it.
+
+The members of ICS 613 were offered extra credit in return for sending
+me the source code of their assignments immediately after the first clean
+compile but prior to testing.  Since the students were following the PSP,
+all coding is completed prior to the first attempt at compiling.
+
+After the students completed their projects, I notified them of warnings
+generated by JWiz. I asked the students to note which of these warnings
+were valid.  For the warnings which identified real defects, the students
+indicated whether they had found the defect, and if so, how long it took
+them to remove it.  I also asked the students to provide some demographic
+data regarding their experience level.
+
+I later compared this data with the data obtained from running JWiz on CSDL
+code.  The ICS 613 data and the CSDL data (as well as the ICS 311 data, I
+soon found out) differed in the phase of development in which JWiz was run.
+Since I could control the phase at which JWiz was run for ICS 613, JWiz was
+always run on post-compile, pre-test code.  For CSDL and ICS 311, JWiz was
+run mostly on post-test code.
+
+\section{Means of Data Collection}
+
+\subsection{ICS 311}
+JWiz was offered to the ICS 311 students in several formats: A GUI
+application, a text-only application, and an Internet-based applet.
+
+The GUI application displays the user's source code along with any warnings
+that were generated.  It also displays a short survey and provides the user
+with the option of submitting their code along with the survey and defect
+data. A screen dump of the GUI application can be seen in Figure
+\ref{GUIApplication}. %on page \pageref{GUIApplication}.
+
+\begin{figure}[tbp]
+  {\centerline{\psfig{figure=images/GUIApplication.ps,width=6in}}}
+  \caption{The GUI Application}
+  \label{GUIApplication}
+\end{figure}
+\newpage
+In addition to showing the line numbers for the code, the application also
+provide the ability to go directly to each line which generated a warning
+by moving the mouse over the description of the problem.  Should the
+warning be invalid, the student would then deselect the corresponding
+checkbox.
+
+Students in ICS 311 were offered extra credit if they used JWiz.  In order
+to report the use to their professor, I provided a field where students
+would enter their email address.
+
+For each warning shown, the student was asked to indicate whether it was a
+real defect or not by toggling the checkbox next to the description of the
+problem.  If the student was using the text only version, she would be
+queried about the validity of each warning generated.
+
+After indicating the validity of the errors and filling out the survey, the
+student could quit the program and the data would be sent to me.
+
+The Internet-based applet was similar to the application in all ways except for
+the manner of entering the file to be parsed.  The application took a
+path and file name whereas the applet required an Internet URL due to
+applet security restrictions.
+
+The text based application was offered in response to an unexpected problem
+in data collection.  ICS 311 programs were required to run on Unix.  I thus
+assumed that the applet and GUI application would suffice for the ICS 311
+student's needs.  It turned out that many students were doing their
+development on PC's, then telnetting over to the Unix environment.  Under
+these circumstances a GUI is not viable.  Combined with this was the fact
+that many of the students did not know how to make a file Internet
+accessible, so they couldn't use the applet.  In response to these events,
+I developed a text-only application which would take the file and run JWiz
+on it.  It would then prompt the user for responses to the survey questions
+in addition to validating the errors.  Figure \ref{TextApplication} is a
+screen shot of the text-only application in use.
+
+\begin{figure}[tbp]
+  {\centerline{\psfig{figure=images/TextApplication.ps,width=6in}}}
+  \caption{The Text-only Application}
+  \label{TextApplication}
+\end{figure}
+
+\subsection{ICS 613}
+In contrast to ICS 311, the students of ICS 613 were never offered JWiz for
+their use.  Instead, as I've already mentioned, the students would send me
+their post-compile, pre-test code upon which I would run JWiz.  After their
+assignments were finished, I sent them the results of the run and asked
+them to verify if the warnings referred to real errors or not.
+
+
+\chapter{Results}
+\section{Defect Classification}
+I classified JWiz warnings into the following three categories: functional
+errors, maintenance errors, and false positives.
+
+A functional error is a defect which will result in the program not doing
+what the developer intended. These are the real defects that programmers
+must fix in order for a program to work properly.  For each of these
+defects, I obtained (when possible) data on how long the programmer spent
+locating and fixing the defect.
+
+A maintenance error is a construct which will not prevent the program from
+functioning properly but is still not correct.  For example, these defects
+involve situations where variables are declared but never used in a method.
+These will not cause the program to malfunction, but they are still errors
+in the sense that they make the program more difficult to understand and
+modify.  We call these maintenance errors because they could cause problems
+if the program is to be revised in the future.
+
+A false positive is a construct which JWiz flags as an error but is
+actually what the programmer intended.  For example, JWiz flags a warning
+when it finds a local variable that overshadows a class variable.  While
+this can signal a real problem, sometimes the programmer actually wants to
+do this.  When a programmer says, ``I meant to do that,'' the warning is
+classified as a false positive.
+
+Unless explicitly stated otherwise, all of the following results are
+obtained from ICS 613.
+
+\section{Raw Data}
+Out of the 235 warnings generated by JWiz, the warnings were spread fairly
+evenly across the three categories.  Functional errors accounted for 29
+percent of the warnings, maintenance errors for 43 percent, and the
+remaining 28 percent were false positives.
+
+Table \ref{Generated Warnings} shows that out of the 30 tests for defects
+that can be performed by JWiz, only the nine tests shown in the table
+generated any warnings.  Also, only two of these tests indicated defects
+which required significant fixes.
+
+\begin{table}[htpb]
+  \caption{Generated Warnings}
+  \begin{center}
+  \begin{tabular}{|l|c|c|c|c|}
+    \hline Test & fe & me & fp & debug time(minutes) \\ \hline \hline
+    Putting a semicolon immediately after & & & & \\
+    an if, for, or while statement.
+    & 0 & 1 & 5 & 0 \\ \hline
+    Using == instead of .equals for & & & & \\
+    string comparisons. 
+    & 0 & 0 & 4 & 0 \\ \hline
+    Variable/Param overshadows class & & & & \\
+    variable.
+    & 55 & 14 & 12 & 163 \\ \hline
+    Declared variables/fields/parameters & & & &\\
+    that are never used.
+    & 12 & 78 & 27 & 158 \\ \hline  %% was 158
+    GUI components that are not added & & & & \\
+    to a container.
+    & 0 & 7 & 4 & 0 \\ \hline
+    Assigning division result to an int.
+    & 0 & 0 & 4 & 0 \\ \hline
+    Frame/DialogBox/FileDialog not & & & & \\
+    sized and/or shown.
+    & 2 & 0 & 6 & 4 \\ \hline
+    AddActionListener not called on Button
+    & 0 & 0 & 3 & 0 \\ \hline
+    Multiple objects added to same & & & & \\
+    borderlayout area
+    & 0 & 0 & 1 & 0 \\ \hline    
+   \end{tabular}
+  \end{center}
+ \label{Generated Warnings}
+\end{table}
+
+The Java compiler improved in the time between my pilot study and final
+experiment.  Thus, the ``String equals'' bug only generated four warnings
+which were all false positives.  I will discuss this further in the section
+regarding observations.
+
+\section{Categorization}
+\subsection{Developer Experience}
+I categorized developer experience using three factors.
+\begin{enumerate}
+\item General programming experience (years).
+\item Java programming experience (months).
+\item Number of languages known.
+\end{enumerate}
+
+The amount of experience varied greatly for the developers in this
+research.  I had developers with general programming experience ranging
+from one year to twenty-five.  I didn't see any correlation between the
+number of years of general experience and the number of years of Java
+experience.  For the majority of the students, ICS 613 was their first
+exposure to the Java programming language.
+
+\begin{figure}[htbp] %htb
+%\vspace{3in}
+{\centerline{\psfig{figure=images/chart5}}}
+  \caption{General Experience vs. Java Experience}
+  \label{Developer Experience}
+\end{figure}
+
+\subsection{Program Size}
+Figure \ref{LOC vs Defects} is a sample of the number of new and changed
+lines of code along with the number of defects made.  There doesn't seem to
+be any relationship between program size and the number of errors that
+people make.  
+
+\begin{figure}[tbp]%htb
+%\vspace{3in}
+{\centerline{\psfig{figure=images/eps-loc-defects.ps}}}
+ \caption{New and Changed LOC vs. Defects Made}
+ \label{LOC vs Defects}
+\end{figure}
+
+One possibility for this is that the students were not accurate in the
+recording of the number of new and changed lines of code.  For example, one
+student listed the number of lines of code reused from a previous project
+as zero, then he listed the new and changed as also zero.  Yet, his total
+lines of code were over 300.  I omitted ``impossible'' numbers such as
+this.
+
+Another potential source of error is the recording of defects.  Perhaps the
+students were less than exact in noting when an error occurred.  If this is
+the case, no correlation would be shown in this data, while there may be a
+relation with the number of defects that were really made.
+
+\subsection{Development Phase}
+As expected, the development phase during which JWiz was run was a big
+factor in the kinds of warnings generated.  When JWiz was used before
+testing began, the types of JWiz warnings were split up evenly with roughly
+the same percentages of functional errors, maintenance errors, and false
+positives.  The number of JWiz warnings generated and their types can be
+found in Table \ref{Generated Warnings} on page \pageref{Generated
+  Warnings}.
+
+In contrast, when JWiz was run after testing, it was, without exception, a
+waste of the developer's time.  No functional errors were ever found by JWiz
+at this stage.  The only useful outcome of running JWiz after testing was
+the cleaning up of code.  As I discuss later in the section regarding
+anecdotal experiences, some developers took to running JWiz so they could
+remove unreferenced variables and parameters.
+
+However, there might be some benefit to running JWiz while still in the
+test phase.  In looking through one student's defect recording log, I noticed
+that he had created one defect in the process of fixing another.  The
+original defect involved the GUI.  While fixing this error, he decided
+to create another button, and this is where the second defect occurred.  He
+forgot to add the button to the window, a defect which JWiz looks for.  He
+spent close to an hour on this defect, almost forty percent of the total
+amount of time he spent testing.  I noticed similar events on other DRLs as
+well.  It might be worthwhile to run JWiz during test when you encounter a
+problem that may be found by JWiz (for example, a component not appearing
+in the display).
+
+\section{JWiz Effectiveness and Accuracy}
+One of the goals I wanted to accomplish with this research is to determine
+the accuracy and effectiveness of JWiz.  The following results are obtained 
+from ICS 613.
+\newpage
+Effectiveness is a measure of valid defects found per thousand lines of
+code, accuracy is a comparison of the number of functional errors with
+maintenance errors and false positives. 
+
+JWiz analyzed 12848 lines of code from ICS 613.  The students reported
+spending 125 hours in test.  Of this time, 76 hours were spent debugging
+and 240 defects were removed.  On average, the students recorded removing
+one defect in test every fifty-four lines.
+
+JWiz generated 235 warnings.  Of these warnings, 69 were functional
+errors, 100 were maintenance errors, and 66 were false positives. 
+
+Regarding effectiveness, JWiz found one functional error every 186 lines of
+code.  This accounted for 29 percent of all defects found by developers in
+test during the study.
+
+\begin{table}[htpb]
+  \caption{Test Phase Statistics}
+  \begin{center}
+  \begin{tabular}{|c|c|c|c|}
+    \hline Total Time(hrs) & Debug Time(hrs) & Num.Def.Removed & Test Def/KLOC \\ \hline \hline
+    125 & 76 & 240 & 1/54 \\ \hline
+   \end{tabular}
+  \end{center}
+ \label{Test Phase Statistics}
+\end{table}
+
+\begin{table}[htpb]
+  \caption{JWiz Statistics}
+  \begin{center}
+  \begin{tabular}{|c|c|c|c|c|c|}
+    \hline Warnings & fe & me & fp & fe/KLOC & fe debug time (hrs)\\ \hline \hline
+    235 & 69 & 100 & 66 & 1/186 & 5.5 \\ \hline
+   \end{tabular}
+  \end{center}
+ \label{JWiz Statistics}
+\end{table}
+
+Although JWiz caught 29 percent of all reported defects found in test, the
+time spent locating and fixing those defects amounted to only five and a
+half hours, or 7.3 percent of the total amount of time spent debugging in
+test.
+
+I believe this apparent discrepancy is a result of the nature of the
+defects that JWiz found.  It turned out that the warnings which most
+frequently indicated real defects were the ones which were included in JWiz
+because they occurred in most developer's programs.  It is possible that
+since these defects are fairly common, people have become somewhat skilled
+at finding and fixing them.  Perhaps the more time consuming defects are
+the odd, rarely occurring ones.  This would account for why JWiz found a
+large percentage of the reported test defects, yet resulted in a much
+smaller percentage of the debugging time.
+
+All in all, JWiz appears to be fairly promising.  As one student put it ``It
+took me 30 minutes to fix [an error reported by JWiz].  If I had seen the
+results of [JWiz] before, I would have gone straight to the point.''
+
+\section{Changes to Java}
+It is not too difficult to identify some potential improvements to the Java
+programming language/environment.  One such improvement would be to
+disallow unused variables and parameters.  Additionally, another
+possibility would be to eliminate the possibility of using the same
+parameter name as the class variable.  I imagine that some developers may
+not be to keen on these ideas however.  Perhaps a better solution would be
+to equip the compiler with something similar to the deprecation warnings
+that arise when the code uses 1.0 event handling.
+
+\section{Changes to JWiz}
+As a result of this experiment, I found that some changes to JWiz should be
+made.  I noticed that some of the false positives are avoidable.  For
+example, one false positive occurred whenever an interface class was
+created.  For each of the methods in the class, JWiz generated ``Parameter
+not used in method'' warnings.  This happened because no code is allowed
+within the method of an interface, but it is not an error. JWiz can check
+if the class is an interface, and eliminate this particular false positive.
+
+This same warning was also considered a false positive when the parameter
+was required as part of an event handling method.  For example, consider
+the action method used for Java 1.0 event handling.  The method requires
+two arguments, an Event and an Object.  If the user does not reference the
+Object argument, JWiz would issue a warning.  I had anticipated some of the
+event methods, but not all (such as the Object argument to the action
+method), so JWiz generated warnings when the developer did not use one of
+the parameters required for certain event handling methods.  Making these
+two changes would eliminate over seven percent of false positives that
+occurred during the course of the experiment.
+
+Another result of the experiment may be to prove the usefulness of a
+functional addition to JWiz. I planned to implement a mechanism which
+allowed users to choose specific warnings.  For the purpose of this
+experiment, I wanted everyone to run all the tests.  I found that certain
+tests were useful only to a few people.  One test in particular,
+``Assigning a division result to an int,'' was always called a false
+positive by the developers in the study.  However, this test made it into
+JWiz from data I collected prior to the development of JWiz when I found
+that one student spent almost a half an hour on this particular bug.
+
+I wanted people to be able to add tests that they would find useful.  These
+tests could be made publicly available for anyone to include in her copy of
+JWiz.  Combined with error toggling, users would then be able to share
+tests, turning them off if they proved to be more of a nuisance than a help.
+
+Some new tests were implemented based on the results of the experiment.
+Some of the participants in the study took to writing me about defects
+which caused them problems.  For example, one student spent a half an hour
+tracking down a NullPointerException.  In this case, he was referencing
+'this' while initializing a class field.  Since the object was not yet set
+up, there was no 'this' to reference.
+
+\section{Anecdotal Experiences}
+Some interesting events occurred during the use of JWiz that provided
+insight into its potential.  
+
+\subsection{Code Clean-up}
+One such situation occurred while a student was cleaning up his code at the
+end of the development process.  The student encountered a variable which
+he believed was not used anywhere in the class.  Hesitant to delete the
+variable lest there was a reference to it, he recalled that JWiz checked
+for unreferenced variables.  This was not the intent of that particular
+JWiz test, but it still served a useful purpose to the student, assuring
+him that the variable was indeed never referenced in the class.
+
+\subsection{Defect Denial}
+One observation I made during this research was that developers were
+reluctant to admit they had made a mistake.  On multiple occasions, a
+developer would claim that a JWiz warning was a false positive. Yet, when I
+looked at the program, I found that it would not function properly as it
+was.  This could be attributed to psychological factors\cite{Weinberg71},
+forgetfulness\cite{Anderson85}, measurement dysfunction\cite{Austin96}, or
+a variety of other reasons.
+
+For the ICS 613 class, each student sent me an email of their post-compile,
+pre-test code.  I ran JWiz on the code, and sent the JWiz results after the
+assignment was completed.  I asked one particular student to verify whether
+several ``GUI component not added to a container'' warnings were valid or
+not.  The student replied that the warnings were not valid, that he had
+really added them to a panel.  I then looked at the post-compile, pre-test
+code and found that this was not the case.  It's possible that there was
+some miscommunication, perhaps the student wasn't clear as to what I was
+asking, or maybe he didn't understand the error message.  Another
+possibility is maybe the student forgot that he had made the error at
+all\cite{Anderson85}.
+
+In another instance, JWiz provided an experienced Java programmer with a
+warning ``Comparing two strings using == instead of the equals method.''
+He incorrectly claimed that the code wouldn't compile using the equals
+method.  This may be explained by ``The Psychology of Computer
+Programming''\cite{Weinberg71}, which illustrates how programmers are
+unlikely to accept blame when an error occurs.
+
+Interestingly, some students report JWiz warnings to be false positives
+when it indicated real defects in their program.  One possibility ties in
+with another CSDL member's research on the validity of PSP data
+collection\cite{Disney98}.  She found that many students submitted
+``suspicious'' defect recording logs.  For example, a student reporting
+spending over an hour in compile but recording only two compile errors,
+each taking 2 minutes to fix.  It is possible that students are not
+recording all their defects.  This could be attributed to measurement
+dysfunction\cite{Austin96}.  For example, maybe the students thinks it
+looks bad to report many defects. 
+
+A student may not record all their defects as a result of insensitivity to
+when a defect occurs.  Say, for example, a compiler error occurs.  It is a
+rapid fix, so the student thinks, ``That only took a few seconds, it's not
+worth recording.''  Maybe the student made the same mistake many times in
+their code.  Not wanting to record each occurrence, he records just the
+first one and omits the rest.  Another possibility is the student just did
+not bother to record the data at the time the error was located and then
+forgot about it.  The idea of the student forgetting to record a defect is
+very plausible.  There is a fair amount of cognitive overhead in performing 
+the PSP and it's possible the student just had too many things to think
+about\cite{Anderson85}.
+
+If the student did forget to record one of their defects, it is possible
+she could forget about making the error entirely.  In this case, maybe the
+student looked at the JWiz warnings, scanned through her list of defects,
+and not seeing anything that matched the warning, responded that the
+warning was a false positive.
+
+Another factor to consider is the effect of telling people that some of the
+warnings could be false positives.  If the student is in a hurry, or thinks
+she is finished with her program, she may discount the warnings and reply
+that they are erroneous without really checking.
+%do a cite here.
+
+%The situations where students had defects remaining in their code after
+%testing indicate that it could be useful to run JWiz after test just to be
+%sure.  Although my data tends to indicate that this would be an unusual
+%case.
+
+\subsection{Post-Test Usage}
+Another situation which I found interesting occurred with the ICS 311
+students.  I made a short (10 minute) presentation to the class during
+which I emphasized the importance of running JWiz after the first compile
+without errors and before beginning to test.  I also provided a handout
+that described what JWiz was, and how to use it.
+
+Although many students used the program (they received extra credit for
+doing so), not one student used the program before testing.  Every student
+ran JWiz on already tested code.  This indicates that the students used
+JWiz solely to obtain extra credit, without regard for its' usefulness in
+debugging.  This is consistent with Gould's findings regarding how people
+debug computer programs\cite{Gould73}.  As expected with such usage, JWiz
+yielded very little in the way of results for these developers.  All that
+was generated were some maintenance errors and false positives; no
+functional errors.  I imagine that the students have a very dim view of the
+usefulness of JWiz as a result.
+
+I also found that some of the students started using JWiz like a compiler.
+When multiple maintenance warnings were generated the student would go fix
+them and then run JWiz again.  Occasionally, more warnings were generated
+and the student would repeat the process.
+
+\subsection{The ``String Equals'' Bug}
+The defect regarding the comparison of two strings using double equals
+generated four warnings, and they were all false positives.  This was
+really quite a surprise since this was indicated to be a very common
+time-consuming defect during my pilot study.  Why would the results be so
+different between the two studies?  The answer is SunSoft's javac compiler
+has gotten a bit smarter in assigning objects and strings.
+
+The following code example shows an example of code that would have caused
+a defect in the pilot study.
+
+\begin{verbatim}
+  public void actionPerformed(ActionEvent evt){
+    boolean flag = false;
+    String command = evt.getActionCommand();
+    if (command == "Enter Program Information"){
+      flag = true;
+    }
+    processFlag(flag);
+  }
+\end{verbatim}
+
+The flag would never be set to true regardless of the value of the string
+'command.'  In the actual experiment however, due to changes in the
+compiler, this code would work as planned.
+
+Using double equals to compare two strings is still a bad idea however as
+shown by the next code example. 
+
+\begin{verbatim}
+  public boolean isEquals(String string1, String string2){
+    if (string1 == string2){
+      return true;
+    }
+    return false;
+  }
+\end{verbatim}
+
+Assuming the parameters are different objects, the above method will never
+return true, even if the contents of the two strings are identical.
+
+This is an example of what I hope to accomplish regarding changes in the
+Java language/environment.  The ``String equals'' bug was a defect which
+everyone had made at one time or another.  The developers of the Java
+language realized this and modified the compiler to reduce some of these
+problems.  Hopefully, by pointing out some other potentially hazardous
+elements of the language, the language/compiler developers will account for
+that in future releases.
+
+\chapter{Related Work}
+This chapter will discuss those systems/methods which are similar in
+purpose to JWiz.  Specifically, I will discuss means of debugging, both
+automated and manual.  The systems/methods that I will discuss are
+jtest!\cite{jtest97}, CodeWizard\cite{CodeWizard97}, Lint\cite{Darwin88},
+and personal code review\cite{Humphrey95}.
+
+\section{Automated Debugging}
+%automated debugging
+Automated debugging involves the use of a computer program which checks for 
+sources of error in your programs through a variety of methods.  Some of
+these systems perform the task through static analysis, JWiz is an example
+of this type of system.  Other systems operate dynamically, doing their
+work while the program is actually running.
+
+%automated debugging: jtest!
+jtest! is a dynamic debugging tool which operates by generating input for
+Java applets and applications.  ``Whenever an input (or sequence of inputs) 
+generated by jtest! causes an uncaught runtime exception, jtest!
+automatically reports the type of exception thrown and the input which
+caused it.''\cite{jtest97}  The idea behind this system is to make your programs
+``bomb-proof,'' assuring that regardless of the input, the program will not 
+fail ungracefully.  
+
+Both jtest! and JWiz aim to improve the quality of Java programs and make
+the developer's life easier.  They differ, however, in the methods used.
+The emphasis of jtest! is to ``bomb-proof'' programs against any and all
+types of user input.  JWiz does not have the ability to check user-input.
+In addition to the types of problems that are checked, the difference
+between the tools is that jtest! is a dynamic analysis tool, while JWiz
+provides static analysis.
+
+%automate debugging: CodeWizard
+CodeWizard for Java is very similar to JWiz.  It is a static analysis tool
+which looks for constructs which could indicate the presence of a defect in
+Java source code.  It ``advises the developer of
+violation''\cite{CodeWizard97} of a number of rules.  Following are the
+list of rules from the ParaSoft description of CodeWizard for
+Java\cite{CodeWizard97}.
+
+\begin{itemize}
+\item Avoid unused variables
+\item Explicitly initialize all variables
+\item Control flows into case
+\item Case label inside loop
+\item Avoid hiding inherited instance variables
+\item Avoid hiding inherited static member functions
+\item Constructor should explicitly initialize all variables
+\item Instantiated classes should be made final
+\item Avoid assignment in if-condition
+\item Avoid public instance variables
+\item First present all public methods/data in a class
+\item Avoid hiding member variables in member functions
+\item Implement interfaces nontrivially or abstract
+\item Use ``equals'' over ``==''
+\item Use ``StringBuffer'' instead of ``String''
+\item Provide ``default:'' label for each switch statement
+\item Provide incremental in for-statement or use while-statement
+\item Enforce name format of classes
+\item Enforce name format of instance variables
+\item Enforce name format of methods
+\item Enforce name format of local variables
+\item Enforce name format of interfaces
+\item Enforce name format of method parameters
+\end{itemize}
+
+Although JWiz and CodeWizard for Java have a few tests in common,
+CodeWizard for Java looks for different types of problems than JWiz.
+CodeWizard, unlike JWiz, seems to concern itself with ``style'' issues,
+such as name formats of classes, methods, etc.
+
+Another difference may be usage requirements.  JWiz requires the code to
+compile without errors and, as far as I could tell, CodeWizard does not
+have this requirement.
+
+%automated debugging: Lint
+Lint's original purpose was to locate bugs and inefficiencies in C source
+code.  Later, it was expanded to handle portability issues.  It also looks
+for code which could cause run-time errors and notifies the developer.
+Although the software is for different languages, the two programs are
+similar in their efforts to locate run-time defects through automated
+notification.
+
+\section{Manual Debugging}
+
+%manual debugging: personal code review
+A personal code review can be performed before or after starting to
+compile.  There is much debate on the topic.  Either way, it is clear that
+personal code reviews can result in the removal of a significant number of
+defects.  Personal code reviews are usually performed by printing out a
+hardcopy version of the program and stepping through the code line by line.
+
+One of the advantages of doing a code review is that when a problem is
+discovered, you have the defect's location, and the context in which the
+defect was made.  This typically sets you up for the proper fix.  Are code
+reviews more effective than unit testing?  Most developers can find two to four
+defects for every hour of test.  In contrast, reviews typically yield six to
+ten defects for each hour of code review\cite{Humphrey97}.
+
+An example of the effectiveness of code reviews involves a defect which
+took three engineers three months to find.  When the developers did find
+this defect, the same code was being inspected by another team consisting
+of five engineers.  This second team was not told about the presence of the
+defect, yet they found it within two hours.  In addition to this defect,
+the team also found 71 others.  As is the case with most defects discovered 
+during testing, finding the defect was the most difficult task, the fix was
+trivial\cite{Humphrey95}.
+
+JWiz follows the same concept as a code review, find defects before test.
+Besides the fact that one method is automated while the other is manual,
+there are distinct differences between the two methods.  First, personal
+code reviews are more effective.  This is because JWiz is limited in what
+it can look for.  It only knows what it has been programmed for.  As in
+the example in the previous paragraph, personal code reviews frequently
+result in the discovery of defects that the reviewer was not specifically
+looking for.
+\newpage
+The two methods can be complementary to each other.  First, personal code
+reviews involve the writing down of the defects that are found.  As a
+result, developers could look through the results and note which defects
+occur the most often.  Then the developer could add tests for those defects
+into JWiz.  In addition to this, JWiz could generate new checklist items to
+be used during the review.  JWiz could be used in conjunction with a code
+review since even with this process, defects can be missed.
+
+\chapter{Conclusion}
+\section{Contributions of this Research}
+The major contribution of this research is JWiz itself.  If the data
+produced by this research is representative, then JWiz can truly support
+the Java software development community.  This is evidenced by JWiz
+reporting defects which amounted to seven percent of the total amount of
+time the ICS 613 developers spent debugging in test.
+
+By releasing JWiz to the general development community, it is possible that
+JWiz will provide even better results as programmers create the tests which 
+are most useful to themselves.
+
+\section{Future Directions}
+
+\subsection{Error Correctness Estimation}
+One avenue of research could be an investigation into the likelihood of
+JWiz warnings being functional errors or false positives.  Perhaps by
+stating that a given error has a high percentage of being a real error, a
+developer would be more inclined to look into it.
+
+I could use current results to attach a ``probability'' to each test.
+However, this would only allow me to rate a few of the tests, as a majority 
+of the tests never generated any warnings with which I could evaluate their 
+effectiveness.  Also, the small sample size may not be indicative of the
+tests' general performance.
+
+\subsection{Publicly Available JWiz}
+A possible topic arising from the idea of making JWiz available to the
+general public is the potential of collecting data on the kinds of defects
+made by developers.  I believe my sample size was too small and restricted
+to yield any real data on this topic.  Perhaps there could be a JWiz
+Internet site which would maintain a collection of JWiz tests as well as
+collect the results from JWiz usage.  By allowing people to contribute
+tests, perhaps the effectiveness of JWiz could be increased, resulting in
+more expensive defects to be found.
+
+Obviously, one future effort could be the development of a package to assist
+developers in the creation of new JWiz tests.
+
+\subsection{Shrinking Test Time}
+\begin{quotation}
+  ``The longer the defect is in the product the larger the number of elements
+  that will likely be involved.''\cite{Humphrey95}
+\end{quotation}
+
+Humphrey's quote refers to a fact widely known among developers.  It is
+also known that the test phase can be the most time consuming and
+frustrating of all the development phases.  Anything that eliminates
+defects prior to test is a good thing.
+
+I found that, on occasion, JWiz could save developers non-trivial amounts
+of time in test.  One developer in my study spent just over six hours
+debugging.  When I sent him the results of the JWiz run, he reported that
+one of the warnings was indeed an error.  The error cost him an hour and a
+half, 15 percent of the total amount of time he spent in test.  It turns
+out that this one defect accounted for seven percent of his total
+development cycle for that program.
+  
+A future avenue of research could be the investigation of potential time
+savings as a result of using JWiz.  Perhaps the amount of time spent in
+test will shrink, or maybe people will start to make new errors, resulting
+in no time savings at all.  One could also investigate a reduction of
+testing as a percentage of the total development cycle or whether JWiz
+results in an increase in productivity (lines of code per hour).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

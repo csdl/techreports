@@ -1,0 +1,696 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% size.tex -- 
+%% Author          : Joe Dane
+%% Created On      : Mon Oct 11 16:56:35 1999
+%% Last Modified By: Joe Dane
+%% Last Modified On: Tue Nov  9 10:40:40 1999
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1999 Joe Dane
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\chapter{Size Measurement}
+\label{chap:size}
+
+We begin this chapter with a discussion about why size measurement is an
+important part of the software engineering process. A brief survey of size
+measurement techniques will be followed by a more detailed description of
+the use of lines of code (LOC).  Particular attention will be paid to LOC
+because, for better or worse, LOC continues to be the most frequently used
+size metric. It should be emphasized, however, that LOCC in no way dictates the
+use of a particular size metric.  We then define structure-sensitive
+counting and why it is desirable to have a size metric which considers
+program structure when producing a measurement.  The problems involved in
+using a size measure which counts total program size in an environment in
+which most development proceeds iteratively is then discussed. Finally, we
+close with some comments about the desirability of automated tool support
+in a size measurement system.
+
+\section{Why is size measurement interesting?}
+
+As a start we should be clear about why program size is an interesting
+feature and why we should want to measure it.  There are a number of
+reasons, some of which are:
+
+\begin{itemize}
+
+\item Cost estimation 
+
+\item Validation of estimates
+
+\item Productivity measurement 
+
+\item Documentation
+
+\end{itemize}
+
+\subsection{Cost Estimation}
+
+If the object we are measuring is something
+produced in the early stages of the development process, we may want
+to measure its size so we can estimate the cost of future stages.
+Cost is often expressed in units of time, as in ``we expect the
+product will require $N$ man-months for completion''.  The object being
+measured in this situation may be a formalized requirements description 
+or some abstract representation of the design of the final product.
+
+For example, say we have defined a formalized requirements language.
+Using this language, we describe the product we wish to develop.  The
+language may contain extensive detail, or may be a high-level and more 
+abstract description.  A size metric is applied to the ``program'' in
+this language, and the resulting measurement can be used to predict
+the cost of complete development.  To do this we would need to have
+some idea of how a certain size measurement in the requirement
+language translates into cost.  This could come from historical data
+relating these quantities, or from historical data relating
+requirement size to final program size, and other data relating final
+program size to development cost.  Both of these translations would
+have to consider factors such as development language, problem domain, 
+problem complexity, staff experience, etc.
+
+\subsection{Validation of Estimates}
+Software cost estimation is notoriously inaccurate: programmers seem
+often to be overly optimistic in estimates of their
+productivity\cite{Putnam,Boehm}.  A measurement of the actual size of the finished
+product can be compared to the estimated size, and errors can be used
+to correct the estimation process.  Another way of looking at this is
+to consider a ``database'' of estimated size vs. actual size
+measurements.  Linear regression can then be used to predict cost from
+estimated size for future products.
+
+Linear regression can also be used to gauge the
+confidence we can have in its estimates.  As more
+data is added to our historical database we may find that we can predict with
+increasing confidence the effort required to produce products in the
+future.  If, however, we find that we cannot predict future effort
+with sufficient confidence --- that our size vs. effort measurements
+are not strongly correlated --- then we need to more closely examine both the
+process and the tools we use to analyze it.  We may be able to improve
+estimation  by identifying factors other than program size which may affect 
+cost: target programming language, experience level of the
+programmers, or special factors such as programs requiring
+multithreading, specialized numerical calculations or other
+complications.  Or we might consider using a different size measure,
+something LOCC is perfectly suited for.  After taking these additional
+factors into 
+consideration we may improve our predictive abilities.
+
+\subsection{Productivity measurement}
+
+If a developer has at his disposal a means for evaluating the size of a
+software product, and additionally has a measure of the time spent
+developing the product, then a productivity measure is a simple
+calculation away.  Productivity is clearly an interesting quantity,
+and one which both programmers and their managers would be
+interested in measuring.  However, see Section \ref{dysfunction} for
+some potential complications with using size measurement to deduce
+productivity. 
+
+\subsection{Documentation}
+
+We may be interested in recording the size of a product as part of the
+process of describing and archiving it.  This may be because of
+institutional guidelines requiring such documentation, or may be done
+simply in the course of the programmer's development process.  We may
+also wish to document progress toward some goal which has been
+identified, e.g. in a GQM \cite{Humphrey} model.  For example, a goal
+may have been set to keep program module size below certain levels. 
+
+
+\section{Some types of size metrics}
+
+A large number of size metrics have been devised in both academic and
+industrials settings,  each with its own
+strengths, weaknesses and peculiarities.  Some have passed into
+obsolescence while others continue to be used regularly.  We discuss
+some of these below.
+
+\subsection{Complexity Metrics}
+
+Beginning with Halstead's Software Science, a number of metrics have
+been 
+developed which try to measure the complexity of a program, and to 
+associate that complexity with a number.  
+
+Halstead proposed measuring program size
+in the following way.  A language has some number of distinct primitive
+operators.  Call the number of these operators $\eta_{1}$.  Additionally, in
+any piece of code there will be some number of distinct operands.  Call this
+number $\eta_{2}$.  Additionally, let $N_{1}$ and $N_{2}$ be the total 
+number of operator and operand occurrences.  Halstead defined three
+metrics based on these primitive quantities.  
+
+The {\em vocabulary} of the program is given by
+
+\[\eta = \eta_{1} + \eta_{2}\]
+
+The {\em length} of the program is given by
+
+\[N = N_{1} + N_{2}\]
+
+And the {\em volume} of the program is given by
+
+\[V = N \log_{2} \eta\]
+
+Halstead meant for these metrics to be applied to small units, such as 
+individual functions or procedures, and the total program size was to
+be found by summing the individual sizes.
+
+Halstead's approach is significant today mainly because it was one of
+the earliest attempts at applying rigorous metrics to software.
+Software Science was intended to be just that: a scientific (and
+therefore precise) quantification of software and the software
+development process.  However, the specific proposals Halstead
+advanced have been generally criticized and found wanting.  One
+problem \cite{Lassez} is Halstead's neat division of program text into 
+the mutually exclusive categories of ``operator'' and ``operand''.
+This division seems reasonable when considering some languages,
+e.g. FORTRAN and Pascal, but in other languages such as LISP and other
+functional languages the status of an expression may change from being 
+a value (operand) to being a function (operator).
+
+A more refined measure of complexity was provided by McCabe.  The
+basic idea is to transform the written description of the program into 
+a control graph, and to then assign a size to the program as follows:
+
+\[ N = e - n + 2 \]
+
+where the graph has e arcs and n nodes.  This number is referred to as 
+the ``cyclomatic'' complexity of the program.  The complexity of a program
+is then related to its size.  
+
+Norman Fenton has written about the utility of cyclomatic complexity as a
+measure of program size\cite{Fenton}.  Fenton claims that, while cyclomatic
+complexity may be useful in some situations (for example, in predicting how
+difficult a program will be to maintain) it does not correspond to an
+intuitive understanding of complexity, and therefore is not useful in
+prediction and estimation.  Fenton gives an example of two programs, one
+simple and the other seemingly complex, which have the same cyclomatic
+complexity.
+
+\subsection{Function Points}
+
+Function point analysis has probably been the most widely adopted size 
+measure, aside from lines of code.  Function points were
+first defined by Allan Albrecht in 1979.  
+
+Function point analysis works by examining the function of a software
+product.  As Albrecht says, the approach is ``to list and count the
+number of external user inputs, inquiries, outputs, and master files
+to be delivered by the development project'', and to weight these
+counts by the relative ``value'' of the component.  Function point
+analysis has a number of attractive features, including:
+
+\begin{itemize}
+
+\item Function point analysis can arrive at a size measure relatively
+early in the development process.  No code is required.  If a customer 
+can supply a detailed description of the product to be developed,
+function point analysis can arrive at a size for the product.  Since
+the inputs to function point analysis are the same requirements
+specifications needed to develop the product itself,  a size estimate
+can be produced almost at the same time as the requirements.
+
+\item The customer is also more likely to be able to relate to a
+measure given in terms of functional units than in lines of code,
+which may be meaningless to a person not versed in software
+development. 
+
+\item Function points are largely language independent.  It makes
+little difference whether the final product is implemented in COBOL,
+C++ or Basic, since the analysis is concerned only with the abstract
+functionality of the product. Function points are also independent of
+the coding style used in writing the code.
+
+\item Function points are consistent.  There is now a International
+Function Point Users Group, which defines standards and concepts to
+promote consistency between different applications of function points.
+
+\end{itemize}
+
+Function point analysis has proved its usefulness simply by the fact
+that it continues to be used today, while other metrics have vanished
+into academic oblivion.  Despite its obvious utility, however, there 
+are serious problems with the function point approach:
+
+\begin{itemize}
+ 
+\item Function points, as originally conceived and as usually
+practiced, have a limited domain of application.  One can tell by the
+phrases used by Albrecht --- ``master files'', ``user input screens'' --- 
+that function points began in an environment of data processing.
+How should one go about applying function points to, say, a large
+physics simulation problem, or a game?  
+
+\item There are problems in classifying function point
+units. \cite{Kitchenham97}.  Functional items are identified and classified 
+along an ordinal scale from ``simple'' to ``complex''.  Kitchenham
+identifies problems with adding items across classifications.
+
+\item Kitchenham also identifies problems with the predictive ability 
+of function points.  Function points in themselves are mostly
+useless.  They are interesting in that they allow estimation of other, 
+more important quantities, like development effort.  As it turns out,
+it may be difficult to have confidence in predictions made based on
+function point analysis.  Graham Low and Ross Jeffrey discovered a 30\% 
+variation {\em within a single organization} in estimation based on
+function point counting.
+
+\item Function points are not immediately amenable to automatic
+  counting.  See \cite{Banker} for a counter-example, though.
+
+\end{itemize}
+
+Function points will continue to be used in industry, and will be
+continued to be studied and refined in academia.  But despite their obvious
+utility, they have not been able to dislodge the most popular, and
+equally troubling measure, lines of code.
+
+
+\subsection{Lines of Code}
+
+The simplest measure of them all, lines of code (also referred to as
+LOC, SLOC, DSI (Delivered Source Instructions)) is like an unpleasant
+relative : its faults are obvious to everyone, but no one can seem to 
+make it go away.  LOC has problems equally as troubling as those
+associated with function points, but it remains the unit most often
+used when discussing program size.  I will enumerate some of the
+problems with using LOC in measuring size, then discuss some reasons
+why, despite the problems, its use continues.
+
+\subsubsection{Measurement Dysfunction}
+\label{dysfunction}
+
+Werner Heisenberg, the great German physicist, made many contributions to
+physics.  The one he is most often remembered for is, of course, what has
+become known as the Heisenberg Uncertainty Principle, which states that
+there is a limit to the knowledge one can have simultaneously about the
+momentum and position of a particle.  The principle is often characterized
+(somewhat misleadingly, I think) thus: ``The act of taking a measurement
+inevitably disturbs that which was being measured.''
+
+The application of the Uncertainty Principle to software
+engineering can be stated, ``The act of measuring program size changes 
+the size of the program being measured.''  No laws of causality need
+be violated for this to be true.  All that need happen is that the
+programmer, the one responsible for producing the code to be
+measured, feel that his performance will be evaluated based on the
+results of the measurement.  If these conditions obtain, then the
+programmer may be pressed into manipulating the very code he is
+producing, with the measurement more in mind than the function of the
+code.
+
+The most obvious and simple example of such a situation is when measuring
+productivity.  Rewards may be given, or penalties assessed, depending on
+the programmer meeting some productivity goal.  When the measure of
+programmer activity is something tied to the behavior of the program, like
+function points, then such productivity measures may be meaningful.  It is,
+however, quite another story with LOC, which can be inflated or deflated
+with ease by experienced programmers.  Even when code must pass review, and
+even when strict code formatting standards are enforced, a programmer who
+is primarily concerned about meeting goals expressed in LOC will be able to
+manipulate his output to that end.  The result may or may not be poor
+quality code.  At any rate, it is generally agreed that the programmer's
+focus should be on solving the problem at hand, and not artificially
+meeting productivity goals.
+
+The conclusion one draws from this is simple and drastic: LOC is
+incompatible with productivity measurement when there is some
+possibility that the productivity measurement might affect the
+programmer.  Productivity measurement must either take place using
+some measure other than lines of code, or must not be allowed to
+affect the programmer.  The only way a programmer can feel certain
+that his productivity measurement will not be used against him is if
+he keeps it secret.  It is this option we advocate with LOCC.
+
+\subsubsection{Size counting in a personal software process}
+
+Watts Humphrey, of the Software Engineering Institute at Carnegie Melon
+University, has described a new direction in software process development
+\cite{Humphrey}.  Instead of formulating a software process as an
+organization wide process, the Personal Software Process focuses on the
+individual programmer.  Use of the PSP, or any other process centered on
+the individual, does not preclude participation in an organizational
+process.  Nor does the PSP exist primarily as a response to the measurement
+dysfunction problems outlined above.  One might even say that the PSP
+solves the measurement dysfunction problem as a side effect of its focus on
+the developer.
+
+In any case, LOCC was designed with a personal software process in
+mind.  LOCC as a tool is intended to be used by individual
+programmers to help them gain insight into their personal software
+process.  Data produced by LOCC is generally provided as text files of 
+some format, which can be analyzed by the programmer and delivered to
+management as the programmer sees fit.  While there is nothing in the
+design of LOCC which limits its use to such circumstances, it is this
+personal, individual framework in which LOCC has thus far been applied.
+
+\subsubsection{Problems with LOC}
+
+Arguably the most vivid problem with the use of LOC as a program size metric
+is its tendency to cause code bloat when used to derive productivity
+measures.  If one envisions a process in which process data can be
+kept private to the developers producing the code, then this problem
+is ameliorated.  Other problems with LOC still exist, however.
+
+The second major fault often found with the use of LOC is that the
+precise definition of a ``line of code'' is actually rather difficult
+to pin down.  A strict interpretation in which each newline is counted 
+does not seem to be best, especially when considering the free-form
+languages which are popular today.  A decision to ignore blank
+lines follows immediately from this.
+
+What about lines with more than one executable statement, or lines
+with a partial statement which is continued on the next line?  Is a
+line which contains a series of complex logical tests equivalent to a
+line which simply increments a counter?  Clearly, some lines are more
+``expensive'' than others, and a measure which counts all lines
+equally will miss this complexity.  
+
+A decision must be made on how to count comments, and the usual
+decision \cite{Humphrey,Boehm,Grady} seems to be to ignore them.  The
+decision seems somewhat arbitrary, and could even lead to poor
+documentation, which is another perpetual bane of the programmer's
+existence.  LOCC's default size metrics, however, follow tradition and
+ignore all comments, although alternative decisions could easily be
+implemented with minimal changes.
+
+\subsubsection{Why LOC is still an interesting measure}
+\label{why-loc}
+
+The two fundamental reasons why LOC persists as a measure of program size
+are convenience and familiarity.  A na\"{\i}ve line counting tool can be
+written in a matter of minutes.  Alternatively, programmers can often use
+general line counting utilities provided by their programming environment,
+like the UNIX ``{\tt wc}'' utility\cite{wc}.  Unlike many other size
+metrics, LOC does not require any deep analysis of the design,
+requirements, or structure of the program.  The flip side of this is,
+naturally, that LOC is not directly applicable to the measurement of these
+features.  LOC is simply ``lines of code'', not units in an abstract design
+or specification language.
+
+Also, and most importantly, programmers tend to think
+naturally in terms of LOC.  Arguably the most important use of the results
+of a program size measurement is in developing an accurate size estimation
+regime, leading from there to more accurate cost estimation.  Estimation
+always asks a question, ``How large do I think this program element will be 
+when coded?'', and effective estimation depends on accurate answers to this 
+question.  Since programmers are used to thinking in terms of lines and not 
+in terms of cyclomatic complexity or expression count, they should feel
+more comfortable answering this all-important question in terms of lines of 
+code.  While it could be argued that programmers simply need time to
+adjust to thinking in terms of other size metrics, as long as development
+is done using text-based languages in text-based environments, lines of
+code will probably be the most comfortable metric for developers.
+
+\subsection{Other program size metrics}
+
+In addition to Halstead's metrics, complexity metrics, function points, and 
+lines of code, other metrics have been proposed over the years.  Briefly,
+some of the size metrics proposed are:
+
+\begin{itemize}
+
+\item Storage size (in bytes) of the program text or compiled object
+      code
+
+\item Number of executable program statements
+
+\item Number of input tokens \cite{Levitin}
+
+\item Abstract information flow \cite{Tausworthe92}
+
+\end{itemize}
+
+\section{Structure sensitive counting}  
+
+Although LOC as a size metric does not strictly require analysis into the
+structure of a program, it has been shown to be beneficial to add this as a
+feature of a line counting regime\cite{Humphrey,Laranjeira90,Lorenz}.
+Knowing the number of lines in a program unit is important in its own
+right, but one also may be interested in metrics such as LOC per function,
+module, class, or other syntactic unit.  One important reason for gathering
+this sort of data is that it may help the programmer better understand his
+development process.  It is important for the developer to become aware of
+his habits and routines in order to make changes which improve the
+development process.  Productivity, in terms of LOC per unit time, is one
+such interesting statistic.  Other interesting statistics (assuming the
+developer is using an object-oriented programming environment) are the
+number of lines per method, the number of lines per class, and the number
+of methods per class.  Once the developer has analyzed a number of his work
+products, he can begin to see the trends in his personal development
+process.  He may be able to compare these numbers to those of other
+developers in an organization, or against organizational or personal goals.
+There may be, for example, a desire to limit the number of lines per
+method, to keep the logic in each method as simple as possible.  A LOC size
+metric can work in such a situation, but the metric must be enhanced to
+have knowledge about the structure of the development language.
+
+Another important reason to be interested in structure sensitive sizing is
+that it may help cost estimation to be more effective and accurate.  A
+typical cost estimation regime \cite{Humphrey,Walston,Laranjeira90} works
+something like this, again assuming a development environment in which the
+terms ``class'', and ``method'' make sense:
+
+\begin{enumerate}
+
+\item Produce a design document.
+
+\item From the design, enumerate the classes needed.
+
+\item For each class, enumerate the methods needed.
+
+\item For each method, categorize the method along a scale from simple 
+to complex.
+
+\item Assign a cost to each method, and sum to find the total cost.
+
+\end{enumerate}
+
+As a concrete example, consider a developer who has completed a design and
+is about to begin coding.  The design has been formalized as a UML diagram
+which displays the classes, attributes, and relationships between entities.
+Each possible method which can be called must be considered and classified
+according to its expected complexity.  The developer, who has previously
+collected data on the actual sizes of classes and methods he has produced,
+can use his historical database to assign an expected size to each method.
+By summing the expected sizes of each method, and adding the expected sizes
+of other class members, the developer arrives at an estimated size for the
+project.  The developer can then use historical productivity measurements
+to estimate the time which must be alloted to the current project.
+
+The routine described here is a simplification, of course, but
+generally describes many of the cost estimation systems in existence.
+In order to use such a system, the developer needs to know such numbers 
+as his historical cost in developing a complex method.
+
+Finally, historical data on such structure sensitive information as
+average number of methods per class may be used to validate new
+designs.  If a new design is proposed which is out of line with
+historical data, it may be worthwhile to spend extra time on the
+design to see if it may be improved.
+
+The important insight, and one of the most interesting and valuable
+contributions of LOCC, is that the inclusion of a parser in the size
+measurement tool can offer extraordinary flexibility when producing
+size measurements.  Should comments be counted or not?  A parser can
+recognize comments and ignore them, count them, or count them with a
+weight assigned by the type of the comment.  For instance,
+documentation comments can often be syntactically recognized, either by
+their location in the parse tree (e.g. LISP) or by convention (e.g. Java,
+whose documentation comments begin with ``/**'').  
+
+This flexibility is useful because it provides an opportunity to
+empirically determine which size metric is best correlated with effort.
+Decisions on what to include in a size count are often motivated by
+convenience instead of by a real consideration of the effect of the
+decision.  Frequently, lines of code are counted simply because they are
+easy to count.  Once a parser is included in the size metric it is a
+relatively simple matter to make and change decisions on what to count and
+on what weight to give to those things that are counted.  These decisions
+can be examined by empirically testing the predictions based on the
+measurements derived from the decisions.  In this way, the developer can
+converge on a more accurate size measure.
+
+A size measurement tool which incorporates a parser for the language
+being counted can count lines, statements, expressions, or weighted
+combinations of those or any other syntactically recognizable
+features.  LOCC encourages the use of parsers in its size metrics, and 
+includes parsers for the two programming languages (Java and C++) it 
+supports, but does not require it.  Again, LOCC values flexibility
+above all other virtues.
+
+
+\section{Size measurement for iterative development}
+\label{sect:diff}
+
+There is an important aspect of program development which is
+often overlooked in discussions about size measurement.  This is that
+a large percentage of software development begins with a base of old,
+previously developed code which is adapted to suit the needs of the
+current project.  Walker Royce, in a talk at the 1997 International
+Conference on Software Engineering, put it this way:
+
+\begin{quotation}
+  \em
+  In a modern development process the most important software metrics are
+  simple, objective measures of how various perspectives of the
+  product/project are changing.  The absolute measures are usually much less
+  important than the relative changes with respect to time.
+\end{quotation}
+
+It should be emphasized that there is very little in the size
+measurement literature about iterative development.  Most software
+size metrics focus on measurement of an entire program unit in
+isolation.  While this research is certainly important, it ignores the
+reality that most software development is concerned not with producing
+code from scratch but with making modifications to existing code.
+There are a number of ways in which this modification takes place:
+
+\begin{itemize}
+
+\item Code may be reused without modification, as when a previously
+developed library is used in new development.
+
+\item Code may be modified during the course of bug fixing.  No major
+modifications are enacted.
+
+\item Code may be improved, or features added, during the course of
+preparing a new release or version.  In this case, major modifications 
+may or may not occur.
+
+\end{itemize}
+
+The first item above is not really of concern to us.  No effort is
+expended on using the old code, and we can simply take the old code to 
+be part of the landscape, in much the same way as we do not count the
+C libraries when counting programs developed in that language.  The
+second and third items, however, present a problem.  Assuming that the 
+program text itself is modified, how are we to distinguish new code
+from old?  A simple line count will clearly not suffice in this
+circumstance.  Possibly we can use something like the UNIX ``{\tt diff}''\cite{diff}
+utility to simply compare versions of the source files, and take as
+the number of new lines the number reported by {\tt diff}.
+
+However, we need to assess what we mean by the ``difference'' between two
+versions of a program.  We are generally interested in program size
+because of its relation to cost, in terms of the number of man-hours
+required to produce a product of a given length.  Therefore, we would
+like a difference measure which would correlate well with effort.
+Changes which are ``easy'' to make should be afforded less weight that 
+changes which are ``hard''.  
+
+Making this determination is, however,
+not always straightforward.  Programs like {\tt diff} have no information
+to assist them in this determination.  Since we have already identified
+sensitivity to program structure as a desirable characteristic of a size
+measure we can appeal to the same intelligence which endows a measure with
+this ability to solve the diff problem.  Simply put: size metrics which
+contain parsers can make more accurate measurements of size difference than 
+simple {\tt diff\/}-like tools can.
+
+While relatively little has been said in the literature on the diff
+problem, there has been quite active research in methods to quantify
+software reuse, especially since the advent of object oriented languages.
+This research may not be applicable to the problem at hand, however.
+Often, object component libraries can be classified as in the first
+category above, as code which is used without modification.  In that case,
+there is no measurement problem to worry about.
+
+Other researchers have proposed systems for categorizing reused code,
+depending upon the amount of intervention required.  This research is
+often quite interesting.  For example, NASA's Goddard Software
+Engineering Laboratory \cite{Fenton} arrived at a 4 level
+categorization of code, from reused verbatim to completely new code.
+Other systems categorize each line in a source
+file depending on whether it was unmodified, modified, or new,
+assigning a weight to each line.  Tausworthe proposed a system in
+which new code lines are given a weight of unity and modified lines
+some value less than one.  His categorization is shown in Table
+\ref{table:taus}. 
+
+\begin{table}
+  \centering
+  \begin{tabular}{|lr|} 
+    \hline
+    New code   &  1.0 \\
+    Reused --- lines of code in modules which will be reused &  0.27 \\
+    Added --- lines added to reused modules & 0.53 \\
+    Changed --- lines from reused modules which are changed & 0.24 \\
+    Deleted --- lines deleted from reused modules & 0.15 \\
+    Removed --- lines deleted from modules as a whole entity & 0.11 \\
+    Tested --- lines reused without modification which still required
+    testing & 0.12 \\
+    \hline
+  \end{tabular}
+  \caption{Classification and weights of modified code}
+  \label{table:taus}
+\end{table}
+  
+
+The problem with many of these systems is that, despite their
+potential utility, they are not supported by any automated
+tools. Developers are left to themselves to determine how much code is
+new and how much is reused.  The result can be incorrect counting,
+decreased productivity due to the time it takes to do the analysis,
+and increased developer dissatisfaction with the software development
+process.  A programmer can't help but think, while sorting through
+lines of code, that this is exactly the sort of thing computers were
+meant to do.
+
+
+\section{Automated vs. manual size counting}
+
+Despite the general lack of agreement on which size measure should
+actually be used, everyone seems to agree that tools are needed to
+assist in the actual data collection.  A software development process
+needs to be as unobtrusive as possible to encourage compliance and
+avoid burn-out.  Requiring programmers to manually count lines,
+tokens, or even function points places an unacceptable burden on
+people whose desire, usually, is to be coding, not counting.
+
+There are very few descriptions of such tools in the literature.  Most 
+academic literature on size counting focuses on the metric, or on their
+validation or interpretation.  Rajiv Banker, et al\cite{Banker}
+describe their experiences in developing an automated function point
+counter.  They were using an application specific development system in
+ which objects were stored in a central repository.  A mapping from language 
+objects to function points was defined, and this mapping was used to 
+perform an automatic function point analysis on objects in the repository.
+   
+At least within the UNIX community, the utilities {\tt wc} and {\tt diff}
+are usually considered the standard tools for program size measurement.
+{\tt wc} computes word and line counts from ASCII input files, and {\tt
+  diff} can be used to compute the difference between two ASCII files.
+The primary advantage displayed by these tools are their ease of use.  A
+simple script can be written to count large numbers of files.  However,
+neither tool can be used by itself to remove comments and blank lines from
+size counts.
+
+Since a simple regular expression can match blank lines and at least most
+types of program comments, a slightly smarter version of {\tt wc} is not
+terribly difficult to create.  Tama Software\cite{tamasoft} has produced a
+program which can count lines of code after removal of comments from
+several programming languages, including C, C++, Basic, and FORTRAN.
+Languages such as Perl\cite{programming-perl} with extensive regular expression
+capabilities can also be used to create similar tools.
+
+While regular expressions are sufficient for handling blank lines and
+(most) comments, they cannot be used to recognize more complex language
+structures such as classes and methods.  For this, one needs some sort of
+parser.  JavaCount\cite{javacount} was an attempt at creating an ad-hoc
+parser for the Java language to recognize such structures while performing
+line counts of programs.  JavaCount was successful in that it became fairly 
+widely used, but suffered from incomplete coverage of the language and
+regularly erupting bug reports.  JavaCount was also limited, naturally, to
+counting Java source files, and could not be extended in any way.
+
+LOCC contains parsers generated by JavaCC\cite{javacc-website} and has
+proven to be much more robust than JavaCount.  It was designed for easy use 
+and extension, and constrains size measures only by requiring them to be
+implemented as Java classes satisfying certain interfaces.  Any size
+measurement which can be automatically collected can be supported by LOCC.
+Even metrics which do not appear to lend themselves to automated counting,
+like function points, can sometimes be adapted to an automated system, as
+was demonstrated by Banker in the study mentioned above.

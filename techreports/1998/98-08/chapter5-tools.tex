@@ -1,0 +1,704 @@
+
+\chapter{Software Tools}
+
+In order to carry out the case study, I developed two software tools: the
+first to automate the PSP and the second to track errors found in the PSP
+projects.  Both tools were written using the Progress 4GL/RDBMS
+\cite{Progress98}, version 6.3F01, running on SCO Unix, Release 3.2v4.2,
+using a character based interface.  This chapter will describe the two
+tools; including requirements, operational scenarios, structure, and areas
+for improvement.
+
+\section{PSP Tool}
+
+\subsection{Requirements}
+
+Obviously, the main requirement for this package was the ability to
+reliably automate all the PSP calculations so that I could check the
+original PSP data for errors.  Since for this purpose I was the only user,
+a clear user interface and flexible functionality weren't very important.
+However, I also wanted to go beyond what was necessary for simple data
+checking and explore some ideas about a fully integrated set of PSP tools.
+
+When I first learned the PSP, I almost immediately began creating various
+small tools to help me follow the PSP processes more efficiently.  Some of
+these, such as a Java LOC counter were assignments in the PSP course
+itself.  I created others, such as a size estimation applet, simply because
+I got tired of doing various processes by hand.  Even though these tools
+relieved me of a lot of tedious work, it still seemed as though there was a
+tremendous amount of overhead involved in using the PSP to do actual
+software development.  I would have a stack of PSP forms (with the correct
+one never on top) to the left of my keyboard, a stack of prior projects
+beyond that, {\it A Discipline for Software Engineering} (never open to the
+right page) for process scripts and form instructions under my elbow, and
+to the right all the papers needed for whatever software project I was
+working on.  Of course, my pencil, eraser, and calculator always seemed to
+be {\it under} one of these papers whenever I needed them! On the computer,
+I had to continuously invoke various tools, provide input, and write down
+results on one of the PSP forms.  All this led me to form the requirement
+that the new tool should completely eliminate any need for paper, including
+the need for the textbook for process scripts and form instructions.  (Of
+course, the book is still needed to {\it learn} the PSP, but not as a
+day-to-day reference guide.)  It should seamlessly combine all tools in
+such a way that the user never has to consciously invoke a tool or transfer
+data from one tool to another.
+
+Closely related to this was the requirement that the new tool should
+provide as much guidance as possible in following process scripts.  The
+user should not have to remember the order of the phases, the order of the
+forms within each phase, or which fields on a particular form are required
+for a particular phase. The tools should provide context-sensitive help
+screens and help messages.  The computer should also calculate all possible
+values.  It should provide derived values, such as {\it LOC per hour,
+  Actual}, to the user in display rather than update mode.  For other
+values, such as {\it Time in Phase, Total, Plan}, it should at least give
+the user a default number to override.
+
+Since PSP results aren't any better than the data that goes into them,
+another requirement was that the tool should do as much collection of
+primary data (time, size, and defects) as possible. Data, such as defects,
+should be easy to collect so that a user is less likely to have an
+incomplete record of his or her work.  The system should also collect data
+automatically, whenever possible, so that a user is less likely to have an
+inaccurate record of his or her work.  For example, the user should not
+have to fill in time log entries or tell the tool how many LOC are in a
+certain program.  However, the user should be able to override or correct
+any automatically collected data.
+
+One of the most aggravating things about doing PSP by hand is the transfer
+of data between projects.  Size and time estimation require data from as
+many prior projects as possible.  The user must either maintain a
+spreadsheet of this data, or continually leaf through a stack of former
+projects, looking for the relevant fields.  Even more data is required from
+the most recently completed project, in both the planning and postmortem
+phases.  The user must find the PSP forms for this project, and then
+reference various values at least 45 times (for PSP2), not counting size
+and time estimation.  Even worse is the situation where a programmer
+discovers an error in PSP data for an older project or decides to declare a
+prior project an outlier.  Recalculating to date values through prior
+projects up to the current project is no fun at all!  Therefore, a
+requirement for the new tool was the ability to do inter-project
+management.  The tool should allow the user to categorize each project by
+PSP process, programming language, and process type; as well as allowing
+certain projects to be marked as outliers.  Other than the PSP process, the
+user should be able to change any of these characteristics even after the
+project is complete.  The tool should have the ability to recalculate all
+PSP data for all prior projects at any time.  Furthermore, when the user is
+working on a new project, the tool should automatically reference relevant
+prior projects to provide all appropriate ``carry forward'' values.
+
+Since reports make collected PSP data even more useful, the ability to do
+at least the reports outlined in {\it A Discipline for Software Engineering}
+was another requirement.
+
+A final requirement was that the tool should be as flexible as possible.
+Since Humphrey intended that developers should modify the PSP for their own
+needs, users should be able to do such things as define new processes,
+change existing process definitions, maintain individual coding standards,
+or add new defect types.  Users should also be able to customize the system
+by such actions as modifying help screens, adding or modifying table
+entries for programming languages, or changing menu option descriptions.
+
+\subsection{Operational Scenarios}
+
+Operational scenarios are descriptions of users actually using a system.
+They provide a story-like rather than manual-like overview of an
+application.  They are not intended to cover all system functions or every
+possible action by the the user.  Instead, they provide small
+representations of what it would be like to actually use an application.
+These scenarios are examples of the way I actually used the tool while
+checking the student data, and illustrate how the tool could be used by
+future PSP users.
+
+\subsubsection{Scenario One: Starting a Project Using PSP1}
+
+A developer decides to start work on a new software project using PSP1.
+She goes to the main PSP menu and selects ``Work on a Project''.  The menu
+disappears and the header for the main project screen comes up. This header
+can be seen on the top part of the screen shown in Figure
+\ref{fig:toolSample1}. The system prompts her for a project number.  Since
+she is starting a new project, she follows the instructions in the help
+message and hits return on the blank field.  
+
+\begin{figure} [htp]
+    {\centerline{\psfig{figure=sample1.eps}}}
+    \caption[PSP Tool: Main Project Screen]{\label{fig:toolSample1}
+    {\em PSP Tool: Main Project Screen}}
+\end{figure}
+
+The system looks in her personal profile for the next project number to
+assign, verifies that it hasn't already been used, and assigns it to the
+new project, displaying ``29'' on the screen. It then prompts her for the
+other data elements needed for project management: process, programming
+language, programmer, project name, project type, date started, and outlier
+status.  Based on system information and her personal profile, the system
+provides defaults for process, programming language, programmer, date
+started, and outlier status.  The developer accepts these values and fills
+in the project name and assigns the project a type of ``N'' for new.  She
+then presses F1.
+
+The system sees from the header data that she will be using PSP1.  It finds
+the database record previously created to define process ``PSP1'', builds a
+list of the phases that are involved, and displays their names on the
+screen.  There are two additional columns for {\it Planned} time in phase
+and {\it Actual} time in phase.  The developer knows that although she can
+arrow up and down over the phase list and select any one, the first phase
+listed is the phase she should use first if she plans to follow the
+standard process script.  Therefore, she presses return on ``Plan''.
+Immediately an asterisk appears by ``Plan'' on the screen, showing that
+this is the current phase.  Under the {\it Actual} Time in Phase column,
+the amount of time spent in Planning is incremented second by second.
+
+Immediately, a box appears titled, ``Problem Description''.  She types in
+``Client LYX requests WP interface to dictation sequences.'' and presses
+F1.  The box disappears and a new box comes up titled, ``Requirements
+Statement''.  She types in a number which references the hardcopy
+requirements document generated in a planning meeting the previous week,
+and presses F1.  A text editor then fills the screen with a document
+already named, created, and pulled up for her, titled ``Produce a
+Conceptual Design''.  She takes about half an hour to do this work, and
+exits the editor. A new box appears titled ``Program List'', which prompts
+her for the code location and the names of the programs she will be adding
+or modifying.  The code location defaults to the one stored in her personal
+profile, so she just types in the name of the one program she will be
+modifying and the names of four new ones. After she presses F1, the system
+automatically counts and displays the number of lines in each program (zero
+for the new ones).  It also makes backup copies so that after development
+it can determine the number of lines that were added, modified, or deleted.
+
+Then the ``Size Estimating Template'' box appears, which prompts the
+developer for all the fields in the top part of the standard Size
+Estimating Template.  After she fills them in and presses F1, another box
+appears, showing the results of all calculations done from the lower part
+of the standard Size Estimating Template.  There is a message in the box
+informing her that calculations have been done, ``Using projects from
+current language/process/type.''  The ``Project Plan Summary'' box appears,
+showing default values for {\it Program Size (LOC), Plan}: base, deleted,
+modified, added, reused, and total new reused.  She glances at them and
+presses F1.  Then the time estimation box appears, with an estimate for
+total time and a message ``From regression calculation on estimated object
+LOC and actual hours.''  She accepts the default value of 661 minutes and
+presses F1.  The system uses to date percentages from her most recent
+similar project to distribute the time across the phases, and again
+presents her with default values.  She presses F1 again and is returned to
+the main project screen.  The screen now displays the planned values for
+each phase, and ``00:33:35'' under {\it Actual} for the phase ``Plan'', as
+shown in Figure \ref{fig:toolSample1}.  She moves the cursor down one line
+to ``Design''.  Invisibly, the system creates a time log entry for the
+planning phase.
+
+
+\subsubsection{Scenario Two: Defect Density Report} 
+A software engineer has been conscientiously using the PSP for about six
+months, and wonders if the quality of his work on new projects is improving
+or not.  He goes to the main PSP menu and selects ``Reports''.  The system
+displays the Reports Menu and he selects ``Defect Densities''.  The system
+hides the Reports Menu and displays the driver screen for the Defect
+Density Report.  The screen prompts him for process, project type,
+language, date range and display type. Using his default values stored in
+database file, it fills in ``PSP2'' for process, ``N'' for project type
+(new projects), ``Progress'' for language, 06/12/98 and 09/04/98 for date
+range (first and last project completed of type ``N'' using PSP2), and
+``D'' for display type.  He doesn't need to change anything, and presses F1
+to proceed.  Instantly, a box appears with a line for each of the 25 new
+projects he completed in Progress using PSP2 during the selected date
+range.  For each project the system displays project number, new and
+changed LOC, number of defects, and defects per KLOC.  The last line
+provides total values and the average number of defects per KLOC, as shown
+in Figure \ref{fig:toolSample2}.  He is happy to see that the later
+projects do appear to have fewer defects.
+
+\begin{figure} [htp]
+    {\centerline{\psfig{figure=sample2.eps}}}
+    \caption[PSP Tool: Defect Density Report]{\label{fig:toolSample2}
+    {\em PSP Tool: Last Page of Multi-Page Defect Density Report}}
+\end{figure}
+
+\subsubsection{Scenario Three: Adding a Defect Model}
+Note: In the PSP tool, {\it defect types} are used as defined in {\it A
+Discipline for Software Engineering}, and refer to general defect
+categories such as Syntax, System, Environment, and Data. I have added a
+new classification, {\it Defect models}, which refer to specific defects
+within a defect type, such as ``Missing semicolon'' or ``Confusing field
+label''.  There are three reasons for this setup: 1) The user can record in
+the Defect Recording Log exactly what went wrong.  This eliminates the
+mental overhead of deciding which defect type to use and cuts down on
+typing in explanatory comments.  2) It provides for a more consistent
+classification of defects.  3) It allows for finer grained defect reporting
+without extra work and without sacrificing any of the functionality
+required to produce the standard PSP defect reports using defect type.
+
+A programmer notices that when recording defects he is continually using
+the defect model code ``GSYN'' for ``General Syntax Error'' and then using
+the comment line to explain ``CUM function set error''.  He decides that he
+wants to add a new defect model to the system to make his defect recording
+process faster. He goes to the main menu and selects the ``Maintain
+Tables'' menu option.  A new menu appears.  He then selects the ``Defect
+Models'' menu option.  The menu disappears, and the Defect Model Code
+Maintenance screen appears.  
+
+Following the instructions in the help message, he decides on a new code
+``CE'' and types it in.  He then enters a description ``CUM functions:
+incorrect use'' and moves to the next field which is ``Defect Type Code''.
+He doesn't know what the defect type codes are, so he presses F6 and a list
+of all defect types appears.  Using the down arrow key, he moves through
+the list until ``Syntax'' is highlighted and presses return.  The defect
+type code ``SYN'' is filled in automatically, and the addition of a new
+defect model is complete.
+
+The next time he is testing, he finds a defect caused by his incorrect use
+of a CUM function.  He opens a new defect in the Defect Recording Log.  The
+system numbers the new defect, fills in the date automatically, and places
+his cursor on the ``Model'' code field.  He doesn't remember the new code
+for CUM errors, so he presses F6 and is presented with a list of all defect
+models.  He types in ``CUM'' and presses return.  ``CUM functions: used
+incorrectly'' appears under his cursor, as shown in Figure
+\ref{fig:toolSample3}, and he presses return again.  ``CE'' is
+automatically placed in the defect model code field.  No comment is
+necessary.
+
+\begin{figure} [htb]
+    {\centerline{\psfig{figure=sample3.eps}}}
+    \caption[PSP Tool: Defect Recording Log]{\label{fig:toolSample3}
+    {\em PSP Tool: Browsing for a defect model while adding a new entry to the Defect Recording Log}}
+\end{figure}
+
+\subsubsection{Scenario Four: Correcting a Completed Project}
+A software developer has an extra half hour late one Friday afternoon.  She
+doesn't want to start anything new, so she starts going through the stack
+of papers that tends to accumulate on one of the back corners of her desk.
+She finds a slip of paper that says: ``McNall lab interface, 3 hours design,
+03/22''.  She remembers that one Sunday back in March she did some work at
+home and never recorded it in her PSP database.  
+
+She turns to her screen and selects ``Work on a Project'' from her main PSP
+tool menu.  The system displays the main project screen and prompts her for
+``Project\#''.  Of course she can't remember the project number, so she
+presses F6 and selects the correct project from the list that appears.
+When the header fields appear, she changes the project status to
+``Incomplete'' and presses F1.  Following the help message on the bottom of
+the screen, she presses F5 and the project time log appears.  She verifies
+that no time was recorded for March 22.  Again following the help message,
+she presses F9 and creates a time log entry for the three hours of design
+work.  Then she presses F4 and returns to the main project screen.  She
+selects the postmortem phase.  All the recalculations take about 1 second.
+She then presses the space bar as 6 boxes showing postmortem data appear.
+The system automatically marks the project as complete, and returns her to
+the main project screen, where she presses F4 twice.  When the system
+returns her to the main PSP menu, she selects ``Recalculate To-Date
+Values''.  A message appears ``Working on project number 1.''  The project
+number quickly changes as the system recalculates the to date values for
+all appropriate projects using the new time measures for the changed
+project.  10 seconds later, the system is completely updated.
+
+\subsection{Structure}
+
+The PSP tool consists of about 80 programs and include files (subroutines)
+and a Progress database. The programs and include files add up to
+approximately 7000 lines of code. The database has 24 files (tables), as
+shown in Table \ref{table:pspTables}, containing 237 fields (columns).  Each
+field definition includes a default validation expression, help message,
+display format, field description, and screen label.
+
+\begin{table} 
+\begin{center}
+\caption{\label{table:pspTables}Database Files for the PSP Tool} 
+\begin{tabular}{|l|l|} \hline 
+File Name      & Description                                     \\ \hline\hline 
+
+s-browse       & Ties field names to code look-up browses        \\ \hline
+s-menu         & Numbers and descriptions of menus               \\ \hline
+s-option       & Numbers and descriptions of menu options        \\ \hline\hline
+
+c-control      & Default values for individual users             \\ \hline
+c-dmodel       & Defect models (general defect categories)       \\ \hline
+c-dtype        & Defect types (specific defect categories)       \\ \hline
+c-form         & PSP forms                                       \\ \hline
+c-help         & Help screens by process, phase, form            \\ \hline
+c-language     & Programming languages                           \\ \hline
+c-otype        & Object types (for size estimation)              \\ \hline
+c-phase        & PSP phases                                      \\ \hline
+c-process      & Holds ordered sets of phases for processes      \\ \hline
+c-prophase     & Ties phases to processes                        \\ \hline
+c-worktype     & Project types                                   \\ \hline\hline
+
+defect         & Defect Recording Log entries                    \\ \hline
+lesson         & Lessons learned/notes                           \\ \hline
+PIP            & Process Improvement Proposals                   \\ \hline
+prob-desc      & Problem descriptions                            \\ \hline
+program-set    & Programs created or modified during development \\ \hline
+project        & Projects                                        \\ \hline
+requirements   & Requirements                                    \\ \hline
+size-template  & Size Estimating Template data                   \\ \hline
+test-report    & Test Report Template entries                    \\ \hline
+time-log       & Time Recording Log entries                      \\ \hline
+\end{tabular} 
+\end{center} 
+\end{table}
+
+I designed the system so that certain database records (rows) must be
+pre-loaded for the system to function.  These records all belong to files
+whose names begin with the prefix ``s-'', and include menus, menu options,
+and links between certain fields and programs providing ``browses'' of
+user-defined acceptable values.  Unless the user modifies the system
+through further programming, nothing should be added to or deleted from
+this record set. The only thing that may be modified are the names of menus
+and the names and numbers of menu options.
+
+Unless a user wants to define his or her own processes completely from
+scratch, all files beginning with the prefix ``c-'' should also have a
+basic set of records pre-loaded before the user tries to start work.  These
+records will define the standard PSP processes, forms, defect types,
+phases, etc.  They will also provide a starting list of programming
+languages, object types, and defect types. Full facilities are provided to
+the user to modify these files and to add new records.
+
+All the remaining files are records of the user's work and PSP data.  The
+central file to this group is ``Project''.  Records in the other files have a
+one-to-one or many-to-one relationship with records in the ``Project''
+file. For example, there is one ``requirements'' record per project record
+and many ``time-log'' records.
+
+I tried to design the system in such a way that programs rarely call other
+programs.  Instead, database records determine which program to run next.
+Each menu option record contains a field for ``program to run''.  After
+writing a simple report program, a user can add it to his or her system
+simply by creating a new menu option record referencing the new program
+(using the maintenance functions already written).  The records used to
+define PSP forms also contain a ``program to run'' field.  To define a new
+process, a user builds a list of the phases that the process will contain,
+then indicates the sequence of forms to use in each phase. This makes it
+easier for someone to write new programs and add them into the system,
+since he or she doesn't have to understand complicated program
+interactions.
+
+\subsection{\label{section:ImprovementIdeas}Areas for Improvement}
+
+As with most applications, the PSP tool has several areas that could use
+more work.  The main deficiency is that the standard PSP has not been
+completely implemented.  The only processes that are truly complete are
+PSP0 and PSP0.1.  PSP1 is missing an entry mechanism for the Test Report
+Template.  This is because I was never able to devise a smooth way of
+switching between this form and the Defect Recording Log.  PSP1.1 does not
+include the Task Planning Template and the Schedule Planning Template.
+The Design and Code Review Checklists are not available for PSP2.
+Finally, PSP3 has not been implemented at all.
+
+There are also two problem areas.  The first is measuring program size.  At
+least for programs written in the Progress 4GL, this is not a simple matter
+of counting the number of lines in the program, since what I really want to
+measure is the number of statements used.  This involves a tremendous
+amount of string parsing.  I was able to implement this accurately in the
+Progress 4GL, but it takes a long time - about .1 seconds per line.  Since
+this is tightly integrated with the rest of the PSP tool, it is still an
+improvement over other line counting methods, but the function should
+probably be rewritten in C++ or even a Unix script, and then called by the
+PSP tool.  The second problem involves time recording.  When a user moves
+too rapidly between phases, a time log entry is not recorded.  I'm not sure
+if this is a problem with my code or the outcome of a combination of quirks
+in the Progress 4GL.
+
+Of course, there are also areas that could be enhanced.  It would be nice
+to add a table for editor types which would include pointers to programs to
+run to create, update, and access documents using editors other than vi!
+Then each user's personal profile could keep track of their preferred
+editor and automatically use it when needed.  In another area, the {\it
+  Actual} time in phase column on the main project screen should
+automatically refresh itself after the user manually changes the time log.
+Similarly, when a user changes any header data for a completed project, the
+system should automatically recalculate all to date values for the projects
+that follow it, rather than requiring the user to remember to take a second
+step.  Finally, the programs that provide maintenance of the defect types,
+defect models, phases, forms, etc., do not allow the user to delete
+entries.  The user should be able to request a deletion, then the system
+should check all relevant records to see if the code has been used at all.
+If not, the system should delete the record, otherwise it should issue a
+warning message to the user.
+
+\subsection{Personal Experiences With PSP Automation}
+My progress toward the goal of automating the PSP was recorded in various
+journal entries over the eight months after my first introduction to the
+PSP. Initially, I was not aware of any problems with PSP data quality;
+instead, I was concerned with the amount of time manual PSP required.
+
+It began with a interest in the PSP and the insights it provided into my
+own software development habits:
+\begin{quote}
+  February 5, 1996\\
+  I'm really enthusiastic about the PSP. ...  My software development group
+  at work has absolutely no process of any kind.  I've tried using similar
+  things before, but they take too much time and don't do much good.  This
+  one seems to be different, however.  I've been using it for three or four
+  days at work, and I think it's improving the quality of my work already.
+  After 10 years of programming, not many bugs actually survive beyond
+  development, but now I realize how much time I was spending killing bugs
+  in the testing phase that could have been prevented by spending just five
+  minutes or so more in design.  Besides, ``watching'' myself work keeps me
+  from getting bored, and after almost five years on the current project
+  that is getting to be a problem.
+\end{quote}
+
+But very soon, the time required began to trouble me:
+\begin{quote}
+  February 23, 1996\\
+  Less and less convinced that the current part of the PSP [size and time
+  estimation] will be helpful in my work.  Thinking back over the large
+  software projects that my company has done for other organizations (where
+  estimates were important), it would have been impossible to get the kind
+  of detail that [PSP] requires from the prospective clients.  In addition,
+  even if we could have gotten it, we could not have afforded to spend the
+  weeks it would have required to design the system to the point where all
+  the input screens were defined for a job that we had not even won yet!
+  That would have cost us a good deal of our profit.  Besides, on every
+  project that we've worked on, the requirements have changed so
+  tremendously along the course of development that it would have been
+  wasted time.  Not to mention all the detailed records you have to keep
+  for every little programming process that take hours to maintain and
+  process.  I'm disappointed, because this was getting interesting, but
+  maybe I'll find something useful on which to build something useful to
+  me.
+\end{quote}
+
+\begin{quote}
+  March 11, 1996\\
+  I'm wondering the best way to use PSP to cover as many programming
+  scenarios as possible.  Right now the place I'm having trouble in is with
+  [problem] fixes.  It's impossible to complete even the planning phase
+  until the [problem] is verified and you know what caused it and how to
+  fix it.  By then, I often need about two minutes programming time to fix
+  it, but all the PSP stuff takes about 10 minutes.  So is this worth it?
+\end{quote}
+
+Despite my concerns, I continued to use PSP at work. It was helping to
+improve the quality of my programs, although there were setbacks at times:
+\begin{quote}
+  March 11, 1996\\
+  I let a major bug get into our new release (using PSP).  I'm upset about
+  it - I remember working a long time on the logic, and testing it well -
+  and yet it was so obvious looking at it a few days ago that it would not
+  work.  What happened?  Maybe just a bad day, but that's no excuse. With
+  PSP1.1 or whatever we're on now [in the PSP class at school] there is the
+  test report sheet, so maybe that would have helped me to catch it.  I
+  HATE it when this kind of thing happens.
+\end{quote}
+
+But I was beginning to move into the PSP mind set:
+\begin{quote}
+  March 15, 1996\\
+  Last night, my office called with a request to have a prototype for some
+  new reports planned, coded, compiled, tested, and on the computer in
+  Pennsylvania by 8AM EST for an important demo.  My first impulse was to
+  say ``This is such a huge job, and I don't want to stay up all night, so
+  I'll just skip the PSP stuff.''  But then my second thought followed
+  automatically, ``No, this will be some valuable data to collect for this
+  type of project.''  I couldn't believe it!
+\end{quote}
+
+About that time I became discouraged trying to use manual PSP in the ``real
+world''.  I stopped using it at work, but started to design an automated
+system:
+
+\begin{quote}
+  March 20, 1996\\
+  Yesterday I went into my office to find about 20 pages of faxes pouring
+  out of my fax machine and all over the floor.  They were all [problems]
+  to fix or [small] improvements to provide ``instant gratification'' for
+  some of our pickier users.  After spending an hour on the phone clearing
+  up questions, I had five hours to get it all done - so decided not to use
+  PSP for this little stuff.  According to my data :-) it's taking at least
+  15 minutes per project to do the PSP work.  Felt bad not to do it, but
+  after I get all the programs done and the database built for the PSP
+  support, it will be much faster.  It was such a relief to do the
+  programming without filling out all those forms and timing every step.
+\end{quote}
+
+\begin{quote}
+  April 3, 1996\\
+  Haven't used PSP at work since March 20.  Need to develop the tools to
+  make it easier to use.  I'm just sick of filling out all those forms.  As
+  soon as school is out ...
+\end{quote}
+
+Two months after starting to use the PSP, I became aware for the first time 
+of problems with data quality, and the ambiguities of defect recording:
+
+\begin{quote}
+  April 12, 1996\\
+  According to my PSP data, I have one design error in about two months of
+  programming.  I've mostly been doing spot improvements or error fixing,
+  but I must not be recording design errors.  How do you know when you find
+  one?  Sometimes I might change my mind about how to do something in the
+  middle of coding, or see a better way to do it, or sometimes the
+  requirements change in the middle of coding - guess that's what I should
+  count.  But those aren't really defects.  And how can you possibly inject
+  a defect in the planning phase?
+\end{quote}
+
+I began to get more serious about my automation project:
+\begin{quote}
+  Friday, April 26, 1996\\
+  Worked some more on the PSP project.  Going well so far, have the menu
+  structure, on-line help and browse functions, and started the database
+  definition.  There are a lot of fields, but the structure is obvious.
+  Getting the defect log and time log going are the most important things -
+  most of the other data can be figured out later.  Having the usual
+  difficulties deciding whether to store calculated values, and if so,
+  which ones.
+\end{quote}
+
+But it took another four months to really be usable.  At that time I was
+able to start observing differences between manual and automated PSP:
+\begin{quote}
+  August 5, 1996\\
+  PSP0 is basically done!  Just need to add the recalculate and timer
+  modification features.
+  
+  I'm much better about recording defects with the computer than with
+  paper.  However, I'm not recording every one (some are tricky) and I'm
+  not always thinking back to the correct injection point for the defect.
+  
+  The postmortem is sort of anticlimactic now.  I remember when I was using
+  the paper and calculating it all out that it used to be kind of exciting
+  to see where all my defects came from and the percent of time in each
+  phase.  Now it's hardly interesting.  Maybe because I've done higher PSP
+  levels since then, or maybe this is just a feature of the automation.
+\end{quote}
+
+I began to realize that automation alone would not solve all collection
+problems: 
+
+\begin{quote}
+  August 26, 1996\\
+  The most frustrating part of PSP at the moment is in keeping track of
+  defects.  After just a day or two of using automated PSP, it became
+  second nature to flip over to the first [virtual terminal screen] and
+  enter the defect before starting to fix it.  The problems are:\\
+  a. deciding where it was injected.  My usual impulse is to pick ``coding'',
+  but I need to think back to design, or most often, a bug injected not
+  because of a design error, but because of a sketchy design that left out
+  the area that caused the bug.\\
+  b.  deciding whether a problem counts as a defect or not.  For example,
+  what if when testing a screen entry program, I don't like one of the
+  labels (but no typo or mistake).  Is that a defect?  What if I was not
+  the one that defined the table (includes label definition)?  What if I
+  defined the table as part of another project than my current one?
+\end{quote}
+
+\begin{quote}
+  September 3, 1996\\
+  Yes, it seems that the real problem with [my] PSP right now is not the
+  automation, but correctly tracking the defects.  Another example: say my
+  design is sloppy, and I'm in the coding phase.  I have to redesign, tear
+  out a little code, and implement the new design.  How do I measure the
+  length of time that defect takes to remove?
+\end{quote}
+
+Eventually, things began to look up, and I committed myself to making
+automated PSP an integral part of my work habits:
+\begin{quote}
+  September 10, 1996\\
+  Now that PSP0.1 is done (except for PIP), it is more exciting to use PSP.
+  Things have settled down so that the figures I see are correct, etc.  And
+  the process is much less intrusive, either because I'm getting used to it
+  or because it really is smoother to use.
+\end{quote}
+
+Currently, I use the PSP tool for most work-related projects, and have 121
+of these projects on file.  Most are done using Progress, but I've also
+used the PSP tool to record data for SPlus projects.  Processes range from
+PSP0 to PSP1.1, as well as 14 projects done using a non-standard process
+used to test the tool's flexibility.
+
+
+\section{Error Tracking Tool}
+
+\subsection{Requirements}
+
+From the beginning, I viewed the error tracking tool as a special-purpose,
+single-user application; with the special purpose of recording errors
+found while analyzing PSP data, and the single user as myself.  Therefore,
+the requirements were rather simple.
+
+The primary requirement was that the tool should have an appropriate
+database structure for recording data about the PSP errors and should
+provide an entry screen that would allow me to record the errors quickly
+and accurately.  If a field on the entry screen corresponded to a list of
+acceptable values, then the tool should allow me to enter only one of those
+values.
+
+As I found errors, I wanted to keep track of 11 pieces of data for each
+one; such as person who injected, person who discovered, assignment,
+process, phase, form, etc.  (This does not include three data elements that
+did not apply to every error: incorrect value, correct value, and comment
+lines).  9 of the 11 fields would contain codes that would represent items
+from lists of acceptable values.  Some of the lists, such as severity
+levels, would contain a fixed set of values.  But others, such as defect
+types, would probably grow as I worked through the case study.  Therefore,
+another requirement was that the lists of acceptable values should have
+maintenance programs available for adding and modifying entries, and that
+each list should appear in selection mode after the user pressed F6 from
+the corresponding field on the error entry screen.
+
+A final requirement was that the tool should allow me to analyze the error
+data after it had been entered.  It should do this by creating various
+reports.  Since these were to be special-purpose reports created for a
+single user, there was no need for fancy output formats or drivers
+with long lists of options.
+
+After implementing this tool and entering about half the projects, I
+realized that I needed to keep track of estimated LOC, actual LOC, and
+actual minutes as they were {\it originally} recorded on the student
+projects.  This was necessary to allow me to efficiently duplicate time and
+size estimation and LOC calculation using incorrect data.  Therefore, this
+became the main requirement for a small addition to the original
+application.
+
+\subsection{Structure}
+ 
+\begin{table}[ht]
+\begin{center}    
+\caption{\label{table:errorTables}Database Files for the Error Tracking Tool}
+\begin{tabular}{|l|l|} \hline 
+File Name      & Description                                             \\ \hline\hline 
+
+s-browse       & Ties field names to code look-up browses                \\ \hline
+s-menu         & Numbers and descriptions of menus                       \\ \hline
+s-option       & Numbers and descriptions of menu options                \\ \hline\hline
+c-dmodel       & Defect models (general defect categories)               \\ \hline
+c-dtype        & Defect types (specific defect categories)               \\ \hline
+c-form         & PSP forms                                               \\ \hline
+c-language     & Programming languages                                   \\ \hline
+c-person       & People (instructor, students, myself)                   \\ \hline
+c-phase        & PSP phases                                              \\ \hline
+c-process      & PSP processes                                           \\ \hline
+c-severity     & Defect severity levels (impact of errors on other data  \\ \hline
+c-worktype     & Project types                                           \\ \hline\hline
+
+defect         & Errors found in student PSP data                        \\ \hline
+hist           & Summary of project data by author/assignment            \\
+               & (Used to keep key data on-line so that when doing       \\
+               & calculations by hand I didn't have to look through      \\
+               & stacks of prior projects)                               \\ \hline 
+        
+\end{tabular}
+\end{center} 
+\end{table}
+
+
+The error tracking tool consists of about 60 programs and include files
+(subroutines) and a Progress database. The programs and include files add
+up to approximately 2000 lines of code. The database has 14 files (tables),
+as shown in Table \ref{table:errorTables}, containing 49 fields (columns).
+Each field definition includes a default validation expression, help
+message, display format, field description, and screen label.  Besides
+providing tracking of errors and historical data, it generates 12 reports.
+A sample report is shown in Figure \ref{fig:toolSample4}.  This report
+shows specific errors types, sorted by the number of times each error was
+found during the case study.
+
+\begin{figure} [htb]
+    {\centerline{\psfig{figure=sample4.eps}}}
+    \caption[Error Tracking Tool: Sample Report]{\label{fig:toolSample4}
+    {\em Error Tracking Tool: Sample Report}}
+\end{figure}
+

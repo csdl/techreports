@@ -1,0 +1,741 @@
+<html>
+  <head>
+    <title>Defmacs: Support for in-process, Emacs-based defect recording</title>
+  </head>
+
+  <body>
+
+<center>
+<h4>Reflective Software Engineering with the Leap toolkit</h4>
+<h1>Defmacs: Support for in-process, Emacs-based defect recording</h1>
+<p>
+<!-- Created: Tue Jan 19 10:52:57 HST 1999 -->
+<!-- hhmts start -->
+Last modified: Fri Jul 16 11:29:43 HST 1999
+<!-- hhmts end -->
+<p>
+
+</center>
+
+<p><hr>
+<h2>Table of Contents</h2>
+
+<ul>
+<li> <A HREF="defmacs.html#motivation">Motivation for Defmacs</A>
+
+<li> <a href="defmacs.html#download">Downloading Defmacs</a>
+<li> <a href="defmacs.html#configure">Configuring Emacs for Defmacs</a>
+  <ul> 
+  <li> <a href="defmacs.html#executable">Loading the Defmacs executable</a>
+  <li> <a href="defmacs.html#tables">Loading the Leap table files</a>
+  <li> <a href="defmacs.html#directory">Setting the DRL directory</a>
+  <li> <a href="defmacs.html#binding">Binding keystrokes and menus</a>
+  <li> <a href="defmacs.html#visible">Setting visible fields</a>
+  <li> <a href="defmacs.html#compilation">Setting up compilation mode</a>
+  <li> <a href="defmacs.html#emacs">A sample .emacs file.</a>.
+  </ul>
+<li> <a href="defmacs.html#using">Using Defmacs</a>
+  <ul>
+  <li> <a href="defmacs.html#open">Opening a DRL file</a>
+  <li> <a href="defmacs.html#add">Adding a defect</a>
+  <li> <a href="defmacs.html#scroll">Defmacs buffer commands</a>
+  <li> <a href="defmacs.html#fixtimes">Tracking fix times</a>
+  <li> <a href="defmacs.html#compile-mode">Recording compiler defects</a>
+  </ul>
+</ul>
+
+
+<p><hr><p><h2><A NAME = "motivation">Motivation for Defmacs</a></h2>
+
+One advantage of the Leap toolkit is its independence from
+specific work product development environments as well as operating
+system platforms.  The Leap tools can be used regardless of whether you are
+using the Visual Studio to develop Visual Basic programs, or Framemaker to
+develop a requirements specification document.
+
+<p>
+
+However, this independence comes at a cost: if you discover the need to
+record some time, size or defect data while working in one of these
+environments, you must switch to the appropriate Leap tool to record the
+information and then switch back to the environment you were working in.
+This "context switching" can be somewhat disruptive. In addition, it can
+sometimes involve manually copying (or cutting and pasting) information
+from the environment into the Leap tool, which
+can seem time-consuming and lame. 
+
+<p>
+
+For example, although Leap tools such as Honu and Mano can be used to
+collect defects, in some cases defects can be collected more efficiently by
+direct integration of Leap-aware facilities into the software development
+environment.  Defmacs is one example of such an approach.  Defmacs is a
+system that extends the XEmacs programmable text editor to support more
+efficient collection of structured defect information for use in Leap.
+Specifically, Defmacs is designed to support <em>in-process</em> defect
+collection.  In-process defect collection occurs when the developer notices
+in the midst of some task that a defect has occurred and wishes to record
+information about that defect, then return quickly to the task at hand.
+(In-process defect collection contrasts with <em>technical review</em>, in
+which the task at hand <em>is</em> the collection of defects.)
+
+<p>
+
+Let's begin by showing what Defmacs looks like:
+
+<p>
+<img src="screens/defmacs-intro.gif">
+<p>
+
+This image shows a simple example use of Defmacs.  In this case, the user
+is editing a file using XEmacs and discovers that some files are named
+incorrectly.  To record the defect, the user types <tt>c-c c-[</tt> which
+splits the screen in two and displays a Defmacs window in the bottom half
+of the window. After entering in the relevant data, the screen looks as
+shown above. Typing <tt>return</tt> saves the defect information out to a
+file that can be read by the Leap toolkit, and returns the window
+configuration to its original state for continued work.
+
+<P>
+
+The principal advantage of Defmacs (and other similar Leap-compliant software)
+is their ability to exploit tight integration with the actual work product
+development environment. For example, Defmacs can be configured to
+automatically record data such as the file name and location of the defect,
+based upon the file that was being edited at the time Defmacs was invoked.
+Defmacs also has an interface to the Emacs compilation mode which allows the
+user to record a compilation error as a defect with a single mouse click.
+
+<p>
+
+Defmacs has limitations as well. It does not support analysis of defect
+data, only collection.  In order to perform analysis, the user must load
+the files containing defect data produced by Defmacs into the Leap
+toolkit. Furthermore, Defmacs-generated defect data is stored in a special
+form of Leap data file that can be read by Leap tools but not written by
+them. Thus, defect information transfer is "one-way", from Defmacs to Leap.
+While you can record a defect in Defmacs, load the resulting file into
+Leap, and display it using Honu, the reverse is not possible in the
+current implementation. 
+
+<p>
+
+The remainder of this chapter goes into more detail on how to use Defmacs.
+The next two sections explain how to download Defmacs and configure
+it for use with XEmacs. The following section explains how to use
+Defmacs during XEmacs editing sections. 
+
+<p><hr><p><h2><A NAME = "download">Downloading Defmacs</a></h2>
+
+Downloading Defmacs involves the following steps:
+
+<ol>
+
+<p><li> Download and install XEmacs 20.3 or later if 
+you do not already have it available locally. XEmacs is available 
+from  <A HREF="http://www.xemacs.org/">http://www.xemacs.org/</A>.
+The current release of Defmacs does not run on GNU Emacs, although
+a port is under way. 
+
+<p><li> Download the Defmacs package. You do this via
+   anonymous FTP to <A
+   HREF="ftp://ftp.ics.hawaii.edu/pub/csdl/defmacs/">ftp://ftp.ics.hawaii.edu/pub/csdl/defmacs/</A>, and download the files you find there into a local directory,
+such as "~/Defmacs/". The following files are available, where
+"X.X.X" is replaced by a version number such as "2.4.3".
+<p>
+<ul>
+<li> <tt>dfm-X.X.X.elc</tt>  The Defmacs binaries.
+<li> <tt>dfm-X.X.X.pdf</tt>  The Defmacs design document.
+<li> <tt>dfm-X.X.X-src.zip</tt>  The Defmacs source code.
+<li> <tt>sample.emacs</tt>  Example Emacs code for installing Defmacs.
+<li> <tt>sample-defs.leap</tt>  Example Leap definitions for testing your 
+                                installation. 
+</ul>
+</ol>
+Once you've downloaded and installed XEmacs, and downloaded the
+Defmacs distribution, the next step is to configure Defmacs for
+your local environment. This is explained in the next section. 
+
+<p><hr><p><h2><A NAME = "configure">Configuring Defmacs</a></h2>
+
+A primary advantage of an integrated system such as Defmacs is that it can
+be very simple and efficient to use under normal circumstances. To achieve
+this, Defmacs must be initially configured to operate effectively in your
+particular development environment. This initial configuration process is
+normally quite simple, and involves the following steps:
+
+<ul>
+<li> Loading the Defmacs executable
+<li> Specifying Leap definition files
+<li> Specifying the DRL file directory
+<li> Binding Defmacs commands to keystrokes and menus
+<li> Setting which defects fields to display
+<li> Setting up Defmacs for compilation mode
+</ul>
+
+Each of these configuration issues are discussed at length below. 
+The results of this configuration process are typically expressed
+as a set of function invocations that are called within your .emacs
+file.  The file 'sample.emacs' included with the distribution 
+provides an example configuration suited to most users, albeit with minor
+modifications.  
+
+
+
+<p><h3><A NAME = "executable">Loading the Defmacs executable</a></h3>
+
+
+The Defmacs executable has the suffix <tt>.elc</tt>. Let's assume that the
+current version of Defmacs is 2.4.1 and you've stored it in ~/Defmacs/.  A
+good way to ensure that Defmacs is automatically loaded every time 
+you run XEmacs is to place the following form into your .emacs
+file:
+
+<P>
+<PRE>
+(require 'dfm "~/Defmacs/dfm-2.4.1.elc")
+</PRE>
+
+This will load the defmacs executable each time you start emacs. Using 
+<tt>require</tt> simply ensures that defmacs will be loaded at most once. 
+
+<p><h3><A NAME = "tables">Specifying Leap definition files</a></h3>
+
+One way that Defmacs makes defect entry easier is through 
+pop-up menus containing the names of your defined projects,
+document IDs, document types, defect types, and checklists. 
+Defmacs obtains this information by reading Leap files containing
+these definitions.  These files can also contain other Leap
+data, such as data on defects, times, and sizes, but this
+non-definition data will be ignored.  Defmacs treats these
+Leap files as read-only can does not modify their contents
+in any way.  
+
+<p>
+<!-- this function name should be changed ->
+
+Any number of Leap files containing definitions can be read into Defmacs
+using the function dfm*user*set-table-files.  This function takes a list of
+strings, each string naming a Leap table file. For example:
+
+<P>
+<PRE>
+(dfm*user*set-table-files '("/group/csdl/Leap/group-defs.leap"
+                            "/home/johnson/Leap/personal-defs.leap"))
+</PRE>
+
+<p>
+These files are not loaded immediately; instead, they are loaded when 
+Defmacs is actually invoked.  This function allows you to specify
+your definitions in your .emacs file but not incur the overhead of
+loading them unless and until you actually run Defmacs.
+
+<p><h3><A NAME = "directory">Specifying the DRL file directory</a></h3>
+
+We noted above that Defmacs treats Leap files as read-only and does not
+alter their contents. How then, does Defmacs record defects and how do
+these defects get to Leap?
+
+<p>
+
+The answer is that while Defmacs can only read Leap files, it can both read
+and write a specialized kind of file called a "DRL" file.  DRL files store
+the defects entered using Defmacs. And, importantly, DRL files conform to a
+syntactic subset of Leap data file syntax, so they can be read into Leap.
+However, you should realize that DRL files can only be read by Leap---if
+you read a DRL file into Leap, modify it, and write it out again, it will
+no longer be usable in Defmacs.  (At some point, Defmacs may be redesigned
+to support general reading and writing of Leap data files, at which point
+this problem will go away.)
+
+<p>
+
+DRL files have some other interesting characteristics. For example, 
+Defmacs automates most of the details of file naming, creation and saving.
+However, we have found that it is quite useful to have Defmacs store DRL
+files in a single directory. (Defmacs attaches a timestamp to each file
+name so that under normal circumstances, files will not be clobbered.)
+To set the DRL directory, use the function dfm*user*set-drl-directory,
+which takes a string naming a directory as its argument. For example:
+<P>
+<PRE>
+(dfm*user*set-drl-directory "/home/4/johnson/Leap/DRLs/")
+</PRE>
+
+
+<p><h3><A NAME = "binding">Binding Defmacs commands to keystrokes and menus</a></h3>
+
+An important way to improve the usability of Defmacs is minimize the amount
+of typing required.  You can accomplish this by binding defmacs commands to
+keystrokes.
+
+<p>
+
+The most appropriate set of keybindings is highly contingent upon
+each user's  environment and the keybindings already in use, so 
+Defmacs does not automatically define keybindings. The 
+bindings are typically placed in your .emacs file. 
+Here are some example bindings to use as a guide. 
+<P>
+
+<PRE>
+(global-set-key "\C-c\C-k" 'dfm*binding*open-drl-file)
+(global-set-key "\C-c\C-]" 'dfm*xemacs*add-defect)
+(global-set-key "\C-c\C-l" 'dfm*xemacs*display-current-defect)
+(global-set-key "\C-c\C-k" 'dfm*xemacs*open-drl-file)
+</PRE>
+
+<P>
+
+For those in a window environment, it can also be useful to 
+set up a menu-based interface.  In XEmacs, for example, the
+following code adds a ``Defmacs'' menu with selections for
+the common Defmacs functions:
+
+<P>
+<PRE>
+(add-menu-item '("Defmacs") "Load Defmacs" 'sample-load-defmacs t)
+(add-menu-item '("Defmacs") "Install compilation mode" 'dfm*compilation*install-defmacs t)
+(add-menu-item '("Defmacs") "Open DRL File" 'dfm*xemacs*open-drl-file t)
+(add-menu-item '("Defmacs") "Add Defect" 'dfm*xemacs*add-defect t)
+(add-menu-item '("Defmacs") "Display Current Defect" 'dfm*xemacs*display-current-defect t)
+</PRE>
+<P>
+
+
+<p><h3><A NAME = "visible">Setting which defect fields to display</a></h3>
+
+The Leap defect format contains over a dozen different fields for each
+defect entry. In many situations, you may not want to show each of these
+fields in Defmacs. (For example, the date field is filled automatically, so
+you almost never want to display this field.)  Other fields may be
+important to some developers but superfluous to others, such as the
+"Severity" field.  Defmacs allows you to configure which fields are
+displayed with the <tt>set-visible-fields</tt>
+function.  Here is an example call:
+
+<p>
+<pre>
+(dfm*xemacs*set-displayed-fields '("DocID" 
+                                   "Project"
+ 		                   "FixTime"
+				   "Location" 
+				   "Occurrences"
+				   "DefType"
+				   "Description"
+				   "Injected"
+				   "Removed"
+				   ))
+</pre>
+<p>
+
+To use this function effectively, you need to the set
+of defined field name strings.  The value of the variable
+<tt>dfm*user*defect-field-labels</tt> is a list of all the currently
+defined defect field names. In Defmacs version 2.4.1, for example, this
+variable's value was
+
+<pre>
+("Date" "Project" "DocID" "FixTime" "Location" "Occurrences" "DefType" "Severity" 
+ "Description" "Valid" "UserCreated" "UserFound" "Injected" "Removed" 
+ "Checklist" "FixDefect" "StartTime")
+</pre>
+
+
+<p><h3><A NAME = "compilation">Setting up Defmacs for compilation mode</a></h3>
+
+Defmacs provides an interface to Emacs compilation mode. This interface
+allows you to move the mouse over an error presented in the compilation
+buffer, and press shift-middle mouse to send it to Defmacs as a new defect.
+This feature is discussed in more detail in the section <a
+href="defmacs.html#compile-mode">Recording compilation mode defects</a>.
+
+<p>
+
+Configuring Defmacs for compilation mode is quite simple; just invoke the
+function <tt>dfm*compilation*install-defmacs</tt>.
+
+
+<p><h3><A NAME = "emacs">A sample .emacs file</a></h3>
+
+Although the preceding explanation for Defmacs configuration may
+have seemed long and complicated, actually performing the configuration
+is quite simple. Typically, you just insert a few calls into your
+.emacs file.  Here is an example Defmacs configuration from the 
+sample.emacs file: 
+
+<pre>
+;;;;;;;;;;;;;;;;;;;;;;;;;;; -*- Mode: Emacs-Lisp -*- ;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; defmacs.html -- 
+;; Author          : Philip Johnson
+;; Created On      : Tue Mar 30 09:24:09 1999
+;; Last Modified By: Philip Johnson
+;; Last Modified On: Tue Mar 30 10:07:20 1999
+;; RCS: $Id$
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;   Copyright (C) 1999 Philip Johnson
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 
+
+;; The following two variables must be set by the user to local 
+;; values before invoking sample-load-defmacs.
+
+(defvar defmacs-table-files '("~/Defmacs/sample-defs.leap")
+  "A list of strings indicating files where Leap definitions for
+projects, defect types, document IDs, and so forth are located.")
+
+(defvar defmacs-drl-directory "~/Defmacs/DRLs/"
+  "The directory where Defmacs will read and write DRL files.")
+
+
+
+(defun sample-load-defmacs ()
+  "Loads and initializes the Defmacs system with sample defaults."
+
+  (interactive)
+  (require 'dfm "~/Defmacs/dfm-2.4.1.elc")  
+
+  (dfm*user*set-table-files defmacs-table-files)
+  (dfm*user*set-drl-directory defmacs-drl-directory)
+
+  (dfm*xemacs*set-displayed-fields '("DocID" 
+				     "Project"
+				     "FixTime"
+				     "Location" 
+				     "Occurrences"
+				     "DefectType"
+				     "Severity"
+				     "Description"
+				     "Checklist"
+				     "Injected"
+				     "Removed"
+				     ))
+
+  (global-set-key "\C-c\C-]" 'dfm*xemacs*add-defect)
+  (global-set-key "\C-c\C-l" 'dfm*xemacs*display-current-defect)
+  (global-set-key "\C-c\C-k" 'dfm*xemacs*open-drl-file)
+
+  (dfm*compilation*install-defmacs)
+
+  (add-menu-item '("Defmacs") "Load Defmacs" 'load-sample-defmacs t)
+  (add-menu-item '("Defmacs") "Install compilation mode" 'dfm*compilation*install-defmacs t)
+  (add-menu-item '("Defmacs") "Open DRL File" 'dfm*xemacs*open-drl-file t)
+  (add-menu-item '("Defmacs") "Add Defect" 'dfm*xemacs*add-defect t)
+  (add-menu-item '("Defmacs") "Display Current Defect" 'dfm*xemacs*display-current-defect t)
+
+  (message "Defmacs Loaded.")
+  )
+
+
+;; Comment out this form if you don't want Defmacs loaded automatically
+;; when you load this file.
+(sample-load-defmacs)
+</pre>
+
+
+<p><hr><p><h2><A NAME = "using">Using Defmacs</a></h2>
+
+After configuring Defmacs and placing the results in your .emacs file, 
+you are now ready to use it.  (Note that you may want to save your
+.emacs, exit XEmacs, and reinvoke XEmacs to make sure your 
+configuration functions are loaded and called correctly.)  This section
+describes the normal Defmacs operations used during a session:
+
+<ul>
+<li> Opening a DRL file.
+<li> Adding a defect.
+<li> Navigating the defects in a DRL file.
+<li> Tracking fix times.
+<li> Recording compiler defects.
+</ul>
+
+<p><h3><A NAME = "open">Opening a DRL file</a></h3>
+
+The function dfm*xemacs*open-drl-file (invoked by a keystroke 
+such as control-c control-k or by selecting the "Open DRL file"
+menu item) sets the file in which  subsequent defect
+entries will be stored.  
+
+<p>
+
+Although you can always invoke this function manually, Defmacs will invoke
+it automatically if you try to add a defect and no DRL file is currently
+open.  Therefore, if you are content to add all defects during an Emacs
+session to a single DRL file, you typically do not need to invoke this
+function explicitly.  Instead, you can just invoke dfm*xemacs*add-defect
+(using the corresponding keystroke or menu item), and if no Defmacs DRL
+file is currently open, it will invoke dfm*xemacs*open-drl-file for you.
+
+<P>
+
+When dfm*xemacs*open-drl-file is invoked, it prompts you with the
+following:
+<pre>
+Load existing DRL file? (y or n)
+</pre>
+
+If you type 'y', then then a dialog box (or minibuffer prompt) appears with
+a file and directory specification.  Select the DRL file you wish to open from
+this list. The default value will be the most recently written DRL file from
+the directory specified in the call to <tt>dfm*user*set-drl-directory</tt>.
+
+<P>
+
+If you type 'n', then Defmacs will prompt you for a file name
+prefix. This defaults to  ``drl-'', but you can change this 
+to a prefix providing more information about
+the defects within the file. Once you type RETURN, the DRL file name 
+will be generated by appending the prefix value with a timestamp with the format
+MMDDHHMMSS and the suffix ``.drl''.  For example, if you
+invoked this function on January 1 at exactly 12:30 and accepted
+the default prefix by typing RETURN immediately, the file name 
+generated would be ``drl-0101123000.drl''. 
+<P>
+
+Defmacs uses timestamped filenames to eliminate worries about overwriting
+previously collected defect data. They also allow multiple developers to
+collaboratively collect and share defect data using a common prefix without
+worrying (much) about duplicate file names.
+
+<P>
+
+Explicit invocation of dfm*xemacs*open-drl-file is required in the
+situation where you want to put defects into several different DRL
+files during a single Defmacs session. (This can occur when the user
+collects defects for several different work products and wants to keep them
+in separate files.) 
+
+
+<p><h3><A NAME = "add">Adding a defect</a></h3>
+
+<h4>Popping up the Defmacs window</h4>
+
+The function dfm*xemacs*add-defect (which is typically bound to a
+keystroke, such as control-c control-]) splits the screen to include a new
+window for entering information about a new defect.
+Here is an example screen image for the first defect entry in a session:
+
+<p>
+<IMG SRC="screens/defmacs-add1.gif"> 
+<p>
+
+There are several things to observe in this initial screen image:
+
+<ul>
+<p><li> Although Leap defects contain over a dozen fields, only 
+the eight fields that were specified in the configuration process
+using <tt>dfm*xemacs*set-visible-fields</tt> are visible in this window. 
+The actual stored entry will contain all of the LEAP fields, but their
+values will be blank. 
+
+<p><li> None of the fields are filled in by default, since this is the first 
+entry.  Subsequent invocations of dfm*xemacs*add-defect will pop up
+a window where many of these fields will be pre-filled with values
+taken from the last entered defect.
+
+<p><li> The center of the bottom modeline contains the name of the Defmacs
+DRL file into which this entry will be stored. In the above example, the
+file is called "drl-test-0529113855.drl". This file name was generated by
+taking the prefix previously supplied by the user ("drl-test-") and
+appending a timestamp (May 29, 11:38:55 am), and the suffix ".drl" (for
+defect recording log).
+
+<p><li> The left corner of the bottom modeline contains the field "[1/1]",
+where the first number indicates the current position of the displayed
+defect, and the second number indicates the total number of defects
+currently stored in the Defmacs DRL file.  In the above example, "[1/1]"
+indicates that the displayed defect is the first entry in the file, and
+there is a total of one defect in the file.
+</ul>
+
+<h4>Entering defect data</h4>
+
+Entering data about a defect involves filling out one or more of the
+visible fields.  Each field entry must occupy a single line (though it can
+be of any length.) This is a design constraint made to improve the 
+efficiency of Defmacs processing, and is not shared by other Leap tools
+in which multi-line defect entry is possible. There are several things
+to note about defect data entry:
+
+<ul>
+<p><li> In the Defmacs buffer, the keystroke "Enter" causes the Defmacs
+window to disappear and the Defmacs DRL file to be written out. (This
+particular keystroke is used because all Defmacs entries must occupy 
+a single line. Use control-n and control-p or the mouse to move between
+fields.)
+
+<p><li> If you inadvertently type "Enter", you can make the Defmacs
+window reappear containing the last entered defect by invoking the
+function dfm*xemacs*display-current-defect (which is typically bound
+to control-c control-l).  
+
+<p><li>  The LEAP toolset allows you to declare values for
+many fields, such as Project, DocID, DefType, Injected, Removed, and so forth.
+By specifying the Leap files containing these definitions
+as part of the configuration process, 
+Defmacs will be able to generate popup menus containing these values.
+Right mousing over over the field of interest and  selecting a value will
+fill in the corresponding field with that value, replacing the 
+current contents, if any.
+
+</ul>
+
+
+<p><h3><A NAME = "scroll">Defmacs buffer commands</a></h3>
+
+The Defmacs buffer is actually a specialized view of the underlying 
+DRL file. In this view, the buffer has been narrowed to display only 
+a single defect, and the contents of the narrowed region has been
+filtered to show only those lines containing a visible defect field.
+(In addition, each line in the underlying DRL file contains some
+HTML code which is also hidden in this view.)  
+<p>
+
+To facilitate manipulation of the underlying file, Defmacs mode binds a
+number of keystrokes to special commands. These keystrokes are only
+available when the point is within the Defmacs buffer, as is the case when
+entering or editing defects.  The currently available commands are:
+
+<p>
+<table border>
+
+<tr>
+<td valign="Top"> meta-?
+<td> Displays a new window containing one-line summaries of all the
+available help commands.
+
+<tr>
+<td valign="Top"> Return
+<td> Closes the window and saves the DRL file to disk.
+
+<tr>
+<td valign="Top"> Control-n
+<td> Move down to the next visible field line.
+
+<tr>
+<td valign="Top"> Control-p
+<td> Move up to the previous visible field line.
+
+<tr>
+<td valign="Top"> Meta-n
+<td> Scroll to the next defect entry in the file.
+
+<tr>
+<td valign="Top"> Meta-p
+<td> Scroll to the previous defect entry in the file.
+
+<tr>
+<td valign="Top"> Meta-r
+<td> Reload the current DRL file and display the last defect. (In some
+cases, Defmacs fails to format entries correctly.  This function is 
+provided to quickly reinitialize the system.)
+
+<tr>
+<td valign="Top"> Right mouse
+<td> When over a field name, pops up a set of selectable values for that field.
+
+<tr>
+<td valign="Top"> Shift right mouse
+<td> When over the "Fix Time" field, pops up a menu containing an
+elapsed time in minutes since the time that the entry was created
+or the timer was reset. 
+
+<tr>
+<td valign="Top"> Shift middle mouse
+<td> (This isn't a defmacs-mode command, but is included in this section for
+completeness.) When over a compilation error in compilation mode,
+shift-middle-mouse will create a new Defmacs entry and pre-fill the
+location and description fields with data from the compilation error line.
+
+</table>
+
+
+<p><h3><A NAME = "fixtimes">Tracking fix times</a></h3>
+
+One useful measurement related to a defect is the time required to find and
+remove it.  Defmacs provides some simple automated support for tracking
+this "fix time" data.  Whenever a defect is entered, Defmacs saves a
+(hidden) timestamp recording the time the entry was created. Then, whenever
+the user shift-right-mouses over the fix time field, a pop-up window
+appears indicating the number of minutes since the time the defect entry
+was created.  The following screen image shows this pop up field with the
+elapsed time value (7 minutes) associated with the displayed defect:
+
+<p>
+<IMG SRC="screens/defmacs-fixtime.gif"> 
+<p>
+
+This pop-up menu provides two options---increment and clear timer:
+<p>
+<table border>
+<tr>
+
+<tr>
+<td valign="Top"> Increment
+<td> Select the minute value (in this example, "7"), which adds 
+     the value "7" to whatever integer value is stored in the fix time
+     field and resets the timer to 0.
+
+<tr>
+<td valign="Top"> Clear timer
+<td> Select "Clear Timer", which replaces the current stored
+timestamp with one representing the current time. 
+
+</table>
+
+<p>
+
+Defmacs supports the following approach to fix time 
+collection.  First, you should reset the timestamp when you begin to 
+work on a defect.  This means either pressing "Clear Timer" if a defect
+entry already exists, or else creating the defect entry.  When you have
+found and fixed the defect, or when you decide to shift to a different
+activity, you can increment the fix time field with the time spent on
+this defect.  Whenever you return to working on the defect, you begin
+by finding the defect entry, resetting the timestamp, then resuming work.
+
+<p><h3><A NAME = "compile-mode">Recording compiler defects</a></h3>
+
+XEmacs supplies a generic compilation mode that enables "point-and-click"
+traversal to the line containing the indicated compiler error.  Compilation
+mode handlers have been implemented for virtually all major programming
+languages.
+
+<p>
+
+Defmacs provides an interface to compilation mode that enables a
+compilation error to be recorded as a Defmacs entry with a single mouse
+click. To enable this feature, Defmacs must be configured for 
+compilation mode, as discussed in the configuration section of this
+chapter.
+
+<p>
+
+Once configured for compilation mode, pressing shift-middle-mouse over a
+compiler defect will create a new Defmacs defect entry with the location
+field filled with the file name and line number, and the description field
+filled with the compiler error description.  The following screen image
+shows the three windows that result from pressing shift-middle-mouse over a
+compiler defect.  The top window is the Java source code, the middle window
+is the compiler defects window, and the bottom window is the newly created
+Defmacs entry containing the two pre-filled fields.
+
+
+<p>
+<IMG SRC="screens/defmacs-compilation.gif"> 
+<p>
+
+
+
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+

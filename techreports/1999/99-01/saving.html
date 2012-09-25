@@ -1,0 +1,585 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>Managing Leap Data</title>
+  </head>
+
+<body>
+<center>
+<h4>Reflective Software Engineering with the Leap toolkit</h4>
+<h1>Managing Leap Data</h1>
+<p>
+<!-- Created: Tue Jan 19 10:52:57 HST 1999 -->
+<!-- hhmts start -->
+Last modified: Fri Jul 16 11:30:38 HST 1999
+<!-- hhmts end -->
+<p>
+</center>
+
+<p><hr>
+<h2>Table of Contents</h2>
+<ul>
+<li> <A HREF="saving.html#motivation">Motivation</A>
+<li> <A HREF="saving.html#organizing">Organizing your Leap files</A>
+  <ul>
+  <li> <A HREF="saving.html#allinone">All in one</A>
+  <li> <A HREF="saving.html#defs">Separate definitions and primary data</A>
+  <li> <A HREF="saving.html#functional">Functional organization</A>
+  <li> <A HREF="saving.html#rolling">Rolling organization</A>
+  <li> <A HREF="saving.html#projects">Projects-only mixin</A>
+  <li> <A HREF="saving.html#export">Project export mixin</A>
+  <li> <A HREF="saving.html#tips">Tips for Leap data file management</A>
+  </ul>
+<li> <A HREF="saving.html#semantics">The "semantics" of saving</A>
+  <ul>
+  <li> <A HREF="saving.html#save">Save</A>
+  <li> <A HREF="saving.html#saveTables">Save Tables</A>
+  <li> <A HREF="saving.html#exportTables">Export Tables</A>
+  </ul>
+<li> <A HREF="saving.html#duplicate">Loading and saving "duplicate" data</A>
+</ul>
+
+
+<p><hr><p><h2><A NAME = "motivation">Motivation</a></h2>
+
+The first question you may be asking yourself is, "Why manage Leap data at
+all?"  Why not simply provide a backend database to perform all storage
+management for the Leap system?
+
+<p>
+
+The question is a fair one.  In fact, at some point in the future, it is
+quite likely that we (or some other sufficiently perturbed user) will
+implement a database backend to Leap.  The Leap architecture is designed to
+make it relatively simple to "swap in" a database to replace our current
+ASCII file-based approach.  And, to be honest, the use of a database
+backend would eliminate certain data management cruftiness present in the
+ASCII file-based data management scheme.  However, the current
+implementation of Leap eschews a database management system for the
+following reasons:
+
+<ul>
+<p><li> <em>ASCII files are free and cross-platform.</em> A 
+database solution to data management would force us to 
+choose either a platform-specific solution (such as Microsoft Access) and/or
+a non-free solution (such as an Oracle database).  We feel strongly
+that providing a usable implementation of Leap that is 
+completely free and cross-platform is 
+quite important for its adoption and evaluation. 
+
+<p><li> <em>ASCII files facilitate interoperation.</em> 
+
+For Leap to be adopted, it must be easy to integrate it with other tools
+and software development environments. Because Leap data is stored as ASCII
+files, the <A
+HREF="http://csdl.ics.hawaii.edu/Tools/LOCC/LOCC.html">LOCC</A> size
+counting tool can easily generate Leap size data, and the <A
+HREF="http://csdl.ics.hawaii.edu/Tools/Defmacs/Defmacs.html">Defmacs</A>
+plugin for Emacs can easily generate Leap defect data. Database systems
+tend to store data in proprietary, binary formats. While some database
+systems support "import" and "export" ASCII formats, we have decided that
+instead of supporting both binary and ASCII formats, we would just go with
+ASCII for now. 
+
+<p><li> <em>ASCII files facilitate evolution.</em> Once the infrastructure
+was built, it became relatively simple to evolve our data structures
+in a backward compatible manner such that old file formats would still
+be readable by the system.  Database systems cannot typically 
+read in data files built from prior versions of the database schemas. 
+
+<p><li> <em>ASCII files facilitate transparency and inspection.</em> Our
+choice of ASCII files was also motivated by our strong desire to make the
+data stored by the system easy for users to understand and verify. In
+addition, ASCII files facilitates debugging of the system, and the
+occasional manual correction of a gorked data file.
+</ul>
+
+Given the decision to use ASCII files, the next issue is their
+internal structure.  Current Leap data management is influenced
+by the following key design decisions:
+
+<ul>
+<p><li> <em>Leap data is organized into collections of predefined
+types.</em> Leap hardwires a set of primitive types.  This primitive type
+set has evolved over time, but it is not user-configurable.  Currently, the
+set of predefined types are: defects, times, sizes, projects, doctypes,
+defect types, severities, phases, docIDs, size definitions, checklists, and
+patterns. Furthermore, instances of each of these predefined types 
+are stored together in a collection.  
+
+<p><li><em>Collections of a predefined Leap data type are 
+represented in files as a restricted form of HTML table.</em>  
+When you look at the contents of a Leap data file, what you'll
+find is one or more HTML tables.  For example, here's an
+example Leap table representing two effort entries:
+
+<pre>
+&lt;table border&gt;
+&lt;tr&gt;
+&lt;td&gt;TRL Plain 2.0.0
+&lt;tr&gt;
+&lt;th&gt;Project&lt;th&gt;Phase&lt;th&gt;DocType&lt;th&gt;Start&lt;th&gt;Stop&lt;th&gt;Interrupt&lt;th&gt;Delta&lt;th&gt;Description
+&lt;tr&gt;
+&lt;td type=Project&gt;98-13
+&lt;td type=Phase&gt;Planning,0
+&lt;td type=DocType&gt;TechReport
+&lt;td type=Start&gt;09:19 12/14/1998
+&lt;td type=Stop&gt;09:33 12/14/1998
+&lt;td type=Interrupt&gt;0
+&lt;td type=Delta&gt;14
+&lt;td type=Description&gt;
+&lt;tr&gt;
+&lt;td type=Project&gt;98-13
+&lt;td type=Phase&gt;Initial draft,2
+&lt;td type=DocType&gt;TechReport
+&lt;td type=Start&gt;09:38 12/14/1998
+&lt;td type=Stop&gt;10:06 12/14/1998
+&lt;td type=Interrupt&gt;0
+&lt;td type=Delta&gt;28
+&lt;td type=Description&gt;
+&lt;/table&gt;
+</pre>
+
+
+Thus, if you open a Leap data file within a Web browser, it will display as
+one or more formatted tables. However, only HTML tables formatted in a very
+specific way can be read by the Leap parser---you can't simply create a
+table in Netscape and expect Leap to read it.  The <A
+HREF="http://csdl.ics.hawaii.edu/Tools/LEAP/dev_info/leap-file-format.html">Leap
+File Format</A> document specifies the precise syntax for legal Leap data
+files.(Yes, for the markup language cognoscenti out there, XML might be a
+better choice, but so far HTML has worked out just fine for our relatively
+simple application domain.)
+
+<p>
+
+You can see from this example that each table is identified as being of a
+specific type (the above example table is of type "TRL Plain") and has a
+version number for that type (this above version is "2.0.0".) Each HTML row
+contains a single Leap data object and the "type" tag is used for
+documentation purposes to specify what value is provided in each field of
+the row.
+
+<p><li><em>A Leap data file can contain one or more tables, and 
+multiple tables of the same type can be included in a single file.</em>
+Each Leap table contains a collection of Leap data objects of a single
+type.  Thus, for a file to contain, for example, project definitions
+plus time entries plus size entries, it would need to include
+three Leap tables.  Furthermore, it is perfectly acceptable to 
+construct a Leap data file containing 2 or more tables of the same
+type. 
+
+
+<p><li><em>Order of entries within a Leap table is unimportant, 
+and the order of tables within a Leap file is unimportant.</em>
+This design decision is important for enabling data to be loaded
+and saved in an efficient and relatively simple fashion. 
+
+
+</ul>
+
+So, in summary, Leap data management is file-based, and each file contains
+one or more HTML tables, where each table holds instances of a single Leap
+data object, of which there are currently 13.  
+
+<p><hr><p><h2><A NAME = "organizing">Organizing your Leap files</a></h2>
+
+As the preceding discussion reveals, Leap provides a great deal
+of flexibility with respect to how you organize your Leap data
+into files.  This section discusses some alternative organizations
+of your Leap data into files and the advantages and disadvantages
+of each.  Many "hybrid" approaches that combine one or more
+of the following schemes are also possible, and we encourage
+you to experiment to find the approach that best fits your needs.
+
+<p>
+
+In the following discussion, I will sometimes refer to example
+file names, such as "definitions.leap".  However, it is important
+to note that Leap does not care about the file name chosen. 
+You could name your Leap data file "myfile.doc" and it would
+load just fine into Leap as long as it was an ASCII file 
+obeying the Leap file format specifications. 
+
+<h3><A NAME = "allinone">All in one</a></h3>
+
+The simplest approach to Leap data organization is to keep all of your Leap
+data in one single file.  The advantage to this approach is that all of
+your Leap data is available to you all of the time by simply loading a
+single file.  If you are just starting to use Leap, we encourage
+you to consider this organization for your first couple of projects.
+There are two primary disadvantages to this organization:
+<ul>
+
+<P><li> Over time, the amount of Leap data can grow to be large.   It will get
+cumbersome to have Naia display by default all of the time data for every
+day for every project for the past year, or Honu to display by default
+every defect you've ever recorded, for example. We call this the
+"ballooning data" problem.
+
+<p><li> The pure "all in one" organization does not allow groups who use
+Leap to share certain Leap "definition" data in common.  For example,
+groups who use Leap for review can benefit from a shared data file
+containing a project definition for the review, the definitions of all
+defect types, the checklist items to be used, and so forth.  This data is
+logically separate (and politically and socially separate) from the data
+accumulated by individuals on the time they spend on review, for example.
+</ul>
+
+<h3><A NAME = "defs">Separate definitions and primary data</a></h3>
+
+The "separate definitions and primary data" approach solves the second
+disadvantage of "all in one".  In this approach, you store most or all of
+the Leap "definition" data (i.e., the Leap data under the "Definitions"
+menu in the Leap Toolkit window) in a single file, such as
+"definitions.leap".  You store all of your "primary" Leap data (i.e., size,
+time, and defects, found under the "Data" menu) in a separate file, such as
+"data.leap".  This approach has the advantage of enabling a group to share
+and enhance a common "definitions.leap" file yet keep their own time, size,
+and defect data to themselves. It is also convenient in the sense that
+definitional Leap data does not tend to become very large in size, nor does
+it change extremely fast (except for an initial period of development when
+it does tend to evolve rapidly).
+<p>
+
+A simple extension of this approach is to have two levels of definitions
+files: a common definitions file used by the entire group, and a personal
+definitions file used by you alone.  This allows a group to specify, for
+example, some "basic" defect type categories for review, yet allow
+individuals to extend these initial categories with defect types of
+particular use to their own circumstances.  
+
+<p>
+
+There are two disadvantages to the "separate definitions and primary data" approach:
+
+<ul>
+<P><li> It still does not solve the "ballooning data" problem of the "all
+in one" approach: over time, the amount of Leap data that you collect is
+going to grow large, and this applies to your "data.leap" file.
+
+<p><li> The "definitions.leap" file will contain "condensation" data,
+which provides summary information about the defects, sizes, times,
+and other information related to a project. (Project condensation
+is covered in detail in the chapter on 
+<A HREF="projects.html">Introduction to Leap Projects</A>.) 
+Sharing files between
+people containing projects that have been condensed can unwittingly
+reveal (at least in aggregate form) personal Leap data that the
+individual may have wished to keep private.  Furthermore, if a 
+file containing project definitions is shared and two people 
+condense it, it is possible to for the second user to "clobber" the 
+condensation of the first user. 
+<p>
+
+As a general rule, therefore, if you have a file containing project
+definitions for shared use, you should not use the condensation feature
+on those projects unless you ensure that all of the members of the 
+group are aware that the file is being used to maintain condensed 
+data.
+
+</ul>
+
+
+<h3><A NAME = "functional">Functional organization</a></h3>
+
+Another useful file management strategy is to place Leap data
+related to different functional activities into different files. 
+For example, I currently maintain all of my Leap data related to 
+technical report production in one file, and all of my Leap data
+related to programming in a separate file.  Since these two
+types of activities have little overlap with respect to size types, 
+defect management, planning, and estimation, it is helpful to 
+keep them separate. 
+
+The primary disadvantage of a functional organization is when
+you interleave activities related to both types of projects during
+your daily course of events.  With a strict functional separation,
+this would result in your effort data being accumulated in two 
+separate files.  This simply means that both files would need to
+be loaded before you could determine aggregate values such as
+the amount of direct time you spend across all functional areas. 
+An alternative approach would be to keep all time data in one
+file, and a functional decomposition for the remaining Leap data.
+
+
+<h3><A NAME = "rolling">Rolling organization</a></h3>
+
+Yet another approach is to maintain a file of Leap data collected
+for a given month, then "roll over" to a new file approximately once
+a month.  This strategy can work well when combined with the 
+"definitions plus data" approach, so that you maintain a consistent
+set of definitions, and roll over only the "data" file once a month.
+
+<h3><A NAME = "projects">Projects-only mixin</a></h3>
+
+"Mixin" is ancient hacker terminology going back to the 
+days of Lisp machines and the Flavors object oriented system.
+It refers to an approach that can be "mixed in" as a 
+grace note to another primary approach, similar to the way 
+Steve's Ice Cream parlor in Cambridge, Massachusetts 
+began providing customers with the ability to "mix in" 
+diced candies and chocolates into their ice cream in the 
+mid-1970's.  The designers of the Flavors system used to 
+frequent Steve's ice cream shop and added the concept of
+"mixin" as an explicit language feature. 
+
+<p>
+
+Well, enough reminiscing; back to the '90s and Leap. The Projects-only
+mixin is a Leap data file management approach that can supplement the
+approaches mentioned above, and which can begin to deal with the
+"ballooning data" problem.  The basic idea is to separate out your project
+data from your other definition data, typically by putting it into a single
+file.
+<p>
+
+Why does this help?  The answer has to do with the motivation for
+condensation.  We recognized early in the development of Leap that while
+detailed data on individual defects, sizes, and times can be extremely
+useful for gaining insight in current and recently completed projects, this
+sheer mass of this data would become overwhelming over months or years of
+Leap usage.  For older projects, and in order to scale the system, one
+solution would be a "condensed" version of the defect, time, and size data
+associated with a given project.  For example, instead of complete details
+about each individual defect, including its description, fix time, and so
+forth, the "condensation" of a project includes only aggregate defect
+information, such as the number of defects injected and removed during each
+phase, the average density of defects, and so forth.  Instead of
+maintaining a record of each individual effort entry, the condensation of a
+project includes only aggregate effort such as that devoted to each phase
+and overall effort for the project. Size data is similarly aggregated.
+Leap stores this "condensation" of the data associated with a project in a
+special field associated with each project entry. (This field is normally
+hidden, but which can be displayed via the <A
+HREF="tables.html#hide">hide/show menu</A>. It is saved in an encoded, not
+very human-readable ASCII format.)  Furthermore, Leap does not calculate or
+maintain this data implicitly: to create a condensation, you must
+explicitly load all of the data associated with a project, then invoke the
+"Condense Project" menu item in Ilio, the Project viewer.
+
+<p>
+
+The benefit of a project condensation is that it is a compact
+representation of most of the information you need to know about old
+projects to support planning, estimation, and trend analysis, and once
+you've created a project condensation, you no longer need to load the time,
+size, and defect data associated with that project as long as you have the
+project entry itself and wish only to perform the analyses included in the
+condensation menu.  
+
+<p>
+
+Thus, the "Projects-only mixin" refers to a file containing only a
+Project table, where each entry is an "old" project that has been 
+condensed after its conclusion.  This mixin allows you to load 
+dozens or hundreds of projects into Leap and obtain many useful
+analyses without also loading the thousands upon thousands of 
+individual time, defect, and size records associated with them.
+
+<h3><A NAME = "export">Project export mixin</a></h3>
+
+Another useful mixin is to create a "Project Export" as you 
+complete a project.  The "File" menu in Ilio (the Project
+viewer) contains a menu item called "Export project". This
+operation allows you to create a new file containing all
+of the data from all tables related to a single project.  
+This serves as a convenient way to "archive" all Leap data
+related to a single project in one place. 
+
+<h3><A NAME = "tips">Tips for Leap data file management</a></h3>
+
+As you can see, Leap provides a potentially bewildering variety of 
+approaches to storing your data.  However, most people quickly find
+a relatively simple storage scheme that works well for their purposes, 
+although we have found within our research group that no one organizes
+their Leap data in exactly the same way!  In general, I suggest that 
+you be guided by the following general heuristics:
+
+<ul>
+<li> Keep it simple at first.  Start by saving everything in a single
+file. You can always modify your file management strategy later on if
+you need to.  
+<li> Don't construct group or organizational "standards" from the 
+beginning and attempt to impose them on group members. Let any
+"standards" evolve bottom up.  On the other hand, it can be very
+useful to provide "template" Leap data files containing definitions
+found useful in the organization.
+<li> Creating project exports at the end of a project as an archival,
+"backup" of your Leap data is highly recommended. 
+<li> Remember that Project condensations are manually created and
+maintained. If you go back to a project and add any time, size, or
+defect data, you will need to rebuild that project's condensation
+to integrate the new data.  Also, you'll need to make sure that all
+time, size, and defect data for that project is loaded before 
+rebuilding the condensation. 
+</ul>
+
+<p><hr><p><h2><A NAME = "semantics">The "semantics" of Saving</a></h2>
+
+As the preceding discussion indicates, Leap allows you to load files
+containing multiple tables from multiple sources.  For example, you
+might load three files containing project export data, where each
+of these three files contains some time data, some defect data,
+some size data, and of course various Leap definitions.  Once
+this data is loaded, it is organized within Leap by type, so that
+all of the time data from all three projects can be viewed within
+Naia, all of the defect data from all three projects can be viewed
+within Honu, and so forth.  
+
+<p>
+
+When Leap loads a file, it needs to keep track of where each individual
+Leap data object in each table came from so that it can save the it back to
+file from which it came if the user edits it during this session.
+Individual Leap data objects are represented as a row in a Leap table
+viewer.  So, for example, if you loaded three files, each containing a
+table of defect data, and then edit the description field of one of those
+defects, Leap must be able to save that defect entry back to the file from
+which it came.  Leap accomplishes this using a special field called
+"LeapDataFile" that is associated with each table entry.  This field is
+initialized with the file membership of an entry when it loaded.  You can
+see this field and its contents using the Hide/Show menu, though it is
+hidden by default.  When you create new entries during a Leap session, 
+this field is empty. 
+
+<p>
+
+It turns out that this implementation, along with the design constraints
+mentionned at the beginning of this chapter, leads to rather subtle
+and sometimes unintuitive behavior when saving Leap data.  The following
+sections attempt to clarify exactly what happens when Leap data is saved,
+and why.
+
+<h3><A NAME = "save">Save</a></h3>
+
+
+Assume that you've loaded three files, gone into Honu, edited some
+old defect entries, added a few new ones, then pressed "Save" in Honu.
+What should happen?  Clearly, you want to update the files whose entries
+you modified with their new contents, and you also want to save out the
+newly created entries to some file.  It is easy to save out the modified
+entries, since the LeapDataFile field holds their file membership, but
+where should the new entries go?  Leap solves this by providing you with a
+pull-down menu as part of the Save dialog box that asks you to specify
+where to save the new entries from among the existing files it knows about
+in Honu. All new entries are always saved to a single file, and that 
+single file must be one of the files already loaded. (In the event that
+there are no entries in this table, Leap pops up a file dialog
+box allowing you to save the entries out to a new file.)
+
+<p>
+
+As part of writing out these new entries, Leap will write the name of 
+the file you selected into each entry's LeapDataFile field.
+
+<p>
+
+While "Save" is invoked from within a specific table-based viewer, its
+effect is not necessarily restricted the contents of that single table.
+Consider the example above once more.  When we press "Save", we want to
+write out all of the files containing defects whose entries have been
+modified in Honu.  However, to maintain data integrity, we don't want to
+write out <em>just</em> the defect table to that file---we want to write
+out a complete update of the modified file, including all of the other
+tables that were present in that file originally (and which may have been
+subsequently modified in other viewers!)  Thus, even though you invoke
+"Save" within Honu, the effect of this operation may be to save changed
+data in other tables as well as long as that changed data was loaded from
+one of the files that is being saved out by Honu.  In general, you will be
+fine if you understand that "Save" is <em>guaranteed</em> to save out only
+the changed entries from a single table, but might <em>potentially</em>
+save out some other data as well, depending upon the circumstances.
+
+
+<h3><A NAME = "saveAs">Save As</a></h3>
+
+The "Save As" button, although it appears in several screen dumps,
+is no longer supported in Leap. This is because it can result in
+loss of data in certain circumstances where multiple files are loaded
+into Leap. The safer alternative is to use "Export" to create a 
+new copy of the contents of one or more tables. 
+
+
+<h3><A NAME = "saveTables">Save Tables</a></h3>
+
+Unlike "Save", which is available only from within
+table-based viewers such as Honu, Ilio, Naia, etc., the "Save Tables" menu
+operation is available from the Leap toolkit window under the File menu.
+We located it in the Leap toolkit because it is a "global" save mechanism
+that operates across all the tables in the toolkit.  "Save Tables" brings
+up a dialog box with entries for all the tables in the system and the files
+associated with each of them.  With "Save Tables", you are asked which
+tables you would like to save (a table is checked by default if it has been
+changed since the last save), and where you would like to place new entries
+(which may be an existing file or a new file).
+
+<p>
+
+Like the "Save" mechanism, "Save Tables" requires all entries loaded from
+a file to be re-saved out to the same file they came from.  Unlike 
+the "Save" mechanism, "Save Tables" allows you to save out all Leap 
+data present in the system.
+
+
+<h3><A NAME = "exportTables">Export Tables</a></h3>
+
+"Export Tables" is also available from the Leap toolkit window 
+under the File menu, because it also provides a "global" save
+mechanism.  Invoking "Export Tables" brings up a window
+enabling the user to specify, for each table, a file to which 
+the contents of the table will be written.  
+
+<p>
+"Export Tables" does not change the file membership 
+of any entries in any of the tables; instead, it makes a new copy of the 
+data. 
+
+<p><hr><p><h2><A NAME = "duplicate">Loading and saving duplicate data</a></h2>
+
+
+Duplicate data is an important issue that must be addressed in Leap,
+given the variety of ways that people can choose to partition their
+data among various files.  There are two fundamentally different
+duplicate data problems:
+
+<ol>
+
+<li> The problem of duplicate definition data.  This problem occurs, for
+example, when you load two exported project files that use the same defect
+type definitions.  This would result in two copies of the same defect type
+definition in Pueo, the defect type viewer.
+
+<li> The problem of duplicate primary data.  This problem occurs, for
+example, when you unwittingly load two copies of the same exported project
+file into Leap at once. This would result in twice
+as many defects being represented as belonging to that project.
+
+</ol>
+
+Currently, Leap provides a solution to the first problem but doesn't solve
+the second.
+
+<p>
+Leap solves the first problem by checking, when loading a new 
+definitional Leap data object, whether or not the same data object
+currently exists in the table.  If so, Leap does not add the new
+object, but Leap does add an additional file membership to that object.
+Thus, the definition Leap data object now belongs to two files 
+simultaneously for the purposes of saving.  If you edit that definition
+and press save, both files will be updated. 
+
+<p>
+
+Currently, we know of no general strategy for avoiding the second problem
+for defect data.
+We can detect and delete duplicate time and size entries. 
+We admit that the potential to "double count" defect data is a
+potentially serious shortcoming in our file-based mechanism, but we have
+found that with a little vigilance, this problem can generally be avoided. 
+
+
+<p>    <hr>
+    <address><a href="mailto:johnson@natasha.ics.Hawaii.Edu">Philip Johnson</a></address>
+</body>
+</html>

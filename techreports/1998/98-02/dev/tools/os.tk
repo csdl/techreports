@@ -1,0 +1,50 @@
+# Operating system specific procedures
+
+# Copyright 1995, 1996 Andrew Worsley
+# May not be redistributed 
+
+# return the current date
+proc gdate { } {
+    return [sexec date]
+}
+
+# Safely perform a system call
+proc ssystem args {
+
+    if {[catch {eval exec $args}]} "return 1"
+
+    return 0
+}
+
+# Safely create a directory
+proc smkdir dir {
+    return [ssystem mkdir $dir]
+}
+
+# return an error message of the last error
+proc geterr {} {
+    global errorCode
+    if {[lindex $errorCode 0] != "POSIX"} {
+	return $errorCode
+    }
+
+    return [lindex $errorCode 2]
+}
+
+# safe exec call
+proc sexec args {
+    if {[catch {set result [eval exec $args]}]} {
+	die "$args: failed\n" $result "(" [geterr] ")\n"
+    }
+    return $result
+}
+# save the original file to orig
+proc save_ofile { f } {
+    set of ${f}_orig
+    if {[file exists $of]} {
+	exec rm $of
+    }
+    if {[file exists $f]} {
+	exec mv $f $of
+    }
+}
