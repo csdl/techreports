@@ -1,0 +1,1705 @@
+<html>
+
+
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+
+<meta name="ProgId" content="FrontPage.Editor.Document">
+
+<title>MDS Build Analysis Initial Results</title>
+
+</head>
+
+
+
+<body>
+
+
+
+<h2 align="center"><b>The Hackystat-JPL Configuration: Overview and Initial
+
+Results</b></h2>
+
+<p align="center">Philip Johnson<br>
+
+Aaron Kagawa<br>
+
+Collaborative Software Development Laboratory<br>
+
+Department of Information and Computer Sciences<br>
+
+University of Hawaii<br>
+
+<a href="mailto:johnson@hawaii.edu">johnson@hawaii.edu<br>
+
+</a><a href="mailto:kagawaa@hawaii.edu">kagawaa@hawaii.edu</a></p>
+
+<p align="center">CSDL-03-07</p>
+
+<p align="center"><a href="http://csdl.ics.hawaii.edu/techreports/03-07/03-07.html">http://csdl.ics.hawaii.edu/techreports/03-07/03-07.html</a></p>
+
+<p align="center"><b>Last update: <!--webbot bot="Timestamp" S-Type="EDITED"
+
+S-Format="%m/%d/%Y %I:%M:%S %p" startspan -->10/24/2003 08:19:06 AM<!--webbot bot="Timestamp" i-CheckSum="30389" endspan -->
+
+&nbsp;</b></p>
+
+<h3>Abstract</h3>
+
+<p>This report presents selected initial results from Hackystat-based
+
+descriptive analyses
+
+of Harvest workflow data gathered from the Mission Data System software
+
+development project from January, 2003 to August, 2003.&nbsp; We present the
+
+motivation for this work, the methods used, examples of the analyses, and
+
+questions raised by the results. Our major findings include: (a) workflow
+
+transitions not documented in the &quot;official&quot; process; (b) significant
+
+numbers of packages with unexpected transition
+
+sequences; (c) cyclical levels of development &quot;intensity&quot; as
+
+represented by levels of promotion/demotion; (d) a possible approach to
+
+calculating the proportion of &quot;new&quot; scheduled work versus rework/unscheduled work
+
+along with baseline values; and (e) a possible approach to calculating the distribution of package &quot;ages&quot; and days spent in the
+
+various workflow states, along with potential issues with the representation of
+
+&quot;package age&quot; based upon the current approach to package
+
+promotion.&nbsp;</p>
+
+<p>The report illustrates how our current approach to analysis can yield
+
+descriptive perspectives on the MDS development process. It provides a first
+
+step toward more prescriptive, analytic models of the MDS software development
+
+process by providing insights into the potential uses and limitations of MDS
+
+product and process data.&nbsp;</p>
+
+<h2>
+
+Table of Contents</h2>
+
+<table border="1" width="100%">
+
+  <tr>
+
+    <td width="50%" valign="top"><b><a href="#1.0">1.0 Introduction</a></b>
+
+      <ul>
+
+        <li><a href="#1.1">1.1 Motivation</a></li>
+
+        <li><a href="#1.2">1.2 Methodology</a></li>
+
+      </ul>
+
+      <p><b><a href="#2.0">2.0 Overview of the Hackystat-JPL User Interface</a></b></p>
+
+      <ul>
+
+        <li><a href="#2.1">2.1 Overview of the MDS Efficiency/Effectiveness
+
+          Analyses</a></li>
+
+        <li><a href="#2.2">2.2 Overview of the MDS Package Age Analyses</a></li>
+
+        <li><a href="#2.3">2.3 Overview of the MDS State Days Analyses</a></li>
+
+        <li><a href="#2.4">2.4 Overview of the MDS Summary Data Analyses</a></li>
+
+        <li><a href="#2.5">2.5 Overview of the MDS Validation Analyses</a></li>
+
+      </ul>
+
+      <p>&nbsp;</td>
+
+    <td width="50%" valign="top"><b><a href="#3.0">3.0 Selected Analysis
+
+      Examples</a></b>
+
+      <ul>
+
+        <li><a href="#3.1">3.1 System Summary</a></li>
+
+        <li><a href="#3.2">3.2 Transition Sequence</a></li>
+
+        <li><a href="#3.3">3.3 Illegal Transition Sequence</a></li>
+
+        <li><a href="#3.4">3.4 Promotions vs. Demotions</a></li>
+
+        <li><a href="#3.5">3.5 Throughput</a></li>
+
+        <li><a href="#3.6">3.6 Work vs. Rework</a></li>
+
+        <li><a href="#3.7">3.7 Interlude: The Box and Whisker Representation</a></li>
+
+        <li><a href="#3.8">3.8 MDS Released Package Age Distribution</a></li>
+
+        <li><a href="#3.9">3.9 State Days Distribution</a></li>
+
+        <li><a href="#3.10">3.10 State Days Monthly Distribution</a></li>
+
+        <li><a href="#3.11">3.11 MDS Package Summary</a></li>
+
+        <li><a href="#3.12">3.12 State Change Gantt Chart</a></li>
+
+      </ul>
+
+      <p><b><a href="#4.0">4.0 Summary and Conclusions</a></b></p>
+
+      <ul>
+
+        <li><a href="#4.1">4.1 Summary of Research Questions</a></li>
+
+        <li><a href="#4.2">4.2 Next steps</a></li>
+
+      </ul>
+
+    </td>
+
+  </tr>
+
+</table>
+
+
+
+<h2><a name="1.0">1.0 Introduction</a></h2>
+
+<h3><a name="1.1">1.1. Motivation</a></h3>
+
+<p>As part of our research in support of the <a href="http://www.nsf.gov/pubs/2003/nsf03557/nsf03557.htm">NSF/NASA
+
+Highly Dependable Computing and Communication Systems Research Program</a>, we
+
+have been investigating tools and techniques to aid in understanding and
+
+improving the
+
+development and build process used by the Mission Data System group at Jet
+
+Propulsion Laboratory.&nbsp; Our motivation for the approach we are following includes the
+
+following:</p>
+
+<ul>
+
+  <li>The MDS group uses a sophisticated, automated build process based upon the
+
+    Harvest workflow and configuration management system as well as in-house
+
+    build utilities.&nbsp; These tools record a great deal of data about the
+
+    development process.&nbsp; We conjecture that with appropriate additional
+
+    analysis support, this data can be turned into knowledge useful for guiding
+
+    and improving development in general and dependability in particular.</li>
+
+  <li>The Collaborative Software Development Laboratory has been investigating
+
+    support for automated collection and analysis of software engineering data
+
+    through the development of a system called <a href="http://csdl.ics.hawaii.edu/Tools/Hackystat/">Hackystat</a>.
+
+    This system provides infrastructure well suited to the collection and analysis of MDS build process data. </li>
+
+  <li>Better understanding of the current MDS development process can support
+
+    improved dependability in at least two ways.&nbsp; First, better
+
+    understanding of the current build process can reveal
+
+    &quot;bottlenecks&quot;, whose removal can improve efficiency and thus
+
+    impact positively on dependability. Second, better understanding of the
+
+    current build process can serve as a kind of &quot;baseline&quot; against
+
+    which the effects of future development changes can be assessed. For
+
+    example, the number of active MDS developers is projected&nbsp; to double in
+
+    the next several years.&nbsp; How will this impact on the throughput of
+
+    changes to the system?&nbsp; Will throughput double? Or does the MDS
+
+    development process have some sort of implicit maximum number of developers,
+
+    beyond which throughput might actually decrease?&nbsp; By establishing a
+
+    baseline and monitoring changes to crucial build process metrics, the MDS
+
+    project managers can gain additional insight into the effect of changing
+
+    resources and development procedures to their development process.</li>
+
+</ul>
+
+<h3><a name="1.2">1.2 Methodology</a></h3>
+
+<p>We are following an exploratory methodology for this research.&nbsp; In the
+
+first stage, we began by developing
+
+a <a href="http://csdl.ics.hawaii.edu/techreports/03-06/03-06.html">design
+
+specification</a> for a Hackystat-based system to support MDS build data collection
+
+and analysis. This specification was informally reviewed by members of the MDS
+
+development team, and we produced a revised version that incorporated their
+
+suggestions for improvements.&nbsp;</p>
+
+<p>In the second stage, we worked with JPL personnel to develop tool support for
+
+extracting development data from the Harvest configuration management system in
+
+a format suitable for transmission to the Hackystat server and subsequent
+
+analysis.&nbsp; This work resulted in a set of
+
+scripts for extracting data from Harvest and producing files in a format that
+
+can be sent to the Hackystat system. The current script provides MDS software
+
+development data from January, 2003 to September, 2003.&nbsp;&nbsp;</p>
+
+<p>In the current stage, we have developed a set of analyses over this
+
+data, and the example results shown in this report are intended to be used as a basis for evaluating these analyses,
+
+suggesting improvements, and developing additional analyses for
+
+implementation.&nbsp;</p>
+
+<p>In the next stage, we will work with JPL personnel to adapt the scripts to
+
+run on a daily basis so that a JPL-based Hackystat server will contain both
+
+historical and current data about the state of the build. We will continue to
+
+evaluate and improve our set of analyses in consultation with JPL personnel.</p>
+
+<p>Once we have refined one or more analyses to the point that they represent
+
+useful &quot;thresholds&quot; for development dynamics, we will implement
+
+Hackystat &quot;alerts&quot; in order to monitor these values automatically and
+
+notify MDS project personnel automatically via email when they are
+
+exceeded.&nbsp;&nbsp;</p>
+
+<h2><a name="2.0">2.0 Overview of the Hackystat-JPL User Interface</a> </h2>
+
+<p>The Hackystat-JPL configuration (or adaptation, to use MDS
+
+terminology) provides two interfaces: a
+
+back-end interface that supports collection of data from the Harvest system, and
+
+a front-end interface that supports user interaction.&nbsp; In this report, we focus on the front-end interface.&nbsp; The following screen images show
+
+the contents of the &quot;Analyses&quot; page for the Hackystat-JPL
+
+configuration, which currently provides 14 analysis commands.
+
+Because this page is too large to fit in a single screen dump, I've made
+
+multiple screen shots for each section of analyses on the page.</p>
+
+<h3><a name="2.1">2.1</a> Overview of MDS Development Efficiency/Effectiveness Analyses</h3>
+
+<p>The first section on the Analyses Page, &quot;MDS Development
+
+Efficiency/Effectiveness&quot;, contains analyses that help understand how well
+
+development is proceeding as reflected by the build data:</p>
+
+<p>&nbsp;<img border="0" src="03-07.1.jpg" width="913" height="721"></p>
+
+
+
+<h3><a name="2.2">2.2</a> Overview of MDS Package Age Analyses</h3>
+
+<p>
+
+
+
+The second section, &quot;MDS Package Age&quot;, contains analyses based upon
+
+the &quot;age&quot; of a package.&nbsp; The age of a package is defined as the
+
+number of days required for the package to proceed from the &quot;created&quot;
+
+state to the &quot;released&quot; state.&nbsp; Package age analyses are restricted to
+
+those packages that have actually reached the release state; in other words,
+
+those packages for which their final &quot;age&quot; is known.&nbsp;</p>
+
+
+
+<p><img border="0" src="03-07.31.jpg" width="818" height="408"></p>
+
+
+
+<h3><a name="2.3">2.3</a> Overview of MDS State Days Analyses</h3>
+
+
+
+<p>These analyses provide perspectives on the number of days a package spends in
+
+a particular state (such as Dev, or Dev Complete). In contrast to Package Age
+
+analyses, which include only packages that have reached the release state, the
+
+State Days analyses typically include only packages that <i>haven't</i> reached
+
+the release state. The motivation for this is to provide analyses that focus on
+
+the state of the &quot;pipeline&quot; at the time the analysis is run, as
+
+opposed to including packages that have already reached a finished state.&nbsp;</p>
+
+
+
+<p><img border="0" src="03-07.32.jpg" width="818" height="466"></p>
+
+
+
+<h3><a name="2.4">2.4</a> Overview of MDS Summary Data Analyses</h3>
+
+<p>The third section, &quot;MDS Summary Data&quot;, contains analyses that
+
+provide overviews of the data in the system.&nbsp;These analyses are useful for
+
+&quot;drilling down&quot; into the data based upon issues and questions raised
+
+by other analyses.&nbsp; They are also useful for debugging the system and
+
+understanding the data representations.</p>
+
+<p><img border="0" src="03-07.3.jpg" width="907" height="755"></p>
+
+<h3><a name="2.5">2.5</a> Overview of MDS Validation analyses</h3>
+
+<p>The fourth section contains an analysis we developed to help isolate packages
+
+that appear to have data inconsistencies and to provide views of the raw data in
+
+the system during debugging.&nbsp; </p>
+
+
+
+<p><img border="0" src="03-07.9.jpg" width="898" height="483"> </p>
+
+
+
+<h2><a name="3.0">3.0</a> Selected Analysis Examples</h2>
+
+<p>The following subsections present examples from running the various analyses
+
+developed so far.&nbsp; One goal of this section is to
+
+provide a kind of informal user guide for MDS personnel who wish to explore the
+
+data themselves by showing sample analyses and their results.&nbsp; Other goals
+
+are to provide a flavor for the kinds of analyses that are currently available,
+
+illustrate some of the open questions we have about the MDS development
+
+process, and provide motivation for where we think we need to go next. </p>
+
+<h3><a name="3.1">3.1 </a> Analysis Example: System Summary </h3>
+
+<p>This analysis presents some overall statistics regarding the data currently present in
+
+the system. </p>
+
+<p><img border="0" src="03-07.5.jpg" width="789" height="695"></p>
+
+<p>This system summary page is intended to provide a high level overview of the
+
+numbers and kinds of entities under analysis. In this case, the system summary
+
+generates the following question:</p>
+
+<ul>
+  <li>[Q.3.1.a] <b>Do the 78 build entries correctly reflect the total number 
+    of builds that were undertaken between January and August?</b>&nbsp; Given 
+    the number of transitions into CM Build&nbsp; (1209) and out of CM Build (812) 
+    revealed in Transition Sequence analysis to be discussed next, we would expect 
+    this number to be higher. Why do we have such little Build data?
+    <ul>
+      <li>[Rich Hug] The builds reported in the initial data were incomplete. 
+        The scripts that extracted the build information were looking at a build 
+        are populated as each build occurred. Unfortunately, the build area was 
+        being periodically &quot;cleaned up&quot; by the MDS CM administrator 
+        to free up disk space.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>(Note: each question in this report is preceded by a label identifying the
+
+section in which it appears (i.e. &quot;3.1&quot;) as well as a letter
+
+indicating the question number (&quot;a&quot;, &quot;b&quot;, &quot;c&quot;,
+
+etc.))</p>
+
+<h3><a name="3.2">3.2</a> Analysis Example: Transition Sequence </h3>
+
+<p>This analysis shows how the various MDS packages&nbsp; moved between workflow
+
+states over a given period of time.&nbsp; The first screen below provides two
+
+tables, one that displays the types and occurrences of &quot;forward&quot;
+
+transitions, and one that counts the types and occurrences of
+
+&quot;backward&quot; transitions:</p>
+
+<p><img border="0" src="03-07.7.jpg" width="795" height="714"></p>
+
+<h4><b>3.2.1 Forward Transitions Table Discussion</b></h4>
+
+
+
+<p>The Harvest workflow model presented in the MDS documentation indicates that
+
+there is only one &quot;forward&quot; path through the system, and the Forward
+
+Transitions table verifies that this is indeed true for the time period under
+
+study and the data collected.&nbsp; In other words, from the &quot;Created&quot;
+
+state, packages were only promoted to Dev; from the Dev state, packages were
+
+only promoted to Dev Complete, and so on.&nbsp; </p>
+
+
+
+<p>We can also see that during this period, 737 MDS packages were created, and
+
+878 made it to the Release state.&nbsp; The fact that more packages were
+
+released than created during this period simply indicates that 141 packages were in an
+
+intermediate state on January 1, 2003, the start date of this analysis. </p>
+
+
+
+<p>The fact that almost 900 packages transitioned to the Release state in
+
+approximately 9 months indicates an average rate of around 100
+
+released packages a month for this time period. </p>
+
+
+
+<p>Finally, we re-iterate that this data seems inconsistent with the number of
+
+Build events collected by the system during this interval, since over 1000
+
+packages entered the CM Build state.</p>
+
+
+
+<h4><b>3.2.2 Backward Transitions Table Discussion</b></h4>
+
+
+
+<p>The Backward Transitions table shows the that there are multiple ways a
+
+package can move &quot;against the workflow&quot; and be demoted.&nbsp; For
+
+example, the first three rows shows that packages were demoted to Dev from three
+
+other states: Dev Complete, Build Queue, and CM Build.&nbsp; Packages were
+
+demoted to Dev Complete from two states: Build Queue and CM Build.&nbsp; It is
+
+interesting to note that of these 7 types of demotion, only 2 are specified (as
+
+backward arrows) in the Harvest Package Lifecycle specification:</p>
+
+
+
+<p><img border="0" src="03-07.2.gif" width="824" height="442"></p>
+
+
+
+<p>This leads to the following question:</p>
+
+
+
+<ul>
+  <li>[Q.3.2.a]<b> Should the Harvest Package Lifecycle documentation be augmented 
+    to discuss the additional demotion paths as practiced by the MDS development 
+    group and the circumstances under which they are used?</b>
+    <ul>
+      <li>[Rich Hug] The MDS Lifecycle definition should be updated to document 
+        these additional valid migration paths</li>
+    </ul>
+  </li>
+</ul>
+
+<p>An additional minor point is that the documentation uses &quot;Build_Test&quot;,
+
+while the data provided to us calls this state &quot;CM Build&quot;. </p>
+
+<p>The Backward Transition table also shows that the vast majority of demotions
+
+began in the CM Build state, and resulted in demotions to the Dev (166 times) or
+
+Build Queue (266 times).&nbsp; This raises the following question:</p>
+
+<ul>
+  <li>[Q.3.2.b]<b> Can CM Build demotion transition types and frequencies serve 
+    as evidence of positive/negative changes to the development process?</b> For 
+    example, assuming this data as a baseline, can departures from this level 
+    and distribution of demotions indicate improvements or degradations to the 
+    development process? 
+    <ul>
+      <li>[Rich Hug] The CM administrator will demote package from CM Build to 
+        Build Queue state for the following reasons: 
+        <ul>
+          <li>problems in build just performed and additional package being developed 
+            to fix problem</li>
+          <li>problems in build just performed and unable to locate associated 
+            developer</li>
+          <li>dependency problem with other packages</li>
+          <li>developer requests different package groupings</li>
+          <li>CM administrator mistake</li>
+        </ul>
+      </li>
+      <li>[Rich Hug] The CM administrator will demote packages from CM build to 
+        Dev state for the following reason:<br>
+        <ul>
+          <li>problems in build just performed and additional package changes 
+            to be done by the developer
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+<p>We also note 2 transitions from CM Build to Dev Complete, which we find
+
+puzzling given our understanding of the meaning of the Dev Complete state. </p>
+
+<ul>
+  <li>[Q.3.2.c] <b>Under what circumstances are packages appropriately demoted 
+    from CM Build to Dev Complete? </b> Are these 'anomalous' transitions indications 
+    of some specialized circumstance during development? 
+    <ul>
+      <li>[Rich Hug] This transition is not necessary. It will be removed from 
+        the Harvest lifecycle</li>
+    </ul>
+  </li>
+</ul>
+
+
+
+<h4><b>3.2.3 State Change Transition Sequences Table Discussion</b></h4>
+
+<p>Following the forward and backward transition tables in this analysis is a
+
+table that shows the actual paths taken through the workflow by the various MDS
+
+packages:</p>
+
+<p><img border="0" src="03-07.10.jpg" width="853" height="580"></p>
+
+<p>&nbsp;</p>
+
+<p>This table is constructed by analyzing the State Change events and listing
+
+the &quot;Start&quot; field values in chronological order.&nbsp; There are
+
+several potential questions raised by the data presented in this table.</p>
+
+<ul>
+  <li>[Q.3.2.d] <b>Why are there IAR packages without any corresponding state? 
+    </b>The first row of the table list 4 IAR packages with no state transition 
+    data associated with them.&nbsp; These IAR values were apparently attached 
+    to other CPs, but never provided with an independent state change event of 
+    their own. Is this valid? 
+    <ul>
+      <li>[Rich Hug] The references IARs were only defined in the Build info command 
+        file. The Build info command file was extracted 12 hours after the Package 
+        info command file were generated. These 2 IARs were introduced within 
+        this window. Some filtering should take place on either the Harvest extraction 
+        side on the Hackystat side.<br>
+        <br>
+      </li>
+    </ul>
+  </li>
+  <li>[Q.3.2.e]<b> Why can non-CP packages enter the workflow in states other 
+    than Created?</b> Many state paths do not start in the Created state.&nbsp; 
+    In the case of Change Packages (CP), this appears due in all cases to Change 
+    Packages that were created prior to January 1, 2003 when this analysis ran. 
+    However, this does not necessarily seem to be the case for IARs, CPRs, ITs, 
+    RPs, and IMs.&nbsp; It appears that these kinds of packages do not necessarily 
+    enter the system in the Created state. 
+    <ul>
+      <li>[Rich Hug] The Package info command file was generated using package 
+        transitions beginning on 1/103. Any creations prior to this date aree 
+        not included in the Package info command file. Hackystat should be adjusted 
+        to accomodate this. Note that &quot;Created&quot; is not a state, just 
+        a pseudo state to fixt our syntax in the Package info command.<br>
+        <br>
+      </li>
+    </ul>
+  </li>
+  <li>[Q.3.2.f]<b> Why do certain packages exhibit an inconsistent set of State 
+    Change transitions? </b>Finally, the table reveals strange anomalies in the 
+    way certain packages go through the various state changes. Consider the package 
+    CP-01023, whose data is displayed using the List Package Sensor Data analysis 
+    below:
+    <ul>
+      <li>[Rich Hug] This is a bug in the scripts used to generate the Package 
+        info command file. I have fixed the problem</li>
+    </ul>
+  </li>
+  <li><br>
+    <br>
+    <img border="0" src="03-07.8.jpg" width="792" height="652"><br>
+    &nbsp; <br>
+    As you can see, this package goes from Created to Dev on 3/26, but when the 
+    next state transition occurs on 5/13, it is no longer in Dev but has somehow 
+    gone to Dev Complete. Later on 5/13, a Dev to Dev-Complete transition is recorded.&nbsp; 
+    One possible explanation for this data is that&nbsp; timestamp associated 
+    with the Dev-&gt;Dev Complete transition is in error.&nbsp; (We have checked 
+    the raw data and this problem, if it exists, does not appear to be in the 
+    Hackystat part of the system.)&nbsp; However, there are a substantial number 
+    of analyses whose set of transitions cannot be explained as simple out-of-order 
+    the timestamps.&nbsp; We wrote a special analysis, called Illegal Transition 
+    Sequence, to identify these packages and explore their representation. This 
+    analysis and its results will be described in more detail below.</li>
+</ul>
+
+<p>In addition to these anomalies, the table also reveals the variety of paths
+
+that packages take as they pass through the workflow. Consider, for example, the
+
+package CP-01022.&nbsp; This package was Created on 3/24 and entered Release on
+
+5/16.&nbsp; During its short but illustrious life, it returned to the Dev state
+
+no less than 10 times! </p>
+
+<h3><a name="3.3">3.3</a> Analysis Example: Illegal Transition Sequence</h3>
+
+
+
+<p>As noted in the last section, we discovered that the sequences of state
+
+transition data entries provided to us do not always appear to be
+
+&quot;legal&quot;, in that the end state of one transition is equal to the start
+
+state of the next transition in chronological order. To better support
+
+resolution of this issue, we implemented an analysis called &quot;Illegal
+
+Transition Sequence&quot;, which searches all the specified package types for
+
+the specified time interval and provides links to those with transition data
+
+where the start state of a transition does not equal the end state of the
+
+previous transition.&nbsp; We found quite a few packages of this type, and
+
+constructed the following table to identify those packages as well as provide a
+
+perspective on the percentage of the package types so afflicted.</p>
+
+
+
+<p><img border="0" src="03-07.11.jpg" width="858" height="532"></p>
+
+
+
+<p>These results raise the following question:</p>
+
+
+
+<ul>
+  <li>[Q.3.3.a] <b>Why do large numbers of packages exhibit apparently &quot;illegal&quot; 
+    sequences of state transitions?&nbsp;</b> Does this represent a defect in 
+    the scripts used to extract data from the Harvest database, a defect in the 
+    way data is entered into the Harvest database, or simply a misconception on 
+    our part about the workflow model?&nbsp;
+    <ul>
+      <li>Same answer for Q.3.2.f - there was a bug in the command file.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>We also discovered that many packages went from the dev to the dev complete
+
+state without any files being added, deleted, or modified.&nbsp; Our assumption
+
+is that any package in the &quot;dev&quot; state should undergo some
+
+modification, and thus some kind of file-level impact should occur before the
+
+transition to Dev Complete can take place.&nbsp; We added a second table to the
+
+Illegal Transition analysis command to display those packages with a Dev-&gt;Dev
+
+Complete analysis without any attached files:</p>
+
+
+
+<p><img border="0" src="03-07.12.jpg" width="858" height="532"></p>
+
+
+
+<p>This analysis raises the following question:</p>
+
+
+
+<ul>
+  <li>[Q.3.3.b]<b> Under what circumstances is it appropriate for a package to 
+    transition from Dev to Dev Complete without any attached files? </b>Does this 
+    represent a defect in the scripts used to extract data from the Harvest database, 
+    a defect in the way data is entered into the Harvest database, or simply a 
+    misconception on our part about the workflow model?&nbsp; 
+    <ul>
+      <li>[Rich Hug] There is no requirement in our methodology that files be 
+        changed in order for a package to be closed. In some cases a fix associated 
+        with another package will also address the issues in this package. Also, 
+        a problem may be closed as non-reproducible. <br>
+        <br>
+        As per our specification of the format of the Package info command file, 
+        files associated with a package will only be documented when the package 
+        moves from the state Dev to Dev Complete. If a package is demoted back 
+        to Dev and then promoted to Dev Complete again, ONLY those files changed 
+        since the previous promotion to Dev Complete will be documented. Hackystat 
+        should be adding these new changes if any to the previous list of changed 
+        files. <br>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+
+
+<h3><a name="3.4">3.4</a> Analysis Example: Promotions Vs. Demotions</h3>
+
+
+
+<p>The Promotions vs. Demotions analysis provides a perspective on both
+
+development &quot;velocity&quot; (as represented by the number of promotions)
+
+and its &quot;friction&quot; (as represented by the number of demotions) over
+
+time.&nbsp; This analysis requires a Start Date, the number of periods to chart,
+
+and the size of each period in days.&nbsp; For the following example, we set the
+
+period size to two weeks, and charted 14 of these two week intervals. (The last
+
+several intervals are empty since they represent dates for which we do not yet
+
+have data.)&nbsp;&nbsp;</p>
+
+
+
+<p>Due to the size of the chart image, two screen images are provided: one
+
+containing the Hackystat command, and the other containing the chart that
+
+results from execution of the command:&nbsp;</p>
+
+
+
+<p><img border="0" src="03-07.13.jpg" width="871" height="352"></p>
+
+
+
+<p align="left"><img src="03-07.14.png" useMap="#Temp22871.png" border="1" width="600" height="480"></p>
+
+
+
+<p align="left">This chart raises the following questions:</p>
+
+
+
+<ul>
+  <li> 
+    <p align="left">[Q.3.4.a]<b> Does the cyclical rise and fall of promotions 
+      represent a predictable pattern of development activity?</b>&nbsp; This 
+      chart shows that the number of promotions in a given two week interval seems 
+      to cycle regularly between a low of around 400 and a high of over 1000.&nbsp; 
+      What causes this cycle, and can this aid in project planning?
+  </li>
+  <li> 
+    <p align="left">[Q.3.4.b] <b>Does the relatively constant level of demotions 
+      represent a predictable pattern of development activity?&nbsp; </b>This 
+      chart also shows that the number of demotions in a two week interval does 
+      not appear to vary much at all.&nbsp; To better illustrate this, the following 
+      screen image illustrates an invocation of the same analysis, except that 
+      the output representation is &quot;Table&quot; rather than &quot;Chart&quot;:<br>
+      &nbsp;&nbsp;<br>
+      <img border="0" src="03-07.26.jpg" width="946" height="471"><br>
+      &nbsp;<br>
+      As you can see, the number of demotions varied between 51 and 74 in eight 
+      out of ten of the intervals.&nbsp;
+  </li>
+  <li> 
+    <p align="left">[Q.3.4.c] <b>Do we need to add a selector to choose the particular 
+      package types in the analysis?</b> It might be useful to understand which 
+      kinds of packages were promoted and demoted in a given time period as a 
+      way of determining the underlying cause of this cyclical variation.&nbsp;
+    <ul>
+      <li>[Rich Hug] I think it would be very useful to be able to select based 
+        on package type. I would expect to see significant differences in promotion/demotion 
+        activity for CPs vs. IARs.<br>
+        <br>
+      </li>
+    </ul>
+  </li>
+  <li> 
+    <p align="left">[Q.3.4.d]<b> Will the current baseline levels of promotions 
+      and demotions change as new developers are added to the project or other 
+      process changes occur?&nbsp;</b>
+  </li>
+</ul>
+
+
+
+<h3 align="left"><a name="3.5">3.5</a> Analysis Example: Throughput</h3>
+
+
+
+<p align="left">The next analysis looks at the &quot;velocity&quot; of MDS
+
+development from the perspective of the numbers of packages entering a given
+
+Harvest state during a given interval of time.&nbsp; The general idea is that
+
+the higher number of packages entering a state, the greater the overall
+
+development velocity, or &quot;throughput&quot;.&nbsp; This analysis is similar
+
+to the Promotions vs. Demotions analysis, in that it allows you to specify a
+
+start date, the number of periods to graph, and the period size in days.&nbsp;
+
+It also allows you to specify which state change transitions you would like to
+
+see appear in the chart.&nbsp; In addition to the specified state change
+
+transitions, it also graphs the number of developers and the number of build
+
+failures.&nbsp; At the time of the design of this analysis, we conjectured that
+
+package transitions might be correlated in some fashion with the number of
+
+developers and build failures.</p>
+
+
+
+<p align="left"><img border="0" src="03-07.22.jpg" width="735" height="450"></p>
+
+
+
+<p align="left"><img src="03-07.15.png" useMap="#Temp22872.png" border="0" width="600" height="480"></p>
+
+
+
+<p align="left">The most obvious feature of this analysis is a re-occurrence of
+
+the cyclical levels that appeared in the promotions vs. demotions chart.&nbsp;
+
+This is not surprising, given that the promotions vs. demotions chart also is
+
+based upon counting of the state changes.&nbsp; This chart, however, provides
+
+more detail on what is occurring.&nbsp; First, it reveals that state changes
+
+into the release state occur in &quot;bunches&quot;: over the 10 two week
+
+intervals illustrated in this chart, all state changes to release occurred in
+
+three of them, at periods 2, 5, and 9.&nbsp; Not only that, the first two of
+
+those three periods also coincided with local rises in most of the other
+
+transitions.&nbsp; In the third cycle, there was a slight offset, with all of
+
+the state changes except that to the release state reaching their cyclical
+
+maximum in the two week interval prior to the interval where the transition to
+
+the release state reached its maximum.</p>
+
+
+
+<p align="left">The chart also shows that the number of developers and the
+
+number of test failures does not appear correlated with any state change
+
+data.&nbsp;</p>
+
+
+
+<p align="left">This chart seems to indicate that development occurs in waves,
+
+with &quot;pushes&quot; approximately every six to eight weeks in which the
+
+attempt is made to &quot;clean out&quot; the build pipeline and move as many
+
+packages as possible into the Release state.&nbsp;</p>
+
+
+
+<p align="left">This analysis raises the following questions:</p>
+
+
+
+<ul>
+  <li> 
+    <p align="left">[Q.3.5.a]<b> Are significant numbers of packages are left 
+      to &quot;languish&quot; in test complete for weeks at a time, followed by 
+      a &quot;cleanup&quot; phase every couple of months?&nbsp;</b> If so, this 
+      approach will undermine our analyses based upon &quot;age&quot;, because 
+      the age of a package is calculated as the number of days between the Created 
+      state change and the Release state change. We might want to calculate &quot;age&quot; 
+      as the number of days from Created to Test Complete, since that might more 
+      accurately reflect the days required to get the package through the system.
+    <ul>
+      <li>[Rich Hug] The methodology is set up such that as each package passes 
+        the test suite, the package is moved to Test Complete. When a release 
+        is to be made, all the packages in Test Complete are moved to Release. 
+        For purposes of metrics, I believe that we can interpret that a package 
+        is &quot;closed&quot; when it moves to Test Complete.<br>
+        <br>
+      </li>
+    </ul>
+  </li>
+  <li> 
+    <p align="left">[Q.3.5.b]<b> Is a cyclical change in the level of state change 
+      transitions accidental, deliberate, or emergent?</b>&nbsp; If accidental, 
+      will this cycle disappear in the future?&nbsp; If deliberate, what are the 
+      pros and cons of this approach to development?&nbsp; If emergent, what forces 
+      act to keep it in place?
+  </li>
+</ul>
+
+
+
+<h3><a name="3.6">3.6</a> Analysis Example: Work Vs. Rework</h3>
+
+
+
+<p>This analysis attempts to represent the proportional effort allocated to
+
+&quot;new&quot; work activities vs. &quot;rework&quot; activities.&nbsp; The
+
+approach used is to count the number of transitions from Dev to Dev Complete,
+
+and categorize them as a &quot;Work&quot; transition or a &quot;Rework&quot;
+
+transition.&nbsp; A &quot;Work&quot; transition is defined as a transition
+
+involving a Change Package without an associated IAR.&nbsp; A &quot;Rework&quot;
+
+transition&nbsp; is defined as a transition involving an IAR, an IM, or a Change
+
+Package with an associated IAR.&nbsp; In some sense, &quot;rework&quot; combines
+
+both defect repair and unscheduled work.</p>
+
+
+
+<p><img border="0" src="03-07.16.jpg" width="735" height="371"></p>
+
+
+
+<p><img src="03-07.28.png" useMap="#Temp29157.png" border="0" width="600" height="480"></p>
+
+
+
+<p>As you can see from the chart, this analysis indicates that a substantial
+
+proportion of transitions from Dev to Dev Complete represent rework or
+
+unscheduled work.&nbsp; For the first five periods, rework or unscheduled work
+
+represents approximately half of the transitions.&nbsp; During the second four
+
+periods, a substantially smaller percentage of transitions involved rework or
+
+unscheduled work.&nbsp; The final period represents partial data.&nbsp;</p>
+
+
+
+<p>An open question is the extent to which this representation of work and
+
+rework based upon state transitions accurately models the effort spent by the
+
+development group on work vs. rework.&nbsp;&nbsp;</p>
+
+
+
+<p>A second open question is whether the decrease in percentage transitions
+
+allocated to rework during the sixth to ninth periods represents a process
+
+improvement.&nbsp;</p>
+
+
+
+<p>We also discovered that no IARs are currently associated with any work
+
+packages in our dataset. In fact, the only package types with any associations
+
+are IARs!&nbsp; These are linked to CPRs, and in fact several of these CPR IDs
+
+are not elsewhere defined in the system.&nbsp; The following screen image
+
+illustrates these issues.</p>
+
+
+
+<p><img border="0" src="03-07.27.jpg" width="964" height="732"></p>
+
+
+
+<p>The questions raised by this analysis are:</p>
+
+
+
+<ul>
+  <li>[Q.3.6.a] <b>To what extent does this representation of work vs. rework 
+    based upon transition data accurately model the <u> effort</u> allocated by 
+    the development group to work vs. rework? </b>If this a reasonably accurate 
+    proxy for effort, then we can assess changes to the development process that 
+    are intended to reduce rework by monitoring the transition data and seeing 
+    if the intended results actually occur.&nbsp;&nbsp;&nbsp;</li>
+  <li>[Q.3.6.b]<b> Does the decrease in percentage rework and unscheduled work 
+    indicate an actual process improvement?</b>&nbsp;&nbsp;What is the significance 
+    of the decreased percentage of transitions involving rework and unscheduled 
+    work during the last half of the period under study?&nbsp; Does this reflect 
+    a true decrease in rework activities, or is it some kind of artifact in the 
+    transition data?</li>
+  <li>[Q.3.6.c] <b>Why are there no CPs with an associated IAR in our dataset?&nbsp; 
+    </b>This does not match our understanding of the MDS workflow, in which we 
+    expect that there would be many CPs with associated IARs. 
+    <ul>
+      <li>[Rich Hug] IARs are associated only with CPRs. IARs are not associated 
+        with CPs.<br>
+        <br>
+      </li>
+    </ul>
+  </li>
+  <li>[Q.3.6.d]<b> Why do some IARs reference undefined CPRs? </b>Again, this 
+    does not match our understanding of the MDS workflow.
+    <ul>
+      <li>[Rich Hug] The was one CPR referenced by an IAR that does not exist. 
+        The CPR must have been deleted at some point in the development lifecycle. 
+        This should not happen.</li>
+    </ul>
+  </li>
+</ul>
+
+
+
+<h3><a name="3.7">3.7</a> Interlude: The Box-And-Whisker Chart representation</h3>
+
+<p>The next several analyses provide a Box-and-Whisker chart
+
+representation.&nbsp; This section documents the visual structure and
+
+interpretation of the box and whisker chart:</p>
+
+<table border="1" width="100%">
+
+  <tr>
+
+    <td width="23%"><b>Visual Representation</b></td>
+
+    <td width="77%"><b>Statistical Meaning</b></td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Horizontal line (inside box)</td>
+
+    <td width="77%">The median of the observations</td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Solid black dot</td>
+
+    <td width="77%">The mean of the observations</td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Solid colored box</td>
+
+    <td width="77%">The interquartile range (IQR).&nbsp; Divide the observations
+
+      into four equal groups. The box represents Q2 and Q3.</td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Upper whisker</td>
+
+    <td width="77%">Observations (if any) with values up to 1.5 times the
+
+      highest IQR value.</td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Lower whisker</td>
+
+    <td width="77%">Observations (if any) with values down to 1.5 times less
+
+      than the lowest IQR value.</td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Unfilled circle</td>
+
+    <td width="77%">Outliers: observations between 1.5 and 3 times greater than
+
+      (or less than) the highest (or lowest) IQR value.</td>
+
+  </tr>
+
+  <tr>
+
+    <td width="23%">Triangle</td>
+
+    <td width="77%">Extremes: observations beyond 3 times the IQR. Indicates
+
+      data points outside the chart.</td>
+
+  </tr>
+
+</table>
+
+
+
+<h3><a name="3.8">3.8</a> Analysis Example:&nbsp; MDS Released Package Age Distribution</h3>
+
+
+
+<p>This analysis generates box-and-whisker charts to illustrate the distribution
+
+of age values for the set of package types specified as a parameter to the
+
+analysis.&nbsp; Only those packages that made it to the Release state are
+
+included in this analysis, since that is required to compute their
+
+&quot;final&quot; age.</p>
+
+
+
+<p><img border="0" src="03-07.18.jpg" width="747" height="373"></p>
+
+
+
+<p><img src="03-07.19.png" useMap="#Temp22874.png" border="0" width="600" height="480"></p>
+
+
+
+<p>This chart shows that there is very wide variability in age for most of the
+
+package types in MDS over the eight months of this analysis. It clearly
+
+indicates that there is little point in referring to an &quot;average&quot; or
+
+&quot;typical&quot; CP with respect to age, and that this analysis is probably
+
+too coarse-grained to be useful except as a stimulus for developing additional
+
+questions, such as:</p>
+
+
+
+<ul>
+
+  <li>[Q.3.8.a] <b>Can factors be identified that help predict the eventual age of a CP, IAR, and
+
+    IM?&nbsp;</b>In other words, given the wide variability in ages of CP, IAR,
+
+    and IM, can we (a) divide these packages into groups, each of which has much
+
+    less variability, and/or (b) provide a model that predicts the eventual
+
+    package age based upon weightings of factors?&nbsp;</li>
+
+</ul>
+
+
+
+<h3><a name="3.9">3.9</a> Analysis Example: State Days Distribution</h3>
+
+
+
+<p>This analysis takes the specified package type, and collects all of the
+
+instances of that package type that have a transition recorded for them between
+
+the specified start and end date and that have not reached the Release state. By
+
+excluding packages that have reached the Release state, the analysis provides a
+
+perspective on the packages currently in the &quot;pipeline&quot; during the
+
+specified period.&nbsp;</p>
+
+
+
+<p>For each of these active package instances, we find the number of days it
+
+spent in each of the Harvest states, and graph that distribution as a
+
+box-and-whisker chart.</p>
+
+
+
+<p><img border="0" src="03-07.35.jpg" width="835" height="362"></p>
+
+
+
+<p><img src="03-07.36.png" useMap="#Temp42963.png" border="0" width="600" height="480"></p>
+
+
+
+<p>The above analysis shows the amount and variability in time spent in the various
+
+states for Change Packages. This chart shows that Change Packages
+
+spend most of their time in Dev, Integration Test, or Test Complete. A
+
+re-running of this analysis specifying IAR as the package type reveals a
+
+different distribution, as illustrated next:&nbsp;&nbsp;</p>
+
+
+
+<p><img src="03-07.37.png" useMap="#Temp42965.png" border="0" width="600" height="480"></p>
+
+
+
+<p>&nbsp;</p>
+
+
+
+<h3><a name="3.10">3.10</a> MDS State Days Monthly Distribution</h3>
+
+
+
+<p>This analysis shows a trend by months of the time spent by a given package
+
+type in a given state.&nbsp; Specifically, it works as follows. For the given
+
+package type and month, it gathers the number of days spent by the package in
+
+the given state, and then graphs that distribution as a box and whisker chart.</p>
+
+
+
+<p><img border="0" src="03-07.38.jpg" width="792" height="405"></p>
+
+
+
+<p><img src="03-07.34.png" useMap="#Temp29159.png" border="0" width="600" height="1440"></p>
+
+
+
+<p>So, for example, the last chart in this image shows the distribution of days
+
+spent by all CPs in the Test Complete state for each of the given months.&nbsp;
+
+As with most trend analyses, the ultimate goal of this analysis is to see if,
+
+over time, development is getting more predictable (or controllable) based upon
+
+decreasing variation, or getting less predictable (based upon increasing
+
+variation).&nbsp;</p>
+
+
+
+<p>These initial results seem to indicate that variability in the time spent in
+
+different Harvest states is actually increasing over time, which raises the
+
+following question:</p>
+
+
+
+<ul>
+
+  <li>[Q.3.10.a] <b>Does the apparent increasing trend in CP state age variation
+
+    indicate development problems? &nbsp;</b>Or does this indicate a problem
+
+    with our approach to analysis?&nbsp;</li>
+
+</ul>
+
+
+
+<h3><a name="3.11">3.11</a> Analysis Example: MDS Package Summary</h3>
+
+
+
+<p>The final two analyses shown in this report provide high level summaries of
+
+the MDS process and product data.&nbsp; The MDS Package Summary analyses
+
+provides a tabular representation of the data available in the system between
+
+the chosen start and end days:</p>
+
+
+
+<p><img border="0" src="03-07.24.jpg" width="933" height="523"></p>
+
+
+
+<p><img border="0" src="03-07.25.jpg" width="975" height="685"></p>
+
+
+
+<h3><a name="3.12">3.12</a> Analysis Example: State Change Gantt Chart</h3>
+
+
+
+<p>This analysis uses a Gantt Chart representation to provide a graphical
+
+representation of the packages of a certain type in the system, and how they
+
+move through the Harvest states over the time period specified.</p>
+
+
+
+<p><img border="0" src="03-07.39.jpg" width="856" height="366"></p>
+
+
+
+<p>&nbsp;</p>
+
+
+
+<p><img src="03-07.40.png" useMap="#Temp42971.png" border="0" width="700" height="525"></p>
+
+
+
+<p>There are a couple of things to note about this analysis that are not shown
+
+by the above example:</p>
+
+
+
+<ul>
+
+  <li>Running the analysis over large time periods (for example, all 8 months)
+
+    creates extremely large charts.</li>
+
+  <li>Because this analysis is based upon an underlying Gantt Chart
+
+    implementation in JFreeChart, it does not display backward transitions
+
+    correctly.&nbsp; If a package instance is demoted to a previously visited
+
+    state, it is displayed as a blank area in the horizontal bar for the package
+
+    instance, rather than the appropriate colored bar.&nbsp; To fix this, we
+
+    will need to make modifications to the underlying Gantt Chart code.&nbsp; We
+
+    are deferring this work until we can confirm that MDS personnel find this
+
+    analysis useful and that it would be helpful to fix this defect.</li>
+
+</ul>
+
+
+
+<h2><a name="4.0">4.0</a> Summary and Conclusions</h2>
+
+
+
+<h3><a name="4.1">4.1</a> Summary of Research Questions</h3>
+
+
+
+<p>For ease in discussion and review, this section re-lists the questions that
+
+have been interspersed throughout this report.&nbsp; The labeling scheme for
+
+each question reveals the section of the report motivating the question. For
+
+example, [Q.3.1.a] refers to Section 3.1 of this report, with the &quot;a&quot;
+
+indicating that this is the first question in that section.</p>
+
+
+
+<ul>
+
+  <li>[Q.3.1.a] Do the 78 build entries correctly reflect the total number of builds
+
+    that were undertaken between January and August?&nbsp;</li>
+
+  <li>[Q.3.2.a] Should the Harvest Package Lifecycle documentation be augmented to
+
+    discuss the additional demotion paths as practiced by the MDS development
+
+    group and the circumstances under which they are used?</li>
+
+  <li>[Q.3.2.b] Can CM Build demotion transition types and frequencies serve as
+
+    evidence of positive/negative changes to the development process?&nbsp;</li>
+
+  <li>[Q.3.2.c] Under what circumstances are packages appropriately demoted from CM
+
+    Build to Dev Complete?&nbsp;</li>
+
+  <li>[Q.3.2.d] Why are there IAR packages without any corresponding state?&nbsp;</li>
+
+  <li>[Q.3.2.e] Why can non-CP packages enter the workflow in states other than
+
+    Created?&nbsp;</li>
+
+  <li>[Q.3.2.f] Why do certain packages exhibit an inconsistent set of State Change
+
+    transitions?&nbsp;</li>
+
+  <li>[Q.3.3.a] Why do large numbers of packages exhibit apparently &quot;illegal&quot;
+
+    sequences of state transitions?&nbsp;&nbsp;</li>
+
+  <li>[Q.3.3.b] Under what circumstances is it appropriate for a package to transition
+
+    from Dev to Dev Complete without any attached files?&nbsp;</li>
+
+  <li>
+
+    <p align="left">[Q.3.4.a] Does the cyclical rise and fall of promotions represent a
+
+    predictable pattern of development activity?&nbsp;&nbsp;</li>
+
+  <li>
+
+    <p align="left">[Q.3.4.b] Does the relatively constant level of demotions represent
+
+    a predictable pattern of development activity?&nbsp;&nbsp;</li>
+
+  <li>
+
+    <p align="left">[Q.3.4.c] Do we need to add a selector to choose the particular
+
+    package types in the analysis?&nbsp;</li>
+
+  <li>
+
+    <p align="left">[Q.3.4.d] Will the current baseline levels of promotions and
+
+    demotions change as new developers are added to the project or other process
+
+    changes occur?&nbsp;</li>
+
+  <li>
+
+    <p align="left">[Q.3.5.a] Are significant numbers of packages are left to
+
+    &quot;languish&quot; in test complete for weeks at a time, followed by a
+
+    &quot;cleanup&quot; phase every couple of months?&nbsp;&nbsp;</li>
+
+  <li>
+
+    <p align="left">[Q.3.5.b] Is a cyclical change in the level of state change
+
+    transitions accidental, deliberate, or emergent?&nbsp;&nbsp;</li>
+
+  <li>[Q.3.6.a] To what extent does this representation of work vs. rework based upon
+
+    transition data accurately model the effort allocated by the development
+
+    group to work vs. rework?&nbsp;</li>
+
+  <li>[Q.3.6.b] Does the decrease in percentage rework and unscheduled work indicate an
+
+    actual process improvement?&nbsp;&nbsp;</li>
+
+  <li>[Q.3.6.c] Why are there no CPs with an associated IAR in our dataset?&nbsp;&nbsp;</li>
+
+  <li>[Q.3.6.d] Why do some IARs reference undefined CPRs?&nbsp;</li>
+
+  <li>[Q.3.8.a] Can factors be identified that help predict the eventual age of a CP, IAR, and
+
+    IM?&nbsp;&nbsp;</li>
+
+  <li>[Q.3.10.a] Does the apparent increasing trend in CP state age variation
+
+    indicate development problems? &nbsp;</li>
+
+</ul>
+
+
+
+<h3><a name="4.2">4.2</a> Next steps</h3>
+
+
+
+<p>A first step is to arrange a teleconference with interested MDS personnel to
+
+go over the findings in this report and obtain feedback. We are interested not
+
+only in answers to the questions listed above, but also in more general
+
+questions: are there interpretations of these descriptive analyses that we have
+
+not discussed? Are there additional analyses that we should be
+
+considering?&nbsp; </p>
+
+
+
+<p>A second step is to install the Hackystat-JPL configuration on
+
+mds1.jpl.nasa.gov server at JPL.&nbsp; This will provide MDS personnel with the
+
+ability to log into the system and run these analyses themselves. We expect and
+
+hope that this live usage of the system will generate additional insights and
+
+requests for enhancements.&nbsp;&nbsp; </p>
+
+
+
+<p>A third step is to modify the scripts for extraction of Harvest data to run
+
+as a daily cron job, extracting any data added to Harvest during the previous
+
+day and sending it to the MDS-based Hackystat-JPL configuration installation.&nbsp; This will enable the
+
+server to provide &quot;up to the minute&quot; analyses </p>
+
+
+
+<p>A fourth step is to begin to move from descriptive to prescriptive
+
+analyses.&nbsp; There are two ways to proceed in this direction.&nbsp; The first
+
+way is by the implementation of Hackystat alerts, which monitor the data being
+
+sent to the server on a daily basis, generating email to a contact person when
+
+an analysis threshold has been exceeded.&nbsp; As one example, consider the Work
+
+vs. Rework analysis in Section 3.6.&nbsp; Once we validate the &quot;external
+
+validity&quot; of this analysis (i.e. that measuring transition data in this way
+
+is actually indicative of work vs. rework effort), we could easily implement an
+
+alert that establishes a threshold percentage level of rework/unscheduled work,
+
+and that sends an email to an MDS person when this threshold has been
+
+exceeded.&nbsp;&nbsp; </p>
+
+
+
+<p>A second form of prescriptive analysis is the development of a model to
+
+predict Package Age or State Days based upon characteristics of the package
+
+itself, or its development history, or the external state of development, or
+
+some combination of these features. We will need significant additional research
+
+to identify appropriate factors, build the model, and validate it against
+
+further development data.&nbsp; A predictive model of Package Age and/or State
+
+Age, in combination with other information, can provide MDS developers with much
+
+better insight into the effects of development decisions. In conjunction with
+
+defect data, we can begin to move toward a predictive model of dependability.</p>
+
+
+
+<p>It is important to note that even the current descriptive analysis can have
+
+utility to MDS, by providing a baseline description of the behavior of the
+
+current development process as reflected by Harvest data.&nbsp; By noting the
+
+date at which significant changes to the development process were implemented,
+
+the descriptive analyses can be used to see what effect, if any, these changes
+
+had on the development process. For example, the current descriptive analyses
+
+reflect approximately 15 active developers.&nbsp; What will be the effect of
+
+adding 5, 10, or 20 additional developers to the group?&nbsp; Changes to the
+
+build process, or incorporation of new design or implementation tools might also
+
+be expected to impact in some fashion on these descriptive analyses. </p>
+
+
+
+<p>&nbsp;</p>
+
+
+
+<p>&nbsp;</p>
+
+
+
+</body>
+
+
+
+</html>
+

@@ -1,0 +1,91 @@
+\chapter{Software Project Telemetry Reducer Developer Guide}
+\label{Chapter:TelemetryDeveloperGuide}
+
+
+The reference implementation of software project telemetry is based on the Hackystat framework. It offers a dynamic loading mechanism of additional telemetry reducers. This documentation is intended for developers who want to implement custom reducers. It assumes that you have a basic understanding of Hackystat source code. The basic steps of implementing a telemetry reducer are:
+
+\begin{itemize}
+  \setlength{\itemsep}{0pt}
+  \setlength{\parskip}{0pt}
+	\item Implement \textit{org.hackystat.app.telemetry.processor.reducer.TelemetryReducer} interface.
+  \item Write a configuration file, and name it \textit{telemetry.\textless your-custom-name\textgreater.xml}.
+  \item Copy the configuration file to \textit{WEB-INF/telemetry} directory during build time.
+\end{itemize}
+ 
+ 
+ 
+ 
+ 
+\section{Telemetry Reducer Interface}
+
+All reducers must implement \textit{TelemetryReducer} interface. There is only one method in this interface:
+
+\begin{verbatim}
+    TelemetryStreamCollection compute(Project project, 
+                   Interval interval, String[] options)
+        throws ReductionException;
+\end{verbatim}
+which generates telemetry streams from the project for the specified interval. ``Options'' are reducer-specific parameters, which provides additional information to the reduction function. If user does not specify any parameter in telemetry definition, either null or an empty string array may be passed to the function. The return value is an instance of \textit{TelemetryStreamCollection}.
+
+ 
+ 
+ 
+ 
+\section{Telemetry Reducer Configuration file}
+
+The xml configuration file must follow the template below:
+
+\begin{verbatim}
+  <TelemetryReducers>
+    <Reducer name="Reducer Name" 
+          class="Fully Qualified Implementing Class"
+          reducerDescription="Description of this reducer"
+          optionDescription="Description of optional parameters" 
+    />
+    <!-- more "Reducer" elements can be put here. -->
+  </TelemetryReducers>
+\end{verbatim}
+
+
+If there are more than one reducer, multiple \textit{Reducer} elements can be put into the configuration file. More formally, it must conform to the following schema:
+
+\begin{verbatim}
+  <?xml version="1.0" encoding="utf-8" ?>
+  <xs:schema targetNamespace="http://hackystat.ics.hawaii.edu
+                              /telemetry/reducer.xsd"
+             elementFormDefault="qualified"
+             xmlns="http://hackystat.ics.hawaii.edu
+                    /telemetry/reducer.xsd"
+             xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="TelemetryReducers">
+      <xs:complexType>
+        <xs:sequence>
+          <xs:element name="Reducer" maxOccurs="unbounded">
+            <xs:complexType>
+              <xs:attribute name="name" 
+                            type="xs:string" />
+              <xs:attribute name="class" 
+                            type="xs:string" />
+              <xs:attribute name="reducerDescription" 
+                            type="xs:string" />
+              <xs:attribute name="optionDescription" 
+                            type="xs:string" />
+            </xs:complexType>
+          </xs:element>
+        </xs:sequence>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+\end{verbatim}
+
+The configuration file name must follow the pattern \textit{telemetry.**.xml}, and must be globally unique. It must be deployed to \textit{WEB-INF/telemetry} directory during the build process. When the system starts up, \textit{TelemetryReducerManager} scans directory \textit{WEB-INF/telemetry} for files whose name matches the pattern \textit{telemetry.**.xml}, and instantiates reducer instances defined in the configuration files. There will be one and only one instance for each reducer, therefore it is imperative that the \textit{TelemetryReducer} implementation be thread-safe.
+
+
+
+ 
+
+
+
+\section{Performance}
+
+Hackystat telemetry infrastructure does not cache telemetry streams generate by telemetry reducers. If performance is critical, each reducer implementation should implement its own cache strategies.

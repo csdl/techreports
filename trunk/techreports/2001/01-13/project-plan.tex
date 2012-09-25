@@ -1,0 +1,487 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% project-plan.tex -- 
+%% Author          : Philip Johnson
+%% Created On      : Thu Oct  4 08:26:49 2001
+%% Last Modified By: Philip Johnson
+%% Last Modified On: Mon Nov  5 16:26:20 2001
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 2001 Philip Johnson
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\subsection{Research plan}
+\label{sec:project-plan}
+
+We now present the principal components of the research plan: bootstrap and 
+ongoing technology development; verification and validation; a comparative
+study of data collection and analysis in Hackystat and the PSP; a case
+study of automated data collection and analysis for Extreme Programming;
+and a longitudinal study of software development skill maturation. A
+time-line for the project is shown in Figure \ref{fig:timeline}.
+
+\begin{figure}[t]
+ {\centerline {\psfig{figure=TimeLine.eps}}}
+ \caption{{\em Project Timeline.}}
+ \label{fig:timeline}
+\end{figure}
+
+
+\subsubsection{Bootstrap and ongoing technology development}
+
+Technology development will be an ongoing activity throughout the project.
+``Bootstrap'' technology development refers to the subset of technology
+development required before the verification and validation component can begin. 
+
+First, we will provide implementations of the ten sensor data types listed
+in Figure \ref{fig:sensors}. We have already identified many subtle issues
+in the definition and implementation of these sensor data types
+\cite{csdl2-01-04}.  Most importantly, we recognize that every sensor
+data type is partial: the system cannot collect the total project effort of
+a developer, or all of the defects that occur, or all of the times a
+certain file is edited or a system is compiled.  A key validation task is
+to ensure that useful developer feedback can be provided even in the face
+of partial data about the product and process.
+
+\begin{figure*}[t]
+\begin{small}
+\begin{center}
+\begin{tabular}{|l|p{5in}|} \hline
+{\bf Sensor Data Type} & {\bf Description} \\ \hline
+ToolTime 
+& The time the developer is ``busy'' using a development
+environment tool. ToolTime data appears to be accurate only to within 15 minutes
+for a given session.  
+\\ \hline
+IdleTime
+& The time during which a development environment tool is running but the
+user is not actively engaged with it such that activities are being
+recorded. 
+\\ \hline
+Activity
+& An event that occurs while using a development environment
+tool. Activities are used both to detect idle time and to detect events
+such as file modification, compilation errors, and so forth.
+\\ \hline
+File Name
+& The name, including the directory path, of a file manipulated by a
+development environment tool.
+\\ \hline
+Module
+& An aggregation of files. Modules can be identified through explicit
+representations such as ``projects'', or implicitly through common directory
+structures and co-occurrence within recorded activity sequences. 
+\\ \hline
+Total Size
+& Refers to a collection of sensor data types
+that calculate different representations of the total size of a software product.  Our initial 
+total size measure will 
+leverage our prior research results on structural size measurement
+and the resulting grammar-based tool called LOCC \cite{csdl-99-10}. 
+\\ \hline
+Differential Size
+& Measures the difference in size between two
+successive versions of a system. LOCC implements one approach to
+differential size measurement that has been successfully applied to
+incremental project planning. 
+\\ \hline
+C/K Complexity
+& Measures the six Chidamber-Kemerer object-oriented metrics: Weighted
+methods per class, depth of inheritance tree, number of children, coupling
+between object classes, response for a class, and lack of module cohesion
+\cite{Chidamber94}.
+Initial language targets are Java and C++.
+\\ \hline
+Defect/Syntax
+& The unsuccessful compilation of a file due to a syntax error.  The sensors will not 
+attempt to infer what specific syntax error occurred
+or how many were in the file. 
+\\ \hline
+Defect/Runtime
+& The unsuccessful termination of a program due to a run-time
+error. Hackystat can determine only that a run-time error occurred and the
+``top-level'' reason (such as ``Null pointer exception''). 
+\\ \hline
+Defect/Unit test
+& Invocation of a specific unit test and its result (pass/fail). 
+\\ \hline
+CM/Tag
+& An aggregation of files that have been tagged as belonging to a release.
+\\ \hline
+\end{tabular} 
+\end{center}
+\end{small}
+\caption{{\em Summary of sensor data types.}}
+\label{fig:sensors}
+\end{figure*}
+
+
+Second, we will implement a set of analyses over these sensor data types.
+To satisfy our developer-centric, in-process, and non-disruptive criteria,
+analyses will be implemented as a server-side computation over the sensor
+log files collected for each developer, and which will result in an
+automatically generated, developer-specific ``Hackystat News Bulletin''
+email containing analysis results. Analyses are only run over developer
+logs when data from that developer was received during the previous day and
+an email is sent only when analysis results from the previous day indicate
+the data is of interest.
+
+The current implementation supports the News Bulletin email, but the
+current analyses are simplistic, consisting of simple summaries of data
+collected and in some cases a comparison of these values to past weekly or
+monthly averages. For development purposes, we currently view receipt of
+any data during the previous day as sufficiently ``interesting'' for the
+email.  However, developers quickly get used to such ``boilerplate''
+summary emails and stop reading them carefully.  To be effective, Hackystat
+must identify important changes in the sensor data and bring those changes
+to the attention of the affected developer.
+
+One approach to identifying certain kinds of important changes is the
+use of statistical process control techniques. For example, appropriate
+control charts can enable the system under certain circumstances to detect
+when recent data becomes "significantly different" from past data.  As a
+simple example, suppose the number of weekly unit test failures has jumped
+from 8 to 17 to 21 during the past three weeks. Control chart data can help
+determine whether this is naturally occurring variation of no concern, or
+an important change that should be brought to the attention of the
+developer.
+
+Figure \ref{fig:analyses} provides examples of the kinds of analyses that
+we have identified.  Each row in the table lists the set of sensor data
+types involved in the analysis, the derived measure, and some of the
+``interesting conditions'' that could result and the developer response. In
+the figure, ``UCL'' refers to the ``Upper Control Limit'' of a control
+chart and ``LCL'' refers to ``Lower Control Limit''. Referring to a measure
+as ``newly in-control'' indicates that a sufficient number of values of
+that measure have been collected to assess control, and that various
+characteristics of the measure indicate that it has been caused by an
+in-control process. Details on the procedures used to assess in-control
+measures are available \cite{Florac97,Wheeler95}.  So far, we have
+identified 15 derived measures from combinations of data types, which 
+have the ability to detect 24 potentially anomalous and thus
+``interesting'' development conditions
+\cite{csdl2-01-04}.
+
+\begin{figure*}[ht]
+\begin{small}
+\begin{center}
+\begin{tabular}{|p{1.2in}|p{5in}|} \hline
+{\bf Sensor Data Type(s)} \newline  {\bf\em Derived measure}  & {\bf Condition(s) and implication(s)} \\ \hline 
+ToolTime \newline 
+{\em Weekly Average}
+& \protect
+\begin{itemize}
+\vspace{-5mm}\item If newly in-control,
+then email developer that ToolTime appears to be in-control and thus may
+be useful for prediction/planning purposes.
+\vspace{-2mm}\item If in-control and recent value greater than UCL, 
+then email developer that recent ToolTime values may not be sustainable.
+\vspace{-2mm}\item If in-control and recent value less than LCL, 
+then email developer that progress may be impacted by low ToolTime; may
+indicate deterioration of work environment.
+\vspace{-4mm}
+\end{itemize}
+\\ \hline
+Differential Size, \newline
+Module, \newline
+ToolTime \newline
+{\em CodingRate}
+& \protect
+\begin{itemize}
+\vspace{-5mm}\item If newly in-control, then email developer that rate of 
+coding appears to be in-control and thus may be useful for
+prediction/planning
+purposes.
+\vspace{-2mm}\item If in-control and recent value greater than UCL, then
+email developer that coding rate is significantly higher than normal, 
+could indicate need to review code more carefully; need to re-estimate, etc.
+\vspace{-2mm}\item If in-control and recent value lower than LCL, then
+email developer that coding rate is significantly lower than normal, 
+indicating potential problems with application domain; need for 
+additional support; need to re-estimate; etc.
+\vspace{-4mm}
+\end{itemize}
+\\ \hline
+Unit Test, \newline
+Module \newline
+{\em Total Weekly Tests}
+& \protect
+\begin{itemize}
+\vspace{-5mm}\item If newly in-control, then email developer that total number of 
+test cases being run per week appears to be in-control.
+\vspace{-2mm}\item If in-control and recent value greater than UCL, then
+email developer that number of tests run this week is higher than normal, 
+potentially indicating problems with quality of code.
+\vspace{-2mm}\item If in-control and recent value lower than LCL, then
+email developer that number of tests run this week is lower than normal,
+indicating potential need to run more tests. 
+\vspace{-4mm}
+\end{itemize}
+\\ \hline
+\end{tabular} 
+\end{center}
+\end{small}
+\caption{{\em Sample measures derived from one or more sensor data types. }}
+\label{fig:analyses}
+\end{figure*}
+
+A key design goal of Hackystat is scalability with respect to the numbers
+of sensors and analyses. Even with the current small number of implemented
+sensors and analyses, the amount of data collected and potentially
+available to developer inspection is overwhelming.  Because sensors must
+run without developer interaction, and because all Hackystat analyses must
+be designed to inform the developer only when something ``interesting'' has
+occurred with respect to that measure, growth in sensors and analyses
+should result in richer and more useful feedback to developers.  Assessing
+whether that design goal is true in practice is the subject of the next
+research component, verification and validation.
+
+\subsubsection{Verification and validation of Hackystat data collection and 
+analysis} 
+
+Once initial technology development is complete, we will begin the first of 
+two phases of verification and validation.
+
+Verification activities focus on assessing the fidelity of the sensors. In
+other words, to what extent does the automatically collected data
+accurately reflect what the developers are actually doing?  For example, to
+what extent does the proposed implementation of the ToolTime and IdleTime
+measures model actual time spent in the tool and actual time spent idle?
+To study this question, we plan to follow methods employed in a study
+of time usage at AT\&T Bell Labs, in which both time diaries and direct
+observation were used to obtain insight into the daily activities of
+developers \cite{Perry95}.  In our case, however, we will take the further
+step of correlating the data gathered manually with the data automatically
+gathered by the sensors.  Time diaries are a standard part of the PSP
+curriculum, so we can easily collect (student programmer) data of this
+form. The direct observation component will be accomplished as part of a
+graduate course in either software engineering or human-computer interaction,
+and will involve either students or professional developers in local high
+tech companies.
+
+Validation activities follow verification, and focus on assessing the
+utility of the sensors and analysis mechanisms. We will assess utility by
+investigating two research hypotheses: (1) Do developers perceive Hackystat
+analysis feedback to be useful? (2) Do developers actually make changes
+based upon the feedback they receive?  To test these hypotheses, we will
+build a validation data gathering mechanism into Hackystat to query
+selected developers by email regarding the utility of the analyses they
+receive.  Say, for example, that Hackystat sends a developer an email on a
+certain day indicating that their recent test failure rate has exceeded the
+level expected under normal development conditions.  One week later,
+Hackystat might randomly select that specific user and analysis result for
+follow-up validation, and send an email requesting that the developer
+follow the enclosed URL to a survey page at the Hackystat server web site.
+This page would contain a copy of the specific analysis result reported to
+the developer the previous week, and ask the user to indicate whether they
+found the analysis result to provide useful insight into development, and
+if so, whether or not they actually made any changes during the past week
+as a result of the message.  To validate the utility of Hackystat, at least
+half of the randomly selected analysis results should be reported as
+useful, and at least one quarter should have precipitated change in
+developer activities.
+
+As we expect significant maturation in the capabilities of the sensors and
+servers over the course of the project, we will perform verification and
+validation activities twice, once near the beginning of the project and
+once near the end.  The initial verification and validation activities will
+involve a small number of participants and the results will be used
+internally to prioritize system development tasks.  By the end of the
+project, we plan to have several hundred active users of the system from
+which to select participants for verification and validation activities.
+At this time, we will augment the validation survey with a request for
+developers to voluntarily provide demographic information regarding
+technical background, organizational context, and application domain so
+that we can better understand the nature of our user community and the
+conditions under which Hackystat is found to be useful.
+
+\subsubsection{A comparative study of data collection and 
+analysis in Hackystat and the PSP}
+
+There are two primary goals for data collection and analysis in the
+Personal Software Process: (1) To support the PROBE method for size and
+time estimation of software projects; and (2) To support defect prevention
+activities through defect data collection and classification.  The PSP
+method is pessimistic about the prospects for fully automated data 
+collection and analysis: ``It would be nice to have a tool to automatically
+gather the PSP data.  Because judgment is involved in most personal
+process data, however, no such tool exists or is likely in the near future.
+\cite{Humphrey95}.''  PSP thus defines itself as an intrinsically
+``disruptive'' approach to in-process data collection. 
+
+The goal of this study is not to confirm or refute the disruptiveness of
+PSP, because our experience with the PSP confirms the author's view that
+the kind of data collected by the PSP is not amenable to total automation.
+Instead, our study will investigate the costs and benefits of disruptive
+vs. non-disruptive data collection and analysis through the following four
+research hypotheses: (1) Does disruptive (PSP) effort data collection lead
+to significantly more accurate effort estimation than non-disruptive
+(Hackystat) effort data collection? (2) Do developers perceive disruptive
+(PSP) defect data collection and analyses as significantly more useful than
+non-disruptive (Hackystat) defect data collection and analysis? (3) Is the
+PROBE size and effort estimation method significantly more accurate than
+alternative, simpler approaches to estimation? (4) Does disruptive,
+in-process data collection and analysis (PSP) have significantly lower
+levels of adoption than non-disruptive, in-process data collection and
+analysis (Hackystat)?
+
+To test these hypotheses, we will employ a case study experimental
+design using approximately 20 student subjects in a graduate-level
+software engineering class.  The course will include the standard
+components of the one-semester introduction to the Personal Software
+Process.  The course will employ two forms of tool support: (1) the
+standard disruptive in-process PSP tool implemented as an Excel spreadsheet
+into which users manually enter time, size, and defect data, and
+distributed by the Software Engineering Institute \cite{SeiPSPtool}, and
+(2) the non-disruptive in-process Hackystat tool implemented as sensors
+into the student's development environment. For the first half of the
+course involving five programming projects, students will not have access
+to their Hackystat data, and will be required to use the PSP tool and PROBE
+estimation method.  During the second half of the course, they will
+continue to be required to gather and input data into the PSP tool, but
+will also have access to their Hackystat data and the additional dozen
+estimation methods used in the Leap case study \cite{csdl2-00-03}.  
+
+After the semester is over, we will perform a retrospective analysis
+of the PSP and Hackystat data sets, comparing their relative accuracy with
+respect to effort estimation. The data will also allow us to perform a
+partial replication of the Leap study regarding the performance of PROBE
+relative to other, simpler estimation methods.  We will gather qualitative
+data to investigate the perceived utility of disruptive vs. non-disruptive
+defect data collection and analysis.  Finally, we will perform a survey of
+the students four months after the semester to see which (if any) of the
+students continue to use the PSP tool, and which (if any) of the
+students continue to use Hackystat, and their reasons for their
+usage.
+
+\subsubsection{A case study of automated data collection and analysis for 
+Extreme Programming}
+
+Extreme Programming (XP) is perhaps the best known of the so-called ``Agile
+Programming Methods'' that have recently attracted attention in the
+software engineering community.  
+XP embraces automated technology when it
+adds clear value to developers; indeed, XP could not exist without
+automated unit testing such as those provided by the xUnit framework family
+\cite{xUnit}. Yet, XP method proponents eschew traditional disruptive,
+in-process data collection and analysis.  
+The primary goal of this case
+study is to determine if a developer-centric, non-disruptive,
+in-process approach to software engineering data collection and analysis is
+compatible with the practices of the XP development community. If
+so, our secondary goal is to determine if our data collection and analysis
+techniques can shed new light on the strengths and weaknesses of XP.
+
+To carry out this case study, we will solicit participation from industrial
+XP development groups through XP-related web sites, news groups, and
+through presentations at XP conferences and workshops. Through this
+process, we hope to obtain commitment from at least five XP development
+groups to participate in a trial use of the Hackystat toolkit over a two
+month period. 
+
+Our research hypotheses for this case study are similar to those for
+general validation: (1) Do XP developers perceive Hackystat analysis
+feedback to be useful? (2) Do XP developers actually make changes based
+upon the feedback they receive?  In addition to the data collected through
+the built-in Hackystat validation data gathering mechanism, we will also
+conduct on-site interviews with XP developers after two months of use.
+Although access to the actual development data collected by the Hackystat
+server might yield additional useful information, we will not depend upon
+such access for this study and organizations will be free to install a
+private Hackystat server to maintain confidentiality if they prefer.
+
+\subsubsection{A longitudinal case study of software development skill maturation}
+
+Over the three years of the project, we will incrementally deploy Hackystat
+into introductory and advanced programming classes at the University of
+Hawaii.  By the end of the project, we will have gathered data from the same
+students at multiple points along their path through the computer
+science degree program.  We expect to obtain data covering four separate
+semesters from at least 100 undergraduate and graduate students by the end
+of the project.
+
+The availability of this longitudinal data enables us to carry out a case
+study that can provide new understanding of how people change over time in
+the way they develop software and the kind of software they develop.  This
+increased understanding can help point the way to more effective and/or
+efficient methods for educating software developers.
+
+This case study will be retrospective, and will involve analysis of the
+Hackystat project data collected from students over the course of the
+study.  We will analyze the database to find the set of students satisfying
+the criteria of having collected Hackystat data covering at least four
+separate semesters, then contact them to obtain permission to use their
+data in this case study. If they accept, we will then solicit demographic
+data from them to support the analysis.  This data will include the grades
+they received in classes for which Hackystat data is available, along with
+their subjective evaluations of their skill at various aspects of software
+development during each semester, including time management, design,
+implementation, testing, and documentation.  
+
+Our research hypotheses are as follows: (1) Do the numbers and proportions
+of defect data (such as run-time errors and compilation interval) change as 
+a person gains development experience? (2) Do the numbers and 
+proportions of defect data correlate with academic achievement? (3) Do
+the values of complexity metrics (such as Chidamber-Kemerer's) grow as a
+person gains development experience? (4) How does the size of software
+projects change, and does the proportion of size change correlate with
+academic achievement?
+
+
+%\subsubsection{Timeline}
+%Figure \ref{fig:plans} shows our planned research schedule on a
+%semester-by-semester basis for the next four years, along with our target
+%goals for the number of production servers and size of our user community.
+
+%\begin{figure*}[ht]
+%\begin{small}
+%\begin{center}
+%\begin{tabular}{|l|p{3.5in}|l|} \hline
+%{\bf Semester} & {\bf Major Activity}  & {\bf Target adoption goal} \\ \hline
+%Spring, 2002 
+%& - Bootstrap technology development \newline
+%  - Initial use, UH software engineering classes 
+%& 50 users, 1 server \\ \hline
+%Fall, 2002
+%& - Bootstrap technology development \newline
+%  - Verification and validation \newline
+%  - Initial use, UH intro. programming classes
+%& 150 users, 2 servers \\ \hline
+%Spring, 2003 
+%& - Continuing use,  UH SE/intro programming classes \newline
+%  - Initial use, UH intermediate programming classes \newline
+%  - Initial use, industry sites \newline
+%  - Initial use, other universities \newline
+%  - Experiment: PSP and Hackystat
+%& 300 users, 5 servers \\ \hline
+%Fall, 2003
+%& - Continuing use, UH/industry/other universities \newline
+%  - Experiment: PSP and Hackystat
+%& 400 users, 10 servers \\ \hline
+%Spring, 2004
+%& - Continuing use, UH/industry/other universities \newline
+%  - Experiment: XP and Hackystat
+%& 500 users, 15 servers \\ \hline
+%Fall, 2004
+%& - Continuing use, UH/industry/other universities \newline
+%  - Experiment: XP and Hackystat 
+%& 600 users, 20 servers \\ \hline
+%Spring, 2005
+%& - Continuing use, UH/industry/other universities \newline
+%  - Verification and validation \newline
+%  - Case study: Longitudinal analysis, UH 
+%& 800 users, 25 servers  \\ \hline
+%Fall, 2005
+%& - Continuing use, UH/industry/other universities \newline
+%  - Verification and validation \newline
+%  - Case study: Longitudinal analysis, UH 
+%& 1000 users, 30 servers \\ \hline
+%\end{tabular} 
+%\end{center}
+%\end{small}
+%\caption{{\em Summary of the planned major activities and target adoption goals.}}
+%\label{fig:plans}
+%\end{figure*}
+
+
+ 

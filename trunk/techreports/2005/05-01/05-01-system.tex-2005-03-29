@@ -1,0 +1,1410 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 05-01-system.tex -- Thesis Proposal - PRI
+%% Author          : Aaron A. Kagawa
+%% Created On      : Mon Sep 23 11:52:28 2004
+%% Last Modified By: Aaron Kagawa
+%% Last Modified On: Wed Mar 23 01:03:26 2005
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 2004 Aaron A. Kagawa
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Implementing PRI with Hackystat}
+\label{chapter:system}
+To successfully use Priority Ranked Inspection, the determination of MINI
+and LINI must be obtainable for a very low cost. In other words, if the
+ranking function takes three months, or even 20 hours of management time,
+to generate, a software project will have long past the need for those
+specific recommendations. Therefore, this determination must be obtained in
+real-time without introducing new costs to the inspection process. 
+
+One way of obtaining ranking function values in real-time and without
+developer overhead is through the use of the Hackystat system. Hackystat is
+a framework for collecting and analyzing software product and development
+process metrics in real-time. For more information about the Hackystat
+system see Chapter \ref{chapter:hackystat}. For this proposed research, I
+have created an extension to Hackystat called the Hackystat Priority Ranked
+Inspection Extension (hackyPRI for short). This extension provides a
+real-time PRI ranking. Figure \ref{fig:ProjectWorkspaceRanking}
+demonstrates the use of the PRI ranking function by ranking a software
+project's workspaces.
+
+This chapter provides a detailed description of the Hackystat PRI
+(hackyPRI) extension. The sections in this chapter are organized with the
+high level, user instruction, information first and the low level, design
+and implementation, information last. In the first section, I provide a
+general introduction to PRI measures. Next, I provide a user level
+description of how to use the Hackystat PRI extension. Next, I discuss how
+hackyPRI supports the four steps of the Priority Ranked Inspection process.
+The last section provides a developer level explanation of the extension's
+design and implementation.
+
+\section{Limitations of Implementing PRI with Hackystat}
+Certainly, utilizing the real-time and low developer overhead collection
+and analysis features of Hackystat is not perfect for every organization.
+There are many barriers for the adoption of a PRI process implemented with
+Hackystat. For example, the barriers could include the initial cost of
+setting up and using Hackystat to collect process and product measures, the
+configuration of the ranking calibration, the devotion required to ensure
+that Hackystat provides accurate information, privacy issues associated
+with collecting information on developers, and possibly many more.
+Although, it is yet to be studied, I hypothesize that PRI will not be
+instantaneously beneficial to an organization. In other words, if an
+organization installs, configures, and uses hackyPRI for only one week,
+then I believe the rankings will not be as beneficial as another
+organization who has collected 3 years of Hackystat data.
+
+I have designed the Priority Ranked Process to be independent of any
+specific means of collection, analysis, and ranking. However, I have
+choosen to use Hackystat to implement PRI in this research, because the
+organization that I am studying has already faced and found solutions for
+the barriers listed above. The decission is basically a matter of
+convineince.
+
+
+
+
+\section{PRI Measures}
+PRI measures are the most important and most complicated component of
+hackyPRI. There are three fundamental aspects that must be understood by
+both users and developers of hackyPRI. The PRI measures are the collection
+of PRI measures, the different types of PRI measures, and the ranking of
+the PRI measures. The following sections introduces these concepts.
+
+\subsection{Collection of PRI Measures}
+PRI measures represent software product and development process measures
+that aid the determination of MINI and LINI documents. In the general
+Priority Ranked Process, PRI measures can be collected by any means. In
+hackyPRI, the Hackystat system is used to automate the collection of the
+PRI measures. In Hackystat, a product and process measure is implemented
+with three components. They are the Sensor Data Type, Sensor, and
+DailyProjectData representation. A Sensor Data Type defines the attributes
+associated with a measure. A Sensor is used to collect the measures in the
+software product or development process and send that information to a
+Hackystat server. The DailyProjectData representation provides a
+project-level representation of the low-level data that was collected by
+the Sensors. hackyPRI requires the use of these three components, therefore
+to successfully implement a PRI measure one must have the necessary
+Hackystat knowledge. In addition to the three Hackystat components;
+hackyPRI implements another component that represents a PRI
+measure. Section \ref{section:designAndImplementation} explains the
+implementation of PRI measures in detail.
+
+\subsection{Aggregate and Snapshot Measures}
+There are two different types of PRI measures. They are Aggregate and
+Snapshot measures. An Aggregate PRI measure is the result of the summation
+of calculated values obtained from processing one or more days of Hackystat
+Sensor Data. For example, the Active Time PRI measure is an Aggregate
+measure because it adds the values of active time over a specified time
+period. If developer A has generated 1.2, 1.0, and 2.0 hours of active time
+on three successive days, the aggregate Active Time measure would return
+4.2 hours. Snapshot measures are not aggregated. Instead, they represents
+the ``most recent'' value of a measure from one or more days. For example,
+the LOC (lines of code) measure does not make sense as an Aggregate
+measure.  If the system size was 1000, 1100, and 1200 on three successive
+days, then the aggregate of those numbers (3300) is not useful. Therefore,
+LOC is a Snapshot PRI measure. In hackyPRI, Aggregate and Snapshot measures
+must be implemented differently. Therefore, the decision of the type of PRI
+measure (either Aggregate or Snapshot) must be made carefully.
+
+\subsection{PRI Measure Ranking Function}
+\label{subsection:prirankingfunction}
+hackyPRI calculates a set of PRI measures for a single workspaces. To
+better illustrate this, see Figure \ref{fig:ProjectWorkspaceRanking}. In 
+this figure, each workspace has values gathered from many different PRI
+measures. Each individual PRI measure can and should be calibrated
+differently to rank its calculated values to best represent a MINI and LINI 
+determination. The calibration of a PRI measure includes four steps.
+
+\begin{enumerate}
+\item 0 to 100 measure ranking - once a PRI measure has gathered and
+  calculated data from the product and process measures obtainable from
+  Hackystat, it returns a ranking with values from 0 to a 100. 0 indicates
+  a bad ranking and 100 indicates the best possible ranking. Taking
+  coverage as an example, one could imagine that 0 would indicate 0 percent
+  coverage and a 100 ranking would be reserved for 100 percent coverage. To
+  accomplish this, certain thresholds must be indentified that are specific
+  for each PRI measure. This is hard for some measures and easy for others.
+  For example, for the calculated coverage percentage PRI measure, with
+  calculated values ranging from 0 percent to 100 percent, it is quite
+  simple to identify a 0 to 100 measure ranking. On the other hand, the
+  thresholds for the Lines of Code measure is less clear. The 0 to 100
+  measure rankings are hard coded into the hackyPRI system.
+\item Weights are assigned to each measure - It is possible that each PRI
+  measure affects the ranking differently. Therefore, each measure can be
+  given a different weight to reflect that difference. For example, an
+  organization may find that coverage is the leading indicator of MINI
+  documents and can weight coverage higher than any other PRI measure.
+  Weights can range from 0 to any integer. If a measure has a weighting of
+  0, then this measure will be ``disabled'' from the ranking function.
+  However, the measure will still be calculated and presented within the
+  ranking. These rankings are configurable through the hackyPRI interface
+  for each project within Hackystat and all measures are defaulted to a
+  weighting of 1 in the initial configuration of a Project PRI Ranking.
+\item Compute aggregate ranking for all measures - Once the independent
+  ranking and measure weights are in place the system will automatically
+  compute an aggregate ranking per workspace. A very simple example is the
+  following: workspace foo has these measure rankings \{92, 100, 30, 15\}
+  and these respective measure weighting \{1, 1, 1, 2\}. The aggregate
+  ranking of this workspace would be 252 [OR SHOULD IT BE 50 (252/500)?].
+\item MINI and LINI threshold computed - the last step of the 4 step
+  process is the declaration of MINI and LINI for each workspace based on
+  the aggregate ranking. 
+\end{enumerate}
+
+
+
+
+\section{User Interface}
+\label{section:userinterface}
+This section contains a description of the user interface components that
+are of importance when using the PRI ranking provided by hackyPRI. It
+should be noted that, like most Hackystat user interface components, the
+interface components associated with hackyPRI have not been thoroughly
+tested for Usability. However, it has gone through some scrutinization from
+the developers of Hackystat.
+
+Each description of the hackyPRI user interface commponents in this section
+will be comprised of both a Screenshot and a short description. 
+
+\clearpage
+\subsection{PRI Analyses}
+\begin{figure*}[htbp]
+  \centering
+  \includegraphics[width=1.00\textwidth]{figs/UserInterface/section-projectPriRanking.eps}
+  \caption[PRI analyses]{Presents the analyses that are provided by the
+    hackyPRI system.}
+  \label{fig:section-projectPriRanking}
+\end{figure*}
+This screenshot shows the Hackystat analyses that the hackyPRI system
+provides. The List Workspace analysis, the first Hackystat analysis in the
+screenshot, allows users to validate the set of workspaces associated with
+a specific project. Because, the PRI ranking provides rankings for
+workspaces it is important to ensure that all workspaces within your
+project is used in the PRI ranking. Therefore, it is very important that
+all the project's workspaces, including child workspaces, are obtainable by
+this analysis.
+
+The Project PRI Ranking analysis, the second Hackystat analysis in the
+screenshot, is much more important. This analysis provides the PRI ranking
+for the selected Project. The execution of this analysis results in a HTML
+table that ranks workspaces within the project according to the PRI ranking
+function described in Section \ref{subsection:prirankingfunction}. Before
+using this analysis, you must configure the PRI ranking, see
+\ref{subsection:configurationManagement}. 
+
+\clearpage
+\subsection{PRI List Workspace Analysis}
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=1.00\textwidth]{figs/UserInterface/analysis-listWorkspace.eps}
+  \caption[Execution of the List Workspace analysis]{Presents an example execution
+    of the List Workspace analysis.} 
+  \label{fig:analysis-listWorkspace}
+\end{figure*}
+This screenshot shows the result of the Hackystat List Workspace Analysis.
+This analysis allows users to validate the set of workspaces associated
+with a specific project. Because, the PRI ranking provides rankings for
+workspaces it is important to ensure that all workspaces within your
+project is used in the PRI ranking. Therefore, it is very important that
+all the project's workspaces, including child workspaces, are obtainable by
+this analysis. 
+
+The example result shown in this screenshot provides a table of all
+workspaces within a project. In this particular execution there are 1564
+workspaces associated with the hacky2004-all Project. These are the
+workapces that will be ranked by the PRI Ranking analysis. However, it
+should be noted that not all workspaces, shown in this analysis will be
+ranked, because not all of these workspaces have code associated with
+them. The PRI ranking will only process workspaces that contain code. 
+
+\clearpage
+\subsection{Project PRI Configuration Management}
+\label{subsection:configurationManagement}
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=1.00\textwidth]{figs/UserInterface/preference-config-kagawaa.eps}
+  \caption[Project PRI Configuration Management preference page]{The
+    Preference page that presents the Project PRI Configuration management.}
+  \label{fig:preference-config-kagawaa}
+\end{figure*}
+This screenshot presents the Project PRI Configuration management page. The
+configuration management is accessible on the Hackystat preferences page,
+shown in the screenshot in Figure \ref{fig:page-preferences}. All software
+projects are different, therefore the purpose of the configuration
+management page is to configure the PRI ranking function for a specific
+project.
+
+In this screenshot, I have no Project PRI Configurations available. There
+are two different sets of Configurations shown. The first table shows the
+Projects that you own. The second table shows the Projects that you are a
+member of. The configuration management allows the user to only create PRI
+Configuratioons for the projects that you own. For example, I must contact
+johnson@hawii.edu, the Project Owner for hacky2004-all, to create a PRI
+Configuration. 
+
+Once a Project PRI Configuration is created, then the Project Owner can
+modify and delete the configuration. 
+
+%%\clearpage
+%%\subsection{Project PRI Configuration Management}
+%%\begin{figure*}[ht]
+%%  \centering
+%%  \includegraphics[width=1.00\textwidth]{figs/UserInterface/preference-config-johnson.eps}
+%%  \caption[Project PRI Configuration Management preference page]{The
+%%    Preference page that presents the Project PRI Configuration management.}
+%%  \label{fig:preference-config-johnson}
+%%\end{figure*}
+
+
+\clearpage
+\subsection{Create a Project PRI Configuration}
+\label{subsection:createPriConfiguration}
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=1.00\textwidth]{figs/UserInterface/preference-createConfig-hacky2004all-johnson-full.eps}
+  \caption[Create Project PRI Configuration]{The Create a PRI Configuration 
+    page.}
+  \label{fig:preference-createConfig-hacky2004-all-jonhson-full}
+\end{figure*}
+In the previous section, I explained that only a Project owner may create a 
+PRI Configuration. Therefore, in this example, I've contacted the project
+owner and requested the creation of the PRI Configuration for the
+hacky2004-all Project. This screenshot presents the Create Project PRI
+Configuration webpage. To create a configuraiton, we must provide the
+following information:
+
+\begin{enumerate}
+\item File Extension - this setting allows the specification of the type of
+  programming language that is used in the PRI Ranking for this Project.
+  Valid entries are file extensions that contain a ``.'' followed by any
+  number of characters. For example, a valid entry could be ``.java'',
+  ``.cpp'', ``.html'', or whatever programming language file extension is
+  associated with your project. There are some problems associated with
+  this setting. First, this setting does not support Projects that are
+  implemented with more than one programming language. Second, the
+  Hackystat product and product measures implemented within Hackystat best
+  support the Java Programming language. By best support, I mean that other 
+  programming languages are supported but not to the extent of
+  Java. Furthoremore, I have not testet the generation of PRI racking for
+  other programming languages other than Java. Of course, the hackyPRI and
+  Hackystat systems can be fairly easy to extend to fully support any
+  programming language. However, for this research I will leave these
+  issues as a future enhancement. 
+\item Ignored Workspaces - this setting allows the specification of
+  workspaces that should be ignored in the PRI ranking. Simply put, I have
+  found that some workspaces in a Project need not be inspected. This can
+  happen for a couple of reasons. First, some workspaces contain code that
+  are no longer released. In this screenshot, the ``hackyCourse'',
+  ``hackyPrjSize'', ``hackyCocomo'', ``hackySQI'', and ``hackyJPLBuild''
+  are parent workspaces that should be ignored. The configuration will also 
+  ignore any child workspace under those parent workspaces. The other
+  ignored workspace, ``selector'' ignores any workspaces that contains the
+  string ``selector''. For the hacky2004-all project, selector code is an
+  anomoly that generally does not need to be inspected. 
+\item Measure Weighting - this setting allows the specification of the
+  weights associated with the PRI measures. By default, all PRI measure
+  weights are set to 1. Any possitive integer, including zero, are valid
+  weights. The measure weights are used to calibrate the individual PRI
+  measure rankings. Section \ref{subsection:prirankingfunction} explains
+  this in detail. If a weight is set to zero, then the PRI measure will not
+  affect the PRI ranking. If a measure's weight is set to 2, and all other
+  weighting remain at 1, then the measure will have twice the significance
+  as the other measures. Measure weighting is useful to correctly configure 
+  the measures' importance in the PRI ranking. For example, if Coverage is
+  a leading factor in the PRI ranking, then it should be weighted higher
+  than the other measures. This configuration provides this possibility. 
+\end{enumerate}
+
+
+\clearpage
+\subsection{Project PRI Configuration Management - After the Creation of
+  PRI Configuration}
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=1.00\textwidth]{figs/UserInterface/preference-configAfterCreate-johnson.eps}
+  \caption[Project PRI Configuration Management preference page]{The
+    Preference page that presents the Project PRI Configuration management.}
+  \label{fig:preference-configAfterCreate-johnson}
+\end{figure*}
+This screenshot presents the Project PRI Configuraiton management webpage
+after the creation of PRI Configuraiton. Provided in the webpage are the
+details of the configurations that have been created. In addition, the
+Project Owner can modify and delete the configuraiton. 
+
+%%\clearpage
+%%\subsection{Project PRI Configuration Management}
+%%\begin{figure*}[ht]
+%%  \centering
+%%  \includegraphics[width=1.00\textwidth]{figs/UserInterface/preference-configAfterCreate-kagawaa.eps}
+%%  \caption[Project PRI Configuration Management preference page]{The
+%%    Preference page that presents the Project PRI Configuration management.}
+%%  \label{fig:preference-configAfterCreate-kagawaa}
+%%\end{figure*}
+
+
+\clearpage
+\subsection{Project PRI Ranking Analysis}
+\label{subsection:projectPriRanking}
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=1.00\textwidth]{figs/UserInterface/analysis-priRanking-sortByRanking-full.eps}
+  \caption[Execution of the Project PRI Ranking analysis]{Presents an
+    example execution of the Project PRI Ranking analysis.}  
+  \label{fig:analysis-priRanking-full}
+\end{figure*}
+After the Project PRI Configurations have been successfully created and
+configured in the previous sections, then you can run the PRI Ranking
+analysis. The analysis is obatinable on the analyses page, Figure
+\ref{fig:page-analysis}, in the Project PRI Ranking section, Figure
+\ref{fig:section-projectPriRanking}.
+
+This screenshot presents the rankings of the hacky2004-all project. This is
+the Hackystat project that I will be studying. Due to page width
+constraints, the screenshot does not show the values of the numerous PRI
+measures in the table. Although, in this HTML table you will be able to
+view the workspace, the aggregate ranking, and all the values of each of
+the PRI measures. This particular execution of the analysis, ranks each
+workspace by its associated aggregate PRI ranking. It sorts the highest
+ranked workspaces (MINI) to the top of the HTML table and the lowest ranked 
+workspaces (LINI) to the bottom of the HTML table. Again, due to page size
+contraints the LINI workspaces are not shown in this particular
+screenshot. 
+
+%%\clearpage
+\subsection{Project PRI Ranking Analysis Selectors}
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=1.00\textwidth]{figs/UserInterface/analysis-priRanking-command.eps}
+  \caption[Project PRI Ranking analysis selectors]{Presents the
+    selectors that are available in the Project PRI Ranking analysis.}
+  \label{fig:analysis-priRanking-command}
+\end{figure*}
+This screenshot presents the user interface for the PRI Ranking analysis.
+There are five different selectors that users can set to determine the PRI
+Ranking that they would like to see.
+
+\begin{enumerate}
+\item Project PRI Configuration - users should use this selector to select
+  what PRI Configuration they would like to be used in the PRI ranking. A
+  PRI Configuration has a one-to-one correspondence with Hackystat
+  Projects, thus when you select a PRI Configuration you are also selecting 
+  what Project data to use in the PRI ranking. 
+\item Package Filter - users should use this selector to show workspaces
+  that contain a value of the string they enter into the textbox. For
+  example, if a user wants to generate the PRI ranking only for the
+  hackyKernel module, then they should enter in ``hackyKernel'' into the
+  Package Filter selector. An example screenshot of this use is shown in
+  Section \ref{subsection:projectPriRanking-hackyKernel}. In addition, if a
+  user wants to rank only analysis code, then the user can enter in
+  ``analysis'' and all workspaces that contain that value will be ranked.
+\item Refresh Calculation? - users should use this selector to either
+  re-generate the PRI ranking or use the last PRI ranking stored in the
+  system. This is an unusual and unique behavior for the standard set of
+  analyses provided by Hackystat. However, I feel that since the PRI
+  ranking takes an unusuall amount of time to generate, in some instances
+  two to five minutes, users will want to be able to play with the
+  selectors without having to wait for the re-generation of the ranking.
+  For example, users could change the PRI configuration weighting, sort by
+  ranking, use the Package Filter, or see the detailed view, without
+  wanting to re-generate the PRI ranking. 
+\item Sort By PRI Ranking? - users should use this selector to sort the
+  workspaces by PRI ranking or by the workspaces. Selecting ``Yes'', will
+  sort the highest ranked (MINI) workspaces to the top of the HTML table
+  and sort the lowest ranked (LINI) workspaces to the bottom of the HTML
+  table. Selecting ``No'', will sort the table by workspaces, which groups
+  all similar workspaces together. 
+\item Is Detailed? - users should use this selector to view detailed
+  informtion about the PRI ranking. Selecting ``Yes'', will provide the
+  weighted-rank for each measure. This will hopefully aid the measure
+  weighting configuration process. An example screenshot of the detailed
+  view is shown in Section \ref{subsection:projectPriRanking-detailed}.
+  Selectiing ``No'', will provide the standard output seen in Section
+  \ref{subsection:projectPriRanking}.
+\end{enumerate}
+
+
+\clearpage
+\subsection{Project Workspace Ranking Analysis - Detailed View}
+\label{subsection:projectPriRanking-detailed}
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=1.00\textwidth]{figs/UserInterface/analysis-priRanking-detailed.eps}
+  \caption[Execution of the Project Workspace Ranking analysis]{Presents an
+    example execution of the Project Workspace Ranking analysis.}  
+  \label{fig:analysis-priRanking-detailed}
+\end{figure*}
+This screenshots presents the results of a Project PRI Ranking with the
+``Is Detailed?'' selector set to ``Yes''. The detailed view shows various
+information that is not available in the regular view and it is intended to
+help the user understand how the rankings are computed, what workspaces are
+ignored, and what workspaces do not have Java implementation. What is shown
+in this screenshot is the detailed information about the PRI measure
+ranking (see Section \ref{subsection:prirankingfunction} for a detailed
+description of a PRI measure ranking). This detailed information will
+hopefully help the Project Ownder in the configuration of the PRI measure
+weighting (discussed in Section \ref{subsection:configurationManagement}).
+
+
+\clearpage
+\subsection{Project Workspace Ranking Analysis - hackyKernel }
+\label{subsection:projectPriRanking-hackyKernel}
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=1.00\textwidth]{figs/UserInterface/analysis-priRanking-hackyKernel.eps}
+  \caption[Execution of the Project Workspace Ranking analysis]{Presents an
+    example execution of the Project Workspace Ranking analysis.}  
+  \label{fig:analysis-priRanking-hackyKernel}
+\end{figure*}
+This screenshot presents the results of the Project PRI Ranking with the
+``Package Filter'' selector set to ``hackyKernel''. The most interesting
+use of the Package Filter is the Average PRI Ranking information obtainable 
+at the bottom of the webpage. The Average PRI Ranking provides the average
+ranking of all workspaces shown in the HTML Table. For hackyKernel
+workspaces the average ranking is 867.29. The ranking of other workspaces
+will differ. In my research I will be addressing the PRI Rankings of
+workspaces, however the PRI rankings can be attainable for whole modules as 
+well. It is my future hypothesis that ranking modules will also provide
+interesting results. 
+
+
+
+\clearpage
+\section{The Four Steps of the Priority Ranked Inspection Process}
+Hackystat PRI Extension supports the four steps of the Priority Ranked
+Inspection process. The following list is the four steps of the PRI
+process.
+
+\begin{enumerate}
+\item The creation of the PRI ranking function, which distinguishes MINI
+  documents from LINI documents. The ranking function design includes two
+  steps:
+\begin{enumerate}
+\item Selection of product and process measures to use in the PRI
+  ranking function.
+\item The calibration of the PRI measures, which includes determining
+  thresholds that provide the ranking of each measure. 
+\end{enumerate}
+\item The selection of a document for inspection based on the PRI
+  ranking function.
+\item The actual inspection of the selected document.
+\item Adjustment of product and process measure selection and
+  calibration based on the results of the inspection.
+\end{enumerate}
+
+The following subsections detail how hackyPRI supports the steps.
+
+\subsection{Step 1a: Selection of Product and Process Measures}
+Step 1 of the Priority Ranked Inspection process states that various
+product and process measures must be selected and calibrated to best
+distinguish MINI documents from LINI documents. Step 1a concentrates on the
+selection of the PRI measures and this selection process will not be the
+same for all software projects. Therefore, different software groups must
+be able to add new product and process measures to their own Hackystat PRI
+installation.
+
+A PRI measure is implemented with a WorkspacePriMeasure, explained in
+Section \ref{subsubsection:measurepackage}, and the following
+Hackystat-related components; a Sensor Data Type, a Sensor, and a
+DailyProjectData representation. The Hackystat system provides a set of
+various product and process measures and I will utilize a subset of the
+available measures to create the PRI measures. Table
+\ref{table:hackyPri-measurepackage} contains a description of the PRI
+measures that are implemented in hackyPRI. Each measure is collected for
+each package within a specified project. Figure
+\ref{fig:ProjectWorkspaceRanking} shows several example LINI packages.
+
+The next two sections provide a detailed illustration of how to add and
+remove PRI measures to and from the system.
+
+%Table \ref{table:measures-hackyPRI} contains a description of the
+%measures that will be used in the hackyPRI extension.
+
+\begin{figure*}[htbp]
+  \centering
+  \includegraphics[width=1.00\textwidth]{figs/2004-12-01-all_Page_01.eps}
+  \caption[Project Workspace Ranking analysis]{The Workspace PRI
+    analysis. Workspaces are listed with its respective PRI ranking and the
+    measures.}
+  \label{fig:ProjectWorkspaceRanking}
+\end{figure*}
+
+
+\subsubsection{Adding a new PRI measure to the system}
+\label{subsubsection:addPriMeasure}
+This section provides a detailed description of the steps that are required
+to add a new, hypothetical Runtime Execution PRI measure to the system.
+This measure represents the total number of runtime executions for a
+specific piece of code during the span of 24 hours. Although this measure
+is currently not obtainable in set of Hackystat measures, it has many
+practical applications. For example, a Hackystat analysis can map out the
+areas of a project that are executed the most during normal usage. This
+would be a great measure to incorporate into PRI, because one would assume
+that if classes in package foo are executed ten times more often than
+classes in package bar, all other measures being equal, then package foo
+could have a higher MINI ranking than package bar.
+
+\paragraph{Step 1 - Create a Runtime Execution Sensor Data Type} All
+Hackystat measures are concretely defined in a Sensor Data Type. This
+representation, specifies the exact information that is required to allow
+useful, interesting, and correct interpretations of the data. Essentially,
+it is the schema that defines the data. Therefore, the first step is to
+define the attributes of a Runtime Execution Sensor Data Type.
+
+\paragraph{Step 2 - Create a Hackystat Runtime Execution Sensor} Like all
+Hackystat measures, there must be some way of ``sensing'' the Runtime
+Execution measure. Utilizing the Java Management Extension (JMX) is one of
+the many possibilities for creating a Runtime Execution sensor. In any case,
+imagine such a software tool exist, such that a Hackystat sensor can
+extract the necessary information required by the Runtime Execution Sensor
+Data Type.  Once the sensor and Sensor Data Type have been implemented,
+Runtime Execution data can be sent to a Hackystat server.
+
+\paragraph{Step 3 - Create a DailyProjectRuntimeExecution representation}
+After the completion of steps 1 and 2, we should have Runtime Execution
+Sensor Data stored in Hackystat. This fine-grained data is meaningless if
+we are unable to associate the data to a specific Hackystat project. At
+this point, the creation of the DailyProjectRuntimeExecution representation
+is needed. The purpose of this representation is to provide coarse-grained
+information about Runtime Execution data at the project level. For example,
+the number of executions during June 14, 2005 for the package foo in
+project Bar.
+
+\paragraph{Step 4 - Create a WorkspacePriRuntimeExecution class}
+Up until this point we have not implemented a PRI measure. Instead, we have
+been implementing various Hackystat-related components that the PRI measure
+requires. Now we are ready to create the WorkspacePriRuntimeExecution
+class. As I previously mentioned each PRI measure must implement the
+WorkspacePriMeasure Interface (see Table
+\ref{table:hackyPri-WorkspacePriMeasure}). This creates a standard set of
+functions that all PRI measures must have. During the implementation of
+this class, a critical question must be answered; should this measure be an
+Aggregate or Snapshot measure? In other words, should the executions be
+aggregated over time or should the number of executions be obtained from
+the last set of data sent by the Runtime Execution sensor? That decision
+is debatable, therefore I would suggest designing all PRI measures as
+Aggregate measures. This will give you the ability to toggle the
+isAggregateMeasure between true and false (Aggregate and Snapshot) to
+determine which type works best.
+
+\paragraph{Step 5 - Add the WorkspacePriRuntimeExecution class to the
+  WorkspacePriMeasureClassInfo class} 
+This step requires the addition of two lines of code. Simply add a instance
+of the WorkspacePriRuntimeExecution to the collection of PRI measures that
+are used in the PRI ranking. In addition, you must add the instance to the
+a collection that creates the presentation of the PRI Ranking. This process
+can be streamlined in the future with the addition of configurable XML
+files that define PRI measures and its presentation components. However, I
+will leave this to a future implementation task.
+
+\paragraph{We are done!} 
+After finishing these five steps you have successfully added a new product
+measure to the PRI determination of MINI and LINI. You should now move on
+to Step 1b in the four step Priority Ranked Inspection Process (Section
+\ref{subsection:step1b}) to improve the calibration of this measure.
+
+
+\subsubsection{Removing a PRI measure from the system}
+\label{subsubsection:removePriMeasure}
+This section provides a detailed description of the steps that are required
+to remove PRI measure from the system. 
+
+\paragraph{Step 1 - Change the PRI Measure Weighting in the Project PRI
+  Configuration to Zero}
+In normal situations to remove a PRI measure from the PRI Ranking you
+simply need to set that measure's weighting to zero. See Section
+\ref{subsection:configurationManagement} and Section
+\ref{subsection:createPriConfiguration} for more information about changing 
+the PRI Configuration for a Project. 
+
+\paragraph{We are done!} 
+After finishing this one step you have successfully removed a PRI measure
+from the PRI determination of MINI and LINI. Of course, one could delete
+all Java implementation of the PRI measure you want to remove. This is
+quite simple but not suggested, because you'll might want that PRI measure
+in a future PRI ranking. 
+
+
+
+\subsection{Step 1b: Calibration of Product and Process Measures}
+\label{subsection:step1b}
+Each measure and its ranking function is implemented in the hackyPRI
+extension. The process of determining the rankings are not shown in Figure
+\ref{fig:ProjectWorkspaceRanking}, however the calibration and ranking
+function works behind the scenes.
+
+To make the important distinction of MINI and LINI involves a four step
+process; identifying thresholds to generate a 0 to 100 measure ranking and
+assigning weights for each measure. The former step is hard coded into the
+system. The latter step is a configurable for each Project in
+Hackystat. See Section \ref{subsection:prirankingfunction} for a detailed
+explanation of the PRI ranking function. 
+
+Once a PRI measure has gathered and calculated data from the product and
+process measures obtainable from Hackystat, it returns a ranking with
+values from 0 to a 100. 0 indicates a bad ranking and 100 indicates the
+best possible ranking. Taking coverage as an example, one could imagine
+that 0 would indicate 0 percent coverage and a 100 ranking would be
+reserved for 100 percent coverage. To accomplish this, certain thresholds
+must be indentified that are specific for each PRI measure. This is hard
+for some measures and easy for others. For example, for the calculated
+coverage percentage PRI measure, with calculated values ranging from 0
+percent to 100 percent, it is quite simple to identify a 0 to 100 measure
+ranking. A coverage percentage of 78 percent could return a 78 as its
+ranking. On the other hand, the thresholds for the Lines of Code measure is
+less clear. The 0 to 100 measure rankings are hard coded into the hackyPRI
+system.
+
+It is possible that each PRI measure affects the ranking differently.
+Therefore, each measure can be given a different weight to reflect that
+difference. For example, an organization may find that coverage is the
+leading indicator of MINI documents and can weight coverage higher than any
+other PRI measure.  Weights can range from 0 to any integer. If a measure
+has a weighting of 0, then this measure will be ``disabled'' from the
+ranking function. However, the measure will still be calculated and
+presented within the ranking. These rankings are configurable through the
+hackyPRI interface for each project within Hackystat and all measures are
+defaulted to a weighting of 1 in the initial configuration of a Project PRI
+Ranking.
+
+After all PRI measures generate an individual measure ranking (0-100) and
+the measure weights are in place, the system creates an aggregate ranking
+which combines the rankings and weights for all PRI measures for a specific
+workspace. The workspaces are then ranked by the aggregate ranking,
+sorting the MINI packages to the bottom and LINI packages to the top.
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{The Calibration used in hackyPRI}
+    \label{table:calibration-hackyPRI}
+    \begin{tabular}{|p{2.5cm}|p{3.0cm}|p{8.0cm}|} \hline
+      {\bf Measure} & {\bf Calibration} & {\bf Discussion} \\ \hline
+\small{}Expert & \small{}johnson=3 \newline anyone else=1 &
+\small{}Dr. Johnson is an active Hackystat developer. He is the most
+experienced programmer in CSDL. In addition, a lot of his development are
+technical over passes of the code to ensure that the code is of high
+quality. Therefore, code that he develops is weighted higher than
+others. \\ \hline
+
+\small{}Active Time & \small{}Not Weighted  &  \\ \hline
+\small{}Last Active Time & \small{}Not Weighted & \\ \hline
+\small{}\# of Developer \newline Active Time \newline Contributions & 
+\small{}3+ developers=2 \newline 2 developers=1 \newline 1 developer=0
+\newline none=0 & \small{}If code has been developed solely by one
+person, the code is more likely to contain defects. As more developers work 
+on the code, the less likely defects will occur. \\ \hline
+
+\small{}Commits & \small{}Not Weighted & \\ \hline
+\small{}Last Commit & \small{}Not Weighted & \\ \hline
+\small{}\# of Developer \newline Commit \newline Contributions & \small{} 
+\small{}3+ developers=2 \newline 2 developers=1 \newline 1 developer=0 &
+\small{}Commit data is another way to determine if developers are working
+on a particular piece of code. If code has been developed solely by one
+person, the code is more likely to contain defects. As more developers work
+on the code, the less likely defects will occur. \\ \hline
+
+\small{}Review & \small{}2+ reviews=2 \newline 1 review=1 \newline none=0 & 
+More reviews (inspections) that are conducted equals higher quality code. \\ \hline
+\small{}Last Review & \small{}today-last$>$30=2 \newline today-last$<$31=1
+\newline none=0 & \small{}Code that has been reviewed recently tends to be
+higher quality code. \\ \hline 
+
+\small{}Defects & \small{}>0=1 & \small{}Open defects represent a problem
+in the system. If there one or more then this will impact the quality of
+the code. \\ \hline
+%%\small{}Last Defect & \small{}Not Weighted & \small{}In development \\ \hline
+
+\small{}File Metrics & \small{}Not Weighted & \small{} \\ \hline
+\small{}Test File Metrics & \small{}Not Weighted  & \small{} \\ \hline
+
+\small{}Dependency & \small{}1=inbound$>$outbound & \small{}Inbound
+references represents the number of references that use a specific
+class. Outbound represents the number of references that the class
+uses. The more inbound references the more likely changes in a class will
+impact other classes.\\ \hline
+
+\small{}Unit Test & \small{}$>$0=1 & \small{}Each day a set of unit tests
+are executed against the system. If there is at least one or more
+executions then we can be fairly certain that some portion of the system
+was tested. However, this does not represent the effectiveness and
+thoroughness of the tests. Effectiveness and thoroughness can be measured
+with a combination of Test Failure, Coverage, and Defects.\\ \hline
+
+\small{}Test Failures & \small{} & \small{} \\ \hline
+
+\small{}Coverage & \small{}100\%=2 \newline 99-90+\%=1 \newline 89-0=\%=0 &
+\small{}Higher coverage percentage, every thing else being equal,
+translates to higher quality code. \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+There are several issues with the ranking and numerical thresholds that I
+still need to address. For example, I explicitly determine thresholds using
+my own subjective opinion of what is low versus high quality. I will need
+to explore if my subjective opinion is sufficient. For example, if some
+measures should be ranked with more weight than others, or if any other
+entirely different ranking methods provide more accurate results.
+
+\subsubsection{Calibrating a PRI measure}
+\label{subsubsection:calibratePriMeasure}
+This section provides a detailed description of the steps that are required
+to calibrate the Runtime Execution PRI measure. This measure represents the
+total number of runtime executions for a specific piece of code during the
+span of 24 hours. This would be a great measure to incorporate into PRI,
+because one would assume that if package foo is executed ten times more
+often than package bar, all other measures equal, then package foo could
+have a higher MINI ranking than package bar. Note that these steps are for
+the developers and not the users. Users of the system will not have to
+write Java code to calibrate a PRI measure. 
+
+\paragraph{Step 1 - Take an initial guess}
+In the previous paragraph, I hinted at an initial guess of one possible
+calibration of the Runtime Execution PRI measure. Step 1 requires that the
+developer of hackyPRI create a calibration based on either an initial guess
+or even hard evidence. The calibration of the Runtime Execution PRI measure
+requires the definition of certain thresholds. For example, 50 executions
+could represent the threshold for a high ranking and 10 executions could
+represent the threshold for a low ranking. 
+
+%%This calibration is implemented
+%%in code similar to Table
+%%\ref{table:hackyPri-WorkspacePriCommitContribution-getPriRank}.
+
+\paragraph{Step 2 - Run the PRI analysis and analyze the results}
+Do not spend a great deal of time contemplating defining the thresholds in
+Step 1, because a calibration is useless unless you have concrete data.
+Therefore, Step 2 requires that you run the PRI ranking on a real software
+project to analyze the results of your initial calibration. The amount of
+effort that is put into validating the calibration of the measures should
+directly affect the effectiveness of the PRI ranking. To thoroughly
+calibrate a PRI measure, one must conduct inspections on a sample of the
+rankings to determine its validity. 
+
+\paragraph{Step 3 - Monitor inspection results over time}
+Software products and development process evolve over time; therefore the
+calibration of the PRI measures that represent them must evolve as well.
+Monitoring the inspection results and comparing them to the calibration of
+PRI measures is a continuous requirement. For example, if you find that
+Runtime Execution information does not have as much as a affect that was
+once determined, then the calibration must be adjusted.
+
+\paragraph{We are done!} 
+After finishing these three steps you have successfully calibrated a PRI
+measure.
+
+
+
+\subsection{Step 2: Selecting a Document for Inspection Based on the PRI
+  Ranking} Using the Hackystat PRI Ranking analysis (Figure
+\ref{subsection:projectPriRanking}, an organization should select a
+document at the bottom of the PRI ranking table for inspection. The higher
+the document is in the table, the less it is in need of inspection.
+
+In my initial studies, I have found that simply picking the highest
+priority document, or the document that is at the very bottom of the chart,
+will probably not be the ``best'' document to inspect. In most cases, I
+have found that the PRI ranking aids the selection of a document, but it
+does not select the document automatically. In other words, it is more
+useful to consider a few documents from the bottom portion of the ranking
+and take an educated guess as to which document needs inspection more.
+
+\subsection{Step 3: Conducting an Inspection of the Selected Document}
+Once a document is selected it can be inspected. One interesting side
+effect of the PRI ranking is that specific statistics and measures can be
+presented during the inspection process. For example, if a document is
+selected because it has low coverage, then the inspection can focus on why
+the coverage is low. However, in my evaluation of PRI, I will keep all PRI
+information a secret. 
+
+Of course, the Hackystat PRI Extension or the PRI process does not support
+the actual inspection of the document. An organization should consult
+traditional inspection processes (i.e., Software Inspection, Fagan
+Inspection, In-Process Inspection, etc). In other words, the PRI process is
+an outer layer that wraps around an already established inspection process.
+
+\subsection{Step 4: Adjustment of the Measure Selection and Calibration}
+If a document is shown to be incorrectly ranked, then an adjustment of the
+PRI ranking function is necessary. In hackyPRI, this can be accomplished
+by adding more PRI measures (Step 1a) or recalibrating the numerical
+thresholds associated with the measures (Step 1b). More specifically, a
+recalibration includes editing the Java source code in the hackyPRI system.
+Conceptually, recalibration would be as easy as editing the information
+presented in Table \ref{table:calibration-hackyPRI}.
+
+
+\section{PRI Measure Ranking}
+\label{section:priMeasureRanking}
+This section describes the PRI measure ranking (0 to 100) for each of the
+currently available PRI measures. [NOT COMPLETED. SEE
+http://csdl.ics.hawaii.edu/techreports/05-01/PriMeasureRanking.html FOR A
+CURRENT VERSION OF THIS SECTION.]
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{The Expert PRI Measure Calibration}
+    \label{table:calibration-expert}
+    \begin{tabular}{|p{2.5cm}|p{11.0cm}|} \hline
+\multicolumn{2}{|c|}{\bf Expert PRI Measure Calibration} \\ \hline
+{\bf Calibration} & johnson=100 \newline anyone else=50 \newline no expert=0 \\ \hline
+\multicolumn{2}{|p{13.5cm}|}{Dr. Johnson is an active Hackystat developer. He is the most
+experienced programmer in CSDL. In addition, a lot of his development are
+technical over passes of the code to ensure that the code is of high
+quality. Therefore, code that he develops is weighted higher than
+others.} \\ \hline
+    \end{tabular}
+  \end{center}
+\end{table}
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{The Active Time PRI Measure Calibration}
+    \label{table:calibration-activeTime}
+    \begin{tabular}{|p{2.5cm}|p{11.0cm}|} \hline
+\multicolumn{2}{|c|}{\bf Active TIme PRI Measure Calibration} \\ \hline
+{\bf Calibration} & active time / the maximum active time * 100 \\ \hline
+\multicolumn{2}{|p{13.5cm}|}
+{} \\ \hline
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+\section{Design and Implementation}
+\label{section:designAndImplementation}
+This section describes the design and implementation of the Hackystat PRI
+Extension (hackyPRI). My development of the hackyPRI system has been an
+ongoing process with many different revisions and enhancements. It has
+taken me three major evolutions of the design and implemention to obtain
+the level of functionality described in the previous sections. The software
+has gone from a very simple and very slow-processing system, then to a
+optimized and robust system, then finally to configurable system that
+supports different projects and organizations.
+
+This section provides a very detailed look at the design and implementation
+of the system. Knowing this low level information provides relatively
+little advantage in respect to accutally using hackyPRI. However, the
+design and implementation is presented in such detail to provide future
+developers with the neccessary information to continue the work that I have 
+started. 
+
+
+The hackyPRI system is written entirely with Java technologies and is fully
+compatitable with the Hackystat system. The system is currenlty installed
+and running on the Collaborative Software Development Laboratory's Public
+Hackystat Server (http://hackystat.ics.hawaii.edu). The source code,
+javadocs and other useful information about the system is freely obtainable
+on the Hackystat Developement Website (http://www.hackystat.org).
+
+\subsection{Design}
+[ADD A GRAPHIC OF HOW IT WORKS!]
+
+\subsection{Implementation}
+The Hackystat PRI Extension has a fairly complicated design. It consists of
+numerous classes organized by eleven different Java packages. See Table
+\ref{table:hackyPRI-packagestructure} for a listing and description of all
+the packages. In the next sections, I describe the design and
+implementation of some of the important hackyPRI packages. 
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{Java Packages in the hackyPRI system}
+    \label{table:hackyPRI-packagestructure}
+    \begin{tabular}{|p{8.0cm}|p{7.0cm}|} \hline
+      {\bf Package} & {\bf Description} \\ \hline
+
+\small{}\emph{org.hackystat.app.pri.admin.analysis.remove} &
+\small{}Provides administrative facilities for deleting the PRI measure
+caches. \\ \hline 
+
+\small{}\emph{org.hackystat.app.pri.analysis.listworkspace} &
+\small{}Provides the List Workspace analysis, which simply lists the
+workspaces within a Project. \\ \hline 
+ 
+\small{}\emph{org.hackystat.app.pri.analysis.workspace} & \small{}Provides
+the Project Workspace Ranking analysis, which provides the PRI ranking for
+a specified project. \\ \hline
+
+\small{}\emph{org.hackystat.app.pri.analysis.workspace.selector} &
+\small{}Provides various selectors used in the Project Workspace Ranking
+analysis. \\ \hline 
+
+\small{}\emph{org.hackystat.app.pri.model.configuration} & \small{}Provides
+the Project PRI Configuration representation, which models the
+configuration of PRI attributes for a sepcific Project's PRI ranking. \\
+\hline  
+
+\small{}\emph{org.hackystat.app.pri.model.configuration.selector} &
+\small{}Provides various selectors that allow the selection of Project PRI
+Configuraiton in the Hackystat analyses. \\ \hline
+
+\small{}\emph{org.hackystat.app.pri.model.workspace} & \small{}Provides the
+Project Ranking Workspace representation, which calculates, stores and
+ranks the PRI ranking for a specified project. \\ \hline
+
+\small{}\emph{org.hackystat.app.pri.model.workspace.measures} &
+\small{}Provides the implementation of various PRI measures, which are used
+in a Project's PRI ranking. \\ \hline
+
+\small{}\emph{org.hackystat.app.pri.model.workspace.measures.helper} &
+\small{}Provides classes that aid in the calcualation of the PRI
+measures. \\ \hline  
+
+\small{}\emph{org.hackystat.app.pri.prreference.configuration} &
+\small{}Provides a set of Project PRI Configuration preference commands,
+which allows the user to create, modify, and delete Proejct PRI
+Configurations. \\ \hline 
+
+\small{}\emph{org.hackystat.app.pri.util} & \small{}Provides utility
+classes that aid the processing of PRI calculations. \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+
+\subsubsection{Package org.hackystat.app.pri.model.workspace.measure}
+\label{subsubsection:measurepackage}
+This package provides Java classes that represent the PRI measures. Each
+measure implements the WorkspacePriMeasure Interface, shown in its entirety
+in Table \ref{table:hackyPri-WorkspacePriMeasure}. The purpose of this
+interface is to standardize the functionality of each and every measure.
+For example, each measure must be able to calculate its value, return the
+calculated value in a readable form, and determine the PRI ranking (0-100
+ranking mentioned in Section \ref{subsection:prirankingfunction}) based on
+the calculated value. The standardization of the functionality of PRI
+measures greatly improved the configurability of the system. In addition,
+the interface defines four methods: isAggregateMeasure, isCacheEnabled,
+writeCache, and readCache, which provide the ability to persistently save
+the results of a measure for future use. Once the measure is calculated it
+should not need to be re-calculated. The use of a persistent cache greatly
+reduces the processing time required to provide a PRI ranking for a
+specified Project. PRI measure persistency is the first level of
+optimizations in the hackyPRI system. The second is described in the
+\emph{workspace} package. Optimization is an important aspect of hackyPRI,
+because the PRI rankings span accross the lifetime of the Project which
+includes all Hackystat data ever collected. As you can imagine, without
+some sort of persisitency and optimization, generating a PRI ranking will
+be quite computationally expensive.
+
+One specific example of one of the PRI measures is the Commit Contribution
+measure. Like all PRI measures provided by hackyPRI, the Commit
+Contribution measure implements the WorkspacePriMeasure Interface and
+therefore provides a standard set of functionality. Each PRI measure has
+its own specific defining characterisitcs. First, it is an Aggregate PRI
+measure. Therefore, its isAggregateMeasure and isCacheEnabled measure both
+return the boolean true. Second, it is obvious that each measure is
+calculated differently. Each measure accesses Hackystat in specific ways to
+obtain the values of the product and process measures. Third, in order to
+return the PRI ranking for this measure, it contains a unique threshold
+configuration to determine what ranking, a value of 0 to a 100, to return.
+
+Table \ref{table:hackyPri-measurepackage} presents a summary listing of
+all the classes in this package. 
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption[WorkspacePriMeasure Interface]{The WorkspacePriMeasure
+      Interface that defines the functionality of all PRI measures.}
+    \label{table:hackyPri-WorkspacePriMeasure}
+    \begin{tabular}{|p{14.0cm}|} \hline
+
+\begin{alltt}{\tiny{}
+  /**
+   * Returns the label of this measure.
+   * @return The label of this measure.
+   */
+  public String getLabel();
+  
+  /**
+   * Determines if the measure is an aggregation of past data. If this method returns true,
+   *   then this indicates that each day since the start day of the project is used to calculate
+   *   the measure's value. If this method returns false, then the measure is calculated from 
+   *   the last build day.
+   * @return True if the measure is an aggregate calculation, false otherwise.
+   */
+  public boolean isAggregateMeasure();
+  
+  /**
+   * Determines if the cache is enabled. Generally, measures that are calculated in an aggregation
+   *   of past data is cached. 
+   * @return True if the cache is enabled, false otherwise.
+   */
+  public boolean isCacheEnabled();
+  
+  /**
+   * Calculates and returns the value of the PRI measure for the specified workspace and day.
+   * @param workspace Specifies the workspace to calculate the measure for.
+   * @param day Specifies the day to calculate the measure for. 
+   * @throws Exception If a problem occurs.
+   */
+  public void calculate(String workspace, Day day) throws Exception;
+  
+  /**
+   * Returns the formatted String of the calculated value.
+   * @param workspace The workspace to get the calculated value.
+   * @return The formatted value.
+   */
+  public String formatCalculatedValue(String workspace);
+  
+  /**
+   * Returns the PRI ranking for the value associated with the workspace.
+   * @param workspace Specifies what workspace to get the PRI ranking for.
+   * @return The PRI ranking for the value associated with the workspace.
+   */
+  public int getPriRank(String workspace);
+  
+  /**
+   * Writes out the cache objects associated with this instance of the measure
+   *   object. The collection of caches are stored in the Project owner's partitions.
+   * @throws Exception If a problem occurs.
+   */
+  public void writeCache() throws Exception;
+  
+  /**
+   * Reads in the cache objects associated with this instance of the measure
+   *   object and creates an internal representation of the cache. The collection of caches 
+   *   are stored in the Project owner's partitions.
+   * @throws Exception If a problem occurs.
+   */
+  public void readCache() throws Exception;
+}\end{alltt} \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption[The measure package]{Summary description of all classes in the 
+      org.hackystat.app.pri.model.workspace.measure package}
+    \label{table:hackyPri-measurepackage}
+    \begin{tabular}{|p{5.5cm}|p{9.5cm}|} \hline
+      {\bf Class Name} & {\bf Description} \\ \hline
+
+\small{}\emph{WorkspacePriMeasure} & \small{}Provides an Interface of all PRI
+measures. \\ \hline 
+
+\small{}\emph{WorkspacePriCache} & \small{}Provides an internal cache of the
+calculated values of the PRI measures \\ \hline
+
+\small{}\emph{WorkspacePriActiveTime} & \small{}Provides the PRI active time
+measure, which represents the total aggregate active time for each
+workspace in a project.\\ \hline 
+
+\small{}\emph{WorkspacePriActiveTimeContribution} & \small{}Provides the PRI
+active time contribution measure, which represents the total aggregate
+number of active time member contributions for each workspace in a
+project. \\ \hline  
+
+\small{}\emph{WorkspacePriActiveTimeLast} & \small{}Provides the PRI last active
+time day measure, which represents the last day active time was recorded
+for each workspace in a project.\\ \hline
+
+\small{}\emph{WorkspacePriCommit} & \small{}Provides the PRI commit measure, which
+represents the total aggregate number of commits for each workspace in a
+project. \\ \hline 
+
+\small{}\emph{WorkspacePriCommitContribution} & \small{}Provides the PRI commit
+contribution measure, which represents the total aggregate number of commit
+member contributions for each workspace in a project. \\ \hline
+
+\small{}\emph{WorkspacePriCommitLast} & \small{}Provides the PRI last commit day
+measure, which represents the last day commit information was recorded for
+each workspace in a project. \\ \hline
+
+\small{}\emph{WorkspacePriCoverage} & \small{}Provides the PRI coverage measure,
+which represents the latest snapshot of the method level coverage
+percentage for each workspace in a project.  \\ \hline
+
+\small{}\emph{WorkspacePriDependency} & \small{}Provides the PRI dependency
+measure, which represents the latest snapshot of the number of inbound and
+outbound dependency references for each workspace in a project. \\ \hline
+
+\small{}\emph{WorkspacePriExpert} & \small{}Provides the PRI expert measure, which
+represents the project member who has the most active time and commits for
+a each workspace in a project. \\ \hline
+
+\small{}\emph{WorkspacePriFileMetric} & \small{}Provides the PRI file metric
+measure, which represents the latest snapshot of the number of lines of
+code, number of methods, number of classes for each workspace in a
+project.\\ \hline 
+
+\small{}\emph{WorkspacePriIssue} & \small{}Provides the PRI issue measure, which
+represents the latest snapshot of the total number of relevant issues
+(open, major, bug) for each workspace in a project. \\ \hline
+
+\small{}\emph{WorkspacePriReview} & \small{}Provides the PRI review measure, which
+represents the total aggregate number of review issues for each workspace
+in a project.  \\ \hline 
+
+\small{}\emph{WorkspacePriReviewLast} & \small{}Provides the PRI last review day
+measure, which represents the last day review issues was recorded for each
+workspace in a project.  \\ \hline
+
+\small{}\emph{WorkspacePriTestFileMetric} & \small{}Provides the PRI file metric
+measure, which represents the latest snapshot of the number of lines of
+test code,  number of test methods, number of test classes for each
+workspace in a project.\\ \hline 
+
+\small{}\emph{WorkspacePriUnitTest} & \small{}Provides the PRI unit test measure,
+which represents the latest snapshot of the number of executed unit tests
+for each workspace in a project. \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+\clearpage
+\subsubsection{Package org.hackystat.app.pri.model.workspace} This package
+provides classes that manage the PRI measures. It can viewed as the
+Contoller portion of the Model-View-Controller design pattern for
+calculating a Project's PRI ranking. This package's most important task is
+to control the computation, measure rankings, and persistency to the PRI
+measures at specific times in the processing of a PRI ranking. 
+
+An important class in this package is the ProjectWorkspaceRanking class.
+This class implements the algorithm presented in Table
+\ref{table:hackyPri-ProjectWorkspaceRanking-algorithm}. This algorithm is the
+second level of optimization in hackyPRI system, it is optimized to quickly
+calculate the PRI rankings for a Project. The algorithm determines when to
+process the PRI measures, when to persistently store them, when to gather
+the measure's rankings, when process Aggregate or Snapshot measures, etc.
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{ProjectWorkspaceRanking algorithm}
+    \label{table:hackyPri-ProjectWorkspaceRanking-algorithm}
+    \begin{tabular}{|p{14.0cm}|} \hline
+\begin{alltt}{\scriptsize{}
+FOR each day starting from the project's end day to the project's start day
+  IF the daily build is buildSuccessful
+    successfulBuildDay = currentDay
+  END IF
+END FOR
+
+FOR each day starting from the project's start day to the project's end day
+  create new WorkspacePri object or retrieve from cache
+  IF day is equal to successFulBuildDay
+    process snapshot product and process measures and add value
+      to WorkspacePri object
+  END IF
+  process aggregate product and process measures and add value
+    to WorkspacePri object
+END FOR 
+
+Rank according to PRI ranking determined by the Workspace Pri calibration
+}\end{alltt}
+\\ \hline
+    \end{tabular}
+  \end{center}
+\end{table}
+
+In addition, the ProjectWorkspaceRanking class generates the aggregate PRI
+ranking for each workspace in the ranking. For a single workspace within
+the ranking, the ProjectWorkspaceRanking class accesses each independent
+PRI measure ranking and using the weights configured in the Project PRI
+Configuraiton it generates an aggregate ranking. A very simple example is
+the following: workspace foo has these measure rankings \{92, 100, 30, 15\}
+and these respective measure weighting \{1, 1, 1, 2\}. The aggregate
+ranking of this workspace would be 252 [OR SHOULD IT BE 50 (252/500)?].
+
+Another important class in this package is the
+ProjectWorkspaceRankingManager. This class manages ProjectWorkspaceRanking
+classes. It determines whether or not a PRI ranking was already calculated
+for a specified Project, whether or not to re-calculate the PRI ranking,
+and whether or not the Project and Configuration information has changed.
+These determinations are part of the third and last level of optimization
+in the hackyPRI system. The basic idea behind this optimization is that
+once a correct PRI ranking has been calculated then the system should not
+re-calculate the ranking again. However, the ProjectWorkspaceRankingManager 
+is able to determine when a re-calculationg is necessary. 
+
+Table \ref{table:hackyPri-workspacepackage} provides a summary
+description of all classes in this package. 
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption[The workspace package]{Summary description of all classes in the 
+      org.hackystat.app.pri.model.workspace package}
+    \label{table:hackyPri-workspacepackage}
+    \begin{tabular}{|p{6.0cm}|p{8.0cm}|} \hline
+      {\bf Class Name} & {\bf Description} \\ \hline
+
+ProjectWorkspaceRankingManager & Provides the management of a collection of 
+ProjectWorkspaceRanking objects. \\ \hline
+
+ProjectWorkspaceRanking & Provides the facilities to calculate PRI measures 
+and create a ranking based on the calculated results.\\ \hline
+
+WorkspacePriValues & Provides a collection of measure values for a
+specified workspace. Used primarily for presentation purposes. \\ \hline
+
+PriRankComparator & Provides a comparator that compares the PRI ranking
+value from two WorkspacePriValues objects. \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+
+\subsection{Design and Implementation Improvements}
+As I previously stated, the Hackystat PRI Extension (hackyPRI), has evolved
+significantly as I discover new ways to optimize the calculations necessary
+to create a PRI ranking and to better support configuration for different
+projects and organizations.
+
+Optimization is one of the major features that I have recently implemented.
+In previous designs, the system's execution time, the duration of time
+required to create a Project's PRI ranking, was unacceptable. In the first
+version of hackyPRI, the system required 60 minutes to execute a complete
+PRI ranking for the hacky2004-all Hackystat project, which contains 2 years
+of Sensor Data gathered from 9 different Hackystat users (approximately 14
+thousand Hackystat XML sensor data files, roughly equal to 956 Megabytes of
+data). This result was collected on a computer with a 3.4 GHz Pentium 4
+processor with Hyperthreading and 1.00 GB of RAM. Furthermore, the system
+will need 60 minutes to process the same project's data for each and every
+execution. In my opinion, this execution time violates the intended design
+of ``real-time'' PRI rankings. This slow execution time hampers the ability
+to properly calibrate the PRI measures. 
+
+Therefore, in subsequent versions of the system, the computation time has
+been greatly improved. Under normal situations the execution time has been
+reduced from 60 minutes to exectution times that range from a fraction of
+second to 5 minutes for the same Hackystat project and on the same 3.4 GHz
+computer. Using the longer duration, this is a 92 percent decrease in
+processing time. In my opinion, I have a achieved the goal of a
+``real-time'' PRI ranking. A simple persistent caching of the calculated
+values accounted for the majority of the dramatic decrease in execution
+time. However, there are two situations where the execution time will
+become quite lengthy. First, when the persistent caches are non-existent.
+Second, when the persistent caches are deleted. In these two cases, the
+system must calculate and persistently store the caches. This action
+requires approximately 50 minutes on the same computer. However, once this
+action is executed, the system should not require it. Therefore, under
+normal situations the execution time ranges from a fraction of a second to
+5 minutes. Of course, execution times will vary depending on the Hackystat
+server's speed, memory, and on the amount of project data.
+
+
+The second area of constant development focuses on the ability to configure
+hackyPRI for other organizations and projects. In previous versions of the
+system, it was quite impossible to extend and configure for other software
+projects without a significant amount of developer effort. For example, in
+a previous version, it definitely could be the case that another
+organization would have needed to totally redesign the system in order to
+create a PRI ranking that works best for them. Obviously, that was a major
+problem that was hopefully rectified. Step 1 of the Priority Ranked
+Inspection process states that various product and process measures must be
+selected and calibrated to best distinguish MINI documents from LINI
+documents. This selection process will not be the same for all software
+projects. Therefore, it is quite obvious that a properly designed system
+will allow the configuration of different product and process measures
+without having to completely redesign the system. For hackyPRI to be
+successful different software projects should be able to easily extend the
+current set of PRI measures.
+
+The current version of hackyPRI implements smaller and more configurable
+pieces. Under this new design, when a new PRI measure is added to the
+system only a few lines of code must change. In addition, swapping
+different PRI measures in and out of the ranking is now very simple. See
+sections \ref{subsubsection:addPriMeasure}, and
+\ref{subsubsection:calibratePriMeasure} for a detailed description of the
+steps required to add, remove, and calibrate a PRI measure.
+
+
+\section{Future Implemention Enhancements}
+The developement of the hackyPRI extension is by no means complete. Rather
+it is just in its infancy. There are many improvements that can be made to
+the system to better support the Priority Ranked Inspection process. The
+following is short list of some possible future implementation
+enhancements. 
+
+
+\subsection{PRI Measure Ranking}
+Currently, the PRI measure ranking (the 0 to 100 ranking provided by each
+PRI measure) is hard coded into the Java implementation. I have choosen to
+do this at this time, simply because creating a configurable 
+measure ranking would be too time consuming. Furthermore, I'm not totally
+convinced that users of PRI should be able to change these low level
+rankings. In my current model, users are allowed to represent their own
+calibration by changing the measures' weights. 
+
+If I find that a configurable measure ranking is needed, then one possible
+solution could be the Jess tool.
+
+
+\subsection{Other Levels of Ranking}
+Currently, hackyPRI only supports a PRI ranking for workspaces. Other
+levels of PRI rankings could be possible. For example, ranking modules,
+Java Classes, or even methods with in a Java class. It is not know if there
+are any advantages of providing different levels of rankings at this time.
+Futuremore, I currently, do not know the level of programming difficulty
+that would come with adding these different levels. However, I have hunch
+that this would not be too difficult.
+
+
+\subsection{Link with Software Project Telemetry}
+hackyPRI currently is not well designed for tracking changes over time. For
+example, if a developer suddenly adds 200 lines of code to a Java class
+that was previously 50 lines of code, then that could indicate a possible
+problem. Thus affecting the MINI and LINI determination for that Java
+class. Therefore, I believe that adding the variation of trends into the
+PRI ranking function will be a huge contribution to its overall robustness.
+In addition, I believe that tracking the trends of the determination of
+MINI and LINI and the validation of its correctness by conducting
+inspections over time will be a useful analysis, which could aid the
+calibration of the PRI ranking function.
+
+Software Project Telemetry \cite{csdl2-04-11} is a new approach to software
+project management which uses Hackystat to provide high-level development
+trends. This infrastructure is an excellent way to provide both trends in
+the values of PRI measures and the validation of the correctness of the
+MINI and LINI determination. I believe it would be quite easy to create the
+necessary Telemetry components to make this possible.
+
+
+\subsection{Automatic Calibration Feedback Loop}
+Since hackyPRI is implemented with Hackystat and Hackystat provides
+measures of product and process data, I believe it could be possible to
+automatically calibrate the PRI ranking function. This is a possibility,
+because Hackystat can collect validation data probably in the form of data
+collect from inspections. If enough inspections are conducted then
+Hackystat could figure out the best possible calibration to identify the
+best possible inspection results. There are many human factors that can
+jepordize this possibility. For example, if the amount of time spent on
+each inspection varies, then it would be dificult for the automatic
+processor to determine how to calibrate the measures with inconsistent
+data. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

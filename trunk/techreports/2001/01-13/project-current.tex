@@ -1,0 +1,140 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% project-current.tex -- 
+%% Author          : Philip Johnson
+%% Created On      : Thu Oct  4 08:28:29 2001
+%% Last Modified By: Philip Johnson
+%% Last Modified On: Mon Nov  5 16:25:43 2001
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 2001 Philip Johnson
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\subsection{Current project status}
+
+\begin{figure}[t]
+ {\centerline {\psfig{figure=dataflow.eps}}}
+ \caption{{\em Basic communication pathways in Hackystat.}}
+ \label{fig:dataflow}
+\end{figure}
+
+
+Development of the Hackystat system began in May, 2001, and the first
+functional public release was made in July, 2001. This release included
+source and binaries for the Hackystat server, a set of sensors for
+detecting time and activity data in JBuilder and Emacs, and server-side
+analysis tools for summarizing time and activity data.  In addition, a
+publically accessible Hackystat server was deployed on the Internet and has
+been available and regularly updated with new releases since then.  Since
+the initial release, additional sensors and analysis tools have been
+released at monthly intervals.  The active development team consists of
+five members, three from the University of Hawaii and one member from each
+of two commercial software development companies.
+
+The Hackystat server code is implemented in Java and contains approximately
+14 packages, 62 classes, and 4,200 non-comment source lines of code.  The
+code leverages over a dozen open source components including Tomcat for web
+services, Cocoon for XML/XSLT processing, JUnit for testing, and SOAP for
+sensor-server communication over the HTTP protocol.
+
+Hackystat sensor code is much smaller and simpler than that required for
+the server.  For example, the JBuilder activity and session sensors consist
+of a total of approximately 200 non-comment source lines of Java, with over
+half of that code consisting of "empty" method declarations required to
+fulfill plug-in API requirements.  The Emacs activity and session sensors
+are written in Lisp and are similar in size.
+
+Currently implemented sensors include: time and activity data for the Emacs
+and JBuilder development environments, and defect data for JUnit.  An
+initial implementation of a size data sensor for Java and C++ using the
+LOCC grammar-based size counting tool will be available in November, 2001.
+Currently implemented analysis tools include active time data, idle time
+threshold analysis, JUnit summary data, and data integrity checking for all
+data types.
+
+Hackystat does not use a relational database back-end. Instead, data for
+each user for each sensor data type is stored in a ``log'' file in XML
+format.  Currently, some developer log files store only a day's worth of
+data (in the case of potentially high volume data such as activity and
+testing data), while other logs store a month's worth of data (in the case
+of low volume data such as session data).  Note that different sensors can
+contribute data to the same log file; for example, activity data for a
+given developer on a given day is stored in the same log file, even if some
+of that data was sent from an Emacs sensor and other data was sent from a
+JBuilder sensor. Each log file type includes data integrity code which
+checks incoming data from sensors.  If bad data is detected, it is not
+added to the sensor log. Instead, it is added to a special ``BadData'' log
+and the user and system administrator gets information concerning this in
+their next daily email.  Bad data should not be sent by correctly
+implemented sensors under normal circumstances, of course.  We use the JATO
+COTS component to support automated translation between the XML log file
+and an in-memory Java object representation, which simplifies the
+implementation of both log files and analysis functions.  While we are
+pleased with both the flexibility and performance of our XML-based approach
+so far, we could easily migrate to a relational database approach in future
+if that becomes necessary.
+
+Initial performance evaluation results are encouraging. There are four
+important costs that impact upon performance: the cost of collecting data
+in the sensor, the cost of sending sensor data to the server, the cost of
+performing analyses on the data, and the cost of storing data. 
+
+If any of
+these costs become excessive, they affect the usability or scalability of
+the system. First, the cost of collecting data by the sensor is so far
+negligible for all sensors we have implemented.  Second, sensor data is
+typically aggregated and sent to the server at the end of tool sessions.
+Currently, this means that Hackystat sends data from a developer less than
+a dozen times a day, and each notification normally requires less than two
+seconds for the http interaction.  Third, analysis computations are
+performed once a day during ``off-hours'' such as 2 am, and current
+analyses require only a few seconds in total to perform for each user.  We
+believe that none of these first three costs prevent the current system
+architecture from scaling to at least several hundred users per server with
+many additional sensors, sensor data types, and analyses.  
+
+The fourth and
+final cost, data storage, is the only one which currently appears to pose
+significant scalability threats. Currently, a typical Hackystat user
+accumulates data in XML log files at the rate of 500 KB per month. As the
+set of sensors and thus data gathering potential increases, we believe that
+data accumulation could easily double to 1MB/user/month, which could create
+performance problems as the number of users rises to hundreds or more. We
+know of one relatively simple potential solution: use built-in Java
+utilities to read and write the XML data as compressed zip files. Tests
+indicate that Hackystat logs are compressed by an average of 90\% using zip 
+encoding. 
+
+
+Figure \ref{fig:dataflow} illustrates the basic communication pathways and
+processing in Hackystat.  First, the developer downloads one or more
+sensors from the server and installs them into the development environment.
+Next, all sensors require some initial configuration; at a minimum, the
+developer must specify the URL of the Hackystat host server to which data
+should be sent and an email address identifying them as the user. At that
+point, sensors begin sending data to the server, and the server notifies
+the developer via email when potentially ``interesting'' analyses occur.
+The developer then has the option of retrieving additional pages from the
+server containing analysis details.
+
+
+
+Our progress so far indicates to us that Hackystat represents a feasible
+approach to developer-centric, in-process, non-disruptive software project
+data collection and analysis, and that our research group has the technical
+skills required to build and enhance such a system.  However, our work so
+far has only begun laying the groundwork for answering important questions
+about this approach.  For example, we know we can collect data
+automatically, but can we collect the right data in the right way?  We know
+we can send the developer an email with analysis results, but can we send
+the developer an email at the right time with the right analysis results?
+The next section presents our approach to addressing these issues.
+
+
+
+
+ 
+
+
+
+

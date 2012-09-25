@@ -1,0 +1,200 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 03-05-ch3.tex --
+%% Author          : Robert Brewer
+%% Created On      : Fri Sep  5 13:50:18 1997
+%% Last Modified By: Aaron Kagawa
+%% Last Modified On: Wed Nov 19 19:47:29 2003
+%% RCS: $Id: thesis-body.tex,v 1.4 2000/03/17 21:28:10 rbrewer Exp $
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 1998 Robert Brewer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+
+\chapter{hackyJPLBuild System Architecture and Design}
+
+This chapter provides a detailed explanation of the Hackystat Jet
+Propulsion Laboratory Build System (hackyJPLBuild).  The initial
+requirements of this system developed by Dr. Philip Johnson
+\cite{csdl2-02-03}.  Using this proposal, I designed and implemented this
+system.  The following sections provide explanations of the Sensor Data
+Types, Abstract Data Types, and Analyses that the hackyJPLBuild system
+provides.
+
+\section{Sensor Data Types}
+The hackyJPLBuild system provides two Sensor Data Types; the StateChange
+and Build Sensor Data Types.  To populate the data for these SDTs a
+specially designed Hackystat sensor will be attached to the MDS Harvest CM
+Tool.  
+
+
+\subsection{State Change Sensor Data Type}
+The StateChange Sensor Data Type represents \emph{promotion} or
+\emph{demotion} events of a MDS Package and aspects about the pacakge's
+state at this point in time.  It contains the following fields:
+
+
+\begin{description}
+\item State Change Sensor Data Type Attributes:
+\begin{enumerate}
+\item \emph{tstamp}: A UTC timestamp (i.e. the number of milliseconds since 
+9/1/1970.  Example: ``105071895265'' (which is roughly 4/18/2003
+2:08pm). Every StateChange instance must have a unique tstamp, and this
+tstamp should represent the time at which the promotion or demotion took
+place.
+\item \emph{packageId}: The unique identifier for the MDS Package that is
+being promoted or demoted.  Example: ``CP-00971''.
+\item \emph{startState}: The Harvest CM State this MDS Package was in just
+before the promotion/demotion.  Example: ``Dev''.
+\item \emph{endState}: The Harvest CM State this MDS Package is now in as a 
+result of the promotion/demotion.  Example: ``Dev-Complete''.
+\item \emph{newFiles}: A comma delimited list of file names that have been
+added since the last state change.
+\item \emph{modifiedFiles}: A comma delimited list of file names that have
+been changed since the last state change.
+\item \emph{deletedFiles}: A comma delimited list of file names that have
+been deleted since the last state change.
+\item \emph{unchangedFiles}: A comma delimited list of file names that have 
+not been changed since the last state change.
+\item \emph{iar}: If this MDS Package (such as a CP) associated with an
+IAR, the IAR packageId is provided here.  Example: ``IAR-02068''.
+\item \emph{developer}: The username of the developer responsible for this
+MDS Package.  Example: ``cxing''.
+\end{enumerate}
+\end{description}
+
+The following is an example of a StateChange Sensor Data Entry in XML form.
+
+\begin{alltt}
+{\small{}
+<?xml version=''1.0'' encoding=''UTF-8'' ?>
+<sensor>
+  <entry tstamp=''97847280003'' tool=''harvest'' pacakgeId=''CP-00971''
+    startState=''dev'' endState=''dev_complete'' newFiles=''newFile.cc''
+    modifiedFiles=''modifiedFile.cc'' deletedFiles=''deletedFile.cc''
+    unchangedFiles=''unchangedFile.cc'' iar=''IAR-02068''
+    developer=''cxing'' />
+</sensor>
+}
+\end{alltt}
+
+
+\subsection{Build Sensor Data Type}
+The Build Sensor Data Type represents an occurence of the build with a
+given MDS Package.  It contains the following fields:
+
+\begin{description}
+\item Build Sensor Data Type Attributes:
+\begin{enumerate}
+\item \emph{tstamp}: A UTC timestamp representing the time at which the
+build took place.  Example: ``1050710895265''.
+\item \emph{packageId}: The unique identifier for the MDS Package that is
+being built.  Example: ``CP-00971''.
+\item \emph{testPassed}: A number indicating the total passed tests.
+Example: ``25''.
+\item \emph{testFailed}: A number indicating the total failed tests.
+Example: ``0''.
+\item \emph{failureType}: One of none, compile, link, and run-time.
+\end{enumerate}
+\end{description}
+
+The following is an example of a Build Sensor Data Entry in XML form.
+
+\begin{alltt}
+{\small{}
+<?xml version=''1.0'' encoding=''UTF-8'' ?>
+<sensor>
+  <entry tstamp=''97847280003'' tool=''harvest'' pacakgeId=''CP-00971''
+    testsPassed=''10'' testsFailed=''0'' failureType=''none'' />
+</sensor>
+}
+\end{alltt}
+
+
+\subsection{Sending data to the server}
+Sensor Data Types define the type of data that can be sent to a Hackystat
+server.  To accomplish sending data, a Hackystat Sensor must be attached to
+the development tool which we wish to monitor, in this case, Harvest.  This
+sensor has been partly designed by Rich Hug of the Jet Propulsion
+Laboratory, the local Harvest expert.  He developed a script which extracts
+data from Harvest into a text file.  This text file can then be used as
+input for the Harvest Sensor.
+
+We have found that sending all the data from January 2003 to October 2003
+to a Hackystat server has a duration of a few seconds.
+
+
+\subsection{Data in the server}
+Once the Sensor Data is in a Hackystat server, the Sensor Data is used as
+the primary source of data, refered to as ``Raw Data''.  This raw data is
+the finest grained source of data the hackyJPLBuild analyzes.  However,
+analyzing raw data is computationallyn expensive becuase it is so fine
+grained.  The following section discusses how I solved this problem.
+
+
+\section{MDS, Work, and Rollup Packages}
+The Sensor Data Types provide access to fine grained measurements of the
+Harvest Tool.  However, the raw data is computationally expensive.
+Therefore, a larger grained measurement was needed.  The goal of creating a
+larger grained measurement is to provide aggregated, easily accessable, and
+derived data that cannot be obtained from just the raw data.  To represent
+this larger grained measurement the hackyJPLBuild system collects together
+all Sensor Data Entries related to a specific MDS Package into an Abstract
+Data Type (ADT).
+
+
+There are three different types of ADTs; (1) the 
+MDS Package, (2) the Work Package, and (3) the Rollup Package.  Figure 1
+provides a UML diagram of the ADTs.
+
+%% Figure of the MDS Package UML diagram goes here
+
+The following explains the attributes of each ADT.
+\begin{description}
+\item MDS Package:
+\begin{enumerate}
+\item \emph{packageID}: The unique identifier of a MDS Package
+\item \emph{startState}: The first Harvest CM State of the MDS Package.
+This is determined by getting the startState of the first StateChange
+Sensor Data Entry associated with this MDS Package.
+\item \emph{endState}: The last Harvest CM State of the MDS Package.  This
+is determined by getting the endState of the last StateChange Sensor Data
+Entry associated with this MDS Package.
+\item \emph{developers}: The developers that have contributed to this MDS
+Package.
+\end{enumerate}
+\item Rollup Package:
+\begin{enumerate}
+\item \emph{type}: One of ITR, IT, or CPR.
+\end{enumerate}
+\item Work Package:
+\begin{enumerate}
+\item \emph{type}: One of CP, IAR, IM, or RP.
+\item \emph{newFiles}: The total number of new files in this Work Package.
+\item \emph{modifiedFiles}: The total number of modified files in this Work 
+Package.
+\item \emph{deletedFiles}: The total number of deleted files in this Work
+Package.
+\item \emph{iars}: The IARs associated with this Work Package.
+\end{enumerate}
+\end{description}
+
+
+There are several things to note about the representations provided
+here. (1) A MDS Package is either a Rollup Package or a Work Package.  (2)
+Rollup Packages represent documentation level Pacakges.  (3) Work Packages
+represent where the actual ``work'' is done.  For this reason, Work Package
+are the only Package that contains attributes for files, because ``work''
+cannot be done on Rollup Packages.
+
+\section{hackyJPLBuild Analyses}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=1.0\textwidth]{figs/mds.development.efficiency.eps}
+  \caption{hackyJPLBuild MDS Development Efficiency Analysis Set}
+  \label{fig:mds.development.efficiency}
+\end{figure}
+
+
+
+

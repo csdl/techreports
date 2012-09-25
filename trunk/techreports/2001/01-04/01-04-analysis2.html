@@ -1,0 +1,479 @@
+
+
+<head>
+<title>Analysis, Displays, and Alerts in Hackystat 2</title>
+</head>
+
+<h2 align="center"><font size="3">Hackystat Design Notes Series<br>
+</font><br>
+Analysis in Hackystat 2</h2>
+
+<p align="center"><a href="http://csdl.ics.hawaii.edu/~cmoore/">Philip Johnson</a><br>
+
+<a href="http://csdl.ics.hawaii.edu/">Collaborative Software Development
+Laboratory</a><br>
+
+<a href="http://www.ics.hawaii.edu/">Department of Information and Computer 
+Sciences </a><br>
+
+<a href="http://www.hawaii.edu/">
+University of Hawaii</a></p>
+
+<p align="center">March 1, 2002<br>
+</p>
+
+<h3 align="left">Overview</h3>
+<p align="left">Hackystat 2 does a better job of defining the boundaries between
+sensor log data and analysis data.&nbsp; Sensor log data is always stored into
+daily log files and represents direct data from the user's tools.&nbsp; In a
+real sense, sensor data is &quot;objective&quot; data.&nbsp; </p>
+<p align="left">Analysis data, on the other hand, is derived from sensor data
+(and/or from other analysis data).&nbsp; It is not persistent and not stored in
+files, but is rebuilt each time the server restarts. (This is a feature rather
+than a bug, at least at this point, because it simplifies changes and upgrades
+to our analysis mechanisms.)&nbsp; Analysis data, in a real sense, is
+&quot;subjective&quot; data---all analyses are an interpretation and/or
+abstraction of the objective sensor log data.&nbsp; </p>
+<p align="left">From prior experience, we know the following things to be true:</p>
+<ol>
+  <li>
+    <p align="left">It is easy to collect an overwhelming amount of sensor data.</li>
+  <li>
+    <p align="left">Raw sensor data is difficult to understand.</li>
+  <li>
+    <p align="left">Most data that's collected is not very interesting to a
+    programmer.</li>
+  <li>
+    <p align="left">Programmers quickly habituate to regular notifications when
+    they do not contain novel or useful information. </li>
+  <li>
+    <p align="left">Programmers are interrupt-driven, they do not
+    &quot;poll&quot;.&nbsp; You cannot expect them to regularly consult a web
+    site or periodically perform a set of analyses just poking around for things
+    of interest.</li>
+  <li>
+    <p align="left">What may appear at first glance to be an event of interest
+    may not be.&nbsp; Even if it is, the appropriate action may require a more
+    detailed understanding of the things that led up to the discovery of the
+    event of interest..&nbsp; </li>
+</ol>
+<p align="left">Our goal in hackystat is to build up a library of analyses that
+are automatically and regularly performed on sensor data and/or other analysis
+data for each user.&nbsp; When the analyses discover something of interest, we
+send an email to the user noting that something of interest has occurred and
+providing them with a way of investigating further. </p>
+<h3 align="left">Analysis, displays, and alerts </h3>
+<p align="left">As an initial foray into the design of this representational
+thicket,&nbsp; I propose that we start by defining three concepts and their
+interrelationships: analyses, displays, and alerts. </p>
+<p align="left">An <i>analysis</i>  is a class that provides some interpretation of the user's
+behavior. An example analysis object might provide the active time spent by a
+specific user on a specific day by analysis of the activity sensor log.&nbsp;
+Another one might represent the variation in unit test coverage on a specific
+project over the course of a month.&nbsp; This latter analysis might consolidate
+the results from a month's worth of daily jblanket sensor logs..</p>
+<p align="left">A <i>display</i> is a combination of a JSP page and its associated MVC
+Command class.&nbsp; Every analysis has at least one
+corresponding display.&nbsp; (Some displays may be associated with multiple
+analyses. For example, the DailyDiary&nbsp; might serve as the display for
+several kinds of analyses.)&nbsp; The fact that all analyses must have at least
+one associated display creates visibility:&nbsp; the conclusions of
+any analysis instance can be seen by the user. </p>
+<p align="left">An <i>alert</i> is a class that functions as a predicate on one
+or more analysis objects.&nbsp; An alert returns true if the analysis object is
+&quot;interesting&quot; or &quot;anomalous&quot; in some sense and thus demands
+attention from the user.&nbsp; In general, Hackystat will apply the set of all
+alerts to their associated analysis objects each night.&nbsp; For each alert
+that returns true, Hackystat will include information about that alert in the
+email message to the user for the next day.&nbsp; Along with that alert
+information will be an URL providing access to the display corresponding to the
+analysis object that this alert was invoked on.&nbsp; For example, one kind of
+alert might implement the following predicate: &quot;The user should have at
+least 90 minutes of active time each day&quot;.&nbsp; If that alert is
+triggered, then the user would be sent an email that says that they did not work
+90 minutes in the previous day and include a pointer to the DailyDiary page that
+demonstrates that less than 90 minutes was worked.&nbsp; Another alert might be: &quot;The user should
+have active time at least 4 times in the past 7 days&quot;.&nbsp; If that alert
+is triggered, then the user would be sent an email that says that they did not
+work 4 times in the past seven days and include a pointer to a WeeklyDiary page
+that explains that alert finding. </p>
+<p align="left">So there you have the basic cycle. A user works, which generates
+sensor log data.&nbsp; This sensor log data is analyzed in various ways.&nbsp; The
+analyses are operated on by a variety of alerts.&nbsp; When an alert is
+triggered, the user gets notified.&nbsp; This notification leads to the user
+inspecting the associated data, and hopefully making some change in their
+behavior as a result. The users subsequent behavior generates more
+sensor log data, and the cycle continues. </p>
+<p align="left">You can see opportunities here for adaptation.&nbsp; For
+example, instead of saying &quot;You need to work 90 minutes a day&quot;, it
+might be more useful to accumulate an average working day over a period of time,
+and then notify the user when their daily active time departs from their normal
+average for more than 2 or 3 days in a row. For one user, perhaps 90 minutes a
+day is the right &quot;trigger&quot;. For another, it might be 400, and it might
+vary from one month to the next.&nbsp; In fact, getting this kind of behavior in
+which the system determines on a user-by-user basis what &quot;normal&quot;
+might be and then tells them when they appear to be acting
+&quot;abnormally&quot; is exactly the goal of statistical process control
+techniques.&nbsp; </p>
+<h3 align="left">General analysis design criteria</h3>
+<p align="left">Some of the general design criteria for analysis objects
+include:</p>
+<ul>
+  <li>
+    <p align="left">Every analysis class implements the
+    hackystat.server.analysis.Analysis interface. (In addition, daily analyses
+    extend the hackystat.server.analysis.daily.DailyAnalysis class,&nbsp;
+    which&nbsp; provides caching services, as discussed further below.) <br>
+    &nbsp; </li>
+  <li>
+    <p align="left">Analysis constructors always require a directory key
+    identifying the user whose data is going to be analyzed.&nbsp; Most analysis
+    constructors will also require a second argument: a date indicating the day
+    of data on which the analysis should be performed.&nbsp; The additional arguments if any depend upon the
+    analysis being performed.&nbsp; <br>
+    &nbsp; </li>
+  <li>
+    <p align="left">Analysis classes are divided into a set of subpackages. One
+    set of subpackages divides up those analyses that interpret data for a
+    specific interval of a day, week, month, or year.&nbsp; These packages are
+    hackystat.server.analysis.daily, hackystat.server.analysis.weekly,
+    hackystat.server.analysis.monthly, and hackystat.server.analysis.yearly.
+    Other subpackages might be created based upon different distinguishing
+    properties, such as the system under development (hackystat.server.analysis.system)..<br>
+    &nbsp; </li>
+</ul>
+<h3 align="left">Daily analysis design criteria</h3>
+<p align="left">The daily analysis objects live in the
+hackystat.server.analysis.daily package.&nbsp; Daily analysis objects observe
+the following design property: they represent a day as a 288 element array of
+objects called the DayArray.&nbsp; This divides the day into five minute
+intervals as follows:</p>
+<ul>
+  <li>
+    <p align="left">DayArray[0] represents all information regarding the time
+    period from 00:00:00 to 00:04:59.</li>
+  <li>
+    <p align="left">DayArray[1] represents all information regarding the time
+    period from 00:05:00 to 00:09:59.</li>
+  <li>
+    <p align="left">and so forth.</li>
+</ul>
+<p align="left">Thus, every multiple of 12 starts a new hour (DayArray[12]
+represents the five minute interval starting at 1:00am, DayArray[24] = 2:00am,
+etc.)</p>
+<p align="left">The DayArray is intended to simplify our initial analyses by
+providing an abstracted representation of time and time intervals. Every event,
+once placed into its proper DayArray element location, is no longer analyzed
+with respect to its specific time of occurrence within that five minute
+interval.&nbsp; Instead, it just occurred at DayArray time N, where N is a
+number between 0 and 287.&nbsp; (Of course, we still have the sensor logs with
+exact time data, so we can always construct a different analysis mechanism later
+with exact times if we realize we need to.) </p>
+<p align="left">Here are some examples of analysis using DayArrays.</p>
+<ul>
+  <li>
+    <p align="left"><b>EventData. </b> The EventData creates a DayArray
+    in which each cell contains a list of the ActivityEntry instances that
+    occurred during that five minute time period. <br>
+    &nbsp; </li>
+  <li>
+    <p align="left"><b>ActiveTime. </b> The ActiveTime analysis creates a
+    DayArray in which each
+    DayArray cell has one of three values: ACTIVE, IDLE, INACTIVE.&nbsp; To compute
+    this, the ActiveTime analysis needs to use two constants:&nbsp; the
+    IdleTimeThreshold and the InactiveThreshold.&nbsp; Both of these are set in
+    the user's configuration page.&nbsp; IdleTimeThreshold is one of the
+    integers 5, 10, 15, 20, 25, 30, with a default value of 15.&nbsp;&nbsp; The
+    InactiveThreshold is one of the integers 30, 60, 90, 120, with a default
+    value of 30. <br>
+    &nbsp; <br>
+    Assuming default values for IdleTimeThreshold and InactiveThreshold, then we
+    can compute the active, idle, and inactive time for the day according to the
+    following algorithm..&nbsp;&nbsp; Obtain the EventData
+    analysis object.&nbsp; Iterate through each of the DayArray cells in the
+    EventData analysis object starting at cell 0.&nbsp; 
+    <ul>
+    <li> If the corresponding EventData cell is empty, and if the preceding 2
+      cells (or less if we are in the first five cells) are also empty, then set
+      this cell and the preceding two cells to IDLE..
+    <li> If the corresponding EventData cell is empty, and if the preceding 5
+      cells (or less if we are in the first five cells) are also empty, then set
+      this cell and the preceding five cells to INACTIVE.
+    <li> If the corresponding EventData cell has ActivityEntries, then set the
+      ActiveTime cell to ACTIVE.
+    <li> If the corresponding EventData cell has ActivityEntries, and if the
+      cell that is located two cells prior to this one (if it exists) is also
+      ACTIVE, then make the cell one cell prior to this one also ACTIVE. (This
+      is to fill in &quot;gaps&quot;). 
+    </ul>
+    <p> <br>
+    Note that this algorithm does not deal with &quot;roll-over&quot; between
+    days (for example, if someone is active up until midnight but pauses work
+    for the first five minutes of the new day, it will be inaccurately recorded
+    as INACTIVE.&nbsp; Fixing this on both ends of the day requires getting not
+    only the EventData for the current day, but for the day before and the day
+    after as well. Until we start getting complaints from the night owls, I'm
+    not going to worry about it.&nbsp;<br>
+    &nbsp; </li>
+  <li><b>FileTime.</b>&nbsp; The FileTime analysis creates a DayArray in which
+    each cell has at most one file name associated with it.&nbsp; This is the
+    file that will be allocated a full five minutes of programmer effort.&nbsp;
+    To compute this file name, the EventData DayArray is created. Then, for each
+    cell in which there exists ActivityEntries with file information, the
+    &quot;majority&quot; file name is selected.&nbsp; Ties are decided
+    arbitrarily.&nbsp; The accuracy of this analysis will be increased by
+    incorporating a timer into the activity sensors that wakes up once per
+    minute and records the active buffer.&nbsp;&nbsp;<br>
+    &nbsp;&nbsp;<br>
+    Once we know for each five minute interval what file is getting credit, then
+    it is a simple matter to say how much aggregate time was worked on files
+    during the day, how much time (if any) a specific file got during a specific
+    day, and so forth.&nbsp;<br>
+    &nbsp;&nbsp;<br>
+    Note that every cell that is specified to be &quot;Active&quot; in the
+    ActiveTime DayArray should have a corresponding file in the FileTime
+    DayArray. That means that cells that are empty in the EventTime DayArray may
+    have a corresponding file in the FileTime DayArray. (For example, imagine
+    cell 1 is active with ActivityEntry data, cell 2 has no ActivityEntry data
+    (5 minute break), and cell 3 again has ActivityEntry data. Cell 2 will be
+    viewed as &quot;active&quot; because the 15 minute threshold has not been
+    reached.&nbsp; Because it's active in the ActiveTime analysis, the FileTime
+    analysis must provide a file value for cell 2.&nbsp; An appropriate decision
+    is to give it the file value from cell 1.<br>
+    &nbsp;&nbsp;</li>
+  <li><b>SystemTime.</b>&nbsp; The SystemTime analysis is closely related to the
+    FileTime analysis and depends upon it.&nbsp; The idea of the SystemTime
+    analysis is to look at directory structures and deduce the time spent on
+    &quot;systems&quot; as opposed to individual files.&nbsp; For example, it
+    would be nice to be able to analyze data on the &quot;Hackystat&quot;
+    system, and differentiate it from the &quot;StackMVC&quot; system.&nbsp;
+    This may require a certain amount of user tailoring in the configuration
+    page. For example, we could provide a list of all of the directory and
+    subdirectory structures that we've found thus far, and let the user select
+    those that they would like to have viewed as &quot;systems&quot; for the
+    purpose of analysis.</li>
+</ul>
+<h3>DayArray design comments</h3>
+<p>The DayArray is an abstraction that will be shared by all of the daily
+analysis classes, and therefore it should be encapsulated into its own class.
+The class should be located in hackystat.server.analysis.daily.DayArray.&nbsp;&nbsp;
+Analysis classes should prefer composition rather than inheritance in using this
+class.&nbsp; Here are some of the operations that the DayArray class should
+provide:</p>
+<ul>
+  <li>A customized Iterator implementation (a DayArrayIterator that implements
+    Iterator).&nbsp; As can be seen from the description of the ActiveTime
+    analysis, one application of DayArrays is to iterate through them
+    sequentially, setting the value of a current cell based upon the values of
+    prior (or future) cells. To simplify the implementation of analyses such as
+    the ActiveTime class, the DayArrayIterator can provide some additional
+    operations in addition to the standard hasNext(), next(), and
+    remove().&nbsp; Two such operations are getSubsequent(int) and
+    getPrevious(int), which return the object in the DayArray cell some number
+    of cells &quot;behind&quot; the current cell or &quot;ahead&quot; of the
+    current cell.&nbsp; If that cell does not actually exist (such as when
+    calling getPrevious(3) when on the first cell, the call returns null (rather
+    than throwing an ArrayIndexOutOfBounds exception, for example.)&nbsp; This
+    iterator instance, returned by the method iterator(), will step through all
+    288 elements of the DayArray in order.<br>
+    &nbsp;&nbsp;</li>
+  <li>Other analyses, such as FileTime, will only want to process the non-empty
+    cells in a DayArray.&nbsp; To simplify this coding for analyses such as the
+    FileTime class, the DayArray class should provide a second, customized
+    iterator implementation.&nbsp; This iterator, returned by the
+    nonemptyIterator() method, provides an iterator that only steps sequentially
+    through the DayArray but only returns cells that have values.&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li>&nbsp;With both iterators, an index() method should be provided that
+    returns an int representing the index of the current cell pointed to by the
+    iterator.&nbsp; This integer can take on a value between 0 and
+    287.&nbsp;&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li>The DayArray should include get(int) and set(int) methods which get and
+    set the DayArray at the locations of the index value passed.&nbsp; These
+    methods throw a DayArrayIndexOutOfBoundsException (a subclass of
+    java.lang.IndexOutOfBoundsException) when an index value that is not between
+    0 and 287 is passed.<br>
+    &nbsp;&nbsp;</li>
+  <li>The values stored in a DayArray can be any object.&nbsp; As we begin to
+    see common features of DayArray cell storage, we can subclass DayArray and
+    provide built-in support for the mechanism. I expect one such common storage
+    mechanism will be a Map, so we should provide a subclass of DayArray called
+    DayArrayMap in which the cell values are always Map instances.&nbsp; To
+    simplify client access,&nbsp; we can provide a get(int, Object) method which
+    returns the value whose key is Object at the int index location.&nbsp;
+    Similarly , the&nbsp; put(int, Object, Object) method would&nbsp; add the
+    key-value pair to a specific index location in the DayArrayMap.&nbsp; Both
+    would throw DayArrayIndexOutOfBoundsExceptions when necessary.&nbsp;<br>
+    &nbsp;&nbsp;<br>
+    Another common storage mechanism will be a List, so we could provide a
+    second subclass of DayArray called DayArrayList in which cell values are
+    always List instances.&nbsp; For this subclass, a useful method would be
+    getListIterator(int), that returns a ListIterator over all of the elements
+    in the List at the specified index location.&nbsp;</li>
+</ul>
+<h3>Caching of daily analysis objects</h3>
+<p>Every analysis class should consider the need to cache instances of itself,
+rather than recompute itself from sensor log data (or other analyses) each time
+it is constructed.&nbsp; For example, the EventData analysis object must perform
+a relatively time consuming parse of the activity sensor log data file in order
+to construct itself.&nbsp; However, we already know that the EventData analysis
+object for a given day will be instantiated twice for each user: once in order
+to construct the ActiveTime analysis instance, and once in order to construct
+the FileTime analysis instance.&nbsp; In both cases, the same identical instance
+will be returned.&nbsp;&nbsp; Now, consider future analyses that operate over
+weekly, monthly, or yearly time frames and which accomplish their tasks by
+constructing a set of daily analysis instances.&nbsp; It is easy to see that the
+EventData analysis object for a given day and a given user might be instantiated
+a dozen times or more per day.&nbsp;&nbsp;</p>
+<p>The abstract hackystat.server.analysis.daily.DailyAnalysis class provides a
+generic facility for caching of daily analysis objects.&nbsp; This class
+provides a Map instance that maps user directory keys to an interior Map.&nbsp;
+The interior Map maps dates to analysis instances.&nbsp; DailyAnalysis
+subclasses (such as EventData, ActiveTime, and FileTime), should use a variant
+of the Singleton design pattern, in which the constructor is private and
+getInstance(DirKey, Date) is used to obtain instances.&nbsp; Unlike the
+traditional Singleton pattern, in which the class is guaranteed to have a single
+instance, this version has guaranteed to have a single instance for a given user
+and date. The getInstance(DirKey, Date) method checks the cache and returns the
+stored instance if it exists. Otherwise it constructs an instance using the
+private constructor, stores it in the cache, and returns it to the client.&nbsp;</p>
+<p>Caching solves one big problem (redundant instance creation overhead) but
+creates another big problem: cache entry expiration.&nbsp;&nbsp; To see why this
+is an issue, imagine that the user edits the idleTimeThreshold value in his user
+configuration page, changing it from 15 minutes to 30 minutes.&nbsp; This has
+significant consequences: it is probable that the active, idle, and inactive
+times computed for any day's work associated with this user are now different
+than they were before. In at least some cases, the user will now have larger
+active times for a day because it takes the system will not shift a cell into
+&quot;idle&quot; as quickly.&nbsp;&nbsp; Because the active times are different,
+the FileTimes are different. Also because active times are different, various
+alerts which might have been true for a given day when the idleTimeThreshold was
+15 minutes (such as the need to have active time &gt; 90 minutes) might now be
+false. (In other words, some days in which the user did not make the 90 minute
+threshold under the old active time would now be reached under the new
+threshold.) Also because active times are different, various &quot;higher
+level&quot; analyses (such as weekly, monthly, or yearly summaries) might now
+have different values.&nbsp;</p>
+<p>I propose that we solve the cache entry expiration in the following way for
+now. First, we will limit caching to daily analysis instances.&nbsp; We will
+assume that higher level analyses are cheap enough to recompute that they do not
+need caching.&nbsp; (I think this is true for now). Second, we will provide a
+way for configuration setting changes to wipe out the cache of one or more or
+all daily analysis instances for a given user.&nbsp; For example, changing the
+value of idleTimeThreshold will wipe out the user's cache values for ActiveTime,
+FileTime, and SystemTime.&nbsp; Probably the best way to implement this is by
+having subclasses be able to listen to event changes on specific configuration
+settings and call their own refresh method when the change has potentially
+invalidated their state.</p>
+<h3>Alerts</h3>
+<p>As noted above, alerts are classes that are invoked on specific analysis
+objects to determine if there is some property of the analysis that should be
+brought to the attention of the user. They are contained in the
+hackystat.server.alert package.&nbsp; Here are some design ideas:</p>
+<ul>
+  <li>The constructor function takes an analysis instance as its argument.</li>
+  <li>Every Alert class implements the hackystat.server.alert.Alert interface.
+    This interface specifies the following methods that must be implemented by
+    all Alert classes:
+    <ul>
+    <li> <i>isTriggered()</i>, which is a boolean that returns
+    true if that alert has found some property of interest.
+    <li> <i>description(),</i> which returns a String providing a text message
+      describing what was found that was of interest. This will be included by
+      hackystat in the email message.
+    <li> <i>displayUrl()</i>, which returns an URL that can be used to retrieve
+      a JSP page for this user containing a visual indication of the data that
+      caused the alert.
+    </ul> 
+     </li>
+</ul>
+<p>In typical usage, hackystat automatically runs the alerts each night,
+generates an email to the user containing the alerts and their corresponding
+display URLs, and the user responds in some fashion to it.&nbsp;<p>Now let's
+consider a new scenario.&nbsp; Suppose that the response of the user is to edit
+their configuration settings? For example, assume that the user has been getting
+an alert that they're working less than 90 minutes a day for the past
+week.&nbsp; Finally, exasperated, the user looks at their configuration settings
+and their activity data and decides that this is only happening because the
+idleTimeThreshold is set wrong. So, they change their idleTimeThreshold to 30
+minutes.&nbsp; The next thing this user will probably want to do is see if they
+would still get alerts over the past week given this new alert setting. In other
+words, they want to recompute the alerts for the past week.&nbsp;<p>Obviously,
+we can't go back in time and send new emails.&nbsp; What we can do, though, is
+have a new monthly calendar page that contains the <i>current</i> value of
+alerts for a user over the month in question.&nbsp; When this page is requested
+from the user's home page, what results is a re-running of the alert instances
+for that user for the given month.&nbsp; If at least one alert is triggered for
+a given day, then a red dot shows up in that day.&nbsp; If no alerts are
+triggered for that day, then a green dot shows up.&nbsp; If there is no data and
+thus no alerts are created, then no dot appears.&nbsp; Each of the dots is
+actually a link. The link results in re-running the alerts for that specific
+day, this time creating a page that presents the output from their description
+field and the URL to the accompanying display page.<p>The alert calendar page
+adds substantial new value to hackystat data analysis, because it allows users
+to get a sense for what things of interest exist in their data as they evolve
+their configuration over time, and as the set of alerts changes over time. (Note
+that when we implement a new alert, the user can bring up this page to see the
+impact of invoking the new alert over their past 30 days of data.)&nbsp;<p>A
+final design property of alerts is that they should be able to be configured as
+well as enabled or disabled by individual users.&nbsp; Let's say that we
+implement an alert called MinimumActiveTime.&nbsp; This alert is designed to be
+triggered when the user has some active time on a day but it does not go over a
+specific threshold value.&nbsp; First, this threshold value can be configured in
+the UserConfiguration page to a set of values such as 15, 30, 45, 60, 120, 180,
+or 240 minutes. Second, this alert can be disabled by a particular user if they
+don't feel it adds value.&nbsp; Over time, we will figure out a &quot;default
+set&quot; of alerts that a user will be provided with when they register with
+Hackystat. Then, through their UserConfiguration page, they can decide upon the
+set of alerts that add value to their development style and the appropriate
+settings for each.&nbsp;<h3>Activity Sensor Timers</h3>
+<p>Our approach to analysis suggests the need to augment our current JBuilder
+and Emacs activity sensors with an additional functionality.&nbsp; This
+functionality is a timer-based mechanism that wakes up and records the file that
+the user is currently working on, if they are actively working on it.&nbsp;
+Although there are many different plausible ways to do this, it is quite
+important that the approach that we use be feasible in both the Emacs and
+JBuilder sensors, as well as any other IDE sensors we decide to provide support
+for. Therefore, it should be a kind of &quot;minimal&quot; implementation.&nbsp;
+My proposal is as follows:
+<ul>
+  <li>There is a new ActivityType, called ACTIVE_BUFFER_STATE_CHANGE.&nbsp;&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li>Each Activity sensor implements a timer. This timer wakes up once every 60
+    seconds.&nbsp; When it wakes up, it checks to see if EITHER (a) the active
+    buffer being edited is different from the one that was being edited the last
+    time the timer work up, OR (b) the current position (or size) of the buffer
+    is different than it was 60 seconds ago.&nbsp; If either (a) or (b) is true,
+    then the timer adds a new activity entry with the current time as the
+    timestamp, the ActivityType ACTIVE_BUFFER_STATE_CHANGE, and the name of the
+    file currently being edited by the active buffer.<br>
+    &nbsp;&nbsp;</li>
+  <li>Editors that support multiple browsers and/or frames (like both Emacs and
+    JBuilder) need to be careful to ensure that only one timer is created and
+    that only one Activity entry of type ACTIVE_BUFFER_STATE_CHANGE can be
+    recorded per minute.</li>
+</ul>
+<p>Once this mechanism is implemented, then we can use this set of activity
+types to implement our FileTime analysis.&nbsp; One algorithm is to check in
+each DayArray cell for all activities of this activity type.&nbsp; Then, the
+file mentioned in the most entries is the &quot;winner&quot; and gets the five
+minutes allocated to them.&nbsp; If there is a tie, pick the first file in the
+list of leaders. If there are other activity types, but none of type
+ACTIVE_BUFFER_STATE_CHANGE, then use the file type from the last cell.&nbsp;</p>
+<h3>Next steps</h3>
+<p>This lays out quite a bit of work.&nbsp; The order of work is approximately
+as follows:</p>
+<ol>
+  <li>Implement the ActivitySensor Timer mechanism and the DayArray abstraction.
+  </li>
+  <li>Implement the initial analysis objects: EventData, ActiveTime, FileTime</li>
+  <li>Implement displays for EventData, ActiveTime, FileTime</li>
+  <li>Implement at least one alert on each of EventData, ActiveTime, and
+    FileTime. Provide configuration options for each alert.</li>
+  <li>Call alerts during each daily email.</li>
+  <li>Implement the Alert Monthly Summary page and make sure it is responsive to
+    changes to user configuration.</li>
+</ol>
+<p>Sounds like a good time to me!</p>
+<p align="left">&nbsp;</p>

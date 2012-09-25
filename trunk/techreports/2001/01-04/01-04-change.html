@@ -1,0 +1,173 @@
+
+
+<head>
+<title>Change Management in Hackystat</title>
+</head>
+
+<h2 align="center"><font size="3">Hackystat Design Notes Series<br>
+</font><br>
+Change Management in Hackystat</h2>
+
+<p align="center"><a href="http://csdl.ics.hawaii.edu/~johnson/">Philip Johnson</a><br>
+<a href="http://csdl.ics.hawaii.edu/">Collaborative Software Development
+Laboratory</a><br>
+
+<a href="http://www.ics.hawaii.edu/">Department of Information and Computer 
+Sciences </a><br>
+
+
+<a href="http://www.hawaii.edu/">
+University of Hawaii</a></p>
+
+<p align="center">June 03, 2001<br>
+</p>
+
+<p align="left">As we all know by now, there is the presumption in Hackystat
+that developers are too busy to &quot;do anything&quot; with respect to process
+data collection and analysis. Hackystat must collect time, size, project,
+defect, and potentially other kinds of data quietly and in the background, and
+somehow combine the data together to form analyses that it makes available to
+the user at periodic intervals via web pages whose URLs it sends to the user in
+an email. There are all of the traditional potential PSP-style benefits of this
+data. However, there's another form of data that I think we want to be
+manipulating in hackystat, and which violates the above paradigm by being
+something that the developer(s) have to explicitly create and maintain. I will
+call this kind of data the &quot;Task list&quot; for now. (Other synonyms could
+be &quot;defect list&quot;, &quot;to do list&quot;, &quot;user story list&quot;,
+&quot;work breakdown structure&quot;, &quot;change request list&quot;, and so
+forth. I would like the task list to be an extremely lightweight, generic form
+of this data). </p>
+<p align="left">The reason why the Task List has to be maintained explicitly is
+simple: the only kind of data that we can even potentially collect automatically
+reflects events that have occurred in the past. The Task List refers to events
+in the future. By combining together data about the past with data about the
+future, I think we open up hackystat to provide very interesting new kinds of
+support for software development. In particular, I think we can come a lot
+closer to the XP view of metrics as something you collect in order to understand
+the &quot;state&quot; of the project. (And, if we do this properly, we can
+provide that without sacrificing the &quot;developer improvement&quot; goal of
+the more traditional projects.) I think that even though the task list requires
+explicit developer maintenance, there's a good chance we can get them to do it
+because some sort to ToDo list is maintained anyway in every development project
+of nontrivial size and complexity, whether the project is done by one person or
+many. I certainly know that I keep a todo list for my current software projects,
+and I know that for the Inca development project the maintenance of a simple
+&quot;bugs.html&quot; page was critical to keeping the team working together
+productively. </p>
+<p align="left">That's not to say that an adoptable task list tool will be easy
+to design and implement. To make it adoptable, I believe we will have to satisfy
+the following requirements: </p>
+<ol>
+  <li>
+    <p align="left">Free. Other change request tools can often be quite
+    expensive. </li>
+  <li>
+    <p align="left">Easy to install. I think a Java webapp deployable on
+    something like Tomcat that is browser-based will work. I view Bugzilla as an
+    example of a web tool that is unecessarily hard to install. If it takes
+    longer than 5 minutes to get going, that's too long. </li>
+  <li>
+    <p align="left">Easy to extend and modify by developers. Lots of
+    implications here, from the quality of the code to the quality of the design
+    to the quality of the documentation. </li>
+  <li>
+    <p align="left">Easy to use. This is something that we really need to think
+    hard about. We're not competing against bugzilla or clearcase as much as
+    we're competing against pencil and paper, or an ascii text file, or a simple
+    html page like bugs.html. I propose that we start with something radically
+    easy to use, and scale up the complexity only as required. There should be
+    no need for users to need to read documentation before using it. </li>
+  <li>
+    <p align="left">Provides value. Making it easy to use is only half the
+    adoptability battle. Unless it's easy to use AND adds significant value, it
+    won't fly. </li>
+  <li>
+    <p align="left">Now let me add the following critical simplifying
+    assumption: Assume a small and collegial group of users. In other words, the
+    system will run in a &quot;secure&quot; environment and can assume that the
+    small number of users are &quot;friendly&quot;. By &quot;small&quot;, I mean
+    a number less than 25 or so.</li>
+</ol>
+<p align="left">Here's some initial ideas on how to combine ease of use and
+value. </p>
+<ul>
+  <li>
+    <p align="left">Everything is a &quot;task&quot;. Bug reports, change
+    requests, user stories, proposed enhancements, etc. are all simply tasks. </li>
+  <li>
+    <p align="left">Each user logs in by providing their name and email. After
+    initial login, a user can later simply select their name from a drop-down
+    list. A password field could be supplied later. </li>
+  <li>
+    <p align="left">Tasks have the following fields:
+      <ul>
+      <li> <b> Title </b> (text line)&nbsp;
+      <li> <b>Reported by:</b> (prefilled with logged in user name)&nbsp;
+      <li> <b>Project</b> : (keywords)&nbsp;
+      <li> <b>Status</b>: (keywords)&nbsp;
+      <li> <b>Priority</b>: (keywords)&nbsp;
+      <li> <b>Description</b>: (text area)&nbsp;
+      <li> <b>Followups</b>: (text area) &quot;Followups&quot;
+    allow users to add supplemental info about the progress of the task.
+      <li> <b>Assigned to</b>: (keywords)&nbsp;
+      <li> The above are traditional,
+    but I'd also like to propose two new fields that can add significant new
+    value when combined with other hackystat data:&nbsp;
+      <li> <b>Estimated complete date:</b>
+    (date field)
+    &quot;Estimated complete date&quot; allows the system to add a lot of value
+    about what is expected to occur in future, what tasks have a deadline
+    looming, _and_ how the estimated complete date changes over time (the
+    estimated complete date field can, like any other, be changed over time).
+      <li> <b>Test cases:</b> (text line, comma separated)
+    
+    The &quot;Test cases&quot; field allows hackystat to connect tasks to the
+    executing parts of the system, and can enable hackystat to (a) verify that a
+    task was operating correctly (b) connect a failed test case to one or more
+    task descriptions, and (c) connect a failed test case back to one or more
+    users who may need to be informed about it.&nbsp;
+    </ul>
+    
+  </li>
+  <li>Reduce or eliminate &quot;configuration&quot;.
+    Let's try to avoid having to &quot;define&quot; projects, status values, etc
+    before using them. Instead, I suggest the following: anywhere a
+    &quot;keyword&quot; element (such as a priority, project, etc.) occurs,
+    allow the user to type in a value or select a preexisting value from a pull
+    down list. Every time a task is submitted to the system, if the value of a
+    field is different from those that are stored, it is saved and presented in
+    the pull down list the next time. That way, the set of &quot;keywords&quot;
+    can be built implicitly and incrementally. It is inevitable, of course, that
+    occasionally a keyword will be mischosen and need to be changed.&nbsp;</li>
+  <li> We must
+    provide a separate page to support global renaming of keywords. This is
+    different from editing a preexisting task to reassigning a keyword, such as
+    changing the &quot;assigned to&quot; name.&nbsp;</li>
+  <li>Every modification of the task
+    list generates an email to all users with a summary of the change. This
+    follows from the simplifying assumption above: the system is oriented toward
+    a small group of collegial developers. This means that everyone will want to
+    know about all changes to the task list, or at least won't get upset about
+    getting the emails.&nbsp;</li>
+  <li>The tasks are stored in XML similar to the hackystat
+    approach. I have the following reasons for this (potentially controversial)
+    choice; (a) we can get the system running extremely quickly if we leverage
+    the hackystat code. (b) it's a very lightweight solution that makes the
+    system more modifiable. (c) it makes the data from this system easily
+    accessable to hackystat, so we can leverage it in our analyses. (d) It
+    allows us to generate reports from the XML using XSL, rather than generating
+    HTML and so forth. We will need a few servlets and JSP pages for entry and
+    editing, of course.&nbsp;</li>
+  <li>Resources: There are some good online pages that we
+    can leverage. Here are some that I've found to be useful:
+     <ul>
+     <li> <a href="http://www.mozilla.org/bugs/">http://www.mozilla.org/bugs/</a>&nbsp;
+     <li> <a href="http://www.mozilla.org/quality/bug-writing-guidelines.html">http://www.mozilla.org/quality/bug-writing-guidelines.html</a>&nbsp;
+     <li> <a href="http://www.elementool.com/">http://www.elementool.com/</a>&nbsp;
+     <li> <a href="http://www.elementool.com/demo/2.html">http://www.elementool.com/demo/2.html</a>&nbsp;
+     <li> <a href="http://www.testingfaqs.org/t-track.htm">http://www.testingfaqs.org/t-track.htm</a>
+    </ul>
+    </ul>
+    I'd like to get such a tool working as soon as possible, with the idea that
+    we can start using it to guide hackystat development and develop it further
+    based upon our experience. Let me know what you think.

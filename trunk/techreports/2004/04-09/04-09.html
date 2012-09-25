@@ -1,0 +1,696 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"><title>Harvest Mapping</title></head>
+<body bgcolor="#FFFFFF" text="#000000">
+<h1 align="center">Hackystat-SQI: Modeling Different Development Processes </h1>
+
+<p align="center"><br>
+Aaron Kagawa<br>
+Philip Johnson<br>
+Collaborative Software Development Laboratory<br>
+Department of Information and Computer Sciences<br>
+University of Hawaii<br>
+<a href="mailto:kagawaa@hawaii.edu">kagawaa@hawaii.edu</a><br>
+<a href="mailto:johnson@hawaii.edu">johnson@hawaii.edu</a> </p>
+<p align="center"><b>Last update: 07/21/2004 11:00:21 AM</b></p>
+<p>&nbsp;</p>
+<h2>Introduction</h2>
+<p>This paper is a design document for the Hackystat-SQI system, which will support multiple projects at the Jet Propulsion Laboratory. The fundamental difference between this Hackystat system and other Hackystat systems is the differences in the development processes of the projects we will be supporting. </p>
+<p>The JPL projects that we will be support all use Harvest for version control. However, that is where the similarity begins and ends because Harvest can be configured differently for each project. There are two main areas of differences in the configurations of Harvest; (1) Harvest Package Model and (2) Harvest State Change Lifecycle. </p>
+<ul>
+  <li>The <strong>Harvest Package Model</strong> represents a way to categorize the different types of &quot;work&quot; that is done on the system. The different types of work are represented with Packages with in the model. For example, a defect can be represented with package type &quot;A&quot; and a new functionality can be represented with package type &quot;B&quot;. See the Harvest Package Model section for more detailed information.</li>
+  <li>The <strong>Harvest State Change Lifecycle </strong>represents how these packages move through a development cycle. The lifecycle contains a set of Harvest States that represents exactly where in the development cycle the packages is currently in. For example, a package that is being currently developed can be in the &quot;Dev&quot; Harvest State. See the Harvest State Change Lifecycle section for more detailed information. </li>
+</ul>
+<p>There has been an ongoing discussion between Rich Hug and I whether we should &quot;normalize&quot; the data before sending it off to Hackystat. (By normalized we mean fit specific package models and state change lifecycles into a generic mapping). However, we feel that the differences between the model and lifecycles should not be hidden, because in fact these differences can affect quality! Therefore, we have decided that we shall send all data to Hackystat in their true form and allow Hackystat to process the differences. </p>
+<p>The following sections address problems and solutions that Hackystat-SQI must address to be able to correctly interpret data from different projects.</p>
+<p>&nbsp; </p>
+<h2>Harvest Package Model</h2>
+<p>As I explained in the introduction, different projects can have different Harvest Package Models. While  this is perfectly reasonable, the differences in the package models presents a problem in Hackystat. Basically, Hackystat must be able to interpret the meaning of the different packages and be able to calculate relevant information for these packages. It has been proven in the Hackystat-MDS system, where we constructed a Hackystat system for a single JPL Project that &quot;package types&quot; and their meanings are an important piece of the puzzle. In Hackystat-MDS we were able to do this by &quot;hard coding&quot; in the significance of the Package Types and implemented specific code that tailored to the MDS Harvest Package Model. However, in Hackystat-SQI &quot;hard coding&quot; the Harvest Package Model is not possible. </p>
+<p>Therefore, Hackystat-SQI needs a way to interpret different Harvest Package Models, in a sense mapping the packages to generic meanings. Here are two Harvest Package Models from the MDS and TCDM projects</p>
+<p>&nbsp;</p>
+<h3><strong>MDS Harvest Package Model: </strong></h3>
+<p>MDS Package Model has a complex structure that groups these packages into a hierarchical structure. The following figure provides this structure:</p>
+<p><img src="MdsHarvestPackageModel.gif" width="660" height="465"></p>
+<p>The following table proves some explanation of the significance of the packages. </p>
+<table width="541" border="1">
+  <tr>
+    <th width="242">MDS Harvest Package</th>
+    <th width="283">Significance</th>
+  </tr>
+  <tr>
+    <td valign="top">Implementation Task Rollup (ITR)</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top"><p>Implementation Task (IT) </p></td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Change Package Rollup (CPR) </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Verification Package Rollup (VPR) </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Requirement Package (RP) </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Change Package (CP) </td>
+    <td>represents new &quot;work&quot; or functionality </td>
+  </tr>
+  <tr>
+    <td valign="top">Internal Anomaly Report (IAR)</td>
+    <td>represents a defect </td>
+  </tr>
+  <tr>
+    <td valign="top">Internal Modification (IM) </td>
+    <td>represents a small change </td>
+  </tr>
+  <tr>
+    <td valign="top">Verification Package (VP) </td>
+    <td>&nbsp;</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<h3><strong>TCDM  Harvest Package Model: </strong></h3>
+<p>Unlike the MDS Harvest Package Model, the TCDM Harvest Package Model does not have a complicated structure. It simply contains the following 4 package types:</p>
+<table width="542" border="1">
+  <tr> 
+    <th width="242">TCDM Harvest Package</th>
+    <th width="284">Significance</th>
+  </tr>
+  <tr> 
+    <td valign="top">New Request (NR) </td>
+    <td>represents new work </td>
+  </tr>
+  <tr> 
+    <td valign="top">
+      <p>Change Request (CR)</p>
+    </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr> 
+    <td valign="top">External Anomaly Report (AR) </td>
+    <td>a defect in released software</td>
+  </tr>
+  <tr> 
+    <td valign="top">Internal Anomaly Report (IAR)</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Internal Modification *</td>
+    <td>this package is generated from meta data provided in IAR packages</td>
+  </tr>
+</table>
+<p>* The TCDM Internal Modification Package Type is a special package type because 
+  it is generated from meta data provided in IAR packages. </p>
+<ul>
+  <li>(Philip's Thoughts) My thinking about the TCDM IAR package is that this 
+    is mostly a bug in their representation; they really should have two separate 
+    packages. But, that's not something we can dictate. Also, I don't think we 
+    want to represent the TCDM IAR package as having both the MinorChangePackage 
+    and the InternalAnomalyType, because any individual instance is either one 
+    or the other but never both.<br>
+    <br>
+    The way to resolve this really depends upon what will be done with the data. 
+    The simplest thing is to just make the TCDM IAR a subtype of the InternalAnomaly 
+    type. Then the people on the project see the analyses the way they think about 
+    things in Harvest; its going to be 'natural' to them. It might be that they 
+    voluntarily decide they want an additional package type (IM) once they see 
+    the benefits that would accrue from having it. In other words, let them figure 
+    out that they have a bug in their representation and see if they become motivated 
+    to fix it themselves because they think fixing it will have value for them.<br>
+    <br>
+    On the other hand, if the immediate goal is cross-project comparison, then 
+    it seems like we have to manually categorize each of their IARs as either 
+    a true IAR or as an IM. That's going to be a hassle. But I don't think having 
+    the IAR be both an IAR and IM at the same time is the right way to go. <br>
+    <br>
+  </li>
+  <li>(Rich Hug's Thoughts) The only problem we have is when a certain type of 
+    package can be used for 2 different types of changes (TCDM IAR - internal 
+    bug and small change) (MDS - IAR - internal and external problem).<br>
+    <br>
+    I think this problem should be handled by the Harvest extraction script. Based 
+    on meta data within the package, it is possible to decide which type of package 
+    it is. I would propose that the extraction script used for a particular project 
+    to be customized to identify and rename the package as appropriate (e.g., 
+    IAR-00010 becomes IM-IAR-00010 or AR-IAR-00010. </li>
+</ul>
+<p>We have concluded that we will &quot;normalize&quot; the data, thus creating 
+  an IM package from IAR meta data.</p>
+<p>&nbsp; </p>
+<h3>The Problem</h3>
+<p>The fundamental problem that Hackystat-SQI faces is how to calculate the Package Level information without having to &quot;hard code&quot; package type information for each Harvest Package Model. For example, one could think of an analysis that calculates the average age of a package that represents new &quot;work&quot; or functionality. To implement a generic analysis that works for all projects the code needs to be able to determine what the package type within a package model represents new functionality.</p>
+<p>&nbsp;</p>
+<h3>The Solution</h3>
+<p>The solutions to the problem is to create a Mapping system that allows a specific Harvest Package Model to map to a Generic Model. The following graphic is a mapping of MDS and TCDM to a generic model. </p>
+<p><img src="HarvestPackageMapping.JPG"></p>
+<p>This mapping has the following properties:</p>
+<ul>
+  <li>All MDS and TCDM package types maps to a package type in the Generic Model</li>
+  <li>All Generic Model package types need NOT map to a MDS or TCDM package type</li>
+  <li>Mappings can be either a 'one to one' mapping or a 'one to many' mapping. For example, the MDS IAR package type represents both Internal Anomalies and External Anomalies. </li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Harvest Package Model Mapping in  Relational Database Table form</strong></p>
+<p>To make this a little easier to visualize I've converted the previous graphical representation of the Mapping into Relational Database Tables. Basically, all we need are two tables for each model; (1) a table for the Package Types and (2) an intersect table that maps the Package Types to the generic model. </p>
+<table width="932" border="1">
+  <tr>
+    <th width="250">Generic Harvest Package Model Table</th>
+    <th width="75" rowspan="11">&nbsp;</th>
+    <th width="249">MDS Harvest Package Model Table </th>
+    <th width="75" rowspan="11">&nbsp;</th>
+    <th width="249">TCDM Harvest Package Table </th>
+  </tr>
+  <tr>
+    <td valign="top">Rollup Package </td>
+    <td valign="top">Implementation Task Rollup (ITR)</td>
+    <td valign="top">New Request (NR) </td>
+  </tr>
+  <tr>
+    <td valign="top">Change Package</td>
+    <td valign="top"><p>Implementation Task (IT) </p></td>
+    <td valign="top"><p>Change Request (CR)</p></td>
+  </tr>
+  <tr>
+    <td valign="top">External Anomaly </td>
+    <td valign="top">Change Package Rollup (CPR) </td>
+    <td valign="top">External Anomaly Report (AR) </td>
+  </tr>
+  <tr>
+    <td valign="top">Internal Anomaly </td>
+    <td valign="top">Verification Package Rollup (VPR) </td>
+    <td valign="top">Internal Anomaly Report (IAR)</td>
+  </tr>
+  <tr>
+    <td valign="top">Minor Change Package </td>
+    <td valign="top">Requirement Package (RP) </td>
+    <td valign="top">Internal Modification (IM)</td>
+  </tr>
+  <tr>
+    <td valign="top">Misc Package</td>
+    <td valign="top">Change Package (CP) </td>
+    <td valign="top">&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">&nbsp;</td>
+    <td valign="top">Internal Anomaly Report (IAR)</td>
+    <td valign="top">&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">&nbsp;</td>
+    <td valign="top">Internal Modification (IM) </td>
+    <td valign="top">&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">&nbsp;</td>
+    <td valign="top">Verification Package (VP) </td>
+    <td valign="top">&nbsp;</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table width="516" border="1">
+  <tr>
+    <th colspan="2">Generic-MDS Harvest Package Model Mapping Table (Intersect Table) </th>
+  </tr>
+  <tr>
+    <th valign="top">MDS</th>
+    <th valign="top">Generic</th>
+  </tr>
+  <tr>
+    <td valign="top">Implementation Task Rollup (ITR)</td>
+    <td width="250" valign="top">Rollup Package </td>
+  </tr>
+  <tr>
+    <td valign="top"><p>Implementation Task (IT) </p></td>
+    <td valign="top">Rollup Package </td>
+  </tr>
+  <tr>
+    <td valign="top">Change Package Rollup (CPR) </td>
+    <td valign="top">Rollup Package </td>
+  </tr>
+  <tr>
+    <td valign="top">Verification Package Rollup (VPR) </td>
+    <td valign="top">Rollup Package </td>
+  </tr>
+  <tr>
+    <td valign="top">Requirement Package (RP) </td>
+    <td valign="top">Change Package</td>
+  </tr>
+  <tr>
+    <td valign="top">Change Package (CP) </td>
+    <td valign="top">Change Package </td>
+  </tr>
+  <tr>
+    <td valign="top">Internal Anomaly Report (IAR)</td>
+    <td valign="top">Internal Anomaly</td>
+  </tr>
+  <tr>
+    <td valign="top">Internal Modification (IM) </td>
+    <td valign="top">Minor Change Package </td>
+  </tr>
+  <tr>
+    <td valign="top">Verification Package (VP) </td>
+    <td valign="top">Misc Package</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<p><strong>Harvest Package Model Mapping in XML form</strong></p>
+<p>Because Hackystat currently does not use a Relational Database, we need to store the mapping information in XML files. The advantage of using XML files in this situation is that when a new Harvest Package Model is introduced the Hackystat administrator would just have to created a XML file that provides the mapping and restart the server. Hackystat-SQI would read in the XML file and dynamically have the mapping. This approach is much more flexible than using a type-safe enumeration approach, because we would then have to compile and rebuild the Hackystat-SQI system. The drawback to using XML files is that it is difficult to ensure the correct values (schema is perfect for this, however, currently Hackystat does not utilize this in any of our XML files).</p>
+<p>It seems that the Generic Model can be hard coded into the system, because this list of packages probably will not change with the introduction of a new project. </p>
+<blockquote> 
+  <pre>
+&lt;harvestpackagemodel type=&quot;mds&quot;&gt;
+  &lt;harvestpackage name=&quot;Implementation Task Rollup&quot; type=&quot;ITR&quot; supertype=&quot;Rollup Package&quot; /&gt;
+  &lt;harvestpackage name=&quot;Implementation Task&quot; type=&quot;IT&quot; supertype=&quot;Rollup Package&quot; /&gt;
+  &lt;harvestpackage name=&quot;Change Package Rollup&quot; type=&quot;CPR&quot; supertype=&quot;Rollup Package&quot; /&gt;
+  &lt;harvestpackage name=&quot;Verification Package Rollup&quot; type=&quot;VPR&quot; supertype=&quot;Rollup Package&quot; /&gt;
+  &lt;harvestpackage name=&quot;Requirement Package&quot; type=&quot;RP&quot; supertype=&quot;Change Package&quot; /&gt;
+  &lt;harvestpackage name=&quot;Change Package&quot; type=&quot;CP&quot; supertype=&quot;Change Package&quot; /&gt;
+  &lt;harvestpackage name=&quot;Internal Anomaly Report&quot; type=&quot;IAR&quot; supertype=&quot;Internal Anomaly&quot; /&gt;
+  &lt;harvestpackage name=&quot;Internal Modification&quot; type=&quot;IM&quot; supertype=&quot;Minor Change Package&quot; /&gt;
+  &lt;harvestpackage name=&quot;Verification Package&quot; type=&quot;VP&quot; supertype=&quot;Unmatched&quot; /&gt;
+&lt;/harvestpackagemodel&gt;
+</pre>
+</blockquote>
+<p>&nbsp;</p>
+<p>This XML implementation works well for the MDS Harvest Package Model. However, the TCDM model presents a problem. </p>
+<blockquote>
+  <pre>
+&lt;harvestpackagemodel type=&quot;tcdm&quot;&gt;
+  ...
+  &lt;harvestpackage name=&quot;Change Request&quot; type=&quot;CR&quot; mapping=&quot;Work Package&quot; /&gt;
+  &lt;harvestpackage name=&quot;New Request&quot; type=&quot;NR&quot; mapping=&quot;Work Package&quot; /&gt;
+  &lt;harvestpackage name=&quot;Internal Anomaly Report&quot; type=&quot;IAR&quot; mapping=&quot;Internal Anomaly&quot; /&gt;
+  &lt;harvestpackage name=&quot;Anomaly Report&quot; type=&quot;AR&quot; mapping=&quot;External Anomaly&quot; /&gt;
+  ...
+&lt;/harvestpackagemodel&gt;
+</pre>
+</blockquote>
+<p>Rich Hug has explained that the IAR type in the TCDM model seems to be a &quot;catch all&quot; package type, in that IARs have different meanings. For example, some IARs are really IMs. The problem is whether the XML should look like the following.</p>
+<blockquote>
+  <pre>
+&lt;harvestpackagemodel type=&quot;tcdm&quot;&gt;
+  ...
+  &lt;harvestpackage name=&quot;Internal Anomaly Report&quot; type=&quot;IAR&quot; mapping=&quot;Internal Anomaly, Minor Change Package&quot; /&gt;
+  ...
+&lt;/harvestpackagemodel&gt;
+</pre>
+</blockquote>
+<p>The problem with this representation is that we will not know when a IAR is 
+  actually a Internal Anomaly or a Minor Change Package. There are a couple solutions 
+  to this problem; (1) we let Rich &quot;normalize&quot; the data on the Harvest 
+  side and send &quot;IM&quot;s instead of IARs when appropriate or (2) have another 
+  attribute in the State Change data so on the Hackystat side we can make that 
+  determination. <br>
+  <br>
+  It has been determined that we will &quot;normalize&quot; the package data to 
+  generate IM's based on the IAR's meta data. Therefore, this gives the following 
+  mapping:</p>
+  
+<blockquote> 
+  <pre>
+&lt;harvestpackagemodel type=&quot;tcdm&quot;&gt;
+  &lt;harvestpackage name=&quot;Change Request&quot; type=&quot;CR&quot; supertype=&quot;Change Package&quot; /&gt;
+  &lt;harvestpackage name=&quot;New Request&quot; type=&quot;NR&quot; supertype=&quot;Change Package&quot; /&gt;
+  &lt;harvestpackage name=&quot;Internal Anomaly Report&quot; type=&quot;IAR&quot; supertype=&quot;Internal Anomaly&quot; /&gt;
+  &lt;harvestpackage name=&quot;Internal Modification&quot; type=&quot;IM&quot; supertype=&quot;Internal Modification&quot; /&gt;
+  &lt;harvestpackage name=&quot;Anomaly Report&quot; type=&quot;AR&quot; supertype=&quot;External Anomaly&quot; /&gt;
+&lt;/harvestpackagemodel&gt;
+</pre>
+</blockquote>
+
+<p>&nbsp;</p>
+<p><strong>How to use the Harvest Package Model Mapping in Java </strong></p>
+<p>The Java implementation to manage the different Harvest Package Models includes representations for the individual models, mappings, and reading the xml files. In addition to the Harvest Package Models there must also be representations for Harvest Packages. These representations calculate the properties of Harvest Package. For example, a Work Package representation will include the number of files, builds, etc. </p>
+<p>HarvestPackageModel<br>
+</p>
+<p>&nbsp;</p>
+<h2>Harvest State Lifecycle</h2>
+<p>As I explained in the introduction, different projects can have different Harvest State Lifecycles. While  this is perfectly reasonable, the differences in the state change lifecycles presents a problem in Hackystat. Basically, Hackystat must be able to interpret the meaning of the different Harvest States and be able to calculate relevant information. It has been proven in the Hackystat-MDS system, where we constructed a Hackystat system for a single JPL Project that &quot;harvest states&quot; and their meanings are an important piece of the puzzle. In Hackystat-MDS we were able to do this by &quot;hard coding&quot; in the significance of the Harvest States and implemented specific code that tailored to the MDS Harvest State Change Lifecycle. However, in Hackystat-SQI &quot;hard coding&quot; is not possible. </p>
+<p>Therefore, Hackystat-SQI needs a way to interpret different Harvest State Change Lifecycles, in a sense mapping the states to generic meanings. Here are two Harvest State Change Lifecycles from the MDS and TCDM projects</p>
+<p>&nbsp;</p>
+<h3><strong>MDS Harvest State Change Lifecycle: </strong></h3>
+<p>The following table proves some explanation of the significance of the states	. </p>
+<table width="541" border="1">
+  <tr>
+    <th width="242">MDS Harvest States </th>
+    <th width="283">Significance</th>
+  </tr>
+  <tr>
+    <td valign="top">Created</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top"><p>Dev Waiting </p></td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Dev</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Dev Null </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Dev Complete</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Build Queue </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">CM Build </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Integration Test </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Test Complete</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Release</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Release-5.1</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top"> Release-5.2 </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Release-&lt;version&gt;</td>
+    <td>&nbsp;</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<h3><strong>TCDM Harvest State Change Lifecycle: </strong></h3>
+<p>The following :</p>
+<table width="542" border="1">
+  <tr>
+    <th width="242">TCDM Harvest States </th>
+    <th width="284">Significance</th>
+  </tr>
+  <tr>
+    <td valign="top">Created</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top"><p>AR/CR Rejected </p></td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">AR/CR Postponed </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">AR/CR Waiting</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">AR/CR Review</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Coding</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Dev Null </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Dev Complete </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">CM Build</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Subsystem Test </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Test Complete </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Test Hold </td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Release</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Release_V28.0</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Release_V28.1</td>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <td valign="top">Release_V&lt;version&gt;</td>
+    <td>&nbsp;</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<h3>The Problem</h3>
+<p>The fundamental problem that Hackystat-SQI faces is how to interpret Harvest State information without having to &quot;hard code&quot; state information for each Harvest State Lifecycle. For example, one could think of an analysis that calculates the number of days a package spends in development. In MDS this state is &quot;DEV&quot; and in TCDM this state is &quot;Coding&quot; . To implement a generic analysis that works for all projects the code needs to be able to determine what the harvest state within a state change lifecycle represents &quot;development&quot;.</p>
+<p>As more project enter the Hackystat-SQI it is unreasonable to assume that we can keep hard coding each of the Harvest State Change Lifecycles. </p>
+<p>&nbsp;</p>
+<h3>The Solution</h3>
+<p>The solutions to the problem is to create a Mapping system that allows a specific Harvest State Change Lifecycle to map to a Generic Lifecycle. The following graphic is a mapping of MDS and TCDM to a generic lifecycle. </p>
+<p><img src="HarvestStateMapping.JPG"></p>
+<p>As you can see, the mapping between the Harvest States is straightforward. </p>
+<ul>
+  <li>Both MDS and TCDM harvest states, except the &quot;Release Version&quot; states, have a one to one relationship with the Generic Model.</li>
+  <li>Both MDS and TCDM have a state that represents a Closed Package</li>
+  <li>Both MDS and TCDM lifecycles have states that do not match the generic model and therefore Hackystat-SQI cannot have a generic analysis that involves any calculations with these unmatched. However, these states are very important to the project's specific Harvest State Change Lifecycle and project-specific analyses can be created to analyze these states when appropriate.</li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>Harvest State Change Lifecycle Mapping in Relational Database Table form</strong></p>
+<p>To make this a little easier to visualize I've converted the previous graphical representation of the Mapping into Relational Database Tables. Basically, all we need are two tables for each lifecycle; (1) a table for the Harvest States and (2) an intersect table that maps the Harvest States to the generic lifecycle. </p>
+<table width="932" border="1">
+  <tr>
+    <th width="250">Generic Harvest State Change Lifecycle Table</th>
+    <th width="75" rowspan="18">&nbsp;</th>
+    <th width="249">MDS Harvest State Change Lifecycle Table </th>
+    <th width="75" rowspan="18">&nbsp;</th>
+    <th width="249">TCDM Harvest State Change Lifecycle Table </th>
+  </tr>
+  <tr>
+    <td valign="top">Created</td>
+    <td valign="top">Created</td>
+    <td valign="top">Created</td>
+  </tr>
+  <tr>
+    <td valign="top">Dev</td>
+    <td valign="top"><p>Dev Waiting </p></td>
+    <td valign="top"><p>AR/CR Rejected </p></td>
+  </tr>
+  <tr>
+    <td valign="top">Dev Null </td>
+    <td valign="top">Dev</td>
+    <td valign="top">AR/CR Postponed </td>
+  </tr>
+  <tr>
+    <td valign="top">Dev Complete </td>
+    <td valign="top">Dev Null </td>
+    <td valign="top">AR/CR Waiting</td>
+  </tr>
+  <tr>
+    <td valign="top">Build</td>
+    <td valign="top">Dev Complete</td>
+    <td valign="top">AR/CR Review</td>
+  </tr>
+  <tr>
+    <td valign="top">Test</td>
+    <td valign="top">Build Queue </td>
+    <td valign="top">Coding</td>
+  </tr>
+  <tr>
+    <td valign="top">Test Complete </td>
+    <td valign="top">CM Build </td>
+    <td valign="top">Dev Null </td>
+  </tr>
+  <tr>
+    <td valign="top">Release</td>
+    <td valign="top">Integration Test </td>
+    <td valign="top">Dev Complete </td>
+  </tr>
+  <tr>
+    <td valign="top">Release Version </td>
+    <td valign="top">Test Complete</td>
+    <td valign="top">CM Build</td>
+  </tr>
+  <tr>
+    <td valign="top">Misc</td>
+    <td valign="top">Release</td>
+    <td valign="top">Subsystem Test </td>
+  </tr>
+  <tr>
+    <td valign="top">Closed</td>
+    <td valign="top">Release-5.1</td>
+    <td valign="top">Test Complete </td>
+  </tr>
+  <tr>
+    <td valign="top">&nbsp;</td>
+    <td valign="top"> Release-5.2 </td>
+    <td valign="top">Test Hold </td>
+  </tr>
+  <tr>
+    <td valign="top">&nbsp;</td>
+    <td valign="top">Release-&lt;version&gt;</td>
+    <td valign="top">Release</td>
+  </tr>
+  <tr>
+    <td valign="top">&nbsp;</td>
+    <td valign="top">&nbsp;</td>
+    <td valign="top">Release_V28.0</td>
+  </tr>
+  <tr>
+    <td valign="top">&nbsp;</td>
+    <td valign="top">&nbsp;</td>
+    <td valign="top">Release_V28.1</td>
+  </tr>
+  <tr>
+    <td valign="top">&nbsp;</td>
+    <td valign="top">&nbsp;</td>
+    <td valign="top">Release_V&lt;version&gt;</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table width="516" border="1">
+  <tr>
+    <th colspan="2">Generic-MDS Harvest State Change Lifecycle Mapping Table <br>
+    (Intersect Table) </th>
+  </tr>
+  <tr>
+    <th width="250" valign="top">MDS</th>
+    <th width="250" valign="top">Generic</th>
+  </tr>
+  <tr>
+    <td valign="top">Created</td>
+    <td valign="top">Created</td>
+  </tr>
+  <tr>
+    <td valign="top"><p>Dev Waiting </p></td>
+    <td valign="top">Misc</td>
+  </tr>
+  <tr>
+    <td valign="top">Dev</td>
+    <td valign="top">Dev</td>
+  </tr>
+  <tr>
+    <td valign="top">Dev Null </td>
+    <td valign="top">Dev Null </td>
+  </tr>
+  <tr>
+    <td valign="top">Dev Complete</td>
+    <td valign="top">Dev Complete </td>
+  </tr>
+  <tr>
+    <td valign="top">Build Queue </td>
+    <td valign="top">Misc</td>
+  </tr>
+  <tr>
+    <td valign="top">CM Build </td>
+    <td valign="top">Build</td>
+  </tr>
+  <tr>
+    <td valign="top">Integration Test </td>
+    <td valign="top">Test</td>
+  </tr>
+  <tr>
+    <td valign="top">Test Complete</td>
+    <td valign="top">Test Complete, Closed</td>
+  </tr>
+  <tr>
+    <td valign="top">Release</td>
+    <td valign="top">Release</td>
+  </tr>
+  <tr>
+    <td valign="top">Release-5.1</td>
+    <td valign="top">Release Version </td>
+  </tr>
+  <tr>
+    <td valign="top"> Release-5.2 </td>
+    <td valign="top">Release Version </td>
+  </tr>
+  <tr>
+    <td valign="top">Release-&lt;version&gt;</td>
+    <td valign="top">Release Version </td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<p><strong>Harvest State Change Lifecycle Mapping in XML form</strong></p>
+<p>Because Hackystat currently does not use a Relational Database, we need to store the mapping information in XML files. The advantage of using XML files in this situation is that when a new Harvest State Change Lifecycle is introduced the Hackystat administrator would just have to created a XML file that provides the mapping and restart the server. Hackystat-SQI would read in the XML file and dynamically have the mapping. This approach is much more flexible than using a type-safe enumeration approach, because we would then have to compile and rebuild the Hackystat-SQI system. The drawback to using XML files is that it is difficult to ensure the correct values (xml schema is perfect for this, however, currently Hackystat does not utilize this in any of our XML files).</p>
+<p>It seems that the Generic Model can be hard coded into the system, because this list of packages probably will not change with the introduction of a new project. </p>
+<blockquote>
+  <pre>
+&lt;harveststatelifecycle type=&quot;mds&quot;&gt;
+  &lt;harveststate name="created" order="0" supertype="created" />
+  &lt;harveststate name="dev waiting" order="1" supertype="misc" />
+  &lt;harveststate name="dev" order="2" supertype="dev" />
+  &lt;harveststate name="dev null" order="3" supertype="dev null" />
+  &lt;harveststate name="dev complete" order="4" supertype="dev complete" />
+  &lt;harveststate name="build queue" order="5" supertype="unmatched" />
+  &lt;harveststate name="cm build" order="6" supertype="build" />
+  &lt;harveststate name="integr test" order="7" supertype="test" />
+  &lt;harveststate name="test complete" order="8" supertype="test complete" closed=&quot;true&quot; />
+  &lt;harveststate name="release" order="9" supertype="release" />
+  &lt;harveststate name="release-5.1" order="10" supertype="release version" />
+  &lt;harveststate name="release-5.2" order="11" supertype="release version" />
+  &lt;harveststate name="release-5.3" order="12" supertype="release version" />
+&lt;/harveststatelifecycle&gt;
+</pre>
+</blockquote>
+<p>Notice the &quot;closed&quot; attribute in the test complete entry, this attribute indicates what harvest state represents a closed package. (I don't know if this is the best way to do this). </p>
+<p>&nbsp;</p>
+<p><strong>How to use the Harvest State Change Lifecycle Mapping in Java </strong></p>
+<p>The Java implementation to manage the different Harvest State Change Lifecycle includes representations for the individual lifcycles, mappings, and reading the xml files.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h2>Other Problems </h2>
+<p>There is one last twist to this issue. It is possible for different projects to use the same Harvest Package Model and/or Harvest State Change Lifecyle. Therefore, this means that we cannot associate one Model/Lifecycle with a Project. I propose that we add a Key-Value attribute to Project representations. This will enable Hackystat-SQI to determine what Model/Lifeclye a project is using. </p>
+<blockquote>
+<pre>Project project = ProjectSelector.getSelectedProject(user);
+
+HarvestStateChangeLifecycle projectLifecycle = project.getKeyValuePair(Project.Lifecycle).getValue();
+HarvestState testState = projectLifecycle.getMapping(GenericLifecycle.TEST);
+</pre>
+</blockquote>
+<p>This example code demonstrates the ability to look determine the specific Harvest 
+  State change Lifecycle associated with a project. And when the lifecycle is 
+  known we can then use the mapping to get a specific Harvest State associated 
+  with that lifecycle. </p>
+<ul>
+  <li>
+    (Philip's Thoughts) This is a good idea, but doesn't require us to extend      the Project representation. Instead, I recommend that you implement a new      package in SQI called org.hackystat.app.jplsqi.lifecycle. This package includes      a Preference command (maybe at the admin level) that allows the user to associate      a given Project with a given Lifecycle. Then, to find out the lifecycle, you      would use something like:
+     
+     <pre>
+	 Project mdsProject = ProjectManager.getInstance().getProject(&quot;MDS&quot;);
+     ProjectLifecycle lifecycle = ProjectLifecycleManager.getInstance().getLifecycle(mdsProject);</pre>
+     
+     Of course, ProjectLifecycleManager would persist these mappings using the conventional UserXML stuff.
+  </li>
+</ul>
+<p>&nbsp;</p>
+<p>Another problem associated with different Lifecycles and Models is the Hackstat HTML Interface. Because, projects can have different lifecycles and models with different types and states the interface should be dynamic depending on what project is selected. For example, if the MDS world wants to know how many packages entered the Build Queue state they should be able to select Build Queue without seeing the AR/CR Review state from the TCDM lifecycle. </p>
+</body>
+</html>

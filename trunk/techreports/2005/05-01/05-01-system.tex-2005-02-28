@@ -1,0 +1,1062 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 05-01-system.tex -- Thesis Proposal - PRI
+%% Author          : Aaron A. Kagawa
+%% Created On      : Mon Sep 23 11:52:28 2004
+%% Last Modified By: Aaron Kagawa
+%% Last Modified On: Mon Feb 28 13:23:49 2005
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 2004 Aaron A. Kagawa
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Hackystat Priority Ranked Inspection Extension}
+\label{chapter:system}
+To successfully use Priority Ranked Inspection, the determination of MINI
+and LINI must be obtainable for a very low cost. In other words, if the
+weighting function takes three months to generate, a software project will
+have long past the need for those specific recommendations. Therefore, this
+determination must be obtained in real-time.
+
+One way of obtaining weighting function values in real-time is through the
+use of the Hackystat system. Hackystat is a framework for collecting and
+analyzing software product and development process metrics in real-time.
+For more information about the Hackystat system see Chapter
+\ref{chapter:hackystat}.  For this proposed research, I have created an
+extension to the Hackystat system called the Hackystat PRI Extension
+(hackyPRI for short). hackyPRI provides a real-time PRI weighting function
+and ranking. Figure \ref{fig:intro-WorkspacePRIAnalysis} demonstrates the
+PRI weighting function and its ranking for a software project that is
+obtainable from the Hackystat PRI Extension.
+
+
+This chapter provides a detailed description of the Hackystat PRI
+(hackyPRI) extension. This extension provides the PRI determination of more
+and less in need of inspection (MINI and LINI). First, I will discuss how
+hackyPRI supports the four steps of the Priority Ranked Inspection process.
+Then, I will provide a detailed explanation of the design and
+implementation of the system.
+
+
+
+\section{Design and Implementation}
+This section describes the design and implementation of the Hackystat PRI
+Extension. I begin this section by discussing the evolution of
+hackyPRI. 
+
+\subsection{Aggregate versus Snap-Shot PRI Measures}
+Before we begin the discussion of the design and implementation, I first
+must explain Aggregate and Snap-Shot PRI measures. Two different types of
+measures exist because of the type of data that is obtainable from
+Hackystat. An aggregate PRI measure is the result of a summation of
+calculated values obtained from processing more than day's worth of
+data. For example, the Active Time PRI measures is an Aggregate measure
+because it adds the values of active time over a specified time
+period. Snap-Shot measures are not aggregated, instead it represents a
+single value from a single day. For example, the number of lines of code in 
+a class does not make sense as an aggregate measure, the summation of lines 
+of code over time. Therefore, lines of code is a Snap-Shot PRI
+measure. hackyPRI will utilize this distinction in the type of PRI
+measure in its implementation.
+
+
+\subsection{hackyPRI version 1.0}
+I began the implementation of the first version of hackyPRI in September
+2004. This initial version, required approximately 10.7 hours of Hackystat
+active time. In this section I will describe the design of hackyPRI v1.0.
+I will also identify some of the problems associated with its design that
+has forced a complete redesign of the system in hackyPRI version 2.0.
+
+\subsubsection{Design and Implementation}
+hackyPRI v1.0 was created with a very simple design. Basically, it
+consisted of two main classes; WorkspacePri and ProjectWorkspacePri. The
+WorkspacePri class was designed to represent a single workspace and its
+associated PRI measures and calibration. The ProjectWorkspacePri class was
+designed to access Hackystat's Sensor Data Types and extract product and
+process measures which were used to create WorkspacePri objects.
+
+The WorkspacePri class has a very simple design. It basically stores the
+values of the PRI measures and when requested provides the PRI ranking
+based on its calibration. Table \ref{table:hackyPriv1-WorkspacePri} is a
+portion of the WorkspacePri code that handles the Commit Measure. In
+addition to the Commit measure, the WorkspacePri class provides methods,
+similar to the methods presented in Table
+\ref{table:hackyPriv1-WorkspacePri}, for 8 other product and process
+measures. Furthermore, this single class mixed Aggregate and Snap-Shot PRI
+measures into one single Java class.
+
+The ProjectWorkspacePri class is the workhorse of the system. Its job is to
+access and gather Hackystat's product and process measures to create
+WorkspacePri objects. Table
+\ref{table:hackyPriv1-ProjectWorkspacePri-algorithm} presents the basic
+algorithm used in the ProjectWorkspacePri class in pseudo-code form. Table
+\ref{table:hackyPriv1-ProjectWorkspacePri} is a portion of the
+ProjectWorkspacePri code that creates and populates the WorkspacePri Commit
+measure. The ProjectWorkspacePri code utilizes Hackystat code to gather the
+Commit information for a specified project. In addition to the Commit
+measure, the ProjectWorkspacePri class accesses Hackystat code to retrieve
+information about 8 other product and process measures. 
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{WorkspacePri code that handles the Commit measure and its calibration}
+    \label{table:hackyPriv1-WorkspacePri}
+    \begin{tabular}{|p{14.0cm}|} \hline
+
+\begin{alltt}{\scriptsize{}
+ /**
+  * Adds the number of commits.
+  * @param commit The number of commits to add.
+  * @param day The day of the commit.
+  */
+ public void addCommit(double commit, Day day) \{
+   if (commit > 0) this.lastCommitDay = day;
+   this.commit += commit;
+ \}
+
+ /**
+  * Returns the number of commits.
+  * @return The number of commits.
+  */
+ public int getCommit() \{
+   return this.commit;
+ \}
+
+ /**
+  * Returns the day of the last commit.
+  * @return The day of the last commit.
+  */
+ public Day getLastCommitDay() \{
+   return this.lastCommitDay;
+ \}
+
+ /**
+  * Adds the user to the member commit map.
+  * @param member The member to add to the commit map.
+  * @param memberCommit The number of commits associated with 
+  *   the specified member.
+  */
+ public void addMemberCommit(User member, int memberCommit) \{
+   int temp = 0;
+   if (this.memberCommitMap.containsKey(member.getUserEmail())) \{
+     temp = ((Integer)this.memberCommitMap.get(member.getUserEmail())).intValue();
+   \}
+   this.memberCommitMap.put(member.getUserEmail(), 
+     new Integer(temp + memberCommit));
+ \}
+
+ /**
+  * Returns the number of members who committed to the workspace.
+  * @return The number of members who committed to the workspace.
+  */
+ public int getMemberCommitSize() \{
+   return this.memberCommitMap.size();
+ \} 
+
+ /**
+  * Returns the pri ranking of the member commit map.
+  * @return The pri ranking level.
+  */
+ public int getMemberCommitPriRank() \{
+   if (this.memberCommitMap.size() >= 3) this.memberCommitPriRank = 2;
+   else if (this.memberCommitMap.size() == 2) this.memberCommitPriRank = 1;
+   return this.memberCommitPriRank;
+ \} 
+}\end{alltt} \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{ProjectWorkspacePri algorithm}
+    \label{table:hackyPriv1-ProjectWorkspacePri-algorithm}
+    \begin{tabular}{|p{14.0cm}|} \hline
+
+
+\begin{alltt}{\scriptsize{}
+FOR each day starting from the project's end day to the project's start day
+  IF the daily build is buildSuccessful
+    successfulBuildDay = currentDay
+  END IF
+END FOR
+
+FOR each day starting from the project's start day to the project's end day
+  create new WorkspacePri object or retrieve from cache
+  IF day is equal to successFulBuildDay
+    process snap-shot product and process measures and add value
+      to WorkspacePri object
+  END IF
+  process aggregate product and process measures and add value
+    to WorkspacePri object
+END FOR 
+
+Rank according to PRI ranking determined by the WorkspacePri calibration
+}\end{alltt}
+\\ \hline
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{ProjectWorkspacePri code that creates the WorkspacePri Commit measure}
+    \label{table:hackyPriv1-ProjectWorkspacePri}
+    \begin{tabular}{|p{14.0cm}|} \hline
+
+\begin{alltt}{\scriptsize{}
+ for (Iterator j = this.project.getMembers().iterator(); j.hasNext(); ) \{
+   User member = (User) j.next();
+   int memberCommit = DailyProjectCommit.getInstance(this.project, 
+     day).getNumOfCommits(member, filePattern);
+   if (memberCommit > 0) \{
+     workspacePri.addMemberCommit(member, memberCommit);
+   \}
+ \}
+ workspacePri.addCommit(
+   DailyProjectCommit.getInstance(this.project, 
+   day).getCodeChurnInfo(filePattern).getNumOfCommits(), day);
+}\end{alltt} \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+
+
+\subsubsection{Design and Implementation Problems}
+There are two major problems with the design and implementation of hackyPri
+version 1.0. The two major problems are poor runtime performance and an
+unscalable and unconfigurable framework.
+
+First, as a result of poor design, the system's execution time is
+unacceptable. For the hacky2004-all Hackystat project, which contains 2
+years of Sensor Data gathered from 9 different Hackystat users
+(approximately 13 thousand Hackystat XML sensor data files), version 1.0
+requires 60 minutes to execute a complete PRI ranking of the whole project.
+This result was collected on a computer with 3.4 GHz Pentium 4 processor
+with Hyper Threading and 1.00 GB of RAM. Furthermore, the system will need
+60 minutes to process the Hackystat project's data for each and every
+execution.In my opinion, this execution time violates the intended design
+of ``real-time'' PRI rankings. In addition, this slow execution time
+hampers the ability to properly calibrate the PRI measures.
+
+Second, also due to poor design, the system is quite hard to extend. For
+example, adding new product and process measures and their calibration
+requires the maintenance two large classes. The WorkspacePri class which
+contained the values of the PRI measures quickly grew to 570 lines of code.
+With each new addition of measures, this class had to be updated. The same
+problem affected the ProjectWorkspacePri class. This problem was a direct
+result of the simplicity of the design. In addition, the system is
+unconfigurable for different software projects. Step 1 of the Priority
+Ranked Inspection process states that various product and process measures
+must be selected and calibrated to best distinguish MINI documents from
+LINI documents. This selection process will not be the same for all
+software projects. Therefore, it is quite obvious that a properly designed
+system will allow the configuration of different product and process
+measures without having to completely redesign the system. This problem can
+also be attributed to the simple design of hackyPRI v1.0. For hackyPRI to
+be successful, different software projects should be able to easily extend
+the current set of PRI measures and in version 1.0 this is not possible.
+
+
+
+
+\subsection{hackyPRI version 2.0}
+Due to various problems that I've discovered in hackyPRI v1.0, I decided to
+completely redesign the architecture of the system. Unlike version 1.0,
+hackyPRI version 2.0 was implemented with processing time, extendibility,
+and configurability in mind. However, I believe that the implementation of
+version 1.0 was very important. Version 1.0 proved that this sort of
+Hackystat extension is possible. Therefore, version 1.0 provided me with a
+baseline implementation to improve. This redesign was accomplished in
+approximately 18.8 hours of active time.
+
+In this section, I will provide a detailed description of the design and
+implementation of the system. I will also describe, how a software
+developer can extend hackyPRI v2.0 to add more product and process measures
+and calibrate the weighting functions for their own software project.
+
+\subsubsection{Design and Implementation}
+hackyPRI version 2.0 has a fairly complicated design. It consists of
+numerous classes within two main packages; the
+\emph{org.hackystat.app.pri.model.workspace} package and
+the \newline \emph{org.hackystat.app.pri.model.workspace.measures}
+package. In this section I will describe how both packages work.
+
+
+\paragraph{Package org.hackystat.app.pri.model.workspace.measure}
+\label{paragraph:measurepackage}
+provides classes that represent the PRI measures. Each measure implements
+the WorkspacePriMeasure interface, shown in its entirety in Table
+\ref{table:hackyPriv2-WorkspacePriMeasure}. The purpose of this interface
+is to standardize the functionality of each and every measure. For example,
+each measure must be able to calculate its value, return the calculated
+value in a readable form, and determine the PRI ranking based on the
+calculated value. In addition, the interface defines four methods:
+isAggregateMeasure, isCacheEnabled, writeCache, and readCache, which
+provide the ability to persistently cache the results of the measure. This
+functionality provides a persistent cache of the measure's values for
+future use. Once the measure is calculated it should not need to be
+re-calculated.
+
+A specific example of one of the PRI measures is the
+Commit Contribution measure. Table
+\ref{table:hackyPriv2-WorkspacePriCommitContribution} provides its
+calculate method. The Commit Contribution PRI measure is an example of
+Aggregate PRI measure. Therefore, its isAggregateMeasure and isCacheEnabled
+measure both return the boolean true.
+
+Table \ref{table:hackyPriv2-measurepackage} presents a summary listing of
+all the classes in the \newline
+\emph{org.hackystat.app.pri.model.workspace.measure} package.
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{The WorkspacePriMeasure interface that defines the
+      functionality of all PRI measures.}
+    \label{table:hackyPriv2-WorkspacePriMeasure}
+    \begin{tabular}{|p{14.0cm}|} \hline
+
+\begin{alltt}{\tiny{}
+  /**
+   * Returns the label of this measure.
+   * @return The label of this measure.
+   */
+  public String getLabel();
+  
+  /**
+   * Determines if the measure is an aggregation of past data. If this method returns true,
+   *   then this indicates that each day since the start day of the project is used to calculate
+   *   the measure's value. If this method returns false, then the measure is calculated from 
+   *   the last build day.
+   * @return True if the measure is an aggregate calculation, false otherwise.
+   */
+  public boolean isAggregateMeasure();
+  
+  /**
+   * Determines if the cache is enabled. Generally, measures that are calculated in an aggregation
+   *   of past data is cached. 
+   * @return True if the cache is enabled, false otherwise.
+   */
+  public boolean isCacheEnabled();
+  
+  /**
+   * Calculates and returns the value of the PRI measure for the specified workspace and day.
+   * @param workspace Specifies the workspace to calculate the measure for.
+   * @param day Specifies the day to calculate the measure for. 
+   * @throws Exception If a problem occurs.
+   */
+  public void calculate(String workspace, Day day) throws Exception;
+  
+  /**
+   * Returns the formatted String of the calculated value.
+   * @param workspace The workspace to get the calculated value.
+   * @return The formatted value.
+   */
+  public String formatCalculatedValue(String workspace);
+  
+  /**
+   * Returns the PRI ranking for the value associated with the workspace.
+   * @param workspace Specifies what workspace to get the PRI ranking for.
+   * @return The PRI ranking for the value associated with the workspace.
+   */
+  public int getPriRank(String workspace);
+  
+  /**
+   * Writes out the cache objects associated with this instance of the measure
+   *   object. The collection of caches are stored in the Project owner's partitions.
+   * @throws Exception If a problem occurs.
+   */
+  public void writeCache() throws Exception;
+  
+  /**
+   * Reads in the cache objects associated with this instance of the measure
+   *   object and creates an internal representation of the cache. The collection of caches 
+   *   are stored in the Project owner's partitions.
+   * @throws Exception If a problem occurs.
+   */
+  public void readCache() throws Exception;
+}\end{alltt} \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{WorkspacePriCommitContribution code that calculates the Commit 
+      Contribution measure}
+    \label{table:hackyPriv2-WorkspacePriCommitContribution}
+    \begin{tabular}{|p{14.0cm}|} \hline
+
+\begin{alltt}{\scriptsize{}
+ /**
+  * Calculates and returns the Commit Contribution PRI measures for the 
+  *   specified workspace and day.
+  * @param workspace Specifies the workspace to calculate the commit 
+  *    contribution measure for.
+  * @param day Specifies the day to calculate the commit 
+  *     contribution measure for. 
+  * @throws Exception If a problem occurs.
+  */
+ public void calculate(String workspace, Day day) throws Exception \{
+   FilePattern filePattern = new FilePattern(workspace + "*.java");
+   WorkspacePriCache cache = (WorkspacePriCache) 
+     this.workspacePriCacheMap.get(workspace);
+   if (cache == null) \{
+     Data data = new Data();
+     for (Iterator i = this.project.getMembers().iterator(); i.hasNext(); ) \{
+       User member = (User) i.next();
+       int commits = DailyProjectCommit.getInstance(this.project, 
+           day).getNumOfCommits(member, filePattern);
+       if (commits > 0) \{
+         data.addContribution(member.getUserEmail(), commits);
+       \}
+     \}
+     this.workspacePriCacheMap.put(workspace, 
+       new WorkspacePriCache(workspace, day, data));
+   \}
+   // if last day is before the day then we need to update the value
+   else if (cache.getLastDay().compareTo(day) < 1) \{
+     Data data = (Data) cache.getValue();
+     for (Iterator i = this.project.getMembers().iterator(); i.hasNext(); ) \{
+       User member = (User) i.next();
+       int commits = DailyProjectCommit.getInstance(this.project, 
+           day).getNumOfCommits(member, filePattern);
+       if (commits > 0) \{
+         data.addContribution(member.getUserEmail(), commits);
+       \}
+     \}
+     cache.replace(day);
+   \}
+ \}
+}\end{alltt} \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{Summary description of all classes in the 
+      org.hackystat.app.pri.model.workspace.measure package}
+    \label{table:hackyPriv2-measurepackage}
+    \begin{tabular}{|p{6.0cm}|p{9.0cm}|} \hline
+      {\bf Class Name} & {\bf Description} \\ \hline
+
+\small{}WorkspacePriMeasure & \small{}Provides an Interface of all PRI
+measures. \\ \hline 
+
+\small{}WorkspacePriCache & \small{}Provides an internal cache of the
+calculated values of the PRI measures \\ \hline
+
+\small{}WorkspacePriActiveTime & \small{}Provides the PRI active time
+measure, which represents the total aggregate active time for each
+workspace in a project.\\ \hline 
+
+\small{}WorkspacePriActiveTimeContribution & \small{}Provides the PRI
+active time contribution measure, which represents the total aggregate
+number of active time member contributions for each workspace in a
+project. \\ \hline  
+
+\small{}WorkspacePriActiveTimeLast & \small{}Provides the PRI last active
+time day measure, which represents the last day active time was recorded
+for each workspace in a project.\\ \hline
+
+\small{}WorkspacePriCommit & \small{}Provides the PRI commit measure, which
+represents the total aggregate number of commits for each workspace in a
+project. \\ \hline 
+
+\small{}WorkspacePriCommitContribution & \small{}Provides the PRI commit
+contribution measure, which represents the total aggregate number of commit
+member contributions for each workspace in a project. \\ \hline
+
+\small{}WorkspacePriCommitLast & \small{}Provides the PRI last commit day
+measure, which represents the last day commit information was recorded for
+each workspace in a project. \\ \hline
+
+\small{}WorkspacePriCoverage & \small{}Provides the PRI coverage measure,
+which represents the latest snapshot of the method level coverage
+percentage for each workspace in a project.  \\ \hline
+
+\small{}WorkspacePriDependency & \small{}Provides the PRI dependency
+measure, which represents the latest snapshot of the number of inbound and
+outbound dependency references for each workspace in a project. \\ \hline
+
+\small{}WorkspacePriExpert & \small{}Provides the PRI expert measure, which
+represents the project member who has the most active time and commits for
+a each workspace in a project. \\ \hline
+
+\small{}WorkspacePriFileMetric & \small{}Provides the PRI file metric
+measure, which represents the latest snapshot of the number of lines of
+code, number of methods, number of classes for each workspace in a
+project.\\ \hline 
+
+\small{}WorkspacePriIssue & \small{}Provides the PRI issue measure, which
+represents the latest snapshot of the total number of relevant issues
+(open, major, bug) for each workspace in a project. \\ \hline
+
+\small{}WorkspacePriReview & \small{}Provides the PRI review measure, which
+represents the total aggregate number of review issues for each workspace
+in a project.  \\ \hline 
+
+\small{}WorkspacePriReviewLast & \small{}Provides the PRI last review day
+measure, which represents the last day review issues was recorded for each
+workspace in a project.  \\ \hline
+
+\small{}WorkspacePriTestFileMetric & \small{}Provides the PRI file metric
+measure, which represents the latest snapshot of the number of lines of
+test code,  number of test methods, number of test classes for each
+workspace in a project.\\ \hline 
+
+\small{}WorkspacePriUnitTest & \small{}Provides the PRI unit test measure,
+which represents the latest snapshot of the number of executed unit tests
+for each workspace in a project. \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+\paragraph{Package org.hackystat.app.pri.model.workspace} provides
+classes that manage the PRI measures in the measures
+\emph{org.hackystat.app.pri.model.workspace.measure} package. Unlike
+version 1.0 where a single class was the workhorse of the system, version
+2.0 evenly distributes the work among this package and the measure package.
+The workspace package is responsible for implementing an algorithm that
+allows the individual PRI measures to calculate and provide rankings for
+each workspace.
+
+The main class of interest in the workspace package is the
+ProjectWorkspaceRanking class. Surprisingly, this class has the same
+general algorithm explained in Table
+\ref{table:hackyPriv1-ProjectWorkspacePri-algorithm}. However, several
+implementation-level enhancements were introduced. The first major
+enhancement was the elimination of lines of code similar to Table
+\ref{table:hackyPriv1-ProjectWorkspacePri}. Instead, the
+ProjectWorkspaceRanking class uses two pieces of code to delegate the
+calculation to the PRI measures. Table
+\ref{table:hackyPriv2-ProjectWorkspaceRanking} and Table
+\ref{table:hackyPriv2-ProjectWorkspaceRanking-calculateMeasure} illustrate
+how this class off-loads the calculation work to the PRI measures in the
+measure package. As I previously explained, each PRI measure implements the
+WorkspacePriMeasure Interface and this minor implementation design makes
+this possible.
+
+Table \ref{table:hackyPriv2-workspacepackage} provides a summary
+description of all classes in this package. 
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{Summary description of all classes in the 
+      org.hackystat.app.pri.model.workspace package}
+    \label{table:hackyPriv2-workspacepackage}
+    \begin{tabular}{|p{6.0cm}|p{8.0cm}|} \hline
+      {\bf Class Name} & {\bf Description} \\ \hline
+
+ProjectWorkspaceRankingManager & Provides the management of a collection of 
+ProjectWorkspaceRanking objects. \\ \hline
+
+ProjectWorkspaceRanking & Provides the facilities to calculate PRI measures 
+and create a ranking based on the calculated results.\\ \hline
+
+WorkspacePriValues & Provides a collection of measure values for a
+specified workspace. Used primarily for presentation purposes. \\ \hline
+
+PriRankComparator & Provides a comparator that compares the PRI ranking
+value from two WorkspacePriValues objects. \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{ProjectWorkspaceRanking code that loads all PRI measures used
+      in this ranking}
+    \label{table:hackyPriv2-ProjectWorkspaceRanking}
+    \begin{tabular}{|p{14.5cm}|} \hline
+
+\begin{alltt}{\scriptsize{}
+ /** 
+  * Constructs a project workspace ranking object. And loads all PRI measures
+  *   that will be used in the ranking.
+  * @param project The project to process.
+  */
+ ProjectWorkspaceRanking(Project project) \{
+   this.project = project;
+   this.measureList.add(WorkspacePriActiveTime.getInstance(this.project));
+   this.measureList.add(WorkspacePriActiveTimeLast.getInstance(this.project));
+   this.measureList.add(WorkspacePriActiveTimeContribution.getInstance(this.project));
+   this.measureList.add(WorkspacePriCommit.getInstance(this.project));
+   this.measureList.add(WorkspacePriCommitLast.getInstance(this.project));
+   this.measureList.add(WorkspacePriCommitContribution.getInstance(this.project));
+   this.measureList.add(WorkspacePriExpert.getInstance(this.project));
+   this.measureList.add(WorkspacePriReview.getInstance(this.project));
+   this.measureList.add(WorkspacePriReviewLast.getInstance(this.project));
+   this.measureList.add(WorkspacePriIssue.getInstance(this.project));
+   this.measureList.add(WorkspacePriFileMetric.getInstance(this.project));
+   this.measureList.add(WorkspacePriTestFileMetric.getInstance(this.project));
+   this.measureList.add(WorkspacePriDependency.getInstance(this.project));
+   this.measureList.add(WorkspacePriUnitTest.getInstance(this.project));
+   this.measureList.add(WorkspacePriCoverage.getInstance(this.project));
+   this.buildWorkspacePriValuesMap();
+ \}
+}\end{alltt} \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{ProjectWorkspaceRanking code that delegates the calculation of 
+      the measures to the WorkspacePriMeasure classes}
+    \label{table:hackyPriv2-ProjectWorkspaceRanking-calculateMeasure}
+    \begin{tabular}{|p{14.0cm}|} \hline
+
+\begin{alltt}{\scriptsize{}
+ /**
+  * Calculates the measure for the specified workspace and day.
+  * @param isAggregateMeasure Determines if the measure to be calculated is 
+  *   an aggregate measure or not.
+  * @param workspace The workspace to calculate the measure for.
+  * @param day The day to calculate the measure for.
+  */
+ private void calculateMeasure(boolean isAggregateMeasure, 
+     String workspace, Day day) \{
+   for (Iterator i = this.measureList.iterator(); i.hasNext();) \{
+     WorkspacePriMeasure measure = (WorkspacePriMeasure) i.next();
+     if (measure.isAggregateMeasure() == isAggregateMeasure) \{
+       try \{
+         measure.calculate(workspace, day);
+       \}
+       catch (Exception e) \{
+         // if exception ignore it and continue processing
+         e.printStackTrace();
+       \}
+     \}
+   \}
+ \}
+}\end{alltt} \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+
+
+\subsubsection{Design and Implementation Improvements}
+As I previously stated, hackyPRI version 2.0 is designed to solve the
+problems associated with version 1.0. The two problems that were solved are
+execution time and the configurability for other software projects.
+
+The execution time of hackyPRI version 2.0 has been greatly improved. Under
+normal situations the execution time has been reduced to 5 minutes from 60
+minutes on the same Hackystat project and on the same 3.4 GHz Pentium 4
+processor with 1.00 GB of RAM computer. This is a 92 percent decrease in
+processing time.  In my opinion, version 2.0 is now a ``real-time'' PRI
+ranking. A simple persistent caching of the calculated values accounted for
+the dramatic decrease in execution time. However, there are two situations
+where the execution time will become quite lengthy. First, when the
+persistent caches are non-existent. Second, when the persistent caches are
+deleted. In these two cases, the system must calculate and persistently
+store the caches. This action requires 47 minutes. However, once this
+action is executed once the system should not require it. Therefore, under
+normal situations the execution time is 5 minutes.
+
+The configurability of hackyPRI version 2.0 has been greatly improved. In
+version 1.0 the system gathered and bunched up the management and
+calculation of the PRI measures into two Java classes. I changed that
+design in version 2.0 and separated the different PRI measures into
+smaller, easier to manage, pieces. Under this new design, when a new PRI
+measure is added to the system only a few lines of code must change. In
+addition, swapping different PRI measures in and out of the ranking is now
+very simple.
+
+
+
+
+\section{The Four Steps of the Priority Ranked Inspection Process}
+Hackystat PRI Extension supports the four steps of the Priority Ranked
+Inspection process. The following list is the four steps of the PRI
+process.
+
+\begin{enumerate}
+\item The creation of the PRI weighting function, which distinguishes MINI
+  documents from LINI documents. The weighting function design includes two 
+  steps: 
+\begin{enumerate}
+\item Selection of product and process measures to use in the PRI
+  weighting function.
+\item Creation of a numerical weighting system that assigns a weight for
+  each measure and the calibration of this weighting system.
+\end{enumerate}
+\item The selection of a document for inspection based on the PRI
+  weighting function and ranking.
+\item The actual inspection of the selected document.
+\item Adjustment of product and process measure selection and
+  calibration based on the results of the inspection.
+\end{enumerate}
+
+The following subsections detail how hackyPRI supports the steps.
+
+\subsection{Step 1a: Selection of Product and Process Measures}
+Step 1 of the Priority Ranked Inspection process states that various
+product and process measures must be selected and calibrated to best
+distinguish MINI documents from LINI documents. This selection process will
+not be the same for all software projects. Therefore, other software groups
+must be able to add new product and process measures to their own Hackystat
+PRI installation.
+
+The Hackystat system provides a set of Sensor Data Types that represent
+various software product and process measures. I will use a subset of the
+available Sensor Data Types as the measures that make up the PRI weighting
+function. Table \ref{table:measures-hackyPRI} contains a description of the
+measures that will be used in the hackyPRI extension.
+
+A PRI measure is implemented with a WorkspacePriMeasure, explained in
+Section \ref{paragraph:measurepackage} and the following Hackystat-related
+components; a Sensor Data Type, a Sensor, and a DailyProjectData
+representation.
+
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{Measures used in hackyPRI}
+    \label{table:measures-hackyPRI}
+    \begin{tabular}{|p{3.0cm}|p{10.0cm}|} \hline
+      {\bf Measure} & {\bf Description} \\ \hline
+\small{}Expert & \small{}The developer who has the most active time and
+commits. An expert represents the developer who is most familiar with the
+particular portion of the system. \\ \hline
+
+\small{}Active Time & \small{}The total time developers spent editing a
+particular file. This measure is obtainable from attaching Hackystat
+sensors to the developers' Integrated Developer Environment (i.e., Emacs,
+JBuilder, Eclipse) \\ \hline
+\small{}Last Active Time & \small{}The day of the last active time. \\ \hline
+\small{}\# of Developer \newline Active Time \newline Contributions &
+\small{}The number of unique developers who have contributed to the total
+active time. \\ \hline
+
+\small{}Commits & \small{}The total number of commits to a particular
+file. This measure is obtainable from attaching Hackystat sensors to a
+Concurrent Version Control server (i.e., CVS). \\ \hline
+\small{}Last Commit & \small{}The day of the last commit. \\ \hline
+\small{}\# of Developer \newline Commit \newline Contributions &
+\small{}The number of unique developers who have contributed to the total
+commits. \\ \hline
+
+\small{}Review & \small{}The number of code reviews (inspections) that were
+conducted. This measure is obtainable from attaching Hackystat sensors
+to the Eclipse Jupiter Review plugin.\\ \hline
+\small{}Last Review & \small{}The day of the last review or inspection. \\ \hline  
+
+\small{}Defects & \small{}The number of defects that were reported and
+stored in the Defect Tracking tool. This measure is obtainable from
+attaching Hackystat sensors to the Jira tool.\\ \hline
+\small{}Last Defect & \small{}The day of the last defect. \\ \hline
+
+\small{}Enhancements & \small{}The number of enhancements that are
+requested. This measure is obtainable from attaching Hackystat sensors to
+the Jira tool.\\ \hline
+\small{}Last Enhancement & \small{}The day of the last enhancement. \\ \hline
+
+\small{}File Metrics & \small{}The last known metrics of non-test code;
+lines of code, number of methods, and number of classes. This measure is
+obtainable from attaching Hackystat sensors to the LOCC tool. \\ \hline
+\small{}Test File Metrics & \small{}The lines of test code, number of test
+methods, and the number of test classes. This measure is obtainable from
+the Hackystat sensors to the LOCC tool. \\ \hline
+
+\small{}Dependency & \small{}The inbound and outbound references that
+indicate dependencies within the system. This measure is obtainable
+from attaching Hackystat sensors to the DependencyFinder tool.\\ \hline
+
+\small{}Unit Tests & \small{}The number of unit tests that are executed
+during the last build of the system. This measure is obtainable from
+attaching Hackystat sensors to the JUnit tool. \\ \hline 
+
+\small{}Test Failures & \small{}The total number of test failures. This
+measure is obtainable from attaching Hackystat sensors to the JUnit
+tool. \\ \hline
+
+\small{}Coverage & \small{}The last know coverage percentage of the
+system. This measure represents the number of methods that are executed
+during a test invocation over the number of total methods. This measure is
+obtainable from attaching Hackystat sensors to the JBlanket tool.. \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+Each measure is collected for each package or workspace within a specified
+project. Figure \ref{fig:WorkspaceQualityAnalysis} shows several example
+LINI packages.
+
+\begin{figure*}[ht]
+  \centering
+  \includegraphics[width=1.00\textwidth]{figs/2004-12-01-all_Page_01.eps}
+  \caption{The Workspace PRI analysis. Workspaces are listed with its
+  respective PRI ranking and the measures.
+}
+  \label{fig:WorkspaceQualityAnalysis}
+\end{figure*}
+
+
+\subsubsection{Adding a new PRI measure to the system}
+This section provides a detailed description of the steps that are required
+to a new PRI measure to the system. As explained earlier, a PRI measure is
+either a product or process measure that is obtainable in Hackystat. In
+this section, I will describe how to add a Runtime Execution PRI measure.
+This measure represents the total number of runtime executions for a
+specific piece of code during the span of 24 hours.  Although this measure
+is currently not obtainable in set of Hackystat measures, it has many
+practical applications. For example, a Hackystat analysis can map out the
+areas of a project that are executed the most during normal usage. This
+would be a great measure to incorporate into PRI because one would assume
+that if package foo is executed ten times more often than package bar,
+ceteris paribus, then package foo could have a higher MINI ranking than
+package bar.
+
+\paragraph{Step 1 - Create a Runtime Execution Sensor Data Type} All
+Hackystat measures are concretely defined in a Sensor Data Type. This
+representation, specifies the exact information that is required to allow
+useful, interesting, and correct interpretations of the data. Essentially,
+it is the schema that defines the data. Therefore, the first step is to
+define the attributes of a Runtime Execution Sensor Data Type.
+
+\paragraph{Step 2 - Create a Hackystat Runtime Execution Sensor} Like all
+Hackystat measures, there must be some way of ``sensing'' the Runtime
+Execution measure. [JMx] Imagine such a software tool exist such that a
+Hackystat sensor can extract the necessary information required by the
+Runtime Execution Sensor Data Type and send that information to
+Hackystat.
+
+\paragraph{Step 3 - Create a DailyProjectRuntimeExecution representation}
+After the completion of steps 1 and 2, we now should have Runtime Execution
+Sensor Data stored in Hackystat. This fine-grained data is meaningless if
+we are unable to associate the data to a specific Hackystat project. At
+this point the creation of the DailyProjectRuntimeExecution representation
+is needed. The purpose of this representation is to provide coarse-grained
+information about Runtime Execution data at the project level. For example,
+return the number of executions for the package foo for June 14, 2005.
+
+\paragraph{Step 4 - Create a WorkspacePriRuntimeExecution class}
+Now we are ready to create the WorkspacePriRuntimeExecution class. As I
+previously mentioned each PRI measure must implement the
+WorkspacePriMeasure Interface. This creates a standard set of functions
+that all PRI measures must have. The critical decision that must be made is
+whether this measure is an Aggregate or Snap-Shot measure. Should the
+executions be aggregated over time or should the number of executions be
+obtained from the last set of data sent by the Runtime Execution sensor?
+That decision is debatable, therefore I would suggest designing all PRI
+measures as Aggregate measures. This will give you the ability to toggle
+the isAggregateMeasure back and forth to determine which type works best.
+
+\paragraph{Step 5 - Add the WorkspacePriRuntimeExecution class to the
+  ProjectWorkspaceRanking constructor}
+This step requires one line of code. Simply add a instance of the
+WorkspacePriRuntimeExecution to the measureList in the
+ProjectWorkspaceRanking constructor. Table
+\ref{table:hackyPriv2-ProjectWorkspaceRanking} shows the constructor in its 
+entirety.
+
+\paragraph{Step 6 - Add the label of the measure to the WorkspacePriValues
+  getLabelIterator}
+Step 5 only ensured that the Runtime Execution PRI measure will be
+calculated properly. To display the calculated values correctly, we must
+add some code to the WorkspacePriValues class, which handles the
+presentation of the PRI ranking. Once again, this is a one line edit.
+
+\paragraph{We are done!} 
+After finishing these six steps you have successfully added a new product
+measure to the PRI determination of MINI and LINI.
+
+
+\subsubsection{Removing a PRI measure from the system}
+This section provides a detailed description of the steps that are required
+to remove PRI measure from the system. 
+
+\paragraph{Step 1 - Remove the WorkspacePriRuntimeExecution class to the
+  ProjectWorkspaceRanking constructor} 
+This step requires the deletion of one line of code. Simply remove the
+instance of the WorkspacePriRuntimeExecution to the measureList in the
+ProjectWorkspaceRanking constructor. Table
+\ref{table:hackyPriv2-ProjectWorkspaceRanking} shows the constructor in its
+entirety.
+
+\paragraph{Step 2 - Remove the label of the measure to the WorkspacePriValues
+  getLabelIterator}
+Step 1 only ensured that the Runtime Execution PRI measure will not be
+calculated. To ensure that we do not display the measure's values, we must
+remove some code from the WorkspacePriValues class, which handles the
+presentation of the PRI ranking. Once again, this is a one line edit.
+
+\paragraph{We are done!} 
+After finishing these two steps you have successfully removed a PRI measure
+from the PRI determination of MINI and LINI.
+
+
+
+\subsection{Step 1b: Calibration of Product and Process Measures}
+Each measure and its numerical weight will be stored within the hackyPRI
+extension. The numerical weights are not shown in Figure
+\ref{fig:WorkspaceQualityAnalysis}, however the calibration and weighting
+system works behind the scenes. 
+
+To make the important distinction of MINI and LINI, I assign certain
+numerical weights to the measures. For example, if the coverage of a
+package is below 80 percent, I assign a ``low'' weight for that measure. If
+the coverage of a package is a 100 percent, then I assign a ``high''
+weight. ``Low'' is operationalized by a 1, ``high'' is operationalized by a
+3, and ``middle ground'' is operationalized by a 2. The system assigns each
+measure a weight after analyzing its value. Table
+\ref{table:weighting-hackyPRI} contains a description of the weighting used
+in the hackyPRI extension.
+
+After all measures are assigned a weight, the weights are aggregated to
+provide a combined weight for each package. The packages are then ranked by
+the packages' aggregate PRI level, sorting the MINI packages to the bottom
+and LINI packages to the top.
+
+\begin{table}[htbp]
+  \begin{center}
+    \caption{The Weighting System used in hackyPRI}
+    \label{table:weighting-hackyPRI}
+    \begin{tabular}{|p{2.5cm}|p{3.0cm}|p{8.0cm}|} \hline
+      {\bf Measure} & {\bf Weighting} & {\bf Discussion} \\ \hline
+\small{}Expert & \small{}johnson=3 \newline anyone else=1 &
+\small{}Dr. Johnson is an active Hackystat developer. He is the most
+experienced programmer in CSDL. In addition, a lot of his development are
+technical over passes of the code to ensure that the code is of high
+quality. Therefore, code that he develops is weighted higher than
+others. \\ \hline
+
+\small{}Active Time & \small{}Not Weighted  &  \\ \hline
+\small{}Last Active Time & \small{}Not Weighted & \\ \hline
+\small{}\# of Developer \newline Active Time \newline Contributions & 
+\small{}3+ developers=2 \newline 2 developers=1 \newline 1 developer=0
+\newline none=0 & \small{}If code has been developed solely by one
+person, the code is more likely to contain defects. As more developers work 
+on the code, the less likely defects will occur. \\ \hline
+
+\small{}Commits & \small{}Not Weighted & \\ \hline
+\small{}Last Commit & \small{}Not Weighted & \\ \hline
+\small{}\# of Developer \newline Commit \newline Contributions & \small{} 
+\small{}3+ developers=2 \newline 2 developers=1 \newline 1 developer=0 &
+\small{}Commit data is another way to determine if developers are working
+on a particular piece of code. If code has been developed solely by one
+person, the code is more likely to contain defects. As more developers work
+on the code, the less likely defects will occur. \\ \hline
+
+\small{}Review & \small{}2+ reviews=2 \newline 1 review=1 \newline none=0 & 
+More reviews (inspections) that are conducted equals higher quality code. \\ \hline
+\small{}Last Review & \small{}today-last$>$30=2 \newline today-last$<$31=1
+\newline none=0 & \small{}Code that has been reviewed recently tends to be
+higher quality code. \\ \hline 
+
+\small{}Defects & \small{}Not Weighted & \small{}In development \\ \hline
+\small{}Last Defect & \small{}Not Weighted & \small{}In development \\ \hline
+
+\small{}File Metrics & \small{}Not Weighted & \small{} \\ \hline
+\small{}Test File Metrics & \small{}Not Weighted  & \small{} \\ \hline
+
+\small{}Dependency & \small{}1=inbound$>$outbound & \small{}Inbound
+references represents the number of references that use a specific
+class. Outbound represents the number of references that the class
+uses. The more inbound references the more likely changes in a class will
+impact other classes.\\ \hline
+
+\small{}Unit Test & \small{}$>$0=1 & \small{}Each day a set of unit tests
+are executed against the system. If there is at least one or more
+executions then we can be fairly certain that some portion of the system
+was tested. However, this does not represent the effectiveness and
+thoroughness of the tests. Effectiveness and thoroughness can be measured
+with a combination of Test Failure, Coverage, and Defects.\\ \hline
+
+\small{}Test Failures & \small{} & \small{} \\ \hline
+
+\small{}Coverage & \small{}100\%=2 \newline 99-90+\%=1 \newline 89-0=\%=0 &
+\small{}Higher coverage percentage, every thing else being equal,
+translates to higher quality code. \\ \hline
+
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+There are several issues with the assignment of numerical weights that I
+still need to address. For example, I explicitly determine the weights
+using my own subjective measure of what is low versus high quality.  I will
+need to explore if my subjective measure is sufficient, if some measures
+should be weighted more than others, or if any other entirely different
+weighting methods provide more accurate results.
+
+\subsubsection{Calibrating a PRI measure}
+
+
+
+\subsection{Step 2: Selecting a Document for Inspection Based on the PRI
+  Ranking} Using the PRI Hackystat analysis, an organization should
+select a document at the bottom of the PRI ranking table for inspection.
+The higher the document is in the table, the less it is in need of
+inspection. 
+
+In my initial studies, I have found that simply picking the highest
+priority document, or the document that is at the very bottom of the chart,
+will probably not be the ``best'' document to inspect. In most cases, I
+have found that the PRI ranking aids the selection of a document, but it
+does not select the document automatically. In other words, it is more
+useful to consider a few documents from the bottom portion of the ranking
+and take an educated guess as to which document needs inspection more.
+
+\subsection{Step 3: Conducting an Inspection of the Selected Document}
+Once a document is selected it can be inspected. One interesting side
+effect of the PRI ranking is that specific statistics and measures can be
+presented during the inspection process. For example, if a document is
+selected because it has low coverage, then the inspection can focus on why
+the coverage is low.
+
+The Hackystat PRI Extension or the PRI process does not support the actual
+inspection of the document. Instead, an organization should consult
+traditional inspection processes (i.e., Software Inspection, Fagan
+Inspection, In-Process Inspection, etc). In other words, the PRI process is
+an outer layer that wraps around an already established inspection process.
+
+\subsection{Step 4: Adjustment of the Measure Selection and Calibration}
+If a document is shown to be incorrectly ranked, then an adjustment of the
+PRI weighting function is necessary. In hackyPRI this can be accomplished
+by adding more Hackystat measures to hackyPRI or recalibrating the
+numerical weights associated with the measures. More specifically, a
+recalibration includes editing the Java source code in the hackyPRI system.
+Conceptually, recalibration would be as easy as editing the information
+presented in Table \ref{table:weighting-hackyPRI}.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

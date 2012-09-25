@@ -1,0 +1,169 @@
+
+
+<head>
+<title>Security in Hackystat</title>
+</head>
+
+<h2 align="center"><font size="3">Hackystat Design Notes Series<br>
+</font><br>
+Security and Privacy in Hackystat</h2>
+
+<p align="center"><a href="http://csdl.ics.hawaii.edu/~johnson/">Philip Johnson<br>
+</a>Shenyan Zhen<br>
+<a href="http://csdl.ics.hawaii.edu/">Collaborative Software Development
+Laboratory</a><br>
+
+<a href="http://www.ics.hawaii.edu/">Department of Information and Computer 
+Sciences </a><br>
+
+
+<a href="http://www.hawaii.edu/">
+University of Hawaii</a></p>
+
+<p align="center">June 23, 2001<br>
+</p>
+
+<p>One goal for Hackystat is to deploy it in a classroom setting such as ICS
+111, 211, or 311. As I've thought about that, a number of issues have arisen in
+my mind. I'd like to lay them out on the table and get your input so that we can
+start moving the system development trajectory in an appropriate direction.</p>
+<p>Let me start by noting the following: security and privacy is not really an
+issue (well, at least not our issue) if the user runs the Hackystat server
+themselves. Then, the degree of security/privacy is based upon how protected
+their server is.</p>
+<p>In addition, we need to remember that Hackystat's source will be openly
+available, so no solution can depend upon restricted access to the source code.</p>
+<p>The scenario I'm most concerned with at the moment is one in which users
+connect to a &quot;well-known public server&quot;, such as
+hackystat.ics.hawaii.edu. I would like to eventually be at the point where we
+run a server on a box in CSDL that is available to anyone world-wide who wishes
+to use it for storing their data. Though people can always install the server
+and run it themselves locally, a well-known public server can enable people to
+evaluate the system much more easily; all they have to do is install the sensors
+and set the environment variables.</p>
+<p>So, under the well-known public server scenario, let me sketch out four
+security/privacy problems that immediately rear their ugly heads:</p>
+<p>1. Inadvertant manipulation/corruption of another user's hackystat data.</p>
+<p>2. Intentional manipulation/corruption of another user's hackystat data.</p>
+<p>3. Inadvertant viewing of another user's hackystat data.</p>
+<p>4. Intentional viewing of another user's hackystat data.</p>
+<p>Hackystat, as it is now implemented, is vulnerable to all four of these
+problems because:</p>
+<p>(a) manipulation (i.e. addition) of hackystat data is based upon users
+self-reporting a username string via the hackystat_user environment variable
+that is not guaranteed to be unique and that is used as the key to their area of
+the repository;</p>
+<p>(b) retrieval of data is not protected; anyone who can guess the URL
+corresponding to hackystat data can retrieve it, regardless of whether it is
+their data or someone else's.</p>
+<p>As an example, here is an url to the user &quot;johnson&quot;'s session data
+for this month:</p>
+<u>
+<p><font COLOR="#0000ff">http://localhost/hackystat/users/johnson/logs/session/2001-06.xml</font></p>
+</u>
+<p>I, of course, am not the only &quot;johnson&quot; who might want to use
+hackystat.ics.hawaii.edu, and it is only a matter of time under the current
+design until someone else decides to use &quot;johnson&quot;. At that point, our
+data will simply be merged together, and we would both be viewing the same set
+of corrupted data and analyses. This situation corresponds to scenarios 1 and 3.</p>
+<p>Scenarios 2 and 4 are similarly easy to construct. Assume we have deployed
+hackystat in ICS 111. Someone might want to make another user &quot;look
+bad&quot; by adding additional defect or time data to their repository (or, they
+may just dislike the person and want to take pleasure in &quot;hacking&quot;
+their data into unusability.) Doing that is as simple as finding out their
+enemy's hackystat username, changing their own environment variable to that
+name, then doing things in the IDE to generate bogus data which will be stored
+in their enemy's account.</p>
+<p>The truly advanced student could even discover the SendNotification program
+and use it to construct a simple program to flood their enemy's account with
+bogus data. It is one small step from there to a denial of service attack on the
+system as a whole.</p>
+<p>So, that's the bad news. Now let me throw out some ideas for ways to address
+some of these issues:</p>
+<p>(A) Use the user's (presumably unique) email address to segment the user
+namespace.</p>
+<p>This is probably the simplest way to solve problems (1) and (3). We could
+proceed as follows--REPLACE the environment variable hackystat_user (i.e.
+&quot;johnson&quot;) with hackystat_email (i.e. &quot;johnson@hawaii.edu&quot;).
+(Note that we are going to need the hackystat_email environment variable anyway,
+so this is actually a net reduction in environment variable overhead). Then, we
+send this email string along with each notification and use it to construct the
+web server file structure. Instead of the current:</p>
+<u>
+<p><font COLOR="#0000ff">http://localhost/hackystat/users/johnson/logs/session/2001-06.xml</font></p>
+</u>
+<p>we would generate:</p>
+<u>
+<p><font COLOR="#0000ff">http://localhost/hackystat/users/edu/hawaii/johnson/logs/session/2001</font></u>-06.xml</p>
+<p>This is a very appealing solution in some ways. First, it is simple to
+implement for both developers and users and would appear to prevent the &quot;inadvertant&quot;
+pair of problems quite well. Second, it allows users to maintain separate areas
+for different jobs: johnson@hawaii.edu vs. johnson@hawaiimidwives.org for
+example. Third, we could potentially generate hackystat_email automatically in
+some environments (such as the ICS lab), making installation as well as usage
+transparent to the user. Fourth, it would allow the site administrators to
+easily collect demographic information about the user population and also
+discover bogus usage.</p>
+<p>(Note: the user will just have to assume that site administrators are
+inherently &quot;trustworthy&quot; and won't use the information
+inappropriately. One of the cool things about hackystat is that it allows
+&quot;off-shore&quot; storage---some industrial developers might (correctly)
+view CSDL as an inherently more trustworthy administrator than their own
+company's sys admins.)</p>
+<p>There are two issues that I can see with this solution:</p>
+<p>(a) It doesn't solve problems (2) and (4).</p>
+<p>(b) It aggravates problems (2) and (4).</p>
+<p>It aggravates the problems because it's now even easier to guess the location
+of your enemy's web pages, since their URL now has to correspond to a legal
+email address. Once you have found their URL, you can construct their
+hackystat_email and go to town. Under the current implementation, I could at
+least make my hackystat_user variable to be &quot;dhjk8DCC4asd&quot; if I wanted
+and get some measure of privacy/security that way.</p>
+<p>(B) Combine (A) with password-protected notifications.</p>
+<p>One way to address problem (2), i.e. intentional &quot;spoofing&quot; of
+another person when sending data to the server, is to require a password.</p>
+<p>Unfortunately, passwords are costly: they bring a whole lot of developer and
+user overhead with them. Who generates the initial password? can the user reset
+it? what happens if (when) they forget it? should it be put in an environment
+variable? (Yes, because supplying a password even the first time a notification
+is sent during a session seems intrusive and violates our prime directive. No,
+because putting it in an environment variable makes it too easy for someone to
+steal and violates the prime directive of passwords which is to never write it
+down or store it in clear text.)</p>
+<p>I worry that unless we are extremely clever about passwords, they will
+increase the overhead of hackystat to the point that people won't want to use
+it. And remember that &quot;zero-developer overhead&quot; is the raison d'etre
+of hackystat.</p>
+<p>(C) Combine (A) and (B) with password-protected web pages.</p>
+<p>In a similar manner, and with similar costs, we could address problem (4),
+intentional viewing of another person's web pages, by requiring a password in
+order to retrieve the page.</p>
+<p>So, there you have it. According to this analysis, the current implementation
+leaves us open to four significant security/privacy problems. We can address two
+of them easily, but that solution simultaneously increases the magnitude of the
+remaining two problems.</p>
+<p>Unless someone has a better idea, I think we should implement solution (A)
+for the first operational release anyway. In the short term, only
+&quot;friends&quot; will be using the system, and it does simplify user-level
+installation.</p>
+<p>If we could come up with a sufficiently elegant password scheme, we could
+potentially design the system such that the administrator configure the
+hackystat server to require password-protected notifications and/or
+password-protected web pages on either a user-by-user or site-wide basis upon
+installation. That would allow people to make their own decisions about how much
+password protection they want to put up with.</p>
+<p><b>Update:&nbsp; 7/18/2001:</b></p>
+<p>As of the Final Fantasy release, the userName is replaced by userEmail, and we have implemented a &quot;Directory
+Key&quot; mechanism: a 12 character randomly generated string that serves as
+each user's &quot;home&quot; directory.&nbsp; This directory key is generated
+the first time a user with a given email sends a notification to a given server.
+Thus, the URL would look something like the following for a user:</p>
+<u>
+<p><font COLOR="#0000ff"><a href="http://localhost/hackystat/users/XU78Fder4nP2/logs/session/2001-06.xml">http://localhost/hackystat/users/XU78Fder4nP2/logs/session/2001-06.xml</a></font></p>
+</u>
+As long as directory browsing is disabled for the server in its server.xml file,
+then this scheme does protect the privacy of users with respect to viewing their
+data.&nbsp; 
+<p>This 12 character directory key could also serve as the basis for a password
+scheme if users wanted to prevent others from sending notifications with spoofed
+userEmail values, but we have not implemented this. </p>

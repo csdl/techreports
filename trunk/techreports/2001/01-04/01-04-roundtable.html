@@ -1,0 +1,155 @@
+
+
+<head>
+<title>A roundtable discussion of Hackystat</title>
+</head>
+
+<h2 align="center"><font size="3">Hackystat Design Notes Series<br>
+</font><br>
+A Roundtable discussion of Hackystat</h2>
+
+<p align="center"><a href="http://csdl.ics.hawaii.edu/~johnson/">Philip Johnson
+(editor)</a><br>
+<a href="http://csdl.ics.hawaii.edu/">Collaborative Software Development
+Laboratory</a><br>
+
+<a href="http://www.ics.hawaii.edu/">Department of Information and Computer 
+Sciences </a><br>
+
+<a href="http://www.hawaii.edu/">
+University of Hawaii</a></p>
+
+<p align="center">May 25, 2001<br>
+</p>
+
+<p>I was really pleased with yesterday's meeting and thought it might be helpful
+to provide a summary. I spent a portion of the meeting reviewing the goals of
+the project and then showing a demo of the current system implementation. In
+essence, the current implementation shows how a &quot;sensor&quot; (in this
+case, a simple GUI timer mechanism) can send a &quot;notification&quot; (in this
+case, session data with start time, stop time, elapsed time, and files worked
+on) to a server that accumulates the session data in an XML log file. The user
+can retrieve that log file from a browser by simply typing in an URL: the XML is
+reformatted via an XSL stylesheet for HTML presentation. There were a number of
+excellent issues raised during the discussion that followed. Here's what I can
+recall: </p>
+<ul>
+  <li><b>Issue: No matter how much you lower the overhead, for Hackystat to be
+    effective, developers still have to _want_ to improve (and not all
+    developers want that). </b><br>
+    My reply: I agree. You can lead a horse to water, but you can't make him
+    drink. Hopefully, the lower the overhead, the higher the percentage of
+    developers who _want_ to improve will be attracted to the system as a low
+    cost _way_ to improve. <br>
+    &nbsp; </li>
+  <li><b>Issue: Automated data collection will introduce inaccuracies. Will they
+    be severe enough to prevent the system from being effective? </b><br>
+    My reply: Good question. I don't know. I think this is a fundamental (and
+    fascinating) research question. It's critical that we design some
+    experiments to address exactly this problem. Before we can do that, of
+    course, we need to implement the sensors and so forth. <br>
+    &nbsp; </li>
+  <li><b>Issue: creating sensors is not easy; you need to know a lot about the
+    development environment that you're attaching the sensor to. Plus, the
+    development environments have bugs in their plugin APIs and they aren't well
+    documented. </b><br>
+    My reply: I agree. The best we can hope for with hackystat is to not require
+    people to know a LOT about the plugin specifics for an IDE _plus_ a LOT
+    about hackystat under normal conditions. As I showed, once you have gathered
+    the data in the IDE, the act of sending it is only two lines of code. <br>
+    &nbsp; </li>
+  <li><b>Issue: But those two lines of code are in Java! What about Emacs Lisp,
+    or Visual Basic, etc? </b><br>
+    My reply: Well, yes. It turns out that with SOAP, it is entirely possible to
+    write VB code to send off the data to be processed by a Java method on the
+    other side. And, it even turns out that SOAP is really not that difficult to
+    use either (I showed the SOAP Java code for processing a notification and it
+    was about a dozen lines long.) And, there is a Microsoft implementation of
+    SOAP (although rumor has it that this implementation is not totally
+    compatible with the Apache SOAP implementation we're using.) For Emacs, my
+    current intent is to create a small Java program that sends notifications
+    with data given on the command line, which can be invoked as a forked
+    subprocess. That is a simple, fast, and portable solution. The idea of
+    writing a native Emacs Lisp SOAP implementation appeals to the Lisp hacker
+    side of me, and I might get around to that at some point. <br>
+    &nbsp; </li>
+  <li><b>Issue: It seems to me that this system involves too much installation.
+    I use a lot of different computers. Can't it just connect magically to the
+    network? </b><br>
+    My reply: Well, yes, it can, to the extent that _any_ application connects
+    &quot;magically&quot; to any network. Note that there's really no such thing
+    as &quot;magic&quot;, some system administrator somewhere always has to do
+    at least an initial configuration of any software package. And the same is
+    true for Hackystat. The approach is that there will be some initial, one
+    time configuration required, but after that (hopefully) you won't have to do
+    anything else. Of course, if the way you work is to always use a new
+    computer every time you do any work, then the overhead of &quot;one
+    time&quot; installation becomes prohibitive. I think for most people, they
+    do most of their &quot;work&quot; on just a couple three environments, and
+    the hackystat model is nice because it allows them to centralize their data
+    in one place. <br>
+    &nbsp; </li>
+  <li><b>Issue: So what about when I'm using my laptop at the beach and not
+    connected to the net? </b><br>
+    My reply: Oh, don't worry about that---by the time we actually have this
+    thing running in three weeks, there will be ubiquitous, inexpensive
+    satellite network access and there will be no such thing as being &quot;off
+    the net&quot; anymore. OK, seriously. In this situation, you would have to
+    either (a) forget about data collection (that may be perfectly reasonable if
+    you're only working a few hours or so), or (b) bring up a server and run it
+    on your laptop to collect the data, then &quot;export&quot; the data from
+    your local server over to your &quot;permanent&quot; server once you get
+    reconnected. <br>
+    &nbsp; </li>
+  <li><b>Issue: You're writing out XML directly and not using a relational
+    database server? That seems so unscalable and inefficient! </b><br>
+    My reply: I know. I struggled with this myself. One thing I learned from the
+    LEAP experience is that the more physical lines of code you have, the harder
+    it is to understand and modify a system. From the Inca experience, I learned
+    that it is complicated to maintain two representations---one object oriented
+    (i.e. Java objects), and one relational tables (i.e. the database)---and
+    translate back and forth between them. For the current initial
+    implementation, I realized that I could reduce the number of lines of code
+    dramatically, simplify the overall implementation, and allow the system to
+    evolve much more quickly if, instead of having both an object-oriented and a
+    relational representation, I just had ONE representation. My gut feeling is
+    that we are going to make much faster progress on the important conceptual
+    issues: how to design sensors, how to design analyses, etc. if our
+    underlying infrastructure is lightweight. I will be very happy when the day
+    comes that Hackystat is used so heavily that we need to move to a database
+    (and by that time, perhaps the underlying representations will have
+    stabilized enough that we can design an appropriate database model.) In the
+    interim, I expect that once you spend a little time with the JDOM API for
+    manipulating XML document objects in memory, you will find it to be a very
+    enjoyable alternative to SQL. <br>
+    &nbsp; </li>
+  <li><b>Issue: Should we focus on developing a single plug-in (say, for time)
+    on a lot of different IDE platforms, or should we focus on developing ALL
+    the plug-ins for a single platform (say, for Emacs)? </b><br>
+    My reply (actually, Cam's reply): Both. For Hackystat to be adopted, we need
+    to provide both breadth (some kind of support for lots of platforms) and
+    depth (lots of different plugins for a single environment). For the
+    immediate future, I think we need to proceed using the &quot;scratch the
+    itch&quot; development method---if you wish you had a hackystat-style
+    capability on your chosen platform, then Go For It! <br>
+    &nbsp; </li>
+  <li><b>Issue: Where did you get those cool hacky sacks? </b><br>
+    My reply: $2.49 on sale at Longs Drugs in Kailua. But you don't need to buy
+    one: I will give you a hacky sack each time you contribute a new sensor,
+    analysis, or other component to the Hackystat project. <br>
+    &nbsp; </li>
+  <li><b>Issue: So where do we go from here? </b><br>
+    My reply: The good news is (modulo a ridiculous amount of frustration
+    created by using command.exe rather than cmd.exe) that I was able to install
+    the hackystat developer release on a new machine without any hackystat-related
+    problems. What I want to do now is do a little more cleanup on the code (no
+    matter how hard I try in Kawa to stop it from adding Tab characters, it
+    still does it, so I need to manually remove them using Emacs) and so forth,
+    and then I will create a developer's release .zip file and send out the URL
+    to this list. At that point, I'd like to ask each of you to download it,
+    install it, and read through the code for the entire system and send me
+    emails with questions about code you don't understand (or consider to be
+    totally lame). We'll go over the questions at the next meeting, which I
+    expect to be next Thursday (next Monday is a holiday, and I'm trying to take
+    national holidays off for once in my life.) </li>
+</ul>

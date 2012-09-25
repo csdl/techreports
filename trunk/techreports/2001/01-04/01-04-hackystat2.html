@@ -1,0 +1,626 @@
+
+
+<head>
+<title>Hackystat2 Redesign Proposal</title>
+</head>
+
+<h2 align="center"><font size="3">Hackystat Design Notes Series<br>
+</font><br>
+Hackystat2 Design Proposal</h2>
+
+<p align="center"><a href="http://csdl.ics.hawaii.edu/~cmoore/">Philip Johnson</a><br>
+
+<a href="http://csdl.ics.hawaii.edu/">Collaborative Software Development
+Laboratory</a><br>
+
+<a href="http://www.ics.hawaii.edu/">Department of Information and Computer 
+Sciences </a><br>
+
+<a href="http://www.hawaii.edu/">
+University of Hawaii</a></p>
+
+<p align="center">December, 2001<br>
+</p>
+
+<h2 align="left">Problems with Hackystat1 and proposals for addressing them
+under Hackystat2</h2>
+
+<p align="left">The original hackystat design (let's call it Hackystat1) has served us well, but as
+the system has increased in size, complexity, and functionality, several
+shortcomings have become apparent. This first section lists both major and minor
+problems and proposes how they will be addressed in the new design called
+Hackystat2.</p>
+
+<ol>
+  <li>
+    <p align="left"><b>Which code executes on the client side, which code
+    executes on the server side, and which code executes on both sides?</b><i>&nbsp;</i>&nbsp;<br>
+    The current package structure does not clarify where code executes.&nbsp;
+    This makes learning the system much more difficult, since you don't know
+    which code you can safely ignore for a given task. To fix this, we could
+    restructure the code into three top level packages, hackystat.server,
+    hackystat.client, and hackystat.common.&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li>
+    <p align="left"><b>Common functionality can be extracted from the Log and
+    Notification classes.</b><br>
+    The ActivityLog, SessionLog, JUnitTestLog, and BadDataLog share the same
+    constructor, class variables, methods, and so forth.&nbsp; To fix this, we
+    can provide an abstract BaseLog class that each of these classes extends and
+    which implements the common functionality. A similar refactoring can be
+    performed on the Notification classes similar effects.<br>
+    &nbsp;&nbsp;</li>
+  <li>
+    <p align="left"><b>Unintuitive class and package names.</b><br>
+    Some names could be better.&nbsp;&nbsp; hackystat.kernel might be better
+    named as hackystat.util. hackystat.cache should be hackystat.repository.&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li>
+    <p align="left"><b>Vestigial packages.</b><br>
+    The hackystat.test package should simply go away entirely, since we have
+    long adopted the idea of keeping tests in the packages that they operate
+    on.&nbsp; The TestHello class is not needed any more.&nbsp;<br>
+    &nbsp;&nbsp;</li>
+  <li><b>Log
+    design</b><br>
+    The concept of &quot;Log&quot; and its interfaces seems to conflate together
+    three separate abstractions.&nbsp;&nbsp;The first abstraction is a persistent store of entries, and the
+    Log and LogEntry interfaces are designed to work with the underlying FileCache
+    mechanism to support this.&nbsp;&nbsp;The second abstraction is the isInteresting() method. This method is
+    intended to indicate whether or not something anomalous exists in the log
+    instance that should be brought to the attention of the user.&nbsp; However,
+    some persistent stores (such as the index.xml page) are never interesting.
+    It's also possible (at least in the future) that something that is not
+    persistent might want to have the interesting property attached to it.&nbsp;
+    The third abstraction relates to logs being repositories for notification
+    data.&nbsp; The way this gets messy is in the design of the userindex page:
+    I am replicating code from FileCache because I don't treat the userindex.xml
+    like a &quot;normal&quot; log page.&nbsp;&nbsp;<br>
+    &nbsp;&nbsp;<br>
+    On another level, it's become apparent that the UserPage data object and the
+    various *Log data objects are in some sense two views onto the same
+    thing.&nbsp; The idea is that UserPages provides a representation of the
+    data files that exist for a given user, and they are constructed upon system
+    startup (more or less) by actually traversing the file structure.&nbsp; This is important, because it
+    means we don't have to basically test every single possible file for
+    existence in order to build up a representation of the files associated with
+    a user.&nbsp; *Log data objects, on the other hand, are created &quot;on
+    demand&quot;.&nbsp; The current design problem is that we don't have a good way to map between a
+    given UserPage and the corresponding *Log instance and vice-versa.&nbsp; &nbsp;
+    What we need is a LogType class which is an
+    enumerated type of all possible log files.<br>
+    &nbsp;&nbsp;<br>
+    To deal with these issues, we need a richer hierarchy of dataset objects than just
+    &quot;log&quot;.&nbsp; There are the following:
+    <ul>
+      <li>SensorLog: represents data collected from sensors. Maybe should be
+        named &quot;SensorLog&quot;.&nbsp;&nbsp; Always a notification
+        associated with these data sets. All current SensorLogs are kept in one
+        file per day (or will be once I fix the SessionLog).&nbsp; I think that
+        we should simply declare that all SensorLogs are kept in daily files for
+        simplicity's sake.&nbsp;<br>
+        &nbsp;&nbsp;</li>
+      <li>AnalysisLog: represents data that is derived from SensorLogs or from
+        other AnalysisLogs. Unlike SensorLogs, which should be daily, AnalysisLogs
+        could represent a daily, monthly, yearly,
+        or some other time frame (such as the duration of a single project).<br>
+        &nbsp;&nbsp; </li>
+      <li>Log:&nbsp; represents the union of SensorLogs and AnalysisLogs. </li>
+    </ul>
+    <p>One common feature of all of the above logs is that they hold data that is unique to a
+    <i>single</i> user.&nbsp; The UserInfoLog, on the other hand, holds data about
+    the set of pages available over <i>all</i> users. To fix this inconsistency,
+    we can split up the current UserInfoLog which is now a singleton into a
+    class which creates a separate instance for each
+    user. We'll call it UserIndex.&nbsp;&nbsp; This has the following implications:
+    </p>
+    <ul>
+      <li>UserIndex will be a kind of Analysis log that holds a set of LogInfo instances.
+        (LogInfo is a generalized version of UserPage.) There
+        is one LogInfo instance for each Log object associated with the
+        user.&nbsp;&nbsp;</li>
+      <li>Just like we do now, the set of LogInfo instances associated with
+        each UserIndex will be (lazily) rebuilt for each user each time the
+        server is restarted. This allows the administrator to manually insert
+        and remove files from the user's directory, then restart the server and
+        have the system update itself automatically.&nbsp;&nbsp;</li>
+      <li>Unlike now, each LogInfo will store whether or not its page is
+        &quot;interesting&quot;. This means that we won't have to recompute
+        &quot;interestingness&quot; every night over every file, which we're
+        currently doing and which is needless.&nbsp; It also means that as we
+        get more sophisticated with our definition of &quot;interesting&quot;,
+        we can simply restart the server to have &quot;interestingness&quot;
+        recomputed over all of the data.&nbsp;&nbsp;</li>
+      <li>Operations on the UserIndex can tell you if a Log of a particular
+        type exists for a given day, and whether or not it is interesting.
+        Another can retrieve and return the Log instance for you. A free( )
+        operation could remove the instance from memory.&nbsp;</li>
+      <li>The UserIndex should replace the UserInfoBean
+        class.&nbsp;</li>
+      <li>The constructor could accept either email addresses or directory key
+        values, making it unnecessary for the user to have to manually map
+        between them.&nbsp;</li>
+    </ul>
+    <p>If we go this way, then we still have the problem of how to associate
+    email addresses with property keys.&nbsp; This is now a simple problem that
+    we can solve via a Properties file that associates these things together and
+    does not need fileCache or anything. &nbsp; It could be called DirectoryKeys or something
+    similar and store the file in &lt;tomcat&gt;/admin/hackystat/.<br>
+    </p>
+  </li>
+  <li><p><b>Log and Analysis object relationships</b><br>
+    In the current version of the system, the relationship between
+    &quot;Log&quot; instances (i.e. representations of the raw data from the
+    sensors) and &quot;Analysis&quot; instances (i.e. representations of derived
+    values) is very simplistic. In general, each time new raw data arrives, the
+    sensor log is updated, and all analyses that depends upon that sensor log
+    are re-computed from scratch regardless of whether their results are
+    affected or not.&nbsp; Furthermore, analyses are currently
+    designed as more-or-less &quot;top-level&quot; functions: they do not assume
+    their results will be required by some other higher level analysis.&nbsp;
+    Although almost all analyses run immediately when new sensor data
+    appears,&nbsp; there is a single exception: the &quot;Daily Email&quot;,
+    which runs once a day.&nbsp; This approach suffers from several problems:
+    (1) a large amount of recomputation can occur when receiving a single raw
+    data update; (2) analyses cannot leverage each other's results; and (3) an
+    analysis may potentially have to read in all of the old sensor data in order
+    to compute a result. <br>
+    &nbsp; <br>
+    In the new version of the system, we should create a more efficient and
+    logical relationship between Log and Analysis objects that enables the
+    system to scale, and more importantly, facilitates the ability of one
+    analysis to leverage the results from another analysis, rather than having
+    to always go back to the raw sensor data.&nbsp; Here is the proposed new
+    approach:<br>
+    <ul>
+    <li> 
+    SensorLog instances (which simply store the raw data received directly by
+    sensors) are updated and saved out immediately as the data is
+    received.
+    <li> 
+    AnalysisLog instances are computed or updated at least once a day, and this
+    computation is based upon a timer-based process.&nbsp; Each analysis
+    instance should check the lastUpdate field of the objects it depends upon
+    (which could be SensorLog or AnalysisLog instances).&nbsp; If the lastUpdate
+    field is within the last 24 hours, then it needs to recompute itself and
+    update its own lastUpdate field. Otherwise, it doesn't have to do
+    anything.&nbsp;
+    <li> 
+    Every AnalysisLog instance should be designed under the assumption that some
+    other AnalysisLog instance will be designed in the future that will want
+    access to the first AnalysisLog's data in an efficient manner.&nbsp; This
+    means each AnalysisLog instance should expose an interface with useful
+    methods regarding its computation. When one of these methods are invoked,
+    the AnalysisLog must first determine if its internal state is up to date by
+    checking the lastUpdate field of the instances that it uses to compute its
+    values.&nbsp; If it needs to recompute itself before returning a value, then
+    it does so.&nbsp;
+    <li> 
+    If one AnalysisLog can depend upon an arbitrary number of other AnalysisLogs,
+    then we have a classic dependency analysis situation. To start, we should
+    simply require the developer to make explicit the dependencies, and we will
+    have to manually decide on the order in which AnalysisLogs are updated in
+    order to ensure that the state is recomputed from the bottom up.&nbsp; We
+    will also have to ensure that circular dependencies are not present.&nbsp;<br>
+    &nbsp;&nbsp; 
+    </ul>
+  </li>
+  <li><p><b>Persistency of AnalysisLog data (i.e. the lack thereof)</b><br>
+    My experience with Hackystat1 has revealed further differences between
+    SensorLogs and AnalysisLogs with respect to persistency. <br>
+    &nbsp; <br>
+    We have a standardized mechanism for persistency of SensorLog instances
+    based upon the FileCache mechanism. This means that raw data is always
+    persistent and can be (relatively) easily stored and retrieved from disk.
+    Furthermore, the use of XSL stylesheets means that SensorLog data can be
+    (relatively) easily displayed to the user. SensorLog data is static,
+    tabular, and textual in nature, which makes the XSL stylesheet mechanism of
+    display quite reasonable.&nbsp; SensorLog data is
+    &quot;dependency-free&quot;, in that the contents of a SensorLog is not
+    affected by changes to any other SensorLog or AnalysisLog: the only way a
+    SensorLog is affected is by receipt of raw data of the type stored by the
+    SensorLog on the day represented by that SensorLog.&nbsp; We must persist
+    SensorLog data because we cannot derive it from other stored data; if it is
+    not stored on disk, then it is lost forever as soon as the server shuts
+    down.&nbsp; Finally, representation of any SensorLog evolves relatively
+    slowly (indeed, there has been almost no evolution in SensorLog data
+    representation so far.)<br>
+    &nbsp; <br>
+    AnalysisLog data has different characteristics. First, AnalysisLog data is
+    not necessarily static, tabular, or textual in nature, making XSL
+    stylesheets less appealing.&nbsp; More importantly, AnalysisLog data is not
+    dependency-free: a change to the value of one AnalysisLog may impact upon
+    the values of an arbitrary number of other AnalysisLogs.&nbsp; Unlike
+    SensorLogs, AnalysisLogs by definition can always be recomputed by
+    retrieving their underlying SensorLog or AnalysisLog instances (the latter
+    of which may require its own recomputation.) Finally, AnalysisLog
+    representations are certain to evolve frequently and unpredictably as we
+    invent new and better ways to analyze the data. <br>
+    &nbsp; <br>
+    My proposal for Hackystat2 is the following:&nbsp; AnalysisLog instances are
+    <i>never</i> persistent, and AnalysisLog instances are <i>always</i>
+    displayed to the user by way of an associated JSP page (which provides an
+    HTML representation of the underlying AnalysisLog instance).&nbsp; Each
+    AnalysisLog instance obeys the JavaBean naming conventions so that it can be
+    passed into the JSP page and its state extracted for display. Because all
+    AnalysisLog method invocations have the effect of bringing the instance up
+    to date if necessary, the user can always get the most recent values for an
+    AnalysisLog by retrieving the associated JSP page. <br>
+    &nbsp; <br>
+    My proposal has a big strength and a big weakness.&nbsp; Its big strength is
+    flexibility and support for evolution.&nbsp; Because AnalysisLog instances
+    are not persistent, evolution in their representation is easier for two
+    reasons: (a) we do not have to design, implement, evolve, and update a
+    persistent representation for AnalysisLog instances, and (b) once we have
+    installed updates to an AnalysisLog, all we have to do to see the changes is
+    restart the server.&nbsp; Since AnalysisLog values are recomputed from
+    scratch each time the server restarts, that means we will automatically have
+    the updated analysis results not only over SensorData received in the
+    future, but also for all the SensorData in the past.&nbsp; In other words,
+    we get &quot;retroactive&quot; updates to our analysis mechanisms.&nbsp;
+    Because we don't save the representation, we don't have to go through the
+    old AnalysisLog files and delete them or modify them to keep them up to date
+    as the analyses evolve. <br>
+    &nbsp; <br>
+    The big weakness is that each time we restart the server, we will
+    potentially need to re-read all of the sensor data for all users to rebuild
+    the entire analysis hierarchy of instances from scratch.&nbsp;&nbsp; For the
+    time being, I think this is very acceptable price to pay. In the future,
+    when usage of the system gets high enough that this becomes a problem, I
+    predict that at least some AnalysisLog instances will have stabilized, and
+    at that point we could make them persistent if we believe this will improve
+    performance.&nbsp; On the other hand, we might find that if we rebuild the
+    AnalysisLog hierarchy only on demand, and if we have a robust method for GC-ing
+    old SensorLog instances right after reading them in, then it might never
+    become a problem.&nbsp; <br>
+    &nbsp; <br>
+    Basically, right now the trade-off is between speed of design and speed of
+    execution, and since speed of design is an actual problem and speed of
+    execution is a potential problem, we should favor decisions that increase
+    speed of design.
+    </p>
+  </li>
+  <li><p><b>The return of index.xml as index.jsp.</b><br>
+    Early on, we created an index.xml file for each user that listed every XML
+    file in their repository.&nbsp; As the number of daily log files has grown
+    to over a half dozen, the resulting linear listing of the literally hundreds of files
+    associated with each user is unusable.<br>
+    &nbsp; <br>
+    Our next approach was to eliminate index.xml in favor of a daily
+    calendar-based view.&nbsp; This approach provides an elegant and usable
+    interface to <i>daily</i> data. However, it is currently being used as the
+    &quot;universal&quot; interface to <i>all</i> hackystat data, which is
+    starting to cause its own set of problems. First, although all SensorLogs
+    are daily in nature, AnalysisLogs could be daily, weekly, monthly, yearly,
+    or project-based in timeframe. The daily calendar-based interface
+    degenerates into a linear listing for all non-daily data.&nbsp; Second, as
+    the number of daily analyses grows, listing them within a single calendar
+    could create a potentially unusable interface. Imagine a calendar with 20 or
+    30 SensorLog and AnalysisLog buttons associated with each day. <br>
+    &nbsp; <br>
+    I propose the following solution: return to a home page for each user called
+    index.jsp, but instead of listing every file, that page will contain a set of
+    links to calendar-based pages, which themselves contain links to the
+    individual XML files (in the case of SensorLogs) or JSP pages (in the case
+    of AnalysisLogs).&nbsp; The number of entries in such an index.jsp page
+    would grow relatively slowly.&nbsp; <br>
+    &nbsp; <br>
+    Here is a sample list of the entries in the new index.jsp file to give you
+    an idea of what I'm proposing:
+    <ul>
+    <li> Daily Sensor Data (a calendar view of all SensorLog entries)
+    <li> Daily Analysis Data (a calendar view of all AnalysisLog entries that
+      are daily in nature)
+    <li> Monthly Analysis Data (a monthly calendar view of AnalysisLogs that are
+      monthly in nature).
+    <li> Environment Configuration (a JSP page containing a form that allows the
+      user to set configuration variables such as their idle time interval and
+      module configuration data)&nbsp;
+    </ul>
+    <p>Note that this page would not provide you with direct feedback on
+    &quot;interestingness&quot;; instead, the user will need to rely on the
+    Daily Email (or some other mechanism) to help guide them to the appropriate
+    places.&nbsp;</p>
+  </li>
+  <li> <b>Standardized identification and retrieval of Log files.</b><br>
+    It will simplify life a great deal if we standardize the way we identify all
+    Log files---i.e. both SensorLogs and AnalysisLogs.&nbsp; This is because the
+    new design could then provide uniform access to all of the log files through
+    the UserIndex instance.&nbsp; For example, the simplest solution is a single
+    getLog() method that takes a standard set of arguments that suffice to
+    uniquely identify every SensorLog and AnalysisLog instance .&nbsp; To make
+    this work, I propose that any Log object can be uniquely identified based
+    upon three attributes:
+    <ol>
+    <li> LogType
+    <li> UserEmail or DirectoryKey string
+    <li> Date (either YY, YY-MM, YY-MM-DD, YY-MM-DD-HH:MM:SS, etc.)
+    </ol>
+    <p>
+    This has the following implications:
+    <ul>
+    <li>
+    The LogType enumerated type must enumerate all defined SensorLogs and AnalysisLogs.
+    <li>
+    The UserEmail and DirectoryKey values are simply two strings that are
+    aliases of each other. Therefore, you should be able to pass either
+    one.&nbsp; It is simple to guarantee that no directorykey contains the
+    &quot;@&quot; character and that all email addresses contain the
+    &quot;@&quot; character, which means we can always determine whether a given
+    string is a UserEmail or a DirectoryKey.
+    <li>
+    For any given LogType and User, a Date must be sufficient to distinguish all of
+    the log instances from each other.&nbsp; This is trivially true for
+    SensorLogs, which are all daily logs by definition.&nbsp; It is not clear
+    that this will work as well for all possible AnalysisLogs, although I can't
+    think of a stunning counter-example at the moment.&nbsp;&nbsp;I'd like to
+    proceed on the assumption that all AnalysisLog objects can be assigned to a
+    unique Date value for retrieval purposes. Note that since no AnalysisLog
+    object is persistent, we don't have to write out files for them.&nbsp;<br>
+    &nbsp;&nbsp;
+    </ul>
+    <li><b>Where is the isInteresting property computed and cached, and why?<br>
+      </b>As noted previously and below, every SensorLog and AnalysisLog object
+      has a boolean &quot;Interestingness&quot; property associated with it
+      which is computed by a method associated with the Log called isInteresting().&nbsp;
+      Obviously, in order for a SensorLog or AnalysisLog to compute the
+      property, it needs access to its internal state information.&nbsp; The
+      isInteresting property is particularly problematic in the case of
+      SensorLogs because we would like to be able to garbage collect sensor log
+      instances while still having access to the Interestingness value
+      associated with these instances. Currently, we can't do that, and it
+      results in us reading in every single SensorLog file&nbsp; in order to
+      compute the interestingness property so that we can display the calendar
+      page.&nbsp; This is clearly a bad thing.<br>
+      &nbsp;&nbsp;<br>
+      So that we can garbage collect SensorLog instances while still retaining
+      some important information about them, the LogInfo class allows us to
+      cache values about logs.&nbsp; The isInteresting property is one such
+      value. Their lastUpdate timestamp is another. Along the same lines, the
+      LogInfo class can enable us to compute the URL associated with retrieval
+      and display of a Log instance without actually having to create the
+      instance itself. In some sense, the LogInfo class is like a wrapper around
+      the actual Log class.&nbsp;<br>
+</ol>
+<h2>Package-level structure under Hackystat2
+    </h2>
+<p>To help kick-start this redesign, the following table presents a revised
+package structure for Hackystat2.&nbsp; All of these packages are&nbsp; within
+the top-level &quot;hackystat&quot; package.&nbsp;
+    </p>
+<p>As usual, lower case names indicate packages, while capitalized names
+indicate classes. All JUnit test files are omitted for readability.
+    </p>
+<p>This table is a little hard to read, but basically each blank cell
+&quot;inherits&quot; the value above it if any.&nbsp; Here are some example
+fully qualified classes to give you an idea of how things work:
+    </p>
+<ul>
+  <li>hackystat.server.admin.DirectoryKey</li>
+  <li>hackystat.server.util.ServerProperties</li>
+  <li>hackystat.server.log.Log</li>
+  <li>hackystat.server.log.sensor.BaseLog</li>
+  <li>hackystat.server.log.sensor.activity.ActivityLog</li>
+  <li>hackystat.client.sensor.jbuilder.JBuilderSessionSensor</li>
+  <li>hackystat.common.util.DateInfo</li>
+</ul>
+<table border="1" width="100%">
+  <tr>
+    <td width="7%" valign="top"><b>P</b><b>ackage</b></td>
+    <td width="12%" valign="top"><b>S</b><b>ubpackage</b></td>
+    <td width="15%" valign="top"><b>(S</b><b>ubpackage)</b></td>
+    <td width="14%" valign="top"><b>(S</b><b>ubpackage)</b></td>
+    <td width="22%" valign="top"><b>Class(es)</b></td>
+    <td width="21%" valign="top"><b>Comments</b></td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">server</td>
+    <td width="12%" valign="top">admin</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">&nbsp;</td>
+    <td width="22%" valign="top">DirectoryKey</td>
+    <td width="21%" valign="top">Maps email addresses to directoryKeys and
+      vice-versa.</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">util</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">&nbsp;</td>
+    <td width="22%" valign="top">ServerProperties<br>
+      Mailer</td>
+    <td width="21%" valign="top">ServerProperties was SysInfo.</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">log</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">&nbsp;</td>
+    <td width="22%" valign="top">Log</td>
+    <td width="21%" valign="top">Interfaces for isInteresting().&nbsp;</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">&nbsp;</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">&nbsp;</td>
+    <td width="22%" valign="top">LogType</td>
+    <td width="21%" valign="top">Enumerated type of all SensorLogs and
+      AnalysisLogs.&nbsp;</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">&nbsp;</td>
+    <td width="15%" valign="top">sensor</td>
+    <td width="14%" valign="top">&nbsp;</td>
+    <td width="22%" valign="top">BaseLog</td>
+    <td width="21%" valign="top">Abstract class with shared code for all
+      SensorLogs</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">&nbsp;</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">&nbsp;</td>
+    <td width="22%" valign="top">SensorLog<br>
+      SensorLogEntry</td>
+    <td width="21%" valign="top">Interfaces for SensorLogs to support FileCache
+      XML persistence.</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">&nbsp;</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">activity</td>
+    <td width="22%" valign="top">ActivityLog<br>
+      ActivityEntry<br>
+      ActivityType<br>
+      Activity</td>
+    <td width="21%" valign="top">One example of a SensorLog, more subpackages
+      for Session, JUnit, etc.</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">&nbsp;</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">repository</td>
+    <td width="22%" valign="top">FileCache<br>
+      GlobalCache<br>
+      JatoCache</td>
+    <td width="21%" valign="top">Provides persistence for SensorLogs using Jato
+      and XML.</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">&nbsp;</td>
+    <td width="15%" valign="top">analysis</td>
+    <td width="14%" valign="top">index</td>
+    <td width="22%" valign="top">UserIndex<br>
+      LogInfo<br>
+      XmlFileFilter</td>
+    <td width="21%" valign="top">Provides access on a per-user basis to the set
+      of SensorLogs and AnalysisLogs available and certain properties of them.&nbsp;</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">&nbsp;</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">idletime</td>
+    <td width="22%" valign="top">IdleTimeEntry<br>
+      IdleTimeDaySummary<br>
+      IdleTimeWeekSummary<br>
+      IdleTimeMonthSummary</td>
+    <td width="21%" valign="top">Supports specification of the idleTimeThreshold
+      value.&nbsp;</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top"></td>
+    <td width="12%" valign="top">&nbsp;</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">junit</td>
+    <td width="22%" valign="top">JUnitDaySummary<br>
+      JUnitWeekSummary<br>
+      JUnitMonthSummary</td>
+    <td width="21%" valign="top">Provides summary values on the number of
+      attempted, passed, and failed tests.</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">&nbsp;</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">tooltime</td>
+    <td width="22%" valign="top">ToolTimeDaySummary<br>
+      ToolTimeWeekSummary<br>
+      ToolTimeMonthSummary</td>
+    <td width="21%" valign="top">Provides summary values on active (tool)
+      time.&nbsp;</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">&nbsp;</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">summary</td>
+    <td width="22%" valign="top">DailySummary<br>
+      WeeklySummary<br>
+      MonthlySummary<br>
+      DailyEmailTimer<br>
+      DailyEmailTimerTask</td>
+    <td width="21%" valign="top">Generates summaries of a day, week, or month's
+      activities that can be retrieved via JSP pages and are also emailed to the
+      user.</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">&nbsp;</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">timer</td>
+    <td width="22%" valign="top">DailyAnalysisTimer<br>
+      DailyAnalysisTimerTask</td>
+    <td width="21%" valign="top">The timer task that wakes up once a day to
+      update analyses as needed and eventually do some garbage collection.</td>
+  </tr>
+  <tr>
+    <td width="91%" valign="top" colspan="6">&nbsp;</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">client</td>
+    <td width="12%" valign="top">sensor</td>
+    <td width="15%" valign="top">jbuilder</td>
+    <td width="14%" valign="top">&nbsp;</td>
+    <td width="22%" valign="top">JBuilderBrowserEventHandler<br>
+      JBuilderBuildEventHandler<br>
+      JBuilderSessionSensor</td>
+    <td width="21%" valign="top">JBuilder sensor implementation.</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">&nbsp;</td>
+    <td width="15%" valign="top">simpletimer</td>
+    <td width="14%" valign="top">&nbsp;</td>
+    <td width="22%" valign="top">SimpleTimer<br>
+      ElapsedEvent<br>
+      Stopwatch<br>
+      StopwatchTicker</td>
+    <td width="21%" valign="top">Simple timer implementation.</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">cli</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">&nbsp;</td>
+    <td width="22%" valign="top">SendNotification</td>
+    <td width="21%" valign="top">Command line interface to the notification
+      service for clients.</td>
+  </tr>
+  <tr>
+    <td width="91%" valign="top" colspan="6">&nbsp;</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">common</td>
+    <td width="12%" valign="top">notify</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">&nbsp;</td>
+    <td width="22%" valign="top">ActivityNotification<br>
+      SessionNotification<br>
+      JUnitTestNotification<br>
+      PingNotification<br>
+      <br>
+    </td>
+    <td width="21%" valign="top">Notification classes contain the send() method
+      that's invoked on the client side and the receive() method that's invoked
+      on the server side.</td>
+  </tr>
+  <tr>
+    <td width="7%" valign="top">&nbsp;</td>
+    <td width="12%" valign="top">util</td>
+    <td width="15%" valign="top">&nbsp;</td>
+    <td width="14%" valign="top">&nbsp;</td>
+    <td width="22%" valign="top">DateInfo<br>
+      ElapsedTimeFormat<br>
+      ToolType</td>
+    <td width="21%" valign="top">Date stuff, Time stuff, and ToolTypes are used
+      on both client and server side.</td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+<p>&nbsp;</p>

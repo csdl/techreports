@@ -1,0 +1,118 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>CourseApp: Fine grained priority rules</title>
+<meta name="Microsoft Theme" content="glacier 000, default">
+<meta name="Microsoft Border" content="t, default">
+</head>
+
+<body bgcolor="#FFFFFF" text="#000000" link="#006666" vlink="#999999" alink="#66CCCC" background><!--mstheme--><font face="Arial, Arial, Helvetica">
+
+<p align="center"><i>Last revision: <!--webbot bot="Timestamp" S-Type="EDITED"
+S-Format="%m/%d/%y %I:%M %p" startspan -->07/17/01 11:00 AM<!--webbot bot="Timestamp" endspan i-CheckSum="26005" --></i></p>
+<!--mstheme--></font>
+<h2><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Inca Software Requirements Specification<!--mstheme--></font></h2>
+<!--mstheme--><font face="Arial, Arial, Helvetica"><!--mstheme--></font>
+<h2><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Fine-grained priority rules<!--mstheme--></font></h2>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>The primary way that the Inca system gives priority to students is by
+their &quot;flavor&quot;: an ICS graduating senior always has highest priority
+for selection of courses.&nbsp; Fine-grained priority rules are used to rank
+students within a flavor, in order to reward better students with
+greater influence over their course selection.&nbsp;</p>
+<p>The concept behind fine-grained priority rules is to compute an integer value
+that represents the priority of a student within a flavor for a course.&nbsp;
+Then, if 20 students of a certain flavor all request a course and there are only
+10 seats available, the seats can be offered to the 10 students with the highest
+priority value.&nbsp;&nbsp;</p>
+<!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Rule representation<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>Each fine-grained priority rule is a function that takes a student and a
+course request and returns an integer.</p>
+<!--mstheme--></font>
+<!--msthemelist--><table border="0" cellpadding="0" cellspacing="0" width="100%">
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">An integer return value of 0 means that the rule does not apply to the
+    course and/or student.&nbsp;&nbsp;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">A positive integer return value indicates that the rule applies to the
+    student and course request, and that the rule should increase the
+    probability of that student getting that course, with higher values
+    corresponding to a higher increase in probability.&nbsp;&nbsp;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+  <!--msthemelist--><tr>
+    <!--msthemelist--><td valign="baseline" width="42"><img src="glabul1.gif" width="15" height="15" hspace="13"></td>
+    <td valign="top" width="100%"><!--mstheme--><font face="Arial, Arial, Helvetica">A negative integer return value indicates that the rule applies to the
+    student and course request, and that the rule should decrease the
+    probability of the student getting that course. Similarly, higher negative
+    values decrease the probability more.&nbsp;<!--mstheme--></font><!--msthemelist--></td>
+  </tr>
+<!--msthemelist--></table>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>Thus, to determine the priority value assigned to a single course request
+made by a single student, the system simply applies all the rules and sums up
+the resulting integer return values.&nbsp;</p>
+<!--mstheme--></font>
+<h3><!--mstheme--><font face="Verdana, Arial, Helvetica" color="#000000">Rule examples<!--mstheme--></font></h3>
+<!--mstheme--><font face="Arial, Arial, Helvetica">
+<p>Here are some example rules. Each rule has two parts, the conceptual
+&quot;goal&quot; of the rule, and the &quot;operational&quot; definition which
+describes the algorithm by which the goal is achieved.&nbsp; Note that as we
+gain experience with the system, we may redesign the operational definitions to
+better achieve the goals.&nbsp;</p>
+<ol>
+  <li><b>Goal</b>: Students who are close to finishing their ICS degree have increased
+    priority for those courses which enable them to finish their degree.&nbsp;<b><br>
+    Operational definition</b>: Return an integer equivalent to the number of
+    courses passed by the student. A student who has passed three ICS courses
+    returns three.<br>
+    &nbsp;
+  </li>
+  <li><b>Goal</b>: Students with a high GPA from completed ICS courses have increased
+    priority, and students with a low GPA from completed ICS courses have
+    decreased priority.&nbsp;<b><br>
+    Operational definition</b>: Return an integer based upon GPA. If GPA &gt;
+    3.5, return 5. If 3.0 &lt; GPA &lt; 3.5, return 3.&nbsp; If 2.5 &lt; GPA
+    &lt; 3.0, return -3.&nbsp; If GPA &lt; 2.5, return -5.<br>
+  &nbsp;&nbsp;
+  </li>
+  <li><b>Goal</b>: Students who have taken a course previously and dropped (or flunked) have
+    decreased priority for that course.&nbsp;<b><br>
+    Operational definition</b>: Return -3 if course exists in student records, 0
+    otherwise.<br>
+  &nbsp;&nbsp;
+  </li>
+  <li><b>Goal</b>: Students who were denied a course previously and are re-requesting it have
+    increased priority.&nbsp;<b><br>
+    Operational definition</b>: Return 3 if course request exists in student
+    records, 0 otherwise.<br>
+    &nbsp;&nbsp;
+  </li>
+  <li><b>Goal</b>: Freshman and sophomores have increased priority for lower level ICS
+    courses.&nbsp;&nbsp;<b><br>
+    Operational definition</b>: Return 5 if course number &lt; 300 and student
+    level is lower division.&nbsp; Return 0 otherwise.<br>
+    &nbsp;&nbsp;
+  </li>
+  <li><b>Goal</b>: Honors students have increased priority.&nbsp;<b><br>
+    Operational definition</b>: If student is honors student, then return 5,
+    else return 0.<br>
+    &nbsp;&nbsp;
+  </li>
+  <li><b>Goal</b>: The student's first and second choices have increased priority.&nbsp;<b><br>
+    Operational definition</b>: If this course is the student's first choice, then
+    return 5.&nbsp; If it's the student's second choice, return 3.
+    Otherwise, return 0.</li>
+</ol>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+&nbsp;<!--mstheme--></font></body>
+
+</html>
