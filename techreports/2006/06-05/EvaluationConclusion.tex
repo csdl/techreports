@@ -1,0 +1,182 @@
+\chapter{Evaluation Conclusions}  \label{Chapter:EvaluationConclusion}
+
+The previous two chapters reported on the evaluation results from the classroom and CSDL studies respectively. This chapter synthesizes the results to gain further insights.
+Section \ref{EvaluationConclusion:Results} reports the insights.
+Section \ref{EvaluationConclusion:FutureEvaluation} describes possible future directions of continued software project telemetry evaluation in the next stage on its evolution path.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                       %
+%                   S E C T I O N                       %
+%                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Synthesis of Study Results} \label{EvaluationConclusion:Results}
+
+The evaluation of software project telemetry was carried out in two studies: one in the classroom, and the other in CSDL. They were all mixed-methods studies.
+The class room study was relatively simple. It was a one-shot survey based study. I distributed a questionnaire at the end of the study to collect the students' opinions about software project telemetry, and their telemetry analysis invocation pattern was analyzed to cross-validate their opinions with the actual system usage.
+The CSDL study was much more comprehensive. I pursued an in-depth data collection and analysis strategy over a much longer period of time: I gathered data through observations and interviews; I generated hypotheses from the data; I also tested the hypotheses in a limited way.
+
+The reason why different methods were used in the two studies was because the two environments have very different characteristics. The classroom study involved a relatively large number of participants (25 students) working on small-scale class projects. On the other hand, there were a relatively small number of participants in the CSDL study: five developers plus one project manager. However, the software under development was much larger in scale. It contained almost 300,000 lines of code in total, and had been under development for five years. The developers had significantly more software engineering experience and process maturity compared to the average student in the classroom.
+
+In both the classroom and CSDL studies, my focus was on the understanding of the use of software project telemetry within the particular software development environments in which the technology was deployed. However, by comparing and contrasting the results from the two studies, I was able to gain a number of insights that might generalize to other software development environments . My insights are grouped into five categories:
+\begin{itemize}
+  \setlength{\itemsep}{0pt}
+  \setlength{\parskip}{0pt}
+	\item Metrics Collection
+	\item Analysis Invocation
+	\item Decision Making
+	\item Best Practice
+	\item Adoption Barrier
+\end{itemize}
+
+
+
+
+
+
+
+
+\subsection{Metrics Collection}
+
+Software project telemetry uses sensors to collect metrics. Sensors must be installed and configured. Once they are installed and configured properly, they collect metrics automatically and unobtrusively. The classroom study indicated that the sensor-based metrics collection had achieved the design goal of eliminating the long-term chronic \textit{``context-switch''} overhead inherent in manual and tool-assisted approaches. However, it identified one weak link in sensor-based approach: most students complained that the installation and configuration of sensors were overly complex, and one of them even reported trouble at the end of the semester.
+
+Based on this feedback, an installer was developed in Fall 2005. The installer provides an intuitive graphical user interface that helps a user to download, configure sensors, and check for updates. The installer was used in the CSDL study. The result indicated that it saved the developers a considerable amount of effort installing and configuring the sensors. 
+
+However, the CSDL study revealed another weak link in sensor-based metrics collection. Sensors are designed to work silently and unobtrusively in the background. Since metrics collection does not require developer intervention, it is very easy to forget about their existence. As a result, broken sensor data might go undetected for a long period of time. Though software error can cause broken sensor data, the most common cause in the CSDL study was the change in the scope of a project. For example, in one incident, a developer created a new module but forgot to update the configuration file to include that module, causing a loss of coverage metrics for almost one week. Change in development tools can also cause broken sensor data. For example, in another incident, a developer upgraded his IDE on his workstation to a newer version but forgot to run the installer to reattach the sensor, causing a loss of software development activity metrics for at least two days. The experience seemed suggest that it would be very hard to avoid broken sensor data completely. An interesting observation was that the project manager and the developers were using telemetry charts to help them make quick assessment whether the underlying sensor data are being collected correctly or not. They used a set of heuristic rules to flag suspicious metrics data, such as dropout of data points, outliers or sudden value changes in telemetry streams, and related metrics not changing together. 
+
+In summary, the experiences from the two empirical studies indicated that sensor-based metrics collection eliminated the long-term chronic \textit{``context-switch''} overhead, and that the installer significantly reduced the cost associated with the installation and configuration of these sensors. However, broken sensor data are a threat one cannot ignore, especially when the scope of a project is changed. The automated nature of metrics collection might even prevent early detection of this problem. The good news is there are telemetry charts and heuristic rules to help make quick assessment whether sensor data are likely broken by flagging suspicious metrics. But a real person familiar with the project and the development activities is required to make the final judgment. Therefore, it is highly recommended for a development team to set up telemetry charts for the purpose of broken sensor data detection, so that the project manager or a process expert could spend one or two minutes each day examining these charts to make a quick assessment.
+
+
+
+
+
+
+
+
+
+
+\subsection{Analysis Invocation}
+
+The software project telemetry implementation exposes three analysis interfaces: \textit{telemetry chart analysis}, \textit{telemetry report analysis}, and \textit{telemetry expert analysis} (Section \ref{Implementation:Telemetry:FunctionalDescription}). While the telemetry expert analysis requires a user to use the telemetry language to interact with the system, the telemetry chart and report analyses allow an expert to predefine telemetry definitions so that a regular user can perform analysis by selecting from a set of predefined definitions.
+
+In the classroom study, the telemetry language was not introduced. Instead, the instructor and I predefined a set of charts and reports that we thought were most useful to the students, and only the telemetry chart and report analyses were introduced. To make up for the loss of flexibility of not using the telemetry language, the telemetry chart and report definitions were parameterized. For example, we defined a telemetry chart showing how unit test coverage varies over time, which used a parameter called \textit{``FilePattern''}. The idea is to allow the students to specify which files should be included in the computation. For example, while a parameter value \textit{``**''} computes coverage for the entire project; \textit{``foo/**''} computes coverage for only the \textit{foo} module in the project. The parameterization solved a practical problem of combinatorial explosion of telemetry definitions, because telemetry inquiries often led to the wish to compare the same telemetry streams across different developers, different modules, or even some combination of developers and modules. 
+The survey responses indicated that the students appreciated the idea of being able to run metrics analysis by choosing from a list of predefined charts and reports, and most of them agreed that it was simple to invoke the analyses.
+
+In the CSDL study, the telemetry wall was used to communicate telemetry analysis results to the developers. I took full responsibility of gathering metrics analysis requirements, designing telemetry charts, and making them available on the telemetry wall. Though the CSDL developers were not expected to run telemetry analysis themselves, I asked them their opinions once during an interview about the three analysis interfaces provided by the software project telemetry implementation. One developer told me that \textit{``the (telemetry) language is the last thing I want to use''} because it looks complex.
+
+The complexity of the telemetry language is necessary, because different software development environments have different constraints for metrics collection and different requirements for metrics analysis. A metric available in one environment might not be available in another environment; and a useful analysis in one environment might not be that useful in another environment. The language provides a glue mechanism so that we can decouple the types of metrics we are able to collect and the types of analysis we wish to support.
+Despite the fact that the classroom study and the CSDL study were all conducted in academic settings, different types of metrics were collected, and different sets telemetry charts/reports were used in the two environments. 
+
+The experiences from the two empirical studies confirmed that an effective approach to this language complexity problem is to hide the language from regular users. A power user or a process expert can take the responsibility of designing telemetry charts. For example, in the classroom study, the instructor and I predefined charts and reports for the students. In the CSDL study, I took the sole responsibility of designing charts and making them available on the telemetry wall.
+
+However, the classroom study did reveal one usability problem with the telemetry chart and report analyses. The problem was related to the input of parameter values. Different charts or reports had different parameter requirements, but it was hard to tell from the simple web interface what parameters were expected. The current solution is: (1) continue to use parameters in telemetry chart analysis but provide detailed error messages, so that the user can find out the expected parameters through trial-and-error; (2) establish a convention that all telemetry reports are defined without parameter.
+The solution represents a compromise, because software project telemetry is implemented as a Hackystat extension, and it has to abide by its user interface constraints. The Hackystat UI constraints are largely vestiges from the old days to support stone-aged web browsers running on antediluvian Unix platforms.
+Fortunately, in the last two years, the web browser market has consolidated into only two major rivals (i.e., Internet Explorer and FireFox), and sophisticated ajax-based\footnote{Ajax is an acronym for ``asynchronous JavaScript and XML.'' It is a technique for creating highly interactive web applications, by utilizing client-side JavaScript and the DOM model to update a portion of a web page according to the result of an asynchronous server method invocation.} rich Web UI frameworks such as GWT \cite{Software:GWT} and Echo2 \cite{Software:Echo2} have emerged. The Hackystat developers are discussing the possibility of migrating toward such a framework. Once the migration is complete, the user interface of the telemetry chart and report analyses can be redesigned to provide real time hints about the types of parameters expected. 
+
+In summary, the experiences from the two empirical studies suggested that the complexity of the telemetry language is necessary to meet real world metrics collection constraints and analysis requirements. However, the complexity does not have to be exposed to a regular user of software project telemetry. A process expert or a power user can predefine telemetry charts and reports for them. In fact, a very important step in using software project telemetry is the customization of telemetry charts and reports to the specific need of a software organization.
+
+
+
+
+
+\subsection{Decision Making}
+
+Collecting metrics is only a means; the end goal is to make decisions. The idea is that by performing telemetry analyses over collected metrics, developers gain insights into their software development processes, which, in turn, help them make process improvement decisions. One of the objectives of the classroom and CSDL studies was to assess the value of software project telemetry for decision-making.
+
+The classroom study was designed as a ``passive'' study. The students were left on their own to experiment with software project telemetry to gain insights from their process and product metrics. The survey responses showed strong evidence that software project telemetry made their development processes transparent. In fact, some students even seemed to suggest that it made their processes more transparent than they had wished by raising privacy concerns. However, the evidence was inconclusive whether software project telemetry had helped them improve their processes.
+
+In the CSDL study, I took an ``active'' role as an on-site process expert by introducing software project telemetry as a process improvement program. I followed the steps of analyzing the lab's process status, customizing telemetry analyses, proposing improvement recommendations, and finally validating process changes. These steps resulted in conclusive evidence that software project telemetry had decision-making values: I was able to help not only the project manager institute changes to improve project management practices, but also the developers gain insights into their software development processes.
+
+Several plausible reasons could explain the different results in the two empirical studies. 
+
+First, the experiences seem to suggest that the ability to understand and interpret telemetry data might have a strong impact on telemetry decision-making values. There were several reports during the classroom study in which the sensors did not seem to collect data correctly, or the telemetry analyses did not seem to compute the expected results. It turned out that some of them were caused by either misunderstanding of metrics or inappropriate interpretation of the analysis results. On the other hand, there were no such problem in the CSDL study.
+
+Second, the experiences also seem to suggest that process maturity might affect telemetry decision-making values. The students in the classroom had relatively low process maturity on average because they were still learning software application lifecycle techniques, but the CSDL developers had much higher process maturity levels. Higher process maturity leads to greater visibility into software development practices. As a result, more metrics could be collected and analyzed in CSDL, resulting in more opportunities for process improvement. Indeed, I was able to collect metrics about project issue tracking, code review, and integration build in the CSDL study, but not in the classroom study. 
+
+Lastly, it seems that the ability to customize telemetry analyses to the specific need of a project might also have an impact on telemetry decision-making values. In the classroom study, though the instructor and I predefined some telemetry charts and reports for the students based on what we thought were most useful to them, we did not update these charts and reports with feedback from them. On the contrary, in the CSDL study, I not only customized telemetry analyses but also validated their usefulness according to my observational data and developer feedback.
+
+
+
+
+
+
+
+\subsection{Best Practice}
+
+\textit{``Top-down telemetry design''} and \textit{``bottom-up metrics collection''} seem to be best practices in software project telemetry. Top-down telemetry design refers to the idea that each telemetry chart should have a clear purpose, such as to help the development team meet a specific process improvement goal. This is similar to the idea in the Goal-Question-Metric paradigm. Bottom-up metrics collection refers to the recommendation to collect whatever metrics a software organization can. Software project telemetry does not suffer from the metrics collection cost problem because sensor-based approach eliminates the chronic ``context-switch'' overhead inherent in manual and tool-assisted approaches. Even if there is no apparent need for a metric today, it can still be used to establish a baseline for tomorrow.
+
+
+
+
+
+
+
+\subsection{Adoption Barrier}
+
+One adoption barrier involves data privacy concerns. This issue seems most severe with effort-related individual developer process metrics, such as \textit{``ActiveTime''}. An interesting observation is that this issue only manifested itself in the classroom study. There was no indication of data privacy concern in the CSDL study. The plausible reasons are: (1) Some students misunderstood ``active time'' for ``software development effort,'' while there was no such misunderstanding among CSDL developers; (2) The classroom group projects emphasized on member participation and \textit{active time} was the primary measure, while progress in CSDL was measured by \textit{``Jira''} issue closure instead of \textit{active time}. 
+In fact, the data privacy issue has been identified in many literatures. For example, Grady \cite{Grady:1992} suggests that specific rules be implemented regarding who can access what portion of data, and when data go from private to public. The recommendation is listed in Table \ref{tab:DataAccessRecommendations}.
+The software project telemetry implementation has a mechanism to limit the scope that the metrics can be accessed. But overcoming this data privacy issue seems largely dependent on what the data are used for in an organization. In other words, are the data used for process improvement or developer performance evaluation?
+
+\begin{table}[tbp]
+  \centering
+    \caption{Data Access Recommendations by Grady}
+    \begin{tabular}{|p{4.5cm}|p{4.5cm}|p{4.5cm}|} 
+      \hline
+      \textbf{Individual} & \textbf{Project Team} & \textbf{Organization} \\
+      \hline
+      %% row 2 column 1
+      Defect rates (by individual)\newline Defect rates (by module)\newline 
+      Defect rates (under development)\newline Number of compiles &
+      %% row 2 column 2
+      Defect rates (team)\newline Module size\newline Estimated module size\newline 
+      Number of re-inspections\newline Defects per module (pre-release) &
+      %% row 2 column 3
+      Defect rates (by project)\newline Size (by product)\newline Effort (by project)\newline 
+      Calendar times\newline Defects per module (post release)\newline 
+      Effort per defect (average) \\ 
+      \hline
+    \end{tabular}
+  \label{tab:DataAccessRecommendations}
+\end{table}
+
+%Software measurement activities will be subverted if they are seen as a threat, ignored if thought incompetent or inappropriate, or discredited if they do not deliver the anticipated benefits.
+
+
+Another adoption barrier involves telemetry expertise. The experiences from the empirical studies indicate that software project telemetry will not likely to delivery best value when used ``out-of-the-box.'' Different projects have different goals and different requirements. To get the best value out of software project telemetry, it needs to be customized. The customization includes not only setting up sensors to collect metrics, but also designing telemetry charts for the specific needs of the project. For example, in the CSDL study, I acted as an on-site process expert. I took the iterative steps of analyzing current software processes, identifying improvement opportunities, designing telemetry charts, implementing changes, and evaluating the results. The experience seems to suggest that software project telemetry can provide decision-making values when this iterative approach is followed. However, there might be difficulty for an organization adopting the technology to find somebody who can perform a similar role to the one I performed in the CSDL study.
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                       %
+%                   S E C T I O N                       %
+%                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Future Evaluations} \label{EvaluationConclusion:FutureEvaluation}
+
+The classroom and CSDL studies enabled me to get a basic level of understanding with respect to the real world use of software project telemetry. However, to various degrees, my knowledge was tied to the academic environments in which the technology was deployed. Though the CSDL setting shared many characteristics with industrial settings, such as large project size and experienced developers, there were still some important elements missing from a typical commercial environment, such as project deadlines and budget constraints. Therefore, it is desirable to evaluate software project telemetry in different industrial settings. Will it be possible to arrive at the same conclusions about software project telemetry in industrial settings? If not, what would be the differences between the software development environments that could account for different conclusions? A constructivist approach could give in-depth understanding about the ``context'' to answer these questions.
+
+An interesting observation from the classroom and CSDL studies is that process maturity seems to have a strong impact on decision-making value of software project telemetry. Since higher process maturity offers greater visibility into software development activities, more metrics can be collected and analyzed. A future area to explore would be how software organizations with different maturity levels use software project telemetry. Does successful use of software project telemetry exhibit different patterns in a low process maturity organization than in a high process maturity organization? 
+
+Another area to explore is the impact of organizational structure on telemetry data collection. Some organizations are more centralized with collocated developers, while others are more decentralized with geologically-dispersed developers collaborating with each other. Different organizations have different constraints on metrics collection. The current experiences suggest that one significant adoption barrier to software project telemetry is the issue of data privacy and confidentiality. This concern is most severe with personal process metrics, especially effort-related ones. On the other hand, most product metrics and certain process metrics do not seem to cause such a problem, such as information about file size, unit test coverage, source code commit, and bug/issue status. Two interesting questions are: to what extent will the loss of personal process metrics affect the decision making value of software project telemetry? What can be done to alleviate the privacy concern in an industrial environment?
+
+%There is also a constant discussion about whether software project telemetry empowers the manager or the developer. Empowering the manger refers to the idea that software project telemetry enables a manager to track not only project status but also developer activities. Empowering the developer refers to the idea that a developer can gain insights and improve his/her development processes by performing telemetry analyses. The two ideas are not mutually exclusive. They are actually more about where software project telemetry lies on a continuum between the two. Current evidence seems to indicate that it would be less controversial to position software project telemetry toward the side of the manager's tool.  A recent trend in software development industry is outsourcing. An interesting direction to explore would be how software project telemetry will fit in an outsourced project.
+
+
+
+
+
+
+
+
+%\subsection{Comparative Studies}
+%
+%The constructivist paradigm and the post-positivist paradigm offer a trade-off between breadth and depth of the knowledge to be gained about software project telemetry. The constructivist paradigm aims for deep insights, but the insights might be limited to the context in which the research is carried out. The post-positivist paradigm aims to yield broadly generalizable conclusions. 
+%
+%After enough experience has been accumulated, we can start to make comparisons between software project telemetry and other metrics based approaches, such as PSP.
+%For example, software project telemetry uses sensors to collect metrics automatically. The advantage is that the cost of metrics collection is low and there is no human bias in metrics collection. The disadvantage is that some types of metrics are not amenable to automated collection. This problem is especially severe with effort related metrics. On the other hand, PSP uses manual approach to collect metrics. More types of metrics can be collection. But the disadvantage is metrics collection is much more expensive and much more prone to bias. 
+%The comparative study will be best set up as a controlled experiment in the post-positivist paradigm. The use of control group and random assignment would help us to generate broadly applicable understanding about software project telemetry. 
+
+
+
+

@@ -1,0 +1,468 @@
+\chapter{Software Project Telemetry Language Specification}  
+\label{Chapter:TelemetryLanguageSpecification}
+
+
+
+This document describes the syntax, semantics, and design of the Software Project Telemetry Language.
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                       %
+%                   S E C T I O N                       %
+%                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}  \label{TelemetryLanguageSpecification:Introduction}
+
+The Software Project Telemetry Language is a language that allows the user to:
+\begin{itemize}
+  \setlength{\itemsep}{0pt}
+  \setlength{\parskip}{0pt}
+  \item compose telemetry reports from telemetry charts,
+  \item compose telemetry charts from telemetry streams,
+	\item and, compose telemetry streams from software metrics using telemetry reducers and functions.
+\end{itemize}
+
+This language specification also specifies a contract for telemetry reducers and functions, but it does not prescribe what reducers and functions an implementation must provide. The relationship between the telemetry language and its reducers and functions is like that of C language and its library functions. The difference is that you can write new functions in C, but you cannot write telemetry reducers or telemetry functions using the telemetry language. In other words, telemetry reducers and functions must be supplied by the language implementation.
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                       %
+%                   S E C T I O N                       %
+%                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Getting Started}   \label{TelemetryLanguageSpecification:GettingStarted}
+
+This section uses one detailed example to illustrate the essential features of the software project telemetry language. It strives for clarity and brevity at the expense of completeness. The intent is to provide the reader with a quick introduction to the language.
+
+The following example is used throughout this section:
+\begin{verbatim}
+  streams FilteredModuleCoverageStreams(filterMode, threshold) = {
+    "Filtered Module Level Coverage Information", 
+    Filter(WorkspaceCoverage("Percentage", "**", "line"), 
+           "SimpleDelta", filterMode, threshold) 
+  };
+  
+  y-axis PercentageYAxis() = {
+    "Percent", "double", 0, 100
+  };
+  
+  chart ModuleCoverageChart(filterMode, threshold) = {
+    "Module Unit Test Coverage", 
+    (FilteredModuleCoverageStreams(filterMode, threshold), 
+     PercentageYAxis()) 
+  };
+  
+  report ModuleCoverageReport(threshold) = {
+    "Modules with Most and Least Favorable Coverage Change",
+    ModuleCoverageChart("Top", threshold),
+    ModuleCoverageChart("Bottom", threshold)
+  };
+\end{verbatim}
+
+This example defines a telemetry report consisting of two charts: one for the modules in a project with most significant increase in test coverage, and the other for the modules with most significant decrease in test coverage during a specified period of time.
+
+Note that this example utilizes \textit{WorkspaceCoverage} telemetry reducer and \textit{Filter} telemetry function. They are used here for illustration purposes only. The telemetry language only specifies a contract that each reducer and function implementation should observe, and a syntax for how they are invoked. The availability and behavior of individual reducer and function are entirely dependent on the particular implementation your are using.
+
+
+\subsection{Telemetry Report}
+
+A telemetry report is a named set of telemetry charts that can be generated for a specified project over a specified time interval.
+
+\begin{verbatim}
+  report ModuleCoverageReport(threshold) = {
+    "Modules with Most and Least Favorable Coverage Change",
+    ModuleCoverageChart("Top", threshold),
+    ModuleCoverageChart("Bottom", threshold)
+  };
+\end{verbatim}
+  
+The example defines a telemetry report called \textit{ModuleCoverageReport}, which is composed of two telemetry charts. The title of the report is \textit{Modules with Most and Least Favorable Coverage Change}. The definition utilizes one parameter called \textit{threshold}, which allows the user to substitute the number modules the constituent charts should display at the report invocation time. Note how the same variable appears in the chart reference section: \textit{ModuleCoverageChart(``Top'', threshold)} and \textit{ModuleCoverageChart(``Bottom'', threshold)}.
+
+
+\subsection{Telemetry Chart and Y-axis}
+
+A telemetry chart is a named set of telemetry streams that can be generated for a specified project over a specified time interval.
+
+\begin{verbatim}
+  chart ModuleCoverageChart(filterMode, threshold) = {
+    "Module Unit Test Coverage", 
+    (FilteredModuleCoverageStreams(filterMode, threshold), 
+     PercentageYAxis()) 
+  };
+\end{verbatim}
+
+The example defines a telemetry chart called \textit{ModuleCoverageChart}. The title of the chart is \textit{Module Unit Test Coverage}. The definition utilizes two parameters: \textit{filterMode} and \textit{threshold}.  
+
+You can think of a telemetry chart as a multi-axis chart (a special kind of combined chart), with each sub-chart having its own vertical axis, but they all share the same horizontal axis. Simply put, a telemetry chart is composed of one or more sub-charts, and a sub-chart is defined by the combination of a \textit{streams} reference and a \textit{y-axis} reference. Multiple sub-charts can be defined in a comma separated list. The general syntax is:
+
+\begin{verbatim}
+  (streams1, yAxis1), (streams2, yAxis2), ... , (streamsN, yAxisN)
+\end{verbatim}
+
+The telemetry chart above consists of exactly one sub-chart as defined by \textit{(FilteredModuleCoverageStreams(filterMode, threshold), PercentageYAxis())}. The vertical axis for the sub-chart is defined below:
+
+\begin{verbatim}
+  y-axis PercentageYAxis() = {
+    "Percent", "double", 0, 100
+  };
+\end{verbatim}
+
+The label for the axis is \textit{Percent}. The definition does not utilizes any parameter. An optional hint \textit{double} specifies that the sub-chart contains double values. Other valid hints are \textit{integer} and \textit{auto}. The last two values are optional lower and upper bounds for the vertical axis.
+
+Note, however, that a telemetry chart definition does not include the information about its horizontal axis, because such information can be inferred automatically from the time interval over which the telemetry chart is evaluated. 
+
+
+\subsection{Telemetry Stream}
+
+Telemetry streams are sequences of a single type of software process or product data for a single project over a specified time interval.
+
+\begin{verbatim}
+  streams FilteredModuleCoverageStreams(filterMode, threshold) = {
+    "Filtered Module Level Coverage Information", 
+    Filter(WorkspaceCoverage("Percentage", "**", "line"), 
+           "SimpleDelta", filterMode, threshold) 
+  };
+\end{verbatim}
+
+The example defines a telemetry \textit{streams} object called \textit{FilteredModuleCoverageStreams}. A \textit{streams} object is a collection of telemetry streams (i.e., zero or more).  \textit{Filtered Module Level Coverage Information} is the description, and the rest is the actual definition. Note that the definition contains a telemetry reducer invocation \textit{WorkspaceCoverage(...)} and a telemetry function invocation \textit{Filter(...)}.
+
+
+\subsection{Telemetry Reducer}
+
+A telemetry reducer aggregates low level software product and process data, and returns a collection of telemetry streams (a.k.a. a \textit{streams} object). For example, suppose a metrics database contains coverage information for each source file in a project, then the telemetry reducer \textit{WorkspaceCoverage} aggregates those metrics and returns a collection of telemetry streams, one for each module in the project.
+
+A reducer can return any number of telemetry streams. While a
+\textit{WorksapceCoverage} reducer returns multiple telemetry streams, a \textit{Coverage} reducer returns only one single telemetry stream for the coverage information for the entire project. Reducer accepts parameters, but the number of the parameters and the meaning of them are entirely determined by the implementation of each reducer.
+
+The evaluation result of a reducer call is a telemetry \textit{streams} object. Telemetry \textit{streams} objects can participate in arithmetic operations. You can add, subtract, multiply, and divide two telemetry \textit{streams} objects, and the result is a new telemetry \textit{streams} object. Suppose the telemetry reducer \textit{WorkspaceCoverage} used in the example does not compute coverage directly. Instead, it only computes the number of source code lines covered and uncovered by test cases. Then 
+
+\begin{verbatim}
+  WorkspaceCoverage("Percentage", "**", "line")
+\end{verbatim}
+
+can be equally written as:
+
+\begin{verbatim}
+  WorkspaceCoverage("NumberOfCoveredLines") 
+  / ( WorkspaceCoverage("NumberOfCoveredLines") 
+      + WorkspaceCoverage("NumberOfUncoveredLines") )
+  * 100
+\end{verbatim}
+
+
+\subsection{Telemetry Function}
+
+A telemetry function takes a telemetry \textit{streams} object as input, and returns another (usually different) telemetry \textit{streams} object as output.
+
+\begin{verbatim}
+  Filter(WorkspaceCoverage("Percentage", "**", "line"), 
+         "SimpleDelta", filterMode, threshold) 
+\end{verbatim}
+
+The example illustrates the use of a telemetry function called \textit{Filter}. Recall that \textit{WorkspaceCoverage(...)} is a telemetry reducer invocation, and the evaluation result is a telemetry \textit{streams} object. This \textit{streams} object is fed to the \textit{Filter} telemetry function as input, so that only the telemetry streams we are interested in are returned.
+
+This is an example where a telemetry function is used to reduce the number of telemetry streams in a \textit{streams} object. There could also be telemetry functions that add new telemetry streams. For example, suppose you want to apply 6-sigma methodology to establish statistical control bounds for your metrics, then you can imagine a \textit{StatisticalControlBound} telemetry function that adds two more streams: one for the upper control bound, and the other for the lower control bound. 
+         
+
+ 
+%\subsection{Parameterization Support}
+%
+%The language supports position based parameters. An example is provided below:
+%\begin{verbatim}
+%  streams MyStreams(member, filePattern1) = {
+%    "project member active time", "Hours",
+%    MemberActiveTime(filePattern1, "true", member)
+%  };
+%  
+%  chart  MyChart(filePattern2) = {
+%    "my own active time chart",
+%    MyStreams("me", filePattern2)
+%  };
+%  
+%  report MyReport(filePattern3) = {
+%    "my own report",
+%    MyChart(filePattern3)
+%  };
+%  
+%  draw R("**");
+%\end{verbatim}
+%\textit{member}, \textit{filePattern1}, \textit{filePattern2}, \textit{filePattern3} are parameters. The definition of ``MyChart'' is interesting. It only instantiates one of the parameters. The final reducer invoked is:
+%\begin{verbatim}
+%    MemberCodeChurn("**", "true", "me")
+%\end{verbatim}
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                       %
+%                   S E C T I O N                       %
+%                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+\section{Grammar}  \label{TelemetryLanguageSpecification:Grammar}
+
+This chapter defines the lexical and syntactic structure of the Software Project Telemetry Language. The grammar is presented using productions. Each grammar production defines a non-terminal symbol and the possible expansions of that non-terminal symbol into sequences of non-terminal or terminal symbols. The first line of a grammar production is the name of the non-terminal symbol being defined, followed by a colon. Each successive indented lines contain a possible expansion of the non-terminal given as a sequence of non-terminal or terminal symbols. When there is more than one possible expansion, the alternatives are listed on separate lines preceded by ``$|$.'' When there are many alternatives, the phrase \textit{one of} may precede a list of expansions given on a single line. This is simply shorthand for listing each of the alternatives on a separate line.
+
+
+\subsection{Lexical Grammar}
+
+The lexical grammar is presented in this section. The terminal symbols of the lexical grammar are the characters in the Unicode character set, and the lexical grammar specifies how characters are combined into tokens and white space. The basic elements that make up the lexical structure are \textit{line terminators}, \textit{white space}, and \textit{tokens}. Of these basic elements, only tokens are significant in the syntactic grammar. Comments are not supported in this version of the telemetry language. The lexical processing consists of reducing the telemetry language input into a sequence of tokens which become the input to the syntactic analyzer. Line terminators and white space  have no impact on the syntactic structure, they only serve to separate tokens. When several lexical grammar productions match a sequence of characters, the lexical processing always forms the longest possible lexical element.
+
+
+\subsubsection{Line Terminators}
+Line terminators divide the characters into lines.
+\begin{verbatim}
+  new-line:
+      Carriage return character (U+000D)
+    | Line feed character (U+000A)
+    | Carriage return character followed by line feed character
+    | Line separator character (U+2028)
+    | Paragraph separator character (U+2029)
+\end{verbatim}
+
+
+\subsubsection{White Space}
+White space is defined as any character with Unicode class Zs which includes the space character, plus the horizontal tab character, the vertical tab character, and the form feed character.
+\begin{verbatim}
+  whitespace:
+      Any character with Unicode class Zs
+    | Horizontal tab character (U+0009)
+    | Vertical tab character (U+000B)
+    | Form feed character (U+000C)
+\end{verbatim}
+
+
+\subsubsection{Tokens}
+There are several kinds of tokens: keywords, operators, punctuators, identifiers, and literals.
+\begin{verbatim}    
+  keywords: one of
+    streams y-axis chart report draw
+
+  operator: one of
+    = + - * /  
+    
+  punctuator: one of
+    , ; ( ) { } "
+    
+  identifier:
+    [letter][letter|digit|-|_]*
+
+  string-constant:
+    anything enclosed in double quotes
+    
+  number-constant:
+    [digit]+  
+    
+  letter:
+    [a-zA-Z]
+    
+  digit:
+    [0-9]
+\end{verbatim}
+
+
+ 
+     
+     
+     
+
+\subsection{Syntactic Grammar}
+
+The syntactic grammar is presented in this section. The terminal symbols of the syntactic grammar are the tokens defined by the lexical grammar, and the syntactic grammar specifies how tokens are combined. Two special tokens are used: \textit{\textless EOF\textgreater} denotes the end of input, and \textit{\textless NULL\textgreater} means nothing is required.
+
+
+\begin{verbatim}
+  input:
+      statements <EOF>
+      
+  statements:
+      statement
+    | statements statement
+    
+  statement: 
+      streams-statement ;
+    | y-axis-statement ;
+    | chart-statement ;
+    | report-statement ;
+    | draw-command ;
+   
+
+  streams-statement:
+      streams identifier ( variables )
+      = { streams-description , streams-definition }
+  
+  streams-description:
+      string-constant
+  
+  streams-definition:
+      expression
+
+
+  y-axis-statement:
+      y-axis identifier ( variables )
+      =  { y-axis-definition }
+  
+  y-axis-definition:
+      y-axis-label
+    | y-axis-label , number-type
+    | y-axis-label , number-type , lower-bound , upper-bound
+    
+  y-axis-label:
+      identifier
+    | string-constant
+    
+  number-type:
+      'integer' | 'double' | 'auto'
+    
+  lower-bound:
+      number-constant
+      
+  upper-bound:
+      number-constant
+      
+    
+  chart-statement:
+      chart identifier ( variables ) 
+      = { chart-title , sub-charts }
+
+  chart-title:
+      string-constant
+    
+  sub-charts:
+      sub-chart-definition
+    | sub-charts , sub-chart-definition
+    
+  sub-chart-definitions:
+      ( streams-reference , y-axis-reference )
+
+  streams-reference:
+      identifier ( variables-and-constants )
+
+  y-axis-reference:
+      identifier ( variables-and-constants )
+
+
+  report-statement:
+      report identifier ( variables ) 
+      = { report-title , report-definition }
+
+  report-title:
+      string-constant
+
+  report-definition:
+      chart-reference 
+    | report-definition , chart-reference
+
+  chart-reference:
+      identifier ( variable-and-constants  )
+    
+    
+  draw-command:
+      draw identifier ( constants )
+      
+  
+  expression:
+      additive-expression
+
+  additive-expression:
+      multiplicative-expression
+    | additive-expression + multiplicative-expression
+    | additive-expression - multiplicative-expression
+
+  multiplicative-expression:
+      unary-expression
+    | multiplicative-expression * unary-expression
+    | multiplicative-expression / unary-expression
+
+  unary-expression:
+      number-constant
+    | ( expression )
+    | function-or-reducer-call
+
+  function-or-reducer-call:
+      identifier ( parameters )
+
+  parameters:
+      parameter
+    | parameters parameter
+    
+  parameter:
+      expression
+    | identifier 
+    | constant
+    
+   
+  variables:
+      <NULL>
+    | variable
+    | variables , variable
+    
+  variable
+      identifier
+    
+  constants:
+      <NULL>
+    | constant
+    | constants , constant
+   
+  constant:
+      number-constant
+    | string-constant
+   
+  variables-and-constants:
+      <NULL>
+    | variable-and-constant
+    | variables-and-constants , variable-and-constant
+      
+  variable-and-constant:
+      variable
+    | constant    
+\end{verbatim}
+
+
+ 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                       %
+%                   S E C T I O N                       %
+%                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+\section{Special Considerations}
+
+
+\subsection{Arithmetic Operations}
+
+Arithmetic operations involving telemetry \textit{streams} objects are valid in the following situations:
+
+\begin{itemize}
+	\item Between two telemetry \textit{streams} objects
+
+The arithmetic operation is valid so long as the two \textit{streams} objects have the same number of telemetry streams, the data points in those telemetry streams are all derived from the same time interval, and there is a way to match individual telemetry stream in the two \textit{streams} objects. Arithmetic operations are carried out between the individual data point in the corresponding telemetry streams.
+
+  \item Between one telemetry \textit{streams} object and one number constant
+
+The arithmetic operation is always valid. Each data point in the telemetry streams participates in the operation with the constant individually, and the result is a new telemetry \textit{streams} object.
+
+\end{itemize}
+ 
+ 
+ 
+\subsection{Telemetry Reducers and Functions}
+
+All reducer invocations take two implicit arguments: project and time interval. They are not covered in this telemetry language specification. It's up to the implementation to determine how such information should be passed to reducers.
+
+Syntactically, there is no difference between a telemetry reducer invocation and a telemetry function invocation. Semantically, there is a difference. The input to a telemetry reducer is a string array, and the output is a telemetry \textit{streams} object. The input to a telemetry function is a telemetry \textit{streams} object, and the output is another telemetry \textit{streams} object. It is this difference that provides the basis distinguishing a reducer call from a function call, since (1) there is no way for the user to specify a telemetry \textit{streams} object directly using the language, and (2) reducers do not take \textit{streams} object as argument. In the following example:
+
+\begin{verbatim}
+  reducer_or_function_call_1(
+      reducer_or_function_call_2(
+          reducer_or_function_call_3(arguments)
+      )
+  )
+\end{verbatim}
+it goes without question that \textit{reducer-or-function-call-1} and \textit{reducer-or-function-call-2} are telemetry function invocations, and \textit{reducer-or-function-call-3} is a telemetry reducer invocation.
+
