@@ -1,0 +1,681 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -*- Mode: Latex -*- %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% backup.tex -- ICSE 2007 submission
+%% Author          : Philip Johnson
+%% Created On      : Wed Dec 08 2004
+%% Last Modified By: 
+%% Last Modified On: Tue Aug 08 14:00:14 2006
+%% RCS: $Id$
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%   Copyright (C) 2002 Philip Johnson
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 
+
+\documentclass[10pt,twocolumn]{article} 
+\input{/export/home/csdl/tex/psfig/psfig}
+\usepackage{/export/home/csdl/tex/icse2003/latex8}
+\usepackage{times}
+%% A verbatim-like environment which allows font changes
+%%\usepackage{alltt}
+%% New LaTeX2e graphics support
+\usepackage[final]{graphicx}
+% uncomment the % away on next line to produce the final camera-ready version
+% and uncomment the \thispagestyle{empty} following \maketitle
+\pagestyle{empty}
+
+\begin{document}
+
+\title{Requirement and Design Trade-offs in Hackystat: An In-Process
+Software Engineering Measurement and Analysis System}
+
+\author{Philip M. Johnson \\
+\em  Collaborative Software Development Laboratory \\
+\em  Department of Information and Computer Sciences \\
+\em  University of Hawai'i \\
+\em  Honolulu, HI 96822 \\
+\em  johnson@hawaii.edu \\
+}
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}
+Abstract here.
+\end{abstract}
+
+\Section{Introduction}
+\label{sec:intro}
+Most software engineers will agree that measurement can be useful in
+software development.  The disagreements begin when deciding what, when,
+where, how, and why to measure.  What to measure can range from process
+measures such as build failure rate to product measures such as the size
+of the system.  When to measure can range from in-process measures that
+require daily or hourly data collection, to out-of-process measures that
+are collected, for example, after a development project is done as part of
+a post-mortem.  How to measure can range from manual techniques that
+require a software process group to collect and analyze the data, to
+automated techniques that require no human involvement at all for
+collection and analysis (but still currently require human involvement for
+interpretation of the analyses and subsequent decision-making.)  Finally,
+why to measure can range from the building of predictive models to estimate
+future cost or quality, to assessment of current project
+characteristics.
+
+Since 2001, we have been developing and evaluating an open source,
+extensible application framework called Hackystat for in-process software
+engineering measurement and analysis (ISEMA).  The client-server systems
+resulting from instantiation of the framework enable developers to attach
+small software plugins called ``sensors'' to their development tools which
+unobtrusively monitor the tools and sends low-level data about their
+behavior and/or results to a Hackystat web application using SOAP. The
+extensible set of sensors currently includes support for IDEs (Eclipse,
+Emacs, JBuilder, Vim, Visual Studio), testing (JUnit, CppUnit, Emma), build
+(Ant, Make), configuration management (CVS, Subversion), static analysis
+(Checkstyle, FindBugs, PMD), bug tracking (Jira), size metrics for over
+twenty five programming languages (SCLC, LOCC, CCCC), and management
+(Microsoft Office, OpenOffice.org). The low-level data sent by sensors is
+represented by an extensible set of abstractions called ``sensor data
+types'', such as Activity, CodeIssue, Coverage, or FileMetric, which
+facilitate data consistency and simplify higher level processing.  On the
+server side, an extensible set of analysis modules process the raw sensor
+data to create higher-level abstractions to support software development
+research and management. For example, the Software Project Telemetry module
+provides support for trend analysis of multiple sensor data streams to aid
+in-process decision-making \cite{csdl2-04-11}, the Zorro module provides
+support for automated recognition of Test Driven Development
+\cite{csdl2-06-02}, the MDS module provides support for build process
+analysis for NASA's Mission Data System project \cite{csdl2-03-07}, the HPC
+module supports analysis of high performance computing software development
+\cite{csdl2-04-22}, the CGQM module provides a ``continuous'' approach to
+the Goal-Question-Mtric paradigm \cite{csdl2-05-09}, and the Course module
+supports software engineering education \cite{csdl2-03-12}.  An
+organization can use Hackystat to instantiate a tailored ISEMA system by
+selecting components from our public repository, and can also combine these
+public components with proprietary Hackystat components they develop for
+themselves.
+
+When we started the Hackystat Project, we had the idealistic (and naive)
+goal of designing a truly ``generic'' ISEMA framework, one that would
+provide appropriate infrastructure to any organization desiring in-process
+software engineering measurement and analysis.  After five years of
+research and development, we have learned that while Hackystat can be
+effectively applied to a range of problems, the domain of in-process
+software engineering measurement and analysis is much too broad for a ``one
+size fits all'' solution.  Indeed, over the past five years, at least five
+other ISEMA system development projects have been initiated, including EPM
+\cite{EPM}, 6th Sense Analytics \cite{SixthSenseAnalytics}, PROM
+\cite{PROM}, ECG \cite{ECG}, and SUMS \cite{SUMS}. On the one hand, this
+surge of activity by the software engineering community appears to validate
+the utility and potential of ISEMA systems.  On the other hand, if
+Hackystat was truly generic, why where these other projects initiated?
+
+Over the course of its development, Hackystat has had over forty public
+releases, undergone seven major architectural revisions, 
+been used by hundreds of developers, and grown to over 300,000 lines of
+code. The system and its architecture appears to be relatively mature and
+stable. Our experiences as developers and the feedback we have received
+from our users over the years have made it apparent that the requirement
+and design decisions made during development of an ISEMA system entail
+trade-offs along the dimensions of usability, simplicity, tailorability,
+marketability, and performance.  We believe that the essential nature of
+these trade-offs is an important reason for rise of alternative ISEMA
+systems.  For example, the decision to make Hackystat extensible with respect to
+sensors, sensor data types, and analyses also makes Hackystat more
+complicated to install and use than an ISEMA tool like ECG, which performs
+a single type of analysis (micro-process analysis) for a single developer
+tool (Eclipse).
+
+This paper presents results from our first five years of research on ISEMA
+in the form of an analysis of requirement and design elements and
+their trade-offs in the Hackystat framework.  We believe this information
+will help (a) potential users of ISEMA systems to better evaluate the
+relative strengths and weaknesses of current and future systems, (b)
+potential developers of new ISEMA systems to better understand some of the
+important requirement and design trade-offs that they must make, and
+finally (c) accelerate progress by helping the community identify promising
+directions for future research and development.
+
+While we will refer to other ISEMA systems during the presentation of the
+trade-offs, and in fact provide a brief overview of them in the next
+section, this paper is not a comparative analysis of current ISEMA systems.
+As developers of the Hackystat system, it would be very hard for us to
+provide a truly unbiased comparison of the various approaches. Furthermore,
+while we have almost complete knowledge about the current design and
+history of the Hackystat system, our knowledge of other systems is limited
+to externally published documentation. Thus, we believe that we can make
+the greatest contribution to the community by providing new insights about
+our own system, and leaving comparative analysis as a possible future
+research direction for an unbiased third party.  That said, the next
+section provides a brief introduction to the current landscape of ISEMA
+systems to clarify the various approaches underway.
+
+\Section{ISEMA Systems}
+
+ISEMA is a relatively recent approach to software engineering measurement.
+The more traditional approach is out of process measurement, in which data
+is collected about a set of previously completed projects and used to make
+predictions about a future as-yet-unstarted project.  One of the most
+successful applications of out of process measurement is COCOMO
+\cite{Boehm00}, in which data about the cost, size, and characteristics of
+previously developed systems is used to produce a predictive model that
+provides estimates of cost and time for new system development projects
+based upon various parameters.  Such an approach is out of process since
+the system is basically used after the completion of old projects but
+before the initiation of new projects.  Other non-ISEMA approaches to
+software engineering measurement and analysis include PSP/TSP, the IFPUG
+function point data repository, and the NASA/SEL metrics repository. The
+ISEMA approach, in contrast, accumulates data about a current project in
+order to provide feedback and decision-making value back into the very same
+project. This section briefly presents some recent ISEMA projects to help
+clarify the range of approaches in consideration.
+
+{\bf PROM.} The Professional Metrics (PROM) system \cite{PROM} is sponsored
+by the Center for Applied Software Engineering at the Free University of
+Bolzano-Bozen in Italy. PROM supports an approach similar to Hackystat, in which
+plugins unobtrusively monitor development activities and send process and
+product data to a centralized server for analysis.  PROM provides plugins
+for Microsoft Office, OpenOffice, and Eclipse. It can
+extract code metrics for Java and Smalltalk. Finally, the Trace tool can
+support tracking of operating system calls.  PROM has been used in case
+studies of agile methodologies, open source tool evaluation, and knowledge
+database integration.
+
+{\bf EPM.} The Empirical Project Monitor (EPM) system \cite{EPM} is
+sponsored by the EASE Project, which is an academic-industrial alliance in
+Japan that includes the Nara Institute of Science and Technology, Osaka
+University, NTT, and Hitachi.  EPM does not use a sensor-based approach,
+but instead ``pulls'' data from three types of development tools: the CVS
+configuration management system, the GNATS issue tracking system, and the
+MailMan mail archiving system. Applications of EPM include analyzing the 
+similarity and diversity of software preojcts, code clone detection, and 
+comparative analysis of open source project repositories.
+
+{\bf Sixth Sense Analytics.} This company \cite{SixthSenseAnalytics}
+provides software measurement and analysis services based upon the use of
+sensors that send data to a centralized server.  Unlike Hackystat, users
+cannot download the server software, install it locally, and store their
+data locally. Sensors are available for a variety of IDEs including
+Eclipse, Emacs, Vim, JBuilder, and Visual Studio. Analyses support two
+proxies for developer effort: Active Time and Flow Time. 
+
+{\bf ElectroCodeoGram.}  The ElectroCodeoGram (ECG) project \cite{ECG} is
+sponsored by the Software Engineering research group at the Free University
+of Berlin. ECG is a plug-in to Eclipse that monitors developer activities
+in order to represent ``micro-processes'' during software development.
+Examples include the ``copy-paste-change'' micro-process, which is a common
+way of producing similar functionality in multiple locations in a software
+system, but which is has been hypothesized to produce defects more often
+than a ``refactoring'' micro-process, in which the common functionality is
+extracted out into a new method and called from both locations.  ECG is
+intended to support experimental investigation into these and other
+micro-processes.
+
+ {\bf SUMS.} The Standardized User Monitoring Suite (SUMS) project
+\cite{SUMS} is sponsored by the Pittsburgh Supercomputing Center and IBM.
+SUMS provides unobtrusive monitoring of developers, but accomplishes this
+not through individual sensors for specific tools, but rather through
+low-level operating system monitoring.  SUMS has been used within a
+specially instrumented lab to collect data on student programmers in order
+to better understand the use of next generation high performance computing
+languages and tools.
+
+All of these ISEMA systems share one basic requirement: after installation
+and configuration of the system, data collection must be automatic. This is
+because in-process metrics are inherently voluminous and impractical to
+collect manually.  On the other hand, none of these other systems appears
+to have gone as far down the road to ``genericity'' as Hackystat.  The next
+section begins our discussion of Hackystat requirement and 
+design trade-offs by focusing on those we made in order to puruse our 
+goal of genericity.
+
+\Section{Primary trade-offs for ISEMA genericity}
+
+{\bf Sensor-server architecture.} An ISEMA system must perform two basic
+activities: data collection and data analysis, and almost always performs
+a third: data storage.  There are a variety of top-level architectures one
+can choose to accomplish these goals, ranging from a single user approach where
+everything occurs on a single computer, to a client-server approach where data
+is collected on a client and sent to a central server for storage (either before
+or after analysis).  Another architectural possibility is peer-to-peer, in which 
+data is stored on individual computers but shared with others as required. 
+
+In Hackystat, we decided upon a client-server architecture in which the
+``clients'' consisted of custom sensors developed for each tool to be
+monitored in the environment.  The cost of this decision is the requirement
+that a custom software component must be created for a tool before its data
+can be included for analysis.  The benefit is that the sensor can include
+domain knowledge about the tool whose behavior is being monitored. For
+example, the sensor for the Eclipse IDE can potentially monitor the
+invocation of subsystems like the debugger, which can provide valuable
+insight into the process of development.  
+
+By convention, Hackystat sensors collect relatively ``raw'' data and send
+it to the server where all significant analysis occurs.  This minimizes the
+processing overhead on the client computer. It also allows new analyses to
+be developed, deployed on the server, and then run retrospectively over
+previously collected sensor data.
+
+ISEMA systems with different architectures illustrate the trade-offs.  For
+example, SUMS does not require specialized sensors for each development
+tool, but instead instruments the operating system. This enables SUMS to
+transparently monitor any tool used by the developers, though the type of
+data that can be collected by monitoring OS-level events is more limited
+than what can be obtained by custom software for each tool.  Additionally,
+the SUMS instrumentation is specific to a single operating system.
+
+EPM is another ISEMA system that does not use a sensor-server architecture.
+Instead, it ``pulls'' data from its tools using their public reporting
+interface. The trade-off in this case is the requirement that a tool have
+some reporting interface in order for it to be accessable to EPM using this
+technique.
+
+{\bf Workspaces.}  In an ISEMA system, measurements associated with
+files must be collected automatically.  A generic ISEMA system
+must confront the following problem: the same file could be named many
+different ways. For example, the file ``Foo.java'' might be associated with
+the file path c:$\backslash$svn$\backslash$projectA$\backslash$Foo.java on
+developer A's computer and /usr/home/smith/svn-sandbox/projectA/Foo.java on
+developer B's computer.
+
+In Hackystat, this issue is addressed by server-side post-processing of
+file names to create a canonical location known as a ``Workspace'', which
+has a common file separator character. The user must also provide a
+``Workspace Root'' during configuration of their account, which enables the
+system to determine that directories rooted at c:$\backslash$svn on
+Developer A's computer and /usr/home/smith/svn-sandbox/ on Developer B's
+computer might contain the same files. 
+
+An ISEMA system can avoid the need for the complexity of Workspaces in
+several ways.  One way is to simply disallow client-side collection of data
+about file artifacts, and instead collect this information from a single
+location, such as a configuration management system.  Another way
+is to limit the ISEMA system to analysis of one user's data (i.e. not
+supporting aggregate analyses over groups of developers working on a common
+project), or requiring all programmers to use a common file system. EPM, 
+ECG, and SUMS all avoid the need for workspaces through one or more of these 
+simplifying assumptions.
+
+{\bf Projects.} Most software engineers work on multiple tasks
+concurrently, and each task might involve a different set of collaborators. 
+Many kinds of ISEMA analyses require the ability to organize the process
+and product data into collections according to the task underway.  
+
+In Hackystat, this issue is addressed through a server-side abstraction
+called ``Projects''.  When a Hackystat user defines a Project, they specify
+a time interval, a set of Workspaces, and a set of email addresses
+corresponding to other Hackystat users.  The server generates an email
+``inviting'' the invited users to join this Project. Accepting
+the invitation enables the system to perform project-level analyses that
+aggregate together the process and product data associated with each of the
+users. The specified set of Workspaces allows the system to filter out 
+unrelated sensor data. 
+
+One way to avoid the need for Projects is for the ISEMA system to guarantee
+that all data sent from a user is associated with a single task. This is
+the approach taken by the SUMS system, which is deployed in a laboratory
+setting under controlled conditions. Another way is to focus on analyses
+that are independent of particular tasks. For example, ECG identification
+of copy-paste-change micro-processes can be useful without tying their
+occurrence to a specific Project.
+
+{\bf Data Quality Assurance.} The requirement of regular, unobtrusive
+process and product data collection creates a number of challenges related
+to data completeness and correctness for a generic ISEMA system.  For
+example, one cannot assume connectivity to the Hackystat server at
+all times: developers often work offline (such as when traveling), and the
+server can crash due to power outages or other problems.  Second, sensors
+for different tools that perform the same type of function (for example,
+two configuration management tools such as CVS and SVN) should collect data
+in a standardized way and format so that analyses are not completely
+tool-specific. Finally, sensors can and will ``drop out'' occasionally due
+to power outages, platform changes, implementation bugs, and so forth.
+
+In Hackystat, we provide a variety of mechanisms to address these
+data quality issues.  First, a middleware application
+called the SensorShell provides infrastructure for Hackystat sensor
+development.  The SensorShell provides a high-level API to sensor designers
+that insulates them from the low-level details of data transmission. It
+also transparently implements client-side offline data caching and
+re-transmission.  Thus, if a developer is working on a plane or the server
+is unavailable, their data will be collected and cached on their laptop
+until she lands and re-establishes a server connection.  Upon the next
+invocation of a sensor-enabled tool, the accumulated data will be sent to
+the server.  The SensorShell also buffers sensor data locally and sends the
+collected data in a single SOAP request every few minutes, dramatically lowering
+the overhead of sensor data transmission.
+
+Second, to ensure consistent data collection across different tools, we
+developed the ``Sensor Data Type'' abstraction.  Sensor Data Types allow
+you to specify both required fields indicating data that must be sent by
+all sensors for this type, as well as a ``property list'' field that
+supports an arbitrary amount of optional key-value data.  For example, the
+``Commit'' sensor data type includes required fields specifying data that
+all configuration management sensors must provide, but also allows a sensor
+for a specific tool to send additional optional data that may only be
+available for that particular tool type. This enables the development of
+``generic'' analyses for Commit data that are independent of the specific
+configuration management tool, as well as specialized analyses for data
+that may be available on only one type of tool.
+
+Third, the requirement for unobtrusive data collection means that it is
+possible for one or more sensors to crash or otherwise stop sending data
+without any notification. On the other hand, sometimes sensor data is not
+sent simply because developers are not currently working with those tools.
+In Hackystat, our approach is the development of telemetry streams that
+allow a project manager to passively monitor sensor data streams and look
+for anomolies.  For example, on one occasion this telemetry revealed a
+developer that was sending IDE, Build, and Commit data for a number of days
+without any corresponding Unit Test data, which revealed that his test
+sensor had become misconfigured during a recent upgrade.
+
+One way to reduce the complexity of data quality assurance is to not use a
+sensor-based mechanism for data collection, and/or minimize the type of
+data that is collected. For example, the EPM project ``pulls'' data from
+three kinds of software engineering data repositories: CVS, GNATS, and
+MailMan.  Such an approach avoids many of the data quality issues we have
+needed to address in Hackystat.
+
+{\bf Configurability.} A generic ISEMA system can be applied to many
+different measurement tasks, and we quickly discovered that providing every
+single implemented analysis, sensor data type, and sensor in a Hackystat
+release significantly impacted upon its usability.  Java web application
+developers, for example, disliked wading through analyses focused on MPI
+programming using C++. Second, supporting configurations enables Hackystat
+to more easily be applied to new domains, and to allow these new domains to
+leverage code implemented previously. Finally, allowing end-user
+configuration and enhancement has enabled Hackystat to grow more easily and
+avoid the need for all extensions to be implemented by a central ``gate
+keeper'' organization.
+
+Clearly, a generic ISEMA system must be able to be tailored to the specific
+measurement and analysis concerns of an organization. In Hackystat, this is
+accomplished through two mechanisms. First, the build procedure allows an
+administrator both exclude public Hackystat modules implementing
+unnecessary functionality and include privately developed Hackystat modules
+implementing organization-specific functionality. Second, a set of
+extension points allow modules to implement generic functionality that can
+be extended for organization-specific purposes.  
+
+These mechanisms have resulted in a current Hackystat architecture
+containing over seventy modules organized into four ``subsystems''.  A
+``core'' subsystem provides essential functions that are independent of the
+specific sensors, sensor data types, and analyses contained in a
+configuration.  Core functions include the sensor and sensor data type
+definition facilities, the SOAP data transmission capabilities, features
+for the web application interface, and the configuration mechanism itself.
+Most instantiations of the Hackystat framework include all of the core
+modules. The ``Sensor'' subsystem contains modules each implementing sensor
+support for a development tool; each module in the ``SDT'' subsystem
+implement a single sensor data type, and the ``App'' subsystem contains
+modules that operate over sensors and sensor data types to provide higher
+level analyses that enable an organization to use the data for project
+monitoring, quality assurance, and decision-making.
+
+Configurability using modules and (an extensible) extension point mechanism
+add significant complexity to Hackystat development, installation, and use.
+First, the Hackystat build process must represent and manage module
+dependencies. For example, a configuration that includes a sensor that
+generates data using the UnitTest SDT must be sure to include the module
+defining that sensor data type.  Second, as Hackystat has grown to over
+seventy modules, 300,000 lines of code, and a half dozen different
+configurations, it has become impractical for developers to test each of
+their changes over the entire system, leading to the need for automated
+daily build and error reports.  Third, configurations make the build
+process more complicated, and have required a substantial amount of
+documentation to be developed, which must also be configurable!
+
+The complexity of Hackystat configurations comes from our desire to
+minimize constraints on the kind of tailoring that can be done.  For
+example, a system like ECG which is constrained to the Eclipse platform and
+micro-process analyses can provide a much simpler extension mechanism for
+this specific platform and analysis domain.
+
+\Section{Emergent trade-offs}
+
+We consider the sensor-server architecture, workspaces, projects, data
+quality assurance, and configurability to be ``primary'' trade-offs: design
+decisions that follow more-or-less directly from our goal to make Hackystat
+as generic an ISEMA system as possible.  Interestingly, a number of
+additional trade-offs follow as a consequence of these primary trade-offs.
+
+{\bf Non-real time analysis.}  We have been contacted several times by
+researchers who have been interested in evaluating Hackystat for use in
+domains involving ``real-time'' measurement and analysis, in other words, a
+domains requiring feedback to the user within a second or two of a
+measurement event.  For example, ``cyclomatic complexity'' is a well-known
+measure of a method or function's complexity, and it is easy in Hackystat
+to provide a sensor for a tool such as NCSS that computes this metric.  An
+example of a real-time application of this measure is a plug-in to an
+IDE that continuously monitors the cyclomatic complexity of a function and
+pops up a window as soon as the complexity exceeds a certain threshold
+value.
+
+Many such ``real-time'' systems for software engineering measurement and
+analysis can be envisioned, but Hackystat is not the appropriate
+infrastructure for their development.  This trade-off results from our
+dependency on the use of the SensorShell middleware component which buffers
+data to reduce transmission overhead and enables offline sensor data
+collection, and the more general assumption that sensor data may appear on
+the server minutes, hours, or even days after it has been collected by the
+client. This assumption allows flexibility in the way sensors are
+implemented.  For example, we implement our Subversion configuration
+management sensor as a timer-based system that runs once a day and collects
+all CM events from the previous day.  Unlike the more real-time,
+``hook-based'' design, our approach does not require root-level privileges
+for its installation and use. 
+
+Our experiences suggest to us that the decision to support ``real-time''
+vs.  ``non-real time'' ISEMA is a significant trade-off.  We believe that an
+ISEMA architecture will be significantly simpler and support its domain
+more effectively if it constrains itself to either real-time or non-real
+time applications but not both.  Interestingly, we know of no systems that
+focus explicitly on generic support for real-time ISEMA applications.
+
+{\bf Sensor data type evolution.} As a consequence of its goal of 
+genericity, Hackystat does not presuppose what types of measurement data 
+will be collected and how this data will be structured.  However, to 
+facilitate understanding and correct analysis of measurement data, 
+Hackystat provides the sensor data type definition facility, which 
+among other things differentiates between ``required'' and ``optional''
+data.  Hackystat also does not presuppose the specific tools from which
+sensor data will be collected, but does mandate that all tools send
+their sensor data as instances of one or more sensor data types. 
+
+The ability to define new sensors and sensor data types over time enables
+an incremental and exploratory approach to ISEMA system development. For
+example, one can implement a sensor data type to support a single kind of 
+size counting tool, such as LOCC, and then add sensors for additional 
+size counting tools such as CCCC, NCSS, and SCLC that use the same 
+sensor data type.  
+
+The problem, of course, is that experience with a broader set of tools
+often reveals inadequacies in the original sensor data type definition.
+For example, it is quite common when first defining a sensor data type to
+build in assumptions about the nature of the data that turn out to be
+peculiar to the first tool you are instrumenting. These hidden assumptions
+only become apparent once sensors for additional tools of that type are
+under development.   
+
+Once a sensor data type definition is found to be inadequate and the
+decision is made to improve it, one must deal with the question of what to
+do with the sensor data already collected under the old definition.  For
+the first few years of Hackystat's development, the system required you to
+throw away the data collected under the old definition if you wished to
+upgrade it.  This is an expensive solution, and in several cases led us to
+simply live with a ``bad'' sensor data type definition simply because we
+did not want to lose access to the data we had already collected.
+
+Hackystat now provides the ability to ``evolve'' sensor data type
+definitions to incorporate new insights about the most appropriate set of
+required and optional data.  The evolution is implemented in terms of a
+distinguished method in the sensor data type definition class which ``lazily'' 
+evolves older versions of the sensor data upon access. This approach 
+enables both old data stored on the server to be upgraded to the new
+definition when retrieved for analysis, as well as data received from
+clients that are still using an old version of a sensor that has not been
+upgraded to use the new SDT definition.  
+
+Sensor data type evolution adds complexity to the representation and
+implementation of sensor data types, but this trade-off does enable a more
+exploratory style of development while preserving the benefits of typed
+data.  To our knowledge, no other ISEMA system implements sensor data type
+evolution. We believe they deal with this issue using one or more of the
+following trade-offs: (1) represent sensor data in an unstructured, non-typed
+format, (2) perform a thorough domain analysis prior to sensor data type
+definition in order to assure that the definition is correct, or (3) force
+users to throw away old sensor data if evolution in the sensor data type is
+required.
+
+{\bf Intermediate abstractions.} The design decisions to send sensor data
+in ``raw'' form, combined with the Project abstraction for representing
+group activities on subsets of sensor data have led to the need for a
+variety of intermediate abstractions to support server-side analyses.
+
+To see why this is so, consider two simple measures: an integer indicating
+the total time in minutes spent editing Project-related files by all
+members for a given day, and an integer indicating the change in size (LOC)
+of the system under development for this Project during that same day.
+There are two interesting things to note about the computation of these two
+integers. First, they are not particularly domain-specific measures: many
+of the Hackystat application domains, from software project telemetry to
+high performance computing to NASA's Mission Data System find these
+measures to be useful. Second, computing these two integers requires
+retrieving all of the sensor data sent by all project members for the week
+of interest, filtering out the sensor data sent by members not related to
+this Project, and processing the remaining data appropriately. In
+Hackystat, several thousand sensor data points might require processing to
+compute each of these measures, and recurrent analyses like software
+project telemetry might want these measures for several weeks or months at
+a time on a regular basis.
+
+Thus, an emergent trade-off in Hackystat is the need for a set of cached, 
+intermediate abstractions that basically represent ``partial analyses'' of
+the raw sensor data.   These abstractions include ``DailyAnalysis'', which 
+represents individual developer activities for a given day in five minute chunks,
+``DailyProjectData'', which represents one or more measures for a given Project
+and day, ``Reduction Functions'', which compute sequences of measures over a given
+time period, and ``SDSA Episodes'', which partition a stream of developer behavioral
+events in discrete episodes suitable for later classification. 
+
+\Section{Scalability trade-offs}
+
+{\bf User-level languages.} (Software Project Telemetry)
+
+* XML vs. RDBMS Repository: We expected trade-off to be performance and/or
+  complexity of concurrent access, but so far has not appeared to matter
+  since raw data must be abstracted and this is where performance
+  bottlenecks occur.
+
+* Dimensions of scalability: breadth of application; number of users, size
+  of system, developer community. The more scalability, the more complexity
+  in code and design.
+
+* privacy and big brother: hard to obfuscate data; two levels of privacy
+  concerns: those using public server, and management-vs-developers with
+  private server. We recommend collecting only product measures initially,
+  but this only defers problem. Trade-off between privacy and analytic
+  capability.
+
+\Section{Architectural Simplifications}
+
+What could we have done to make Hackystat more simple? 
+
+* Sixth Sense Analytics currently chooses to not make its server
+  available. This eliminates many complexities we experience in supporting
+  distribution and local modification/enhancement of the server side of
+  ourframework.
+
+* Supporting only a single language, such as Java.
+
+* Supporting only a single platform, such as the Mac. OnLife is an example.
+
+* Supporting only a single tool, such as Eclipse (the BIRT project is an example).
+
+
+\Section{Buy vs. Build}
+
+Practical implications of this architectural analysis is the ``buy
+vs. build'' decision: when an organization wants to implement an automated
+system for collection and analysis of in-process software engineering
+metrics, should they use one of the available systems or build their own? 
+
+Some of the things to consider:
+
+* If you know exactly what measures you want, and what tools you use, and you do not expect 
+this to change, then: build.
+
+* If you want to develop a core competancy in measurement systems development and maintenance: build.
+
+* If you want to leverage community resources: buy.
+
+* If you want to push toward standards: buy.
+
+(Should I suggest buy vs. build for specific systems?)
+
+\Section{A Research Agenda for ISEMA systems in 2011}
+
+Where should we be in five years?
+
+* real-time ISEMA.
+
+* Framework-level interoperability: there should be standards to allow various ISEMA systems to export and import data gathered from other sources. 
+
+* Qualitative data integration. There are limits to the analyses that can
+  be performed on data that is entirely automatically gathered.  We need to
+  determine what kinds of data can and should be collected manually, and
+  how that should be integrated with automatically collected data. (Cedar?)
+
+* Privacy.  A sensor-based development environment with unobtrusive
+  monitoring raises legitimate questions about privacy.  Hackystat is
+  designed so that sensor installation and deployment is under developer
+  control, but other frameworks could make different choices.  In Hackystat, 
+  some developers worry about the Active Time measure which is derived from 
+  measuring activity within their interactive development environment, but other
+  frameworks can go even farther. For example, the SUMS environment collects keystrokes
+  and browser HTTP requests. 
+
+* Automated decision making.  Hackystat currently provides analyses but does not automatically
+  act upon them.  However, this is a natural next step: for example, kicking off builds, running
+tests, and so forth. 
+
+* Measurement and analysis validation: The design and deployment of sensors 
+requires ways to assess (a) are the sensors actually collecting the data that 
+they are supposed to be collecting? and (b) does the data that's collected provide
+useful insight.  (This is similar to assessing ``internal'' and ``external'' validity in 
+experimental methods.)  The tradeoff here is between simplicity (i.e. ignore these issues)
+and usability/accuracy (introduce procedures to do validation rather than simply ``trust''
+the analyses. 
+
+
+* Support, organizational resources.  Hackystat has grown to 350 KLOC over
+five years, and has doubled in size over the past 18 months. Even so, the
+current code base explores only a small number of the potential sensors,
+sensor data types, and analyses possible on ISEMA.  On the one hand, it is
+quite possible to envision the code base doubling or tripling in size over
+the next five years to 800-1000 KLOC. On the other hand, such a system
+would require new levels of infrastructural support to maintain
+performance, quality, and usability. 
+
+\Section{Conclusions}
+The recent rise in the number of ISEMA system projects...
+
+
+\Section{Acknowledgements}
+\label{sec:acknowledgements}
+We gratefully acknowledge support for the Hackystat Project from NSF grants [...].
+%We would also like to thank Koji Torii from the EPM Project, Alberto Sillitti from the PROM project, 
+%Frank from the ECG project, and Todd Olson from Sixth Sense Analytics for their comments on this
+%paper.
+ 
+\bibliographystyle{/export/home/csdl/tex/icse2003/latex8}
+\bibliography{/export/home/csdl/bib/csdl-trs,/export/home/csdl/bib/hackystat,/export/home/csdl/bib/psp,/export/home/csdl/bib/hpcs}
+\end{document}
+ 
+
+
+
+
+
+
+
+
+
+
