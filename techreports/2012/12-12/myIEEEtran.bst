@@ -92,7 +92,8 @@
 % 1.13 (2008/09/30)
 %  1. Fixed bug with edition number to ordinal conversion. Thanks to
 %     Michael Roland for reporting this and correcting the algorithm.
-
+% 2012/12
+%  1. Hacked to remove URL listing from references.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% DEFAULTS FOR THE CONTROLS OF THE BST STYLE %%
@@ -1258,7 +1259,7 @@ FUNCTION {format.names}
                 { pop$ }
               if$
               t "others" =
-                { " " * bbl.etal emphasize * }
+                { " " * bbl.etal  * }
                 { numnames #2 >
                     { "," * }
                     { skip$ }
@@ -1406,7 +1407,7 @@ FUNCTION {format.in.booktitle}
       this.status.std
       select.language
       intype missing$
-        { emphasize
+        { 
           bbl.in " " *
         }
         { intype " " * }
@@ -1424,7 +1425,6 @@ FUNCTION {format.in.booktitle.edition}
     { this.to.prev.status
       this.status.std
       select.language
-      emphasize
       edition empty$ 'skip$
         { ", " *
           edition
@@ -1482,7 +1482,6 @@ FUNCTION {format.book.title.edition}
     { this.to.prev.status
       this.status.std
       select.language
-      emphasize
       edition empty$ 'skip$
         { ", " *
           edition
@@ -1507,7 +1506,6 @@ FUNCTION {format.book.title}
       this.status.std
       cap.status.std
       select.language
-      emphasize
     }
   if$
 }
@@ -1522,7 +1520,6 @@ FUNCTION {format.journal}
       this.status.std
       cap.status.std
       select.language
-      emphasize
     }
   if$
 }
@@ -2132,8 +2129,8 @@ FUNCTION {mastersthesis}
   format.school "school" bibinfo.warn output
   format.address "address" bibinfo.check output
   format.date "year" output.warn
-  format.note output
   format.url output
+  format.note output
   fin.entry
   if.url.std.interword.spacing
 }
@@ -2150,8 +2147,8 @@ FUNCTION {misc}
   format.address "address" bibinfo.check output
   format.pages output
   format.date output
-  format.note output
   format.url output
+  format.note output
   fin.entry
   empty.entry.warn
   if.url.std.interword.spacing
@@ -2259,8 +2256,8 @@ FUNCTION {techreport}
   format.address "address" bibinfo.check output
   format.tech.report.number output.nonnull
   format.date "year" output.warn
-  format.note output
   format.url output
+  format.note output
   fin.entry
   if.url.std.interword.spacing
 }
