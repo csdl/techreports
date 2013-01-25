@@ -13,9 +13,9 @@
 %
 \mainmatter              % start of the contributions
 %
-\title{Timeseries features discovery with SAX, TFIDF weighting and Vector Space model.}
+\title{Timeseries features discovery with SAX, TF-IDF weighting and Vector Space model.}
 %
-\titlerunning{Timeseries features discovery with SAX and TFIDF weighting}  % abbreviated title (for running head)
+\titlerunning{Timeseries features discovery with SAX and TF-IDF weighting}  % abbreviated title (for running head)
 %                                     also used for the TOC unless
 %                                     \toctitle is used
 %
@@ -44,7 +44,7 @@ classification and clustering, while enabling interpretability of results.
 
 In this paper, we propose a novel method for time series features 
 discovery based on three existing techniques - 
-Symbolic Aggeregate Approximation (SAX), TFIDF weighting, and Vector space model. 
+Symbolic Aggregate Approximation (SAX), TFIDF weighting, and Vector space model. 
 This method is capable of discovering and ranking of time series features by their 
 ``importance'' to the class, which provides interpretable class generalization
 and facilitates clustering.
@@ -68,29 +68,36 @@ Another drawback is that it provides a very little information about why
 the particular time-series was assigned to a particular class except their
 mutual distance metrics.
 
+As an alternative to kNN algorithm, recently, time series shapelets were
+introduced [cite]. Instead of iteratively looking for a closes neighbor among all 
+known instances, shapelets-based approaches classify unknown sequences based 
+on their inclusion or exclusion [cite logical shapelets] of known shapelets. 
+While demonstrating similar or superior to kNN algorithms performance,
+shapelets-based approaches (logical shapelets in particular) require some
+additional, empirical parameters tuning in order to avoid overfitting.
+
+In this work, we propose a somewhat similar to logical shapelets technique,
+which is capable of building a well-performing classifier by automatically
+recognizing and ranking of characteristic to classes features.
+
+
 \begin{algorithm}
-\caption{Calculate $y = x^n$}
+\caption{Class Bag of Words construction}
 \label{alg1}
-\begin{algorithmic}
-\REQUIRE $n \geq 0 \vee x \neq 0$
-\ENSURE $y = x^n$
-\STATE $y \leftarrow 1$
-\IF{$n < 0$}
-\STATE $X \leftarrow 1 / x$
-\STATE $N \leftarrow -n$
-\ELSE
-\STATE $X \leftarrow x$
-\STATE $N \leftarrow n$
-\ENDIF
-\WHILE{$N \neq 0$}
-\IF{$N$ is even}
-\STATE $X \leftarrow X \times X$
-\STATE $N \leftarrow N / 2$
-\ELSE[$N$ is odd]
-\STATE $y \leftarrow y \times X$
-\STATE $N \leftarrow N - 1$
-\ENDIF
-\ENDWHILE
+\begin{algorithmic}[1]
+\REQUIRE A dataset $D$ containing at least one time series
+\ENSURE Return a class WordBag
+\STATE $W \leftarrow$ sliding window size
+\STATE $P \leftarrow$ PAA size
+\STATE $A \leftarrow$ SAX alphabet size
+\STATE $B \leftarrow$ \{the resulting bag\}
+\FOR{ $t$ in $D$}
+ \FOR{ $i\leftarrow 1$ to $|t|-W$}
+ \STATE $w \leftarrow SAX(subseries(t,i,W), P, A))$ \{convert subseries into word\}
+ \STATE $B \leftarrow w$ \{put the word into the bag, updating frequency\}
+ \ENDFOR
+\ENDFOR
+\RETURN $B$
 \end{algorithmic}
 \end{algorithm}
 
