@@ -20,7 +20,7 @@
 %
 \mainmatter              % start of the contributions
 %
-\title{Timeseries features discovery with SAX, TF-IDF weighting and Vector Space model.}
+\title{Time Series Classification Using SAX Representation and Vector Space Model.}
 %
 \titlerunning{Timeseries features discovery with SAX and TF-IDF weighting}  % abbreviated title (for running head)
 %                                     also used for the TOC unless
@@ -41,82 +41,105 @@ Information and Computer Sciences Department,\\
 University of Hawaii at Manoa,\\ Honolulu HI 96822, USA,\\
 \email{senin@hawaii.edu}
 \and
-Lockheed Martin Corporation,\\
-3 Executive campus, Cherry Hill, NJ 08002, USA,\\
+Lockheed Martin Advanced Technology Laboratories,\\
+Executive Campus, Suite 600, Cherry Hill, NJ 08002, USA,\\
 \email{sergey.b.malinchik@lmco.com}}
 
 
 \maketitle              % typeset the title of the contribution
 
 \begin{abstract}
-Ability to discover characteristic features in time series paves the road 
-for many downstream analyses such as classification and clustering while 
-enabling interpretability of results.
+Ability to discover characteristic patterns in time series paves the road for many downstream
+analyses such as classification and clustering, while enabling interpretability of results. 
 
-In this paper we propose a novel method for time series features discovery 
-based on two existing techniques - Symbolic Aggregate Approximation (SAX) 
-and Vector space model. This method is capable of discovering and ranking of 
-time series features by their ``importance'' to the class - which provides 
-interpretable class generalization and facilitates clustering.
+In this paper, we propose a novel method for time series features discovery based on two existing
+techniques - Symbolic Aggregate Approximation (SAX) and Vector space model. 
+This method is capable automatically discover and rank time series patterns by their “importance” to
+the class, which not only creates well-performing classifiers, but, in turn, provides interpretable
+class generalization and facilitates clustering. The accuracy of this technique, as shown  through
+our experimental evaluation, is matching current state of the art while being extremely robust to
+noise and lost values.  
 
-The accuracy of this technique, as shown through experimental evaluation, 
-is matching or superior to the current state of the art. While being 
-computationally expensive within a training phase, our method provides fast 
-and interpretable classification.
-
+While being relatively computationally expensive within a learning phase, our method provides fast,
+precise, and interpretable classification.
 \keywords{Knowledge discovery, Algorithms, Experimentation}
 \end{abstract}
 %
 \section{Introduction}
 %
-Time series classification is an increasingly popular area of the research.
-While there are numerous algorithms proposed within recent years, to date,
-the most robust method is the simple nearest neighbor algorithm (KNN), 
-which is simple, and depends on a very few parameters \cite{ed}. 
-However, while being virtually unbeatable in performance, kNN algorithm 
-requires vast amounts of space and computational time. 
-Another drawback is that it provides a very little information about why 
-the particular time-series was assigned to a particular class except to 
-their mutual distance metrics.
+Time series classification is an increasingly popular area of the research. While there are numerous
+algorithms proposed within recent years, to date, the most robust method is the simple nearest
+neighbor algorithm (KNN) built upon Euclidean distance or DTW \cite{1NN}, which is simple, and
+depends on a very few parameters \cite{ed}.
+However, while being virtually unbeatable in performance, kNN algorithm requires significant time
+and space resources. Another drawback is that it provides a very little information about why the
+particular time-series was assigned to a particular class except to their mutual distance metrics.
+Also, it was shown, that it is possible to perform better in classification and clustering with more
+adaptive distance metrics.
 
-As an alternative to kNN algorithm, recently, time series shapelets were
-introduced \cite{shapelet}. A shapelet is a time series subsequence that 
-is representative of class membership.
-Instead of iteratively looking for the closest neighbor
-among all known instances, shapelets-based approaches classifies unknown 
-sequences by use of a multivarate decision-tree that supports branching
-based on conjunctions or disjunctions of shapelets \cite{logical}. 
-While demonstrating a superior interpretability, and similar to kNN algorithms 
-performance, shapelets-based approaches are outperformed by other classifiers
-and require some additional tuning. Moreover, the approach is relatively
-time-consuming.
+As an alternative to kNN algorithm, recently, time series shapelets were introduced \cite{shapelet}.
+A shapelet is a short time series subsequence that is a representative of class membership - a class
+characteristic feature. Instead of iteratively looking for the closest neighbor among all known
+instances, shapelets-based approaches classifies unknown sequences by use of a multivariate
+decision-tree, that supports branching based on conjunctions or disjunctions of shapelets
+\cite{logical}. 
+While demonstrating a superior interpretability, robustness, and being similar to kNN algorithm
+in performance, shapelets-based approaches are outperformed by other classifiers
+and require some additional tuning. Moreover, the approach is somewhat time-consuming,  since it
+requires an extensive search for best shapelet(s) in order to build a classification tree.
 
-In this work, we propose a somewhat similar to shapelets technique,
-which finds time series subsequences that are representatives of classes.
-However, instead of recursive search, our technique is based on the 
-single-pass features extraction and their further statistical discrimination,
-yielding vectors of all weighted class representatives at once.
+In this work, we propose a similar to shapelets technique, which is also rests on finding time
+series subsequences that are representatives of classes. However, instead of recursive search for a
+set of shapelets, our technique finds and weights by importance all possible subsequences at once.
 
 \section{Background}
-Our methodology is based on two well-known techniques. The first technique is Symbolic
-Aggregate approXimation \cite{sax}, which is a high-level, low-bounding symbolic 
-representation of time series data. The second technique is a Vector Space model and
-\textit{tf$\ast$idf} statistics (weighting), well known in IR field \cite{tfidf}.
+Our methodology is based on two well-known techniques. The first technique is Symbolic Aggregate
+approXimation \cite{sax}, which is a high-level, low-bounding symbolic representation of time series
+data. The second technique is a Vector Space model and TF*IDF statistics \cite{salton}.
 
-\subsection{Symbolic Aggregate approXimation (SAX)} \label{sax}
+\subsection{Symbolic Aggregate approXimation (SAX)}
+Symbolic representation of time series, once introduced \cite{sax}, has attracted much attention,
+because it opened the door for application of numerous string-processing algorithms, bioinformatics
+and text data mining tools. In addition, this method provides significant reduction of the
+dimensionality and is low-bounding to Euclidean distance as shown by Lin \& Keogh, which guarantees
+no false-dismissal.
 
-\begin{figure}[tb]
-   \centering
-   \includegraphics[height=35mm]{figures/sax_intro.eps}
-   \caption{The illustration of the SAX approach taken from \cite{sax} depicts 
-    two pre-determined breakpoints for the three-symbols alphabet and the conversion of the time-series of 
-    length $n=128$ into PAA representation followed by mapping of the PAA coefficients into SAX symbols with 
-    $w=8$ and $a=3$ resulting in the string \textbf{baabccbc}.}
-   \label{fig:sax_intro}
-\end{figure}
+SAX is based on the assumption that normalized time series tend to have have Gaussian distribution
+\cite{larsen_marx}, so by determining the breakpoints that correspond to the chosen alphabet
+size, one can obtain equal sized areas under the Gaussian curve. Algorithm consists of following
+steps: in the first step the time series (or a sub-series) is normalized. In the second step, the
+dimensionality of the time series is reduced by using the PAA \cite{paa}. In PAA, times series is
+divided into equally sized segments, and the mean values of the points within segments then computed
+and constitute a lower dimensional vector - which represents the original time series. Finally, in
+the third step, the PAA representation of the time series is discretized into the string by use of
+lookup tables and the PAA values.
 
-\subsection{TF-IDF weighting scheme} \label{tfidf}
-The weighting scheme, that we have used, is a reference \textit{tf$\ast$idf} weighting statistics,
+Note, that in further SAX development \cite{hot_sax}for application to problem of discords
+and motifs discovery, streams analyses and clustering \cite{streaming_sax}, authors
+proposed a sampling strategy and a distance function specifically designed in order to avoid trivial
+and degenerative solutions. 
+
+\subsection{Bag of words, documents corpus}
+“Bag of words” is a widely used term in IR. Although, similar definitions, such as “bag of features”
+\cite{bag_features} or “bag of patterns” \cite{bag_patterns} were previously proposed for techniques
+built upon SAX, we  will use “bag of words” since it reflects symbolic space. Essentially, in our
+algorithm                                                                                      and
+in our implementation bag of words is a hashmap which maps extracted y SAX words (a
+“term”) to their observed frequencies. Set of such bags, representing all TRAIN classes, orms a
+“corpus” which is used in downstream steps.
+
+Note, that just as in Linguistics, such a corpus could be built from bags of SAX words obtained with
+different parameters, or, moreover, by parsing every single series by more than once. This,
+potentially, not only improves performance of our technique, but also facilitates multivariate
+series classification.
+
+\subsection{Vector Space Model}
+We use the vector space model exactly as it is known in information retrieval \cite{salton}, for
+disambiguating class entities. Bags of words, representing each of the training classes, are
+converted into the vectors whose dimensions correspond to separate “terms” - observed in a corpus
+SAX words. 
+
+We employ the \textit{tf$\ast$idf} weighting scheme for terms (SAX words) ranking 
 which is defined for a term $t$ and document $D$ 
 as a product of a logarithm of a raw term frequency in a document $D$:
 \begin{equation}
@@ -127,8 +150,55 @@ and a logarithm of an inverse document frequency for that term:
  idf_{t} =  \log_{10}(\frac{N}{\mbox{df}_{t}})
 \end{equation} 
 
+\section{Our algorithm (how to name it?)}
+Our classification algorithm consists of two distinct phases - the training phase and the
+classification itself. The training phase is relatively computationally expensive because it
+involves extraction of SAX words from all known series and their postprocessing. However, once
+performed, there is no need to maintain an index of training series or to store them in memory. If
+there are $N$ classes, only $N$ real-valued vectors need to be stored for classification.
 
-\subsection{Classification} \label{sax}
+The classification procedure itself is fast and consists of converting each of the unknown series
+into a vector of terms, which, in turn, classified by computing $N$ cosine values (where $N$ is the
+number of classes) and assigning a series to the class with which cosine is maximal (i.e angle is
+minimal).
+
+\subsection{Training phase}
+In order to employ Information Retrieval techniques, we transform all training instances from a
+single TRAIN class into the single bag of words. For this, our algorithm converts a real valued time
+series into SAX string representation configured by five parameters: the sliding window length (w),
+the number of PAA frames per window (p), the SAX alphabet size (a), and by the complexity reduction
+strategy (s). Note, that each subseries, extracted with sliding window is normalized by energy
+before being processed with PAA \cite{goldin_kanellakis}. If, however, the standard deviation is
+below a fixed epsilon, similarly to SAX approach, we do not apply normalization
+\cite{sax}. Further we shall discuss the parameters selection procedure in the following section.
+
+By applying this procedure to all N training classes, we build a corpus of N bags (or documents in
+IR terms), which in turn we process with \textit{tf$\ast$idf}. This provides N vectors, each of
+which is a characteristic representative of a class. \textit{tf$\ast$idf} statistics naturally
+``highlights’’ class terms bearing unique to the class features (in our context - curves) by
+assigning higher weight. Contrary, it ``cancels’’ those terms, which present in the majority of
+classes by assigning low weights. Note however, that this weights are not binary (need to refer to
+shapelets?), the range of their values is continuous, facilitating smooth boundaries between
+classes, which allows to define outliers (i.e. series which are not representatives of any of known
+classes).
+
+Intuitively, \textit{tf$\ast$idf} statistic ``refines’’ frequency-based vector space model by
+elevating weight coefficients for terms which are true representative of the class, while lowering
+weights for terms tend to ``confuse’’ a classier.
+
+Once N vectors are weighted with \textit{tf$\ast$idf}, they are normalized and used in the
+classification procedure.
+
+
+
+\subsection{Classification}
+Similarly to training phase, in order to classify an unknown time-series, we transform it into the
+terms vector using the same SAX parameters which we have used in training phase. Then, we compute
+cosine values between this vector and those built in the training phase - which represent N known
+classes. The series is then assigned to the class whose vector yields the maximal cosine similarity
+value.
+
+
 \begin{algorithm}
 \caption{Class Bag of Words construction}
 \label{alg1}
@@ -179,6 +249,12 @@ Ding, H., Trajcevski, G., Scheuermann, P., Wang, X., Keogh, E.:
 Querying and mining of time series data: experimental comparison of representations and distance measures,
 Proc. VLDB Endow., 1542--1552 (2008)
 
+\bibitem {1NN}
+Xi, X., Keogh, E., Shelton, C., Wei, L., Ratanamahatana, C.A.:
+Fast time series classification using numerosity reduction,
+Proceedings of the 23rd international conference on Machine learning (ICML '06). 
+NY, USA, 1033-1040.
+
 \bibitem {shapelet}
 Ye, L., Keogh, E.:
 Time series shapelets: a new primitive for data mining.
@@ -196,10 +272,47 @@ Lin, J., Keogh, E., Wei, L., Lonardi, S.:
 Experiencing SAX: a novel symbolic representation of time series.
 Data Mining and Knowledge Discovery, 107--144, (2007)
 
-\bibitem {tfidf}
+\bibitem {salton}
 Salton, G., Wong, A., Yang., C.S.,:
 A vector space model for automatic indexing. 
 Commun. ACM 18, 11, 613--620, (November 1975)
+
+\bibitem {larsen_marx}
+Larsen, Richard J. and Marx, Morris L.:
+An Introduction to Mathematical Statistics and Its Applications (3rd Edition)
+Prentice Hall, 2000.
+
+\bibitem {paa}
+Eamonn J. Keogh and Michael J. Pazzani. 2000. A Simple Dimensionality Reduction Technique for Fast
+Similarity Search in Large Time Series Databases. In Proceedings of the 4th Pacific-Asia Conference
+on Knowledge Discovery and Data Mining, Current Issues and New Applications (PADKK '00), Takao
+Terano, Huan Liu, and Arbee L. P. Chen (Eds.). Springer-Verlag, London, UK, UK, 122-133.
+
+\bibitem {hot_sax}
+Eamonn Keogh, Jessica Lin, and Ada Fu. 2005. HOT SAX: Efficiently Finding the Most Unusual Time
+Series Subsequence. In Proceedings of the Fifth IEEE International Conference on Data Mining (ICDM
+'05). IEEE Computer Society, Washington, DC, USA, 226-233.
+
+\bibitem {streaming_sax}
+Jessica Lin, Eamonn Keogh, Stefano Lonardi, and Bill Chiu. 2003. A symbolic representation of time
+series, with implications for streaming algorithms. In Proceedings of the 8th ACM SIGMOD workshop on
+Research issues in data mining and knowledge discovery (DMKD '03). ACM, New York, NY, USA, 2-11.
+
+\bibitem {bag_features}
+Jessica Lin and Yuan Li. 2009. Finding Structural Similarity in Time Series Data Using
+Bag-of-Patterns Representation. In Proceedings of the 21st International Conference on Scientific
+and Statistical Database Management (SSDBM 2009), Marianne Winslett (Ed.). Springer-Verlag, Berlin,
+Heidelberg, 461-477.
+
+\bibitem {bag_patterns}
+Jessica Lin, Rohan Khade, and Yuan Li. 2012. Rotation-invariant similarity in time series using
+bag-of-patterns representation. J. Intell. Inf. Syst. 39, 2 (October 2012), 287-315.
+
+\bibitem {goldin_kanellakis}
+Dina Q. Goldin and Paris C. Kanellakis. 1995. On Similarity Queries for Time-Series Data: Constraint
+Specification and Implementation. In Proceedings of the First International Conference on Principles
+and Practice of Constraint Programming (CP '95), Ugo Montanari and Francesca Rossi (Eds.).
+Springer-Verlag, London, UK, UK, 137-153.
 
 \end{thebibliography}
 
