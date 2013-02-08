@@ -12,6 +12,7 @@
 \usepackage{amsfonts,amsmath,amssymb}
 \usepackage{fixltx2e} % Fixing numbering problem when using figure/table* 
 \usepackage{booktabs}
+\usepackage{tabularx}
 
 %
 \usepackage{makeidx}  % allows for indexgeneration
@@ -133,11 +134,11 @@ different parameters, or, moreover, by parsing every single series by more than 
 potentially, not only improves performance of our technique, but also facilitates multivariate
 series classification.
 
-\subsection{Vector Space Model}
-We use the vector space model exactly as it is known in information retrieval \cite{salton}, for
-disambiguating class entities. Bags of words, representing each of the training classes, are
-converted into the vectors whose dimensions correspond to separate “terms” - observed in a corpus
-SAX words. 
+\subsection{Vector Space Model (VSM)}
+We use the vector space model exactly as it is known in information retrieval, for
+disambiguating class entities \cite{salton}. Bags of words, representing each of the training
+classes, are converted into the vectors whose dimensions correspond to separate “terms” - observed
+in a corpus SAX words. 
 
 We employ the \textit{tf$\ast$idf} weighting scheme for terms (SAX words) ranking 
 which is defined for a term $t$ and document $D$ 
@@ -150,17 +151,19 @@ and a logarithm of an inverse document frequency for that term:
  idf_{t} =  \log_{10}(\frac{N}{\mbox{df}_{t}})
 \end{equation} 
 
-\section{Our algorithm (how to name it?)}
+\section{Our algorithm, SAX-VSM}
 Our classification algorithm consists of two distinct phases - the training phase and the
 classification itself. The training phase is relatively computationally expensive because it
-involves extraction of SAX words from all known series and their postprocessing. However, once
-performed, there is no need to maintain an index of training series or to store them in memory. If
-there are $N$ classes, only $N$ real-valued vectors need to be stored for classification.
+involves extraction of SAX words from all known series and their post-processing with VSM.
+However, there is no need to maintain an index of training series or to store them in memory -
+algorithm simply iterates over all labeled series, one by one, building bags of SAX words.
+Once built, the corpus is processed with \textit{tf$\ast$idf}, which results in $N$
+real-valued vectors needed for for classification (where $N$ is the number of classes).
 
 The classification procedure itself is fast and consists of converting each of the unknown series
-into a vector of terms, which, in turn, classified by computing $N$ cosine values (where $N$ is the
-number of classes) and assigning a series to the class with which cosine is maximal (i.e angle is
-minimal).
+into a vector of terms frequencies, which, in turn, is classified by computing $N$ cosine values
+(where $N$ is the number of classes) and assigning a series to the class with which cosine is
+maximal (i.e angle is minimal).
 
 \subsection{Training phase}
 In order to employ Information Retrieval techniques, we transform all training instances from a
@@ -196,7 +199,12 @@ cosine values between this vector and those built in the training phase - which 
 classes. The series is then assigned to the class whose vector yields the maximal cosine similarity
 value.
 
-\section{Experimental evaluation}
+\section{Results}
+We have proposed a novel algorithm for time series classification based on the SAX
+representation of time series and Vector space model called SAX-VSM. Here we present a range of
+experiments assessing its performance for classification and clustering.
+
+\section{Classification}
 To evaluate our approach, we selected XX data sets from the UCR time series repository.
 We selected these particular data sets with intention to evaluate the performance of our approach
 not only against 1NN Euclidean and DTW classifiers, but recently proposed shapelet decision trees
@@ -206,13 +214,47 @@ and the bag construction strategy were found exclusively on a training set in le
 cross-validation fashion. The test set was used only once with the final set of parameters. 
 Our algorithm implementation is publicly available at \cite{jmotif}.
 
+{\scriptsize
 
+\begin{tabular}{|  l | c | c | c | c | c |  c | }
+  \hline
+  Dataset & 1NN-Eu & 1NN-DTW & 1NN-SAX & Shapelet Tree & Shapelet SVM & SAX-VSM \\
+  \hline
+  SyntheticControl  & 0.12  & \textbf{0.007} & 0.02 & 5.77 & 12.77 & 0.013 \\
+  
+\end{tabular}
 
+}
+
+\subsection{}
 \begin{figure}[tbp]
    \centering
    \includegraphics[width=130mm]{figures/precision-runtime.ps}
    \caption{Precision-Runtime}
    \label{fig:precision-runtime}
+\end{figure}
+
+\subsection{Exploratory analysis of classifier}
+We use a well-studied \textit{Gun Point} dataset to show the interpretability of real-life
+classification results. The \textit{Gun Point} data contains time series of an actor performing the
+motion of drawing a gun, and the classification problem is to determine whether or not she were
+holding a gun or imitated the action (the \textit{Gun/NoGun problem}). In \cite{shapelet}, they
+identified that the best shapelet for classification was when the actor lowered her arm without a
+gun - the ``overshoot'' phenomena causing the dip in the time series. In \cite{bagnal}, when
+reporting 10 best shapelets for a similar problem, they confirmed the phenomena with 7 shapelets,
+adding 3 shapelets reflecting arm rising motion with a gun. Both shapelets clusters are confirmed by
+our approach as shown at the Figure \ref{fig:shapelet-like-patterns}, moreover, in the \textit{Gun}
+set, our approach also highlighted the upward arm motion.
+
+\begin{figure}[tbp]
+   \centering
+   \includegraphics[width=130mm]{figures/shapelet-patterns.ps}
+   \caption{The two best weighted sub-series from each class of Gun Point dataset. 
+   Note, the upward arm motion is more ``important'' in a Gun set, whether downward arm motion in
+NoGun set. These result aligns with previous work \cite{bagnal} reporting best shapelets at this
+locations.
+}
+   \label{fig:shapelet-like-patterns}
 \end{figure}
 
 \section{Conclusion}
