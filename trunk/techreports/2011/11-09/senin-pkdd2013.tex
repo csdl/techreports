@@ -13,6 +13,7 @@
 \usepackage{fixltx2e} % Fixing numbering problem when using figure/table* 
 \usepackage{booktabs}
 \usepackage{tabularx}
+\usepackage{subfig}
 
 %
 \usepackage{makeidx}  % allows for indexgeneration
@@ -67,41 +68,41 @@ precise, and interpretable classification.
 \section{Introduction}
 %
 Time series classification is an increasingly popular area of the research. While there are numerous
-algorithms proposed within recent years, to date, the most robust method is the simple nearest
-neighbor algorithm (KNN) built upon Euclidean distance or DTW \cite{1NN}, which is simple, and
+algorithms proposed within recent years, to date, the best method is the simple nearest neighbor
+algorithm (KNN) built upon Euclidean distance or DTW \cite{1NN}, which is simple, and
 depends on a very few parameters \cite{ed}.
 However, while being virtually unbeatable in performance, kNN algorithm requires significant time
-and space resources. Another drawback is that it provides a very little information about why the
-particular time-series was assigned to a particular class except to their mutual distance metrics.
-Also, it was shown, that it is possible to perform better in classification and clustering with more
-adaptive distance metrics.
+and space resources. Another drawback is that it provides a very little information about why an
+unknown time-series was assigned to a particular class, except to their mutual distance.
 
-As an alternative to kNN algorithm, recently, time series shapelets were introduced \cite{shapelet}.
+Also, while 1NN algorithm is probaly the best all-around method, it is often possible to perform
+better in classification and clustering with more adaptive distance metrics. As one of the
+possible alternatives, recently, the time series shapelets were introduced \cite{shapelet}.
 A shapelet is a short time series subsequence that is a representative of class membership - a class
-characteristic feature. Instead of iteratively looking for the closest neighbor among all known
-instances, shapelets-based approaches classifies unknown sequences by use of a multivariate
+characteristic feature. Instead of iteratively looking for the closest neighbor among all
+known instances, shapelets-based approaches classify unknown sequences by use of a multivariate
 decision-tree, that supports branching based on conjunctions or disjunctions of shapelets
 \cite{logical}. 
-While demonstrating a superior interpretability, robustness, and being similar to kNN algorithm
-in performance, shapelets-based approaches are outperformed by other classifiers
-and require some additional tuning. Moreover, the approach is somewhat time-consuming,  since it
-requires an extensive search for best shapelet(s) in order to build a classification tree.
+While demonstrating a superior interpretability, robustness, and outperforming kNN
+algorithm in performance, shapelets-based approaches are quite time-consuming - which makes their
+application to many-classes problems uncertain. 
 
-In this work, we propose a similar to shapelets technique, which is also rests on finding time
-series subsequences that are representatives of classes. However, instead of recursive search for a
-set of shapelets, our technique finds and weights by importance all possible subsequences at once.
+In this work, we propose yet another alternative to 1NN algorithm. Similarly to shapelets, our
+technique rests on finding time series subsequences that are representatives of classes. However,
+instead of recursive search for a set of shapelets, our algorithm finds and weights by
+``importance'' all potential candidate subsequences at once.
 
 \section{Background}
 Our methodology is based on two well-known techniques. The first technique is Symbolic Aggregate
-approXimation \cite{sax}, which is a high-level, low-bounding symbolic representation of time series
-data. The second technique is a Vector Space model and TF*IDF statistics \cite{salton}.
+approXimation \cite{sax}, which is a high-level symbolic representation of time series
+data. The second technique is Vector Space model and \textit{tf$\ast$idf} statistics
+\cite{salton}.
 
 \subsection{Symbolic Aggregate approXimation (SAX)}
 Symbolic representation of time series, once introduced \cite{sax}, has attracted much attention,
 because it opened the door for application of numerous string-processing algorithms, bioinformatics
-and text data mining tools. In addition, this method provides significant reduction of the
-dimensionality and is low-bounding to Euclidean distance as shown by Lin \& Keogh, which guarantees
-no false-dismissal.
+and text data mining tools. This method provides significant reduction of the dimensionality and
+a low-bounding to Euclidean distance metrics, which guarantees no false-dismissal.
 
 SAX is based on the assumption that normalized time series tend to have have Gaussian distribution
 \cite{larsen_marx}, so by determining the breakpoints that correspond to the chosen alphabet
@@ -118,56 +119,78 @@ and motifs discovery, streams analyses and clustering \cite{streaming_sax}, auth
 proposed a sampling strategy and a distance function specifically designed in order to avoid trivial
 and degenerative solutions. 
 
-\subsection{Bag of words, documents corpus}
-“Bag of words” is a widely used term in IR. Although, similar definitions, such as “bag of features”
-\cite{bag_features} or “bag of patterns” \cite{bag_patterns} were previously proposed for techniques
-built upon SAX, we  will use “bag of words” since it reflects symbolic space. Essentially, in our
-algorithm                                                                                      and
-in our implementation bag of words is a hashmap which maps extracted y SAX words (a
-“term”) to their observed frequencies. Set of such bags, representing all TRAIN classes, orms a
-“corpus” which is used in downstream steps.
+\subsection{Bag of words, corpus}
+``Bag of words'' is a widely used term in Information Retrieval (IR) for abbreviation of an
+unordered collection of words (or terms). Although, similar definitions, such as \textit{``bag of
+features''} \cite{bag_features} or \textit{``bag of patterns''} \cite{bag_patterns} were previously
+proposed for techniques built upon SAX, we will use ``bag of words'' since it clearly reflects our
+workflow. 
 
-Note, that just as in Linguistics, such a corpus could be built from bags of SAX words obtained with
-different parameters, or, moreover, by parsing every single series by more than once. This,
-potentially, not only improves performance of our technique, but also facilitates multivariate
-series classification.
+``Corpus'' (text corpus) is another IR term which is usually used for structured set of texts or
+bags of words. Here, we will use this term in a very similar way - for abbreviating an organized
+bags of words collection. Moreover, our algorithm follows a common IR workflow based on text corpus
+- extraction of numerical \textit{tf$\ast$idf} statistics and ranking a bag's relevance given a
+query with Cosine similarity.
 
 \subsection{Vector Space Model (VSM)}
-We use the vector space model exactly as it is known in information retrieval, for
-disambiguating class entities \cite{salton}. Bags of words, representing each of the training
-classes, are converted into the vectors whose dimensions correspond to separate “terms” - observed
-in a corpus SAX words. 
+We use Vector space model exactly as it is known in information retrieval - for disambiguating class
+entities \cite{salton}. Bags of words, representing each of the training classes, are converted into
+the \textit{vectors}, whose dimensions correspond to separate “terms” - observed in a corpus SAX
+words. 
 
-We employ the \textit{tf$\ast$idf} weighting scheme for terms (SAX words) ranking 
-which is defined for a term $t$ and document $D$ 
-as a product of a logarithm of a raw term frequency in a document $D$:
+To construct these vectors, we employ the \textit{tf$\ast$idf} weighting scheme for terms which is
+defined as a product of two factors: term frequency (\textit{tf}) and inverse document frequency
+(\textit{idf}). For the first factor we use logarithmically scaled term frequency:
 \begin{equation}
- \mbox{w}_{t, D} =  \begin{cases} 1 + \log(\mbox{tf}_{t,D}), & \mbox{if } tf_{t,D}>0  \\ 0, & \mbox{otherwise } \end{cases}
+ \mbox{tf}_{t, d} =  \begin{cases} \log(1 + \mbox{f}_{t,d}), \mbox{ if f}_{t,d}>0  \\
+0, & \mbox{otherwise } \end{cases}
 \end{equation} 
-and a logarithm of an inverse document frequency for that term:
+where $t$ is the term and $d$ is a bag of words (document).
+
+The inverse document frequency we compute as usual:
 \begin{equation}
- idf_{t} =  \log_{10}(\frac{N}{\mbox{df}_{t}})
+ \mbox{idf}_{t, D} =  \log_{10}\frac{|D|}{|d \in D : t \in d|} = \log_{10}\frac{N}{\mbox{df}_{t}}
+\end{equation} 
+where $N$ is the cardinality of corpus $D$ and the denominator $df_{t}$ is a number of documents
+where the term $t$ appears.
+
+Then, $\textit{tf$\ast$idf}$ value for a term $t$ in the document $d$ of a corpus $D$ is defined as 
+\begin{equation}
+ \mbox{tf * idf}(t, d, D) =  \mbox{tf}_{t, d} \times \mbox{idf}_{t, D} = \log(1 + \mbox{f}_{t,d})
+\times \log_{10}\frac{N}{\mbox{df}_{t}}
+\end{equation} 
+for the all cases where $\mbox{f}_{t,d}>0$ and $\mbox{df}_{t}>0$ or zero otherwise.
+
+\subsection{Cosine similarity}
+Cosine similarity is a similarity measure between two vectors based on the inner product space
+and is the cosine value of an angle between them. For two vectors $a$ and $b$ that is:
+\begin{equation}
+ \mbox{similarity}(a,b) = cos(\theta) = \frac{ \sum\limits^{n}_{i=1} a_{i} \times b_{i} }{
+\sqrt{\sum\limits^{n}_{i=1} a_{i}} \times \sqrt{\sum\limits^{n}_{i=1} b_{i}} }
 \end{equation} 
 
-\section{Our algorithm, SAX-VSM}
+
+\section{Our classification algorithm: SAX-VSM}
 Our classification algorithm consists of two distinct phases - the training phase and the
-classification itself. The training phase is relatively computationally expensive because it
-involves extraction of SAX words from all known series and their post-processing with VSM.
-However, there is no need to maintain an index of training series or to store them in memory -
-algorithm simply iterates over all labeled series, one by one, building bags of SAX words.
-Once built, the corpus is processed with \textit{tf$\ast$idf}, which results in $N$
-real-valued vectors needed for for classification (where $N$ is the number of classes).
+classification. The training phase is relatively computationally expensive (Figure
+\ref{fig:precision-runtime}) because it involves extraction of SAX words from all known series and
+their post-processing with VSM. However, there is no need to maintain an index of training series or
+to keep all of them in memory: the algorithm simply iterates over all labeled series incrementally
+building bags of SAX words for each of training classes. Once built, the corpus is processed with
+\textit{tf$\ast$idf} and also discarded. The set of $N$ real-valued vectors (where $N$ is the number
+of classes) is the only information retained after training.
 
-The classification procedure itself is fast and consists of converting each of the unknown series
-into a vector of terms frequencies, which, in turn, is classified by computing $N$ cosine values
-(where $N$ is the number of classes) and assigning a series to the class with which cosine is
-maximal (i.e angle is minimal).
+The classification procedure itself is fast and consists of converting of each of unknown series
+into a vector of term frequencies and its classification by computation of $N$ cosine values
+and assigning the series to the class with which cosine value is maximal (i.e angle is minimal).
 
-\begin{figure}[tbp]
+\begin{figure}[H]
    \centering
    \includegraphics[width=120mm]{figures/overview.eps}
-   \caption{An overview of algorithm workflow.
-   }
+   \caption{An overview of algorithm workflow: at first, known labeled series are converted into
+bags of words using SAX; secondly, \textit{tf$\ast$idf} statistics is computed. Unknown series are
+classified by the label of the \textit{tf$\ast$idf} weights vector having the minimal angle (maximal
+cosine value) with the words frequency vector build by SAX application to the series.}
    \label{fig:overview}
 \end{figure}
 
@@ -198,6 +221,17 @@ weights for terms tend to ``confuse’’ a classier.
 Once N vectors are weighted with \textit{tf$\ast$idf}, they are normalized and used in the
 classification procedure.
 
+\begin{figure}[tbp]
+   \centering
+   \includegraphics[width=125mm]{figures/precision-runtime.ps}
+   \caption{Graphical comparison of precision and runtime of SAX-VSM and 1NN Euclidean classifier on
+CBF data: SAX-VSM performs much better with limited amount of training samples at relatively high
+cost while with the growth of labeled data, both classifiers demonstrate similar performance.
+SAX-VSM is much faster in classification and comparable with 1NN classifier cost when training time
+is accounted.}
+   \label{fig:precision-runtime}
+\end{figure}
+
 \subsection{Classification phase}
 Similarly to training phase, in order to classify an unknown time-series, we transform it into the
 terms vector using the same SAX parameters which we have used in training phase. Then, we compute
@@ -221,6 +255,7 @@ cross-validation fashion. The test set was used only once with the final set of 
 Our algorithm implementation is publicly available at \cite{jmotif}.
 
 {\scriptsize
+\minipage[b]{1.0\linewidth}
 \begin{tabular}[h]{  p{11em} | c | c | c | c |  c  }
 \hline
 Dataset           & 1NN-Euclidean  & 1NN-DTW       & Shapelet Tree & Shapelet SVM & SAX-VSM \\
@@ -240,17 +275,9 @@ ECG               & 0.120   & 0.230           & 0.149    & \textbf{0.007}   & 0.
 Lightning7        & 0.425   & 0.274    & 0.507    & \textbf{0.301}  & \textbf{0.301} \\
 \hline
 \end{tabular}
-}
 
-\subsection{}
-\begin{figure}[tbp]
-   \centering
-   \includegraphics[width=125mm]{figures/precision-runtime.ps}
-   \caption{Graphical comparison of precision and runtime of SAX-VSM and 1NN Euclidean classifier on CBF data . 
-   SAX-VSM performs much better with limited amount of training samples at relatively high cost. 
-   With the growth of labeled data, both classifiers demonstrating similar performance, while SAX-SVM is faster.}
-   \label{fig:precision-runtime}
-\end{figure}
+\endminipage \hfill
+}
 
 \subsection{Exploratory analysis}
 
@@ -355,6 +382,12 @@ with efficient discrimination and measurement toolkit: the tf part of the weight
 captures the frequency of observed feqtures within the class, while the idf part 
 captures the feature informativeness (features that appear in many classes 
 are less informative than those that appear rarely)
+
+\section{Future directions}
+Note, that just as in Linguistics, such a corpus could be built from bags of SAX words obtained with
+different parameters, or, moreover, by parsing every single series by more than once. This,
+potentially, not only improves performance of our technique, but also facilitates multivariate
+series classification.
 
 \begin{algorithm}
 \caption{Class Bag of Words construction}
