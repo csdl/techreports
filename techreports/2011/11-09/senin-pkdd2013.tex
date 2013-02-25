@@ -13,10 +13,11 @@
 \usepackage{fixltx2e} % Fixing numbering problem when using figure/table* 
 \usepackage{subfig}
 \usepackage{tabularx,ragged2e,booktabs}
+\usepackage{todonotes}
 %
 \newcolumntype{C}[1]{>{\Centering}m{#1}}
 \renewcommand\tabularxcolumn[1]{C{#1}}
-\setlength{\parindent}{0pt}
+\setlength{\parindent}{10pt}
 \renewcommand{\tablename}{\bf Table}
 
 %
@@ -55,15 +56,15 @@ Executive Campus, Suite 600, Cherry Hill, NJ 08002, USA,\\
 \maketitle              % typeset the title of the contribution
 
 \begin{abstract}
-Ability to discover characteristic patterns in time series paves the road for many downstream
-analyses while enabling interpretability of results. 
+Ability to discover characteristic patterns in time series paves the road for many
+downstream analyses while enabling interpretability of results. 
 In this paper, we propose a novel method for time series features discovery based on two existing
 techniques - Symbolic Aggregate Approximation (SAX) and Vector space model. 
-This method is capable to automatically discover and rank time series patterns by their “importance” 
-to the class, which not only creates well-performing classifiers, but, in turn, provides interpretable
-class generalization and facilitates clustering. The accuracy of this technique, as shown  through
-our experimental evaluation, is matching current state of the art while being extremely robust to
-noise and lost values.  
+This method is capable to automatically discover and rank time series features by their
+“importance” to the class, which not only creates well-performing classifiers, but, in turn,
+provides interpretable class generalization and facilitates clustering. The accuracy of this
+technique, as shown  through our experimental evaluation, is matching current state of the art while
+being robust to noise and lost values.  
 While being relatively computationally expensive within a learning phase, our method provides fast,
 precise, and interpretable classification.
 \keywords{Knowledge discovery, Algorithms, Experimentation}
@@ -71,30 +72,51 @@ precise, and interpretable classification.
 %
 \section{Introduction}
 %
-Time series classification is an increasingly popular area of the research. While there are numerous
-algorithms proposed within recent years, to date, the best method is the simple nearest neighbor
-algorithm (KNN) built upon Euclidean distance or DTW \cite{1NN}, which is simple, and
-depends on a very few parameters \cite{ed}.
-However, while being virtually unbeatable in performance, kNN algorithm requires significant time
-and space resources. Another drawback is that it provides a very little information about why an
-unknown time-series was assigned to a particular class, except to their mutual distance.
+Time series classification is an increasingly popular area of the research. Within last decades,
+many time series representations and similarity measures were proposed. These, usually, can be
+categorized into two categories. The first category of classification techniques is based on the
+shape-based similarity metrics - where distance is measured directly between time series
+points. Classic examples of methods from this category are nearest neighbor (k-NN) classifiers
+built upon Euclidean distance or DTW \cite{1NN}. The second category consist of classification
+techniques based on the structural similarity metrics involving some high-level representations
+of time series. Examples from this category include Discrete Fourier Transform based classifier
+\cite{DFT}, or a shapelet tree \cite{shapelet}.
 
-Also, while 1NN algorithm is probaly the best all-around method, it is often possible to perform
-better in classification and clustering with more adaptive distance metrics. As one of the
-possible alternatives, recently, the time series shapelets were introduced \cite{shapelet}.
-A shapelet is a short time series subsequence that is a representative of class membership - a class
-characteristic feature. Instead of iteratively looking for the closest neighbor among all
-known instances, shapelets-based approaches classify unknown sequences by use of a multivariate
-decision-tree, that supports branching based on conjunctions or disjunctions of shapelets
-\cite{logical}. 
-While demonstrating a superior interpretability, robustness, and outperforming kNN
-algorithm in performance, shapelets-based approaches are quite time-consuming - which makes their
-application to many-classes problems uncertain. 
+The existence of these two categories can be explained by difference in the performance of these
+techniques. While shape-based similarity methods virtually unbeatable on short, often pre-processed,
+time series data \cite{benchmark}, they usually fail on long and noisy data sets \cite{indexing}
+where feature-based techniques demonstrate superior performance. Also, feature-based methods
+require less storage and usually have faster classification time, thus, they often implemented in
+industrial settings. 
+
+As per current state of the art, it worth noting, that despite to recent development, to date, the
+best overall algorithm in the field is the simple nearest neighbor classifier, which is accurate,
+and robust. Moreover it depends on a very few parameters \cite{comparison}
+\cite{classifiers} \cite{benchmark}. However, while being virtually unbeatable in performance,
+k-NN techniques have a number of disadvantages: first of all, they require searching of the
+entire labeled dataset, secondly they do not offer any insight into the data. 
+
+As one of the possible
+alternatives, recently, the time series shapelets were introduced \cite{shapelet} and gained
+popularity. A shapelet is a short time series ``snippet'' that is a representative of class
+membership. Instead of iteratively looking for the closest neighbor among all known instances,
+shapelets-based approaches classify unknown sequences by use of a multivariate decision-tree, that
+supports branching based on conjunctions or disjunctions of shapelets \cite{logical}. While
+demonstrating a superior interpretability, robustness, and similar to kNN algorithms performance,
+shapelets-based approaches are quite time-consuming - which makes their application to many-classes
+problems difficult. 
+\todo{Sergey, - cant figure out the way to convince the reader that 1NN and shapelets are the
+state of the art}
 
 In this work, we propose yet another alternative to 1NN algorithm. Similarly to shapelets, our
 technique rests on finding time series subsequences that are representatives of classes. However,
-instead of recursive search for a set of shapelets, our algorithm finds and weights by
-``importance'' all potential candidate subsequences at once.
+instead of recursive search for shapelets one-by-one, our algorithm finds and weights by
+``importance'' all potential candidate subsequences at once. 
+
+Built atop of Symbolic Aggregate Approximation (SAX), our algorithm, at first, transforms time
+series into collections of SAX words. At the second step, similarly to common in Information
+Retrieval work-flow for texts comparison, it employs Vector Space Model for comparison
+of these collections. Here, we argue 
 
 \section{Background}
 Our methodology is based on two well-known techniques. The first technique is Symbolic Aggregate
@@ -224,7 +246,6 @@ weights for terms tend to ``confuse’’ a classier.
 
 Once N vectors are weighted with \textit{tf$\ast$idf}, they are normalized and used in the
 classification procedure.
-
 \begin{figure}[tbp]
    \centering
    \includegraphics[width=125mm]{figures/precision-runtime.ps}
@@ -437,86 +458,75 @@ series classification.
 % ---- Bibliography ----
 %
 \begin{thebibliography}{5}
+\bibliographystyle{splncs}
 %
 
-\bibitem {ed}
-Ding, H., Trajcevski, G., Scheuermann, P., Wang, X., Keogh, E.:
-Querying and mining of time series data: experimental comparison of representations and distance measures,
-Proc. VLDB Endow., 1542--1552 (2008)
-
 \bibitem {1NN}
-Xi, X., Keogh, E., Shelton, C., Wei, L., Ratanamahatana, C.A.:
-Fast time series classification using numerosity reduction,
-Proceedings of the 23rd international conference on Machine learning (ICML '06). 
-NY, USA, 1033-1040.
+Xi, X., Keogh, E., Shelton, C., Wei, L., Ratanamahatana, C.A. 2006. 
+Fast time series classification using numerosity reduction. 
+In Proc of the 23rd international conference on Machine learning (ICML '06). 1033--1040.
 
 \bibitem {shapelet}
 Ye, L., Keogh, E.:
-Time series shapelets: a new primitive for data mining.
-Proceedings of the 15th ACM SIGKDD international conference on Knowledge discovery and data mining,
-Paris, France, 947--956, (2009)
+Time series shapelets: a new primitive for data mining. 2009.
+In Proc of the 15th ACM SIGKDD international conference on Knowledge discovery and data
+mining. 947--956.
 
 \bibitem {logical}
-Mueen, A., Keogh, E., Young, N.:
+Mueen, A., Keogh, E., Young, N. 2011.
 Logical-shapelets: an expressive primitive for time series classification.
-Proceedings of the 17th ACM SIGKDD international conference on Knowledge discovery and data mining,
-San Diego, California, USA, 1154--1162, (2011)
+In Proc of the 17th ACM SIGKDD international conference on Knowledge discovery and data
+mining. 1154--1162.
 
 \bibitem {sax}
-Lin, J., Keogh, E., Wei, L., Lonardi, S.:
+Lin, J., Keogh, E., Wei, L., Lonardi, S. 2007.
 Experiencing SAX: a novel symbolic representation of time series.
-Data Mining and Knowledge Discovery, 107--144, (2007)
+Data Mining and Knowledge Discovery, 107--144.
 
 \bibitem {salton}
-Salton, G., Wong, A., Yang., C.S.,:
+Salton, G., Wong, A., Yang., C.S. 1975.
 A vector space model for automatic indexing. 
-Commun. ACM 18, 11, 613--620, (November 1975)
+Commun. ACM 18, 11, 613--620.
 
 \bibitem {larsen_marx}
-Larsen, Richard J. and Marx, Morris L.:
-An Introduction to Mathematical Statistics and Its Applications (3rd Edition)
-Prentice Hall, 2000.
+Larsen, Richard J. and Marx, Morris L. 2000. 
+An Introduction to Mathematical Statistics and Its Applications (3rd Edition).
+Prentice Hall.
 
 \bibitem {paa}
-Keogh, E., Pazzani, M.J.:
+Keogh, E., Pazzani, M.J. 2000.
 A Simple Dimensionality Reduction Technique for Fast Similarity Search in Large Time Series Databases. 
-Proceedings of the 4th Pacific-Asia Conference on Knowledge Discovery and Data Mining, Current Issues and New Applications (PADKK '00), 
-Takao Terano, Huan Liu, and Arbee L. P. Chen (Eds.). Springer-Verlag, London, UK, UK, 122-133.
+In Proc PADKK '00. 122-133.
 
 \bibitem {hot_sax}
-Keogh, E., Lin, J., Fu, A.:
+Keogh, E., Lin, J., Fu, A. 2005.
 HOT SAX: Efficiently Finding the Most Unusual Time Series Subsequence. 
-Proceedings of the Fifth IEEE International Conference on Data Mining (ICDM'05). 
-IEEE Computer Society, Washington, DC, USA, 226-233.
+In Proc ICDM '05. 226-233.
 
 \bibitem {streaming_sax}
-Lin, J., Keogh, E., Lonardi, S., Chiu, B.:
+Lin, J., Keogh, E., Lonardi, S., Chiu, B. 2003.
 A symbolic representation of time series, with implications for streaming algorithms. 
-Proceedings of the 8th ACM SIGMOD workshop on Research issues in data mining and knowledge discovery (DMKD '03).
-ACM, New York, NY, USA, 2-11.
+In Proc 8th ACM SIGMOD workshop DMKD '03. 2-11.
 
 \bibitem {bag_features}
-Lin, J., Khade, R., Li, Y.:
+Lin, J., Khade, R., Li, Y. 2009.
 Finding Structural Similarity in Time Series Data Using Bag-of-Patterns Representation. 
-Proceedings of the 21st International Conference on Scientific and Statistical Database Management (SSDBM 2009),
-Marianne Winslett (Ed.). Springer-Verlag, Berlin, Heidelberg, 461-477.
+In Proc SSDBM '09. 461-477.
 
 \bibitem {bag_patterns}
-Lin, J., Khade, R., Li, Y.:
+Lin, J., Khade, R., Li, Y. 2012.
 Rotation-invariant similarity in time series using bag-of-patterns representation. 
-J. Intell. Inf. Syst. 39, 2 (October 2012), 287-315.
+J. Intell. Inf. Syst. 39, 2 , 287-315.
 
 \bibitem {goldin_kanellakis}
-D.Q., Kanellakis, P.C.,:
+D.Q., Kanellakis, P.C., 1995.
 On Similarity Queries for Time-Series Data: Constraint Specification and Implementation. 
-Proceedings of the First International Conference on Principles and Practice of Constraint Programming (CP '95), 
-Ugo Montanari and Francesca Rossi (Eds.). Springer-Verlag, London, UK, UK, 137-153.
+In Proc CP '95. 137-153.
 
 \bibitem {bagnal}
-Lines, J., Davis, L.M., Hills, J., Bagnall, A.:
+Lines, J., Davis, L.M., Hills, J., Bagnall, A. 2012.
 A shapelet transform for time series classification. 
-In Proceedings of the 18th ACM SIGKDD international conference on Knowledge discovery and data mining (KDD '12). 
-ACM, New York, NY, USA, 289-297.
+In Proc 18th ACM SIGKDD KDD '12. 289-297.
 
 \bibitem {jmotif}
 paper Authors: 
@@ -524,10 +534,40 @@ Accompanying information for this paper.
 https://code.google.com/p/jmotif/
 
 \bibitem {modha}
-Dhillon, S.I., Modha, D.S.: 
+Dhillon, S.I., Modha, D.S. 1996.
 A Data-Clustering Algorithm on Distributed Memory Multiprocessors. 
-Large-Scale Parallel Data Mining, Workshop on Large-Scale Parallel KDD Systems 1996, SIGKDD,
-Mohammed Javeed Zaki and Ching-Tien Ho (Eds.). Springer-Verlag, London, UK, 245-260.
+In Proc Workshop on Large-Scale Parallel KDD Systems, SIGKDD, 245-260.
+
+\bibitem {DFT}
+Agrawal, R., Faloutsos, C., Swami, A. 1993.
+Efficient Similarity Search In Sequence Databases.
+In Proc FODO '93. 69-84.
+
+\bibitem {classifiers}
+Salzberg, S.L. 1997.
+On comparing classifiers: Pitfalls to avoid and a recommended approach. 
+Data Mining and Knowledge Discovery, 1, 317–328.
+
+\bibitem {comparison}
+Ding, H., Trajcevski, G., Scheuermann, P., Wang, X., and Keogh, E. 2008.
+Querying and Mining of Time Series Data: Experimental Comparison of Representations and Distance
+Measures. 
+In Proc of the 34th VLDB. 1542–1552, 2008
+
+\bibitem {words}
+Rath, T.M, Manmatha, R. 2003.
+Word image matching using dynamic time wrapping. 
+CVPR, II:521–527, 2003.
+
+\bibitem {indexing}
+Keogh, E. 2002. 
+Exact indexing of dynamic time warping. 
+In Proc of the 28th international conference on Very Large Data Bases (VLDB '02). 406-417.
+
+\bibitem {benchmark}
+Keogh, E., Kasetty S. 
+On the need for Time Series Data Mining Benchmarks: a survey and empirical demonstration.
+Proc. ACM KDD 2002, pp. 102–111.
 
 \end{thebibliography}
 
