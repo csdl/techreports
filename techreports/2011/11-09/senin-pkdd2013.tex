@@ -29,8 +29,7 @@
 %
 \title{Time Series Classification Using SAX Representation and Vector Space Model.}
 %
-\titlerunning{Timeseries features discovery with SAX and TF-IDF weighting}  % abbreviated title (for
-running head)
+\titlerunning{Timeseries features discovery with SAX and TF-IDF weighting}  % abbreviated title (for running head)
 %                                     also used for the TOC unless
 %                                     \toctitle is used
 %
@@ -59,8 +58,8 @@ Executive Campus, Suite 600, Cherry Hill, NJ 08002, USA,\\
 \begin{abstract}
 Ability to discover characteristic patterns in time series paves the road for many
 downstream analyses while enabling interpretability of results. 
-In this paper, we propose a novel method for time series features discovery based on two existing
-techniques - Symbolic Aggregate approXimation and Vector space model, SAX-VSM. 
+In this paper we propose a novel method for time series features discovery based on two existing
+techniques - Symbolic Aggregate approXimation and Vector space model - SAX-VSM. 
 This method is capable to automatically discover and rank time series features by their
 “importance” to the class, which not only creates well-performing classifiers, but, in turn,
 provides interpretable class generalization and facilitates clustering. The accuracy of this
@@ -75,77 +74,78 @@ precise, and interpretable classification.
 %
 Time series classification is an increasingly popular area of the research. Within last decades,
 many time series representations and similarity measures were proposed. These, usually, can be
-divicategorized in two major categories. The first category of classification techniques is based on
+divided in two major categories. The first category of classification techniques is based on
 the shape-based similarity metrics - where distance is measured directly between time series
 points. Classic examples of methods from this category are nearest neighbor (k-NN) classifiers
 built upon Euclidean distance or DTW \cite{1NN}. The second category consist of classification
 techniques based on the structural similarity metrics involving some high-level representations
 of time series. Examples from this category include Discrete Fourier Transform based classifier
-\cite{DFT}, or SpAD e\cite{spade}
-a PLA shapelet tree \cite{shapelet}.
+\cite{DFT}, or SpADe \cite{spade}. 
 
-The existence of these two categories can be explained by difference in the performance of these
+The existence of these two categories can be explained by differences in the performance of these
 techniques. While shape-based similarity methods virtually unbeatable on short, often pre-processed,
 time series data \cite{benchmark}, they usually fail on long and noisy data sets \cite{indexing}
 where feature-based techniques demonstrate superior performance. Also, feature-based methods
 require less storage and usually have faster classification time, thus, they often implemented in
 industrial settings. 
 
+As one of the possible alternatives, recently, the time series shapelets were introduced 
+\cite{shapelet} and gained popularity. A shapelet is a short time series ``snippet'' that is a 
+representative of class membership. Thus, potentially, this approach combines the best of two
+categories - superior performance of shape-based similarity methods, and the high-throughput 
+capacity of feature-based methods\cite{logical}. While demonstrating a superior interpretability, 
+robustness, and similar to kNN algorithms performance, shapelets-based approaches are quite 
+time-consuming - which makes their adoption to many-classes problems difficult. 
+
 As per current state of the art, it worth noting, that despite to recent development, to date, the
 best overall algorithm in the field is the simple nearest neighbor classifier, which is accurate,
 and robust. Moreover it depends on a very few parameters \cite{comparison}
 \cite{classifiers} \cite{benchmark}. However, while being virtually unbeatable in performance,
-k-NN techniques have a number of disadvantages: first of all, they require searching of the
-entire labeled dataset, secondly they do not offer any insight into the data. 
-
-As one of the possible
-alternatives, recently, the time series shapelets were introduced \cite{shapelet} and gained
-popularity. A shapelet is a short time series ``snippet'' that is a representative of class
-membership. Instead of iteratively looking for the closest neighbor among all known instances,
-shapelets-based approaches classify unknown sequences by use of a multivariate decision-tree, that
-supports branching based on conjunctions or disjunctions of shapelets \cite{logical}. While
-demonstrating a superior interpretability, robustness, and similar to kNN algorithms performance,
-shapelets-based approaches are quite time-consuming - which makes their application to many-classes
-problems difficult. 
-\todo{Sergey, - cant figure out the way to convince the reader that 1NN and shapelets are the
-state of the art}
+k-NN techniques have a number of disadvantages, where the major is that they do not offer any 
+insight into the data.
 
 In this work, we propose yet another alternative to 1NN algorithm. Similarly to shapelets, our
 technique rests on finding time series subsequences that are representatives of classes. However,
 instead of recursive search for shapelets one-by-one, our algorithm finds and weights by
-``importance'' all potential candidate subsequences at once. 
-
-Built atop of Symbolic Aggregate Approximation (SAX), our algorithm, at first, transforms time
-series into collections of SAX words. At the second step, similarly to common in Information
-Retrieval work-flow for texts comparison, it employs Vector Space Model for comparison
-of these collections. Here, we argue 
+``importance'' all potential candidate subsequences at once. This, in turn, enables a discovery of
+characteristic patterns.
 
 \section{Background}
 Our methodology is based on two well-known techniques. The first technique is Symbolic Aggregate
 approXimation \cite{sax}, which is a high-level symbolic representation of time series
-data. The second technique is Vector Space model and \textit{tf$\ast$idf} statistics
-\cite{salton}.
+data. The second technique is a well known in Information Retrieval workflows Vector Space 
+model \cite{salton}. By utilizing SAX, our algorithm, at first, transforms time series into collections of 
+SAX words. At the following step, it utilizes \textit{tf$\ast$idf} terms weighting for classifier 
+construction. Finally, it uses Cosine similarity metric for classification.
+
+SAX algorithm, however, requires three parameters to be provided as input, and there is no efficient 
+solution for parameters selection exists as per today. To solve this problem, we employ a global 
+optimization scheme that converge relatively quickly and yield a deterministic optimized solution. 
+The solution is based on the divided rectangles (DIRECT) algorithm \cite{direct} which is a 
+derivative-free global optimization scheme that reaches a deterministic solution and does not require 
+selecting values for any parameters. In addition, DIRECT has the added benefit of possessing both 
+local and global-optimization properties. 
 
 \subsection{Symbolic Aggregate approXimation (SAX)}
-Symbolic representation of time series, once introduced \cite{sax}, has attracted much attention,
-because it opened the door for application of numerous string-processing algorithms, bioinformatics
-and text data mining tools. This method provides significant reduction of the dimensionality and
-a low-bounding to Euclidean distance metrics, which guarantees no false-dismissal.
+Symbolic representation of time series, once introduced \cite{sax}, has attracted much attention by
+enabling application of numerous string-processing algorithms, bioinformatics and text data mining 
+tools to temporal data. This method provides significant reduction of the dimensionality and
+a low-bounding to Euclidean distance metrics, which guarantees no false-dismissal  \cite{hot_sax}.
 
-SAX is based on the assumption that normalized time series tend to have have Gaussian distribution
-\cite{larsen_marx}, so by determining the breakpoints that correspond to the chosen alphabet
-size, one can obtain equal sized areas under the Gaussian curve. Algorithm consists of following
-steps: in the first step the time series (or a sub-series) is normalized. In the second step, the
-dimensionality of the time series is reduced by using the PAA \cite{paa}. In PAA, times series is
-divided into equally sized segments, and the mean values of the points within segments then computed
-and constitute a lower dimensional vector - which represents the original time series. Finally, in
-the third step, the PAA representation of the time series is discretized into the string by use of
-lookup tables and the PAA values.
+Algorithm consists of following steps: at the first step, the time series (or a sub-series) are normalized
+by energy \cite{goldin_kanellakis}. Next, the dimensionality of the time series is reduced by using 
+of PAA \cite{paa}. In PAA, times series is divided into equally sized segments, and the mean values 
+of the points within segments, once computed, constitute a lower dimensional vector - which 
+represents the original time series. Finally, in the third step of SAX algorithm, the PAA representation 
+of the time series is discretized into the string by use of alphabet lookup tables. The construction of 
+such tables rests upon the assumption that normalized time series tend to have have Gaussian 
+distribution \cite{larsen_marx}, thus, by determining the breakpoints under Gaussian curve one 
+can obtain equally sized areas under the Gaussian curve used for chosen SAX alphabet size.
 
-Note, that in further SAX development \cite{hot_sax}for application to problem of discords
-and motifs discovery, streams analyses and clustering \cite{streaming_sax}, authors
-proposed a sampling strategy and a distance function specifically designed in order to avoid trivial
-and degenerative solutions. 
+Note, that in further SAX development \cite{hot_sax} for application to problems of discords
+and motifs discovery, streams analyses and clustering \cite{streaming_sax}, authors proposed a 
+sampling strategy and a distance function specifically designed in order to avoid trivial and 
+degenerative solutions. In our work we use this combination in \textit{CLASSIC} sampling strategy.
 
 \subsection{Bag of words, corpus}
 ``Bag of words'' is a widely used term in Information Retrieval (IR) for abbreviation of an
@@ -156,9 +156,7 @@ workflow.
 
 ``Corpus'' (text corpus) is another IR term which is usually used for structured set of texts or
 bags of words. Here, we will use this term in a very similar way - for abbreviating an organized
-bags of words collection. Moreover, our algorithm follows a common IR workflow based on text corpus
-- extraction of numerical \textit{tf$\ast$idf} statistics and ranking a bag's relevance given a
-query with Cosine similarity.
+collection of bags of words. 
 
 \subsection{Vector Space Model (VSM)}
 We use Vector space model exactly as it is known in information retrieval - for disambiguating class
@@ -170,8 +168,8 @@ To construct these vectors, we employ the \textit{tf$\ast$idf} weighting scheme 
 defined as a product of two factors: term frequency (\textit{tf}) and inverse document frequency
 (\textit{idf}). For the first factor we use logarithmically scaled term frequency:
 \begin{equation}
- \mbox{tf}_{t, d} =  \begin{cases} \log(1 + \mbox{f}_{t,d}), \mbox{ if f}_{t,d}>0  \\
-0, & \mbox{otherwise } \end{cases}
+ \mbox{tf}_{t, d} =  \begin{cases} \log(1 + \mbox{f}_{t,d}), &\mbox{if f}_{t,d}>0  \\
+0, & \mbox{otherwise} \end{cases}
 \end{equation} 
 where $t$ is the term and $d$ is a bag of words (document).
 
@@ -199,18 +197,21 @@ and is the cosine value of an angle between them. For two vectors $a$ and $b$ th
 
 
 \section{Our classification algorithm: SAX-VSM}
-Our classification algorithm consists of two distinct phases - the training phase and the
-classification. The training phase is relatively computationally expensive (Figure
-\ref{fig:precision-runtime}) because it involves extraction of SAX words from all known series and
-their post-processing with VSM. However, there is no need to maintain an index of training series or
-to keep all of them in memory: the algorithm simply iterates over all labeled series incrementally
-building bags of SAX words for each of training classes. Once built, the corpus is processed with
-\textit{tf$\ast$idf} and also discarded. The set of $N$ real-valued vectors (where $N$ is the number
-of classes) is the only information retained after training.
+Our classification algorithm is similar to a common, two-phase IR text by query ranking workflow
+based on the text corpus. 
 
-The classification procedure itself is fast and consists of converting of each of unknown series
-into a vector of term frequencies and its classification by computation of $N$ cosine values
-and assigning the series to the class with which cosine value is maximal (i.e angle is minimal).
+The training of SAX-VSM classifier is relatively computationally expensive 
+(Figure \ref{fig:precision-runtime}), because it involves a construction of text corpus by extraction 
+of SAX words from all labeled series, and its post-processing with VSM. However, there is no need 
+to maintain an index of training series or to keep all of them in memory: the algorithm simply iterates 
+over all labeled series, incrementally building bags of SAX words for each of training classes.
+Once built, the corpus is processed with \textit{tf$\ast$idf} and also discarded. Only the set of $N$ 
+real-valued vectors (where $N$ is the number of classes) is retained after training.
+
+The classification procedure itself is fast and consists of converting of an unknown time series
+into a vector of SAX words frequencies, and its classification by computation of $N$ cosine values.
+The unknown time-series is assigned to the class with which cosine value is maximal 
+(i.e. the angle is minimal).
 
 \begin{figure}[H]
    \centering
@@ -373,7 +374,7 @@ set, our approach also highlighted the upward arm motion.
    \includegraphics[width=130mm]{figures/AcerCircunatum.eps}
    \caption{Illustration of best discriminating patterns found by our technique for OSULeaf
 dataset. These patterns align with well known in botany discrimination techniques by lobe
-shapes, serrations and leaf base.}
+shapes, serrations and the leaf base.}
    \label{fig:shapelet-acer-patterns}
 \end{figure}
 
