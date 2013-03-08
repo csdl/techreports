@@ -92,10 +92,10 @@ industrial settings.
 As one of the possible alternatives, recently, the time series shapelets were introduced 
 \cite{shapelet} and gained popularity. A shapelet is a short time series ``snippet'' that is a 
 representative of class membership. Thus, potentially, this approach combines the best of two
-categories - superior performance of shape-based similarity methods, and the high-throughput 
+categories - superior precision of shape-based similarity methods, and the high-throughput 
 capacity of feature-based methods\cite{logical}. While demonstrating a superior interpretability, 
 robustness, and similar to kNN algorithms performance, shapelets-based approaches are quite 
-time-consuming - which makes their adoption to many-classes problems difficult. 
+time-consuming - which makes their adoption to many-classes problems difficult \cite{bagnal}. 
 
 As per current state of the art, it worth noting, that despite to recent development, to date, the
 best overall algorithm in the field is the simple nearest neighbor classifier, which is accurate,
@@ -128,7 +128,7 @@ possessing both local and global-optimization properties.
 
 \subsection{Symbolic Aggregate approXimation (SAX)}
 Symbolic representation of time series, once introduced \cite{sax}, has attracted much attention by
-enabling application of numerous string-processing algorithms, bioinformatics and text data mining 
+enabling application of numerous string-processing algorithms, bioinformatics, and text data mining 
 tools to temporal data. This method provides significant reduction of the dimensionality and
 a low-bounding to Euclidean distance metrics, which guarantees no false-dismissal  \cite{hot_sax}.
 
@@ -151,7 +151,7 @@ degenerative solutions. In our work we use this combination in \textit{CLASSIC} 
 ``Bag of words'' is a widely used term in Information Retrieval (IR) for abbreviation of an
 unordered collection of words (or terms). Although, similar definitions, such as \textit{``bag of
 features''} or \textit{``bag of patterns''} \cite{bag_patterns} were previously proposed for
-techniques built upon SAX, we will use ``bag of words'' since it clearly reflects our
+techniques built upon SAX, we will use \textit{``bag of words''} since it clearly reflects our
 workflow. 
 
 ``Corpus'' (text corpus) is another IR term which is usually used for structured set of texts or
@@ -227,28 +227,21 @@ cosine value) with the words frequency vector build by SAX application to the se
    \label{fig:overview}
 \end{figure}
 
-\subsection{Training phase}
-In order to employ Information Retrieval techniques, we transform all training time-series instances
-from each of TRAIN classes into the single bag of words. For this, our algorithm converts a real
+\subsection{Classifier training phase}
+In order to employ Information Retrieval techniques, we transform all labeled time-series instances
+from each of training classes into the single bag of words. For this, our algorithm converts a real
 valued time series into SAX string representation configured by four parameters: the sliding window
 length (\textit{W}), the number of PAA frames per window (\textit{P}), the SAX alphabet size
 (\textit{A}), and by the complexity reduction strategy (\textit{S}). 
 As we mentioned, each of the extracted with sliding window subseries is normalized by energy before
 being processed with PAA \cite{goldin_kanellakis}. If, however, the standard deviation of the
 time-series values is below a fixed epsilon threshold, we do not apply this normalization.
-In our implementation cite{jmotif}, we use Java HashMap map as single data structure for a bag
-of words (words are the keys, whether their observed frequencies are the values).
+In our implementation \cite{jmotif}, we use Java HashMap map as single data structure for a bag
+of words (HashMap keys are words, whether their observed frequencies are values).
 
 By applying this procedure to all $N$ training classes, we build a corpus of $N$ bags, which, in
-turn, we process with \textit{tf$\ast$idf}. This provides $N$ vectors of the same length, each of
+turn, we process with \textit{tf$\ast$idf}. This provides $N$ vectors of the equal length, each of
 which represents one of the TRAIN classes.
-
-The \textit{tf$\ast$idf} statistics naturally ``highlights’’ class terms bearing unique to the class
-features (in our context - curves) by assigning a higher weight. For the terms which are 
-present in more classes, \textit{tf$\ast$idf} assigns weights inversely proportional to their
-presence, while zero weights are given to terms found in all classes. The values of these weights
-are also proportional to terms frequencies in the bag. All the weights are in the range between
-zero and one.
 
 Once $N$ vectors of \textit{tf$\ast$idf} are obtained, they are normalized by Cosine
 normalization procedure and used in the classification phase.
@@ -266,23 +259,46 @@ is accounted.}
 
 \subsection{Classification phase}
 Similarly to training phase, in order to classify an unknown time-series, we transform it into the
-terms vector using the same SAX parameters which we have used in training phase. Then, we compute
-cosine values between this vector and those built in the training phase - which represent $N$ known
-classes. The series is then assigned to the class whose vector yields the maximal cosine similarity
+terms vector using the same SAX parameters which we have used in the training phase. 
+Then, we compute cosine values between this terms vector and vectors which represent $N$ known
+classes. The series is assigned to the class whose vector yields the maximal cosine similarity
 value.
 
+\subsection{Intuition behind SAX-VSM}
+First of all, by using sliding window and by combining all of observed in the class SAX words into a 
+single bag, SAX-VSM manages to exhaustively capture an intraclass variability at the sliding window 
+length granularity. Intuitively, this improves the algorithm's selectivity by facilitating a proper 
+classification of time series which possess low similarity to labeled series at the full length, 
+but embed characteristic to the class features.
 
-continuous, facilitating smooth boundaries between
-classes, which allows to define outliers (i.e. series which are not representatives of any of known
-classes).
+Secondly, the \textit{tf$\ast$idf} statistics naturally ``highlights'' the terms unique to the class 
+by assigning them higher weights, while terms observed in a number of classes are assigned weights 
+inversely proportional to their interclass presence frequency. 
+This weighting scheme improves the selectivity of classification by  lowering the contribution of 
+``confusive'' multi-class terms, and  increasing  the contribution  of  class' ``defining''  terms 
+to the final cosine value.
+
+\subsection{SAX Parameters selection}
+We use a common cross-validation scheme while exploring possible parameters space. 
+In order to accelerate the search for optimal set, 
+we utilize DIRECT (DIviding RECTangles) algorithm, which 
+was introduced by Jones et al. \cite{direct-original}. This optimization scheme 
+designed to search for global minima of a real valued function over a bound-constrained domain. 
+In our implementation we use rounding of parameters by nearest integer function.
+
+The algorithm iteratively performs two procedures - partitioning the search domain, 
+and identifying potentially optimal hyperrectangles (i.e., having potential to contain good solutions). 
+It begins by scaling the search domain to a n-dimentional unit hypercube which is considered 
+as potentially optimal. The error function is then evaluated at the center of this hypercube. Next, 
+other points are created at one-third of the distance from the center in all coordinate directions. 
+The hypercube is then divided into smaller rectangles which are identified by their center point 
+and their error function value. This procedure continues interactively until error function converges.
+For brevity, we omit the detailed explanation of the algorithm, and refer the 
+interested reader to \cite{direct} for additional details about our implementation.
+
+
 
 \section{Results}
-
-Intuitively, when comparing to \textit{``bag of patterns''} \cite{bag_patterns} approach,
-\textit{tf$\ast$idf} statistic ``refines’’ frequency-based vectors model by elevating weight
-coefficients for terms which are true representative of the class, while lowering
-weights for terms tend to ``confuse’’ a classier.
-
 We have proposed a novel algorithm for time series classification based on the SAX
 representation of time series and Vector space model called SAX-VSM. Here we present a range of
 experiments assessing its performance for classification and clustering.
@@ -582,6 +598,11 @@ Proc. ACM KDD 2002, pp. 102-111.
 Björkman, M., Holmström, K.
 Global Optimization Using the DIRECT Algorithm in Matlab.
 Advanced Modeling and Optimization, 1999, 1(2),17-37
+
+\bibitem {direct-original}
+Jones, D.R., Perttunen, C.D., Stuckman, B.E.:
+Lipschitzian Optimization without Lipschitz Constant.
+Journal of Oprtimization Theory and Applications, 79 (1), 1993.
 
 \bibitem {spade}
 Chen, Y., Nascimento, M. A., Ooi, B. C., Tung, A. K. H.:
