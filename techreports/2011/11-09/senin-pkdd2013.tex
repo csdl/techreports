@@ -43,7 +43,7 @@
 %
 \mainmatter              % start of the contributions
 %
-\title{SAX-VSM: \\Time Series Classification Using SAX Representation and Vector Space Model.}
+\title{SAX-VSM: \\Time Series Classification Using SAX Representation and Vector Space Model}
 %
 \titlerunning{Timeseries features discovery with SAX and TF-IDF weighting}  
 % abbreviated title (forrunning head)
@@ -119,7 +119,8 @@ demonstrating a superior interpretability, robustness, and similar to kNN algori
 shapelets-based approaches are quite time-consuming - which makes their adoption to many-classes
 classification problems difficult \cite{bagnal}. 
 
-As per current state of the art, it is worth noting, that despite to recent development, to date, the
+As per current state of the art, it is worth noting, that despite to recent development, to date,
+the
 best overall algorithm in the field is the simple nearest neighbor classifier, which is accurate
 and robust. Moreover, it depends on a very few parameters \cite{benchmark} \cite{comparison}
 \cite{classifiers}. Nevertheless, while posessing all these qualities, 1NN
@@ -138,7 +139,8 @@ approXimation \cite{sax}, which is a high-level symbolic representation of time 
 data. The second technique is a well known in Information Retrieval workflows Vector Space 
 model \cite{salton}. By utilizing SAX, our algorithm, at first, transforms time series into
 collections of SAX words (terms). 
-At the following step, it utilizes \textit{tf$\ast$idf} terms weighting for  a classifier construction. 
+At the following step, it utilizes \textit{tf$\ast$idf} terms weighting for  a classifier
+construction. 
 Finally, it relies on Cosine similarity metric for classification.
 
 SAX algorithm, however, requires three parameters to be provided as an input and, as per today,
@@ -147,7 +149,8 @@ To solve this problem, we employ a global optimization scheme that converge rela
 and yields a deterministic, optimized solution. 
 This scheme is based on the divided rectangles (DIRECT) algorithm \cite{direct}, which is
 a derivative-free global optimization process and does not require any parameters.
-In addition, DIRECT has the added benefit of possessing both local and global-optimization properties. 
+In addition, DIRECT has the added benefit of possessing both local and global-optimization
+properties. 
 
 \subsection{Symbolic Aggregate approXimation (SAX)}
 Symbolic representation of time series, once introduced \cite{sax}, has attracted much attention by
@@ -158,40 +161,40 @@ Thus, SAX is often used as an embedded procedure within a number of other techni
 shapelets \cite{fast-shapelets}, which utilize the low-bounding property of symbolic approximation 
 for performance improvement.
 
-Given a time-series $T$ of a length $n$, SAX produces its symbolic approximation $S$ of length $w$
-where letters are taken from an alphabet $\alpha$. 
+Given a time-series $T$ of a length $n$, SAX produces its symbolic approximation $\hat{S}$ of 
+a length $w$ where letters are taken from an alphabet $\alpha$. 
 Along with $T$, two parameters must be specified as an input: the alphabet size $\alpha$ and the 
 size of the word to produce $w$. Since SAX rests on the assumption that normalized time series 
-tend to have Gaussian distribution \cite{larsen_marx}, time-series normalized by energy 
-\cite{goldin_kanellakis} before approximation. Algorithm works as follows. 
+tend to have Gaussian distribution \cite{larsen_marx}, time-series is normalized by energy 
+\cite{goldin_kanellakis} before its approximation. Algorithm works as follows. 
 
-At first, the dimensionality of the time series ($n$) is reduced to $w$ by obtaining a 
+At first, the dimensionality of the time series is reduced to $w$ by obtaining a 
 Piecewise Aggregate Approximation (PAA) of $T$. Specifically, this approximation is 
 obtained by dividing the time series $T$ into $w$ equal-sized segments and computing the 
-mean values for points within each segment. Once aggregated, the sequence of these mean 
+mean values for points within each segment. The aggregated sequence of these mean 
 values forms PAA approximation of $T$ of length $w$. At the next step of SAX algorithm, 
 each PAA coefficient is converted into the letter of the alphabet $\alpha$ by the use of 
 lookup tables. These tables are built by defining a set of breakpoints that divide the 
 distribution space into $\alpha$ equiprobable regions.
 
-\subsection{Bag of words representation of time series}
+\subsection{Bag of words representation of time series} \label{bow_representation}
 Previously, SAX approximation was shown to be an efficient tool for solving problems 
 of finding motifs and discords in time series \cite{motifs} \cite{hot_sax}. 
 The authors employed a sliding window based subsequence extraction technique 
-and an augmented data structures (has table \cite{motifs}, trie \cite{hot_sax}) 
+and an augmented data structures (hash table in \cite{motifs} and trie in \cite{hot_sax}) 
 to capture frequent and rare subsequence occurrences - motifs and discords - 
-through the frequency and location analysis of the SAX words 
-``vocabulary'' for time series. 
+through the frequency and location analyses of the words from SAX ``vocabulary''. 
 Later, the same technique based on the combination of sliding window and SAX
 was used in the numerous works, most notably in time series classification using 
 bag of patterns (BOP) \cite{bag_patterns}. 
 
-We use exactly the same sliding window technique to convert a time series $T$ of 
+We use the same sliding window technique to convert a time series $T$ of 
 length $n$ into the set of $m$ SAX words, where $m=(n-l_{s})+1$ and 
 $l_{s}$ is the sliding window length. 
 By sliding a window of length $l_{s}$ across time series $T$, extracting 
-subsequences, converting them to SAX words, and placing them into a collection,
-we obtaining the \textit{bag of words} representation of the original time series.
+subsequences, converting them to SAX words, and placing them into an unordered 
+collection, we obtaining the \textit{bag of words} representation of the 
+original time series.
 
 \subsection{Vector Space Model (VSM)}
 We use Vector space model exactly as it is known in information retrieval (IR) - 
@@ -207,14 +210,20 @@ SAX \cite{bag_patterns}, we use \textit{bag of words} since it reflects our
 workflow precisely. The term \textit{corpus} is used for a structured collection 
 of bags of words. 
 
-SAX-VSM builds bags of SAX-generated words representing each of the training 
-classes and assembles them into a corpus. This corpus, by its construction, 
-is a sparse \textit{term frequency matrix} with excluded all-zero elements rows. 
-The columns of this matrix represent frequencies of all words found in all classes, 
-thus, many elements are zeros - because words present in one class usually not present in another. 
-Following to the common in IR workflow, we employ the \textit{tf$\ast$idf} weighting scheme 
-for each element of this matrix in order to transform its columns into a set of weight vectors. 
+Given a training set, SAX-VSM builds bags of SAX-generated words representing 
+each of the training classes and assembles them into a corpus. 
+This corpus, by its construction, is a sparse \textit{term frequency matrix}. 
+Rows of this matrix is a list of all SAX words found in \textit{all classes}, thus, 
+many elements are zeros - because words extracted from one class are often 
+not found in others. 
+Each column of this matrix denotes a class from the training set. 
+Intuitively, this sparse term frequency matrix is a dictionary of all SAX words 
+extracted from a training set which accounts for frequencies of a word in 
+each of the training classes.
 
+Following to the common in IR workflow, we employ the \textit{tf$\ast$idf} weighting 
+scheme for each element of this matrix in order to transform its columns into a 
+set of \textit{term-weight vectors} - . 
 The \textit{tf$\ast$idf} weight for a term is defined as a product of two factors: 
 term frequency (\textit{tf}) and inverse document frequency (\textit{idf}). 
 For the first factor we use logarithmically scaled term frequency:
@@ -236,6 +245,7 @@ Then, $\textit{tf$\ast$idf}$ value for a term $t$ in the document $d$ of a corpu
 \begin{equation}
  \mbox{tf * idf}(t, d, D) =  \mbox{tf}_{t, d} \times \mbox{idf}_{t, D} = \log(1 + \mbox{f}_{t,d})
 \times \log_{10}\frac{N}{\mbox{df}_{t}}
+ \label{formula:tfidf}
 \end{equation} 
 for the all cases where $\mbox{f}_{t,d}>0$ and $\mbox{df}_{t}>0$, or zero otherwise.
 
@@ -243,7 +253,8 @@ for the all cases where $\mbox{f}_{t,d}>0$ and $\mbox{df}_{t}>0$, or zero otherw
 Cosine similarity is a similarity measure between two vectors based on the inner product. 
 For two vectors $\boldsymbol{a}$ and $\boldsymbol{b}$ that is:
 \begin{equation}
- \mbox{similarity}(\boldsymbol{a},\boldsymbol{b}) = cos(\theta) = \frac{ \sum\limits^{n}_{i=1} a_{i} \times b_{i} }{
+ \mbox{similarity}(\boldsymbol{a},\boldsymbol{b}) = cos(\theta) = \frac{ \sum\limits^{n}_{i=1} a_{i}
+\times b_{i} }{
 \sqrt{\sum\limits^{n}_{i=1} a_{i}} \times \sqrt{\sum\limits^{n}_{i=1} b_{i}} }
 \end{equation} 
 
@@ -253,14 +264,16 @@ As many other classification techniques, SAX-VSM consists of two parts - the tra
 and the classification. 
 
 The training phase of the SAX-VSM classifier is relatively computationally expensive 
-(Figure \ref{fig:precision-runtime}), because it involves construction of a text corpus by extraction 
+(Figure \ref{fig:precision-runtime}), because it involves construction of a text corpus by
+extraction 
 of SAX words from all labeled series and its post-processing with VSM. However, there is no need 
 to maintain an index of training series, or to keep any of them in the memory at runtime:
 the algorithm simply iterates over all labeled series, incrementally building bags of SAX words for
 each of the training classes, that is, algorithm builds a \textit{single bag of words for each
 class}. Once built, the corpus of $N$ bags of words (where $N$ is the number of classes) is
 processed with \textit{tf$\ast$idf} and can be also discarded. Only the set of $N$ real-valued
-vectors is retained after training for classification. Note, that construction of only a single bag for
+vectors is retained after training for classification. Note, that construction of only a single bag
+for
 each class, is a one of the main differences of SAX-VSM from other, previously published 
 techniques \cite{bag_patterns}.
 
@@ -272,37 +285,29 @@ The use of the cosine similarity is another main difference of SAX-VSM from comp
 \begin{figure}[t]
    \centering
    \includegraphics[width=115mm]{figures/overview.eps}
-   \caption{A simplified overview of the SAX-VSM algorithm: at first, labeled series are converted into
-bags of words using SAX; 
-secondly, \textit{tf$\ast$idf} statistics for two-bags corpus is computed, resulting in one weights
-vectors for each class.
-Unlabeled series are classified by the label of the weight vector having the maximal cosine similarity with the words frequency vector built by SAX application to the unlabeled series.}
+   \caption{A simplified overview of the SAX-VSM algorithm: at first, labeled series are 
+   converted into bags of words using SAX; 
+   secondly, \textit{tf$\ast$idf} statistics for two-bags corpus is computed, resulting in 
+   one weights vectors for each class.
+   Unlabeled series are classified by the label of the weight vector having the maximal 
+   cosine similarity with the words frequency vector built by SAX application to the 
+   unlabeled series.}
    \label{fig:overview}
 \end{figure}
 
 \subsection{Training phase}
-In order to employ Vector Space Model approach , we need to transform all labeled time-series into 
+In order to employ Vector Space Model approach, we need to transform all labeled time-series into 
 symbolic representation.  For this, our algorithm converts a real valued time series into SAX 
 string representation configured by four parameters: the sliding window
 length (\textit{W}), the number of PAA frames per window (\textit{P}), the SAX alphabet size
-(\textit{A}), and by the complexity reduction strategy (\textit{S}). 
+(\textit{A}), and by the numerosity (complexity) reduction strategy (\textit{S}). 
 As we mentioned, each of the extracted with sliding window subseries is normalized by energy before
 being processed with PAA \cite{goldin_kanellakis}. If, however, the standard deviation of the
 time-series values is below a fixed epsilon threshold, we do not apply this normalization.
 
-
-
-Note, that in further SAX development, for its application to problem of discords
-and motifs discovery, streaming data analyses, and clustering \cite{hot_sax} \cite{streaming_sax}, 
-the authors proposed a sampling strategy and a distance functions specifically designed 
-in order to avoid trivial and degenerative solutions.  In our work we experimented with this choices  and 
-found it useful to include them in the search of optimal parameters. For some datasets, it significantly reduced
-the convergence time and improved the accuracy.
-
-
 By applying this procedure to all $N$ training classes, we build a corpus of $N$ bags, which, in
 turn, we process with \textit{tf$\ast$idf}. This provides $N$ real-valued vectors of equal
-length, each of which represents one of the training classes classes. 
+length, each of which represents one of the training classes. 
 
 \subsection{Classification phase}
 Similarly to training phase, in order to classify an unlabeled time-series, we transform it into the
@@ -311,28 +316,65 @@ in the training phase. Then, we compute Cosine similarities between this terms v
 \textit{tf$\ast$idf} weight vectors representing $N$ labeled classes. 
 The series is assigned to the class whose vector yields the maximal Cosine similarity value.
 
-\subsection{A note on SAX numerosity reduction}
-As noted in \cite{sax}, given a character subsequence $S_{i}$ extracted by the use of sliding
-window and SAX, it is very likely, that $S_{i}$ is very similar to its neighboring subsequences,
-$S_{i−1}$ and $S_{i+1}$ (i.e. those that start one point to the left, and one point to the right of
-$S_{i}$), especially if $S_{i}$is in the smooth region of the time series. This phenomena results in
-mapping of multiple consecutive subsequences to the same string. The authors called these
-subsequences as ``trivial matches'' of $S_{i}$, and suggested to avoid their over-counting
-introducing a ``numerosity reduction technique'' by keeping only the first occurrence of $S_{i}$. 
+\subsection{A note on numerosity reduction}
+In later SAX development, particularly in its application for discords discovery,
+streaming data analyses, and clustering \cite{hot_sax} \cite{streaming_sax}, the authors 
+proposed a combination of a sampling strategy and a distance function specifically 
+designed in order to avoid ``trivial and degenerative solutions''. While the inclusion of
+numerosity reduction into workflow was found to be vital for some of the mentioned SAX applications,
+intuitively, in our case, the over-counting effect is significantly mediated by \textit{tf$\ast$idf}
+statistics \eqref{formula:tfidf}. Moreover, by enforcing the exclusion of ``trivial matches'', we
+may degrade the overall classification accuracy of SAX-VSM, as pointed in 
+bag-of-patterns work \cite{bag_patterns}.
 
-While the inclusion of numerosity reduction into workflow seems to be reasonable for SAX
-applications, namely motif and discords finding, we found, that SAX-VSM classifier performs
-significantly better without it on the majority of thirty one datasets representing a variety of 
-real-life applications \cite{jmotif}. We believe, that the over-counting effect is significantly 
-mediated by \textit{tf$\ast$idf} statistics, which reduces the effect of raw counts. 
-Also, this conclusion is similar to one articulated in \cite{bag_patterns}.
+Nevertheless, we experimented with SAX authors original combination and found useful to 
+employ it in the parameters optimization scheme. 
+For most of the datasets, this procedure significantly reduced the DIRECT scheme convergence 
+time and improved its accuracy. Moreover, once we relaxed the ``triviality constraints'' 
+we were able to improve the SAX-VSM classification
+accuracy. Thus, we shall explain this in greater detail.
 
-Nevertheless, for few cases, by using numerosity reduction, we were able to improve the 
-accuracy of SAX-VSM classifier \cite{jmotif}. By further experimentation, we discovered,
-that if we relax the original numerosity reduction strategy by using Hamming distance 
-\cite{hamming} instead of SAX $MINDIST$ \cite{streaming_sax} function, it is possible to 
-further improve accuracy for a number of datasets. At this point we unable to further 
-comment on this fact and leaving this phenomena for our future work.
+As noted in \cite{sax}, given a character subsequence $\hat{S_{i}}$ extracted by the use 
+of sliding window and SAX, it is very likely, that $\hat{S_{i}}$ is very similar to its
+neighboring subsequences, $\hat{S_{i-1}}$ and $\hat{S_{i+1}}$ (i.e. those that start one 
+point to the left, and one point to the right of $\hat{S_{i}}$), especially if $\hat{S_{i}}$
+is in the smooth region of the time series - due to the dimensionality reduction. 
+This phenomena results in mapping of multiple consecutive subsequences
+to the same string. The authors called these subsequences as ``trivial matches'' of 
+$\hat{S_{i}}$, and suggested to avoid their over-counting introducing a 
+``numerosity reduction technique'' by keeping only the first occurrence of $\hat{S_{i}}$. 
+
+In order to measure distance between two SAX words, the authors introduced a low-bounding 
+to Euclidean distance function \textit{MINDIST} \cite{streaming_sax} which is based on the 
+function which computes the distance between two SAX symbols using lookup tables.
+Similarly to the their distance function we define a $dist$ function for two
+SAX words $\hat{Q}$ and $\hat{C}$:
+\begin{equation}
+ \mbox{dist}(\hat{q_{i}},\hat{c_{i}})=
+        \begin{cases} \qquad  0, & \mbox{, if } | \hat{q_{i}} - \hat{c_{i}} | \leq 1 \\
+         ASCIIdist( \hat{q_{i}} , \hat{c_{i}} ) & \mbox{, otherwise } 
+        \end{cases}
+\end{equation} 
+where $ASCIIdist( \hat{q_{i}}, \hat{c_{i}} )$ is the absolute value of the difference between 
+ASCII codes for letters $\hat{q_{i}}$ and $\hat{c_{i}}$.
+
+By using this function we modified the process a bag of words construction: 
+while sliding a window across time series and extracting consecutive words
+as explained in Section \ref{bow_representation}, we compare each newly 
+extracted word to the last word added to a bag using $dist$ function. 
+If these words appear to be equal, we discard the new (to be added) word and 
+continue as usual. Since this numerosity reduction strategy is based 
+on previous work we called it $CLASSIC$.
+
+By further experimentation, we discovered, that if we relax this numerosity reduction
+strategy by using Hamming distance \cite{hamming} instead of $dist$ function
+defined above, it is possible to further improve accuracy for a number of datasets 
+(see \cite{jmotif}). We called this numerosity reduction strategy EXACT, since 
+the use of Hamming distance prevents only exact consecutive trivial matches to 
+be placed into the bag. 
+
+At this point we unable to further comment on these experimental results and 
+leaving this phenomena for future research.
 
 \begin{figure}[t]
    \centering
@@ -446,7 +488,8 @@ explained in Section \ref{section-direct}. Once selected, the optimal set of par
 was used to access SAX-VSM classification accuracy which is reported in the last column 
 of the Table \ref{perf_table}.
 
-In addition to the reported in this paper experiments, we use additional asessed the classification accuracy 
+In addition to the reported in this paper experiments, we use additional asessed the classification
+accuracy 
 of our SAX-VSM implementation implementation 
 Our algorithm implementation is publicly available at \cite{jmotif}.
 
@@ -611,29 +654,40 @@ time series.
 \section{Conclusion}
 In this paper, we have proposed a novel technique for characteristic patterns discovery 
 and ranking in temporal data based. We implement this using Symbolic Aggregate approXimation 
-and Vector space model. We show that our implementation the superior classification performance of SAX-VSM is based on 
+and Vector space model. We show that our implementation the superior classification performance of
+SAX-VSM is based on 
 a number of factors. 
 
 First of all, our approach is very different in nature from those 
 based on convenient distance measures such as Euclidean distance or DTW - to some 
 extent we do not pay attention to ordering of time points outside of sliding window. 
 Surely, overlapping windows do carry information about initial ordering, but this 
-is fading away along the steps of our algorithm. Nevertheless, accumulating overlapping words (patterns) appearing along time series we build up and reveal a unique signature of each individual time series. Merging the bags of words of all time series representing the same class we create a signature of the whole class.  The class signature is found to be unique enough to allow performing class identification very efficiently.    
+is fading away along the steps of our algorithm. Nevertheless, accumulating overlapping words
+(patterns) appearing along time series we build up and reveal a unique signature of each individual
+time series. Merging the bags of words of all time series representing the same class we create a
+signature of the whole class.  The class signature is found to be unique enough to allow performing
+class identification very efficiently.    
 
-Secondly, we are able to efficiently tolerate noise by leveraging smoothing effect provided by PAA/SAX technique.     agglomeration and mediation (??? correct words?)  with PAA.
+Secondly, we are able to efficiently tolerate noise by leveraging smoothing effect provided by
+PAA/SAX technique.     agglomeration and mediation (??? correct words?)  with PAA.
 
 Thirdly, the SAX alphabet cuts provide flexible boundaries for capturing similar 
 sub-series (NOT COMPLITELY CLEAR).
 
 And finally, Vector space model and text {tf$\ast$idf} statistics provide us 
-with efficient measurement toolkit allowing to reveal and emphasize most informative and descriminating features(patterns) within each time series or the whole class.       
+with efficient measurement toolkit allowing to reveal and emphasize most informative and
+descriminating features(patterns) within each time series or the whole class.       
 
 \subsection{Limitations}
-Currently, while SAX and Vector Space model naturally support extraction and processing of multiple
-word lengths in the same classifier, our implementation lacks this capacity. Certainly this is a
+Vector Space model naturally support processing of multiple word lengths in the same
+classifier, our implementation lacks this capacity. Certainly this is a
 major limitation since shapelet-based techniques \cite{bagnal} not only provide such a feature
 but prove its superior performance.
 
+A choice of most appropriate SAX-VSM parameters for domain problem remains a serious challenge. 
+While DIRECT optimization provides satisfiable performance, it is designed for function
+A choice of right parameters for the SAX-VSN algorithm remains a serious challange. While DIRECT
+optimization provides satisfiable performance, it is designed for function
 While DIRECT optimization provides satisfiable performance, it is designed for function
 defined on real values, whether SAX parameters defined only on integer domain. In our
 experimentation we observed DIRECT redundantly sampling same locations due to the rounding scheme
