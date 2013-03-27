@@ -66,7 +66,7 @@ University of Hawaii at Manoa,\\ Honolulu HI 96822, USA,\\
 \email{senin@hawaii.edu}
 \and
 Lockheed Martin Advanced Technology Laboratories,\\
-3 Executive Campus, Suite 600, Cherry Hill, NJ 08002, USA,\\
+3, Executive Campus, Suite 600, Cherry Hill, NJ 08002, USA,\\
 \email{sergey.b.malinchik@lmco.com}}
 
 
@@ -107,7 +107,7 @@ While shape-based similarity methods virtually unbeatable on short, often pre-pr
 time series data \cite{benchmark}, 
 they usually fail on long and noisy data sets \cite{indexing},
 where feature-based techniques demonstrate a superior performance. 
-In addition, feature-based methods require less storage space and, usually, 
+Futhermore, feature-based methods require less storage space and, usually, 
 have faster classification time, thus, they often implemented in industrial settings. 
 
 As one of the possible alternatives to this two categories, recently, the time series shapelets
@@ -258,64 +258,6 @@ For two vectors $\boldsymbol{a}$ and $\boldsymbol{b}$ that is:
 \sqrt{\sum\limits^{n}_{i=1} a_{i}} \times \sqrt{\sum\limits^{n}_{i=1} b_{i}} }
 \end{equation} 
 
-
-\section{SAX-VSM classification algorithm }
-As many other classification techniques, SAX-VSM consists of two parts - the training phase 
-and the classification. 
-
-The training phase of the SAX-VSM classifier is relatively computationally expensive 
-(Figure \ref{fig:precision-runtime}), because it involves construction of a text corpus by
-extraction 
-of SAX words from all labeled series and its post-processing with VSM. However, there is no need 
-to maintain an index of training series, or to keep any of them in the memory at runtime:
-the algorithm simply iterates over all labeled series, incrementally building bags of SAX words for
-each of the training classes, that is, algorithm builds a \textit{single bag of words for each
-class}. Once built, the corpus of $N$ bags of words (where $N$ is the number of classes) is
-processed with \textit{tf$\ast$idf} and can be also discarded. Only the set of $N$ real-valued
-vectors is retained after training for classification. Note, that construction of only a single bag
-for
-each class, is a one of the main differences of SAX-VSM from other, previously published 
-techniques \cite{bag_patterns}.
-
-The classification phase of the SAX-VSM is fast and consists only of converting of query time series
-into a bag of words, and its successive classification by computation of $N$ cosine values. The
-unlabeled time-series is assigned to the class with which the cosine similarity is maximal. 
-The use of the cosine similarity is another main difference of SAX-VSM from competing techniques.
-
-\begin{figure}[t]
-   \centering
-   \includegraphics[width=115mm]{figures/overview.eps}
-   \caption{A simplified overview of the SAX-VSM algorithm: at first, labeled series are 
-   converted into bags of words using SAX; 
-   secondly, \textit{tf$\ast$idf} statistics for two-bags corpus is computed, resulting in 
-   one weights vectors for each class.
-   Unlabeled series are classified by the label of the weight vector having the maximal 
-   cosine similarity with the words frequency vector built by SAX application to the 
-   unlabeled series.}
-   \label{fig:overview}
-\end{figure}
-
-\subsection{Training phase}
-In order to employ Vector Space Model approach, we need to transform all labeled time-series into 
-symbolic representation.  For this, our algorithm converts a real valued time series into SAX 
-string representation configured by four parameters: the sliding window
-length (\textit{W}), the number of PAA frames per window (\textit{P}), the SAX alphabet size
-(\textit{A}), and by the numerosity (complexity) reduction strategy (\textit{S}). 
-As we mentioned, each of the extracted with sliding window subseries is normalized by energy before
-being processed with PAA \cite{goldin_kanellakis}. If, however, the standard deviation of the
-time-series values is below a fixed epsilon threshold, we do not apply this normalization.
-
-By applying this procedure to all $N$ training classes, we build a corpus of $N$ bags, which, in
-turn, we process with \textit{tf$\ast$idf}. This provides $N$ real-valued vectors of equal
-length, each of which represents one of the training classes. 
-
-\subsection{Classification phase}
-Similarly to training phase, in order to classify an unlabeled time-series, we transform it into the
-terms vector using the same sliding window technique and SAX parameters which we have used 
-in the training phase. Then, we compute Cosine similarities between this terms vector and 
-\textit{tf$\ast$idf} weight vectors representing $N$ labeled classes. 
-The series is assigned to the class whose vector yields the maximal Cosine similarity value.
-
 \subsection{A note on numerosity reduction}
 In later SAX development, particularly in its application for discords discovery,
 streaming data analyses, and clustering \cite{hot_sax} \cite{streaming_sax}, the authors 
@@ -375,6 +317,65 @@ be placed into the bag.
 
 At this point we unable to further comment on these experimental results and 
 leaving this phenomena for future research.
+
+
+\section{SAX-VSM classification algorithm }
+As many other classification techniques, SAX-VSM consists of two parts - the training phase 
+and the classification. 
+
+The training phase of the SAX-VSM classifier is relatively computationally expensive 
+(Figure \ref{fig:precision-runtime}) because it involves construction of a corpus by
+extraction of SAX words from all labeled series and its post-processing with VSM. 
+However, there is no need to maintain an index of training series, or to keep any of 
+them in the memory at runtime: the algorithm simply iterates over all labeled series
+incrementally building bags of SAX words for each of the training classes, 
+that is, algorithm builds a \textit{single bag of words for each class}. 
+Once built, the corpus of $N$ bags of words (where $N$ is the number of classes) is
+processed with \textit{tf$\ast$idf} and can be also discarded. 
+Only the set of $N$ real-valued vectors is retained after training for classification. 
+Note, that construction of a single bag for each of training classes is a one of the main 
+differences of SAX-VSM from other, previously published techniques \cite{bag_patterns}.
+
+The classification phase of the SAX-VSM is fast and consists of converting of unlabeled
+time series into a bag of words and its successive classification by computation 
+of $N$ cosine values. The unlabeled time-series is assigned to the class with which 
+the cosine similarity is maximal. The use of the cosine similarity is another main 
+difference of SAX-VSM from competing techniques.
+
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=115mm]{figures/overview.eps}
+   \caption{A simplified overview of the SAX-VSM algorithm: at first, labeled series are 
+   converted into bags of words using SAX; 
+   secondly, \textit{tf$\ast$idf} statistics for two-bags corpus is computed, resulting in 
+   one weights vectors for each class.
+   Unlabeled series are classified by the label of the weight vector having the maximal 
+   cosine similarity with the words frequency vector built by SAX application to the 
+   unlabeled series.}
+   \label{fig:overview}
+\end{figure}
+
+\subsection{Training phase}
+In order to use Vector Space Model, we need to transform all labeled time-series into 
+symbolic representation.  For this, our algorithm converts a real valued time series 
+into SAX string representation configured by four parameters: the sliding window
+length (\textit{W}), the number of PAA frames per window (\textit{P}), the SAX alphabet size
+(\textit{A}), and by the numerosity (complexity) reduction strategy (\textit{S}). 
+As we mentioned, each of the extracted with sliding window subseries is normalized 
+by energy before being processed with PAA \cite{goldin_kanellakis}. If, however, 
+the standard deviation of the time-series values is below a fixed epsilon threshold, 
+we do not apply this normalization.
+
+By applying this procedure to all $N$ training classes, we build a corpus of $N$ bags, 
+which, in turn, we process with \textit{tf$\ast$idf}. This provides $N$ real-valued 
+vectors of equal length representing training classes. 
+
+\subsection{Classification phase}
+Similarly to training phase, in order to classify an unlabeled time-series, we transform it into the
+terms vector using the same sliding window technique and SAX parameters which we have used 
+in the training phase. Then, we compute Cosine similarities between this terms vector and 
+\textit{tf$\ast$idf} weight vectors representing $N$ labeled classes. 
+The series is assigned to the class whose vector yields the maximal Cosine similarity value.
 
 \begin{figure}[t]
    \centering
@@ -624,16 +625,8 @@ the differences in coffee flavor, which also aligns with previously reported fin
 
 
 \section{Clustering}
-Clustering is a common tool used for data visualization, exploration, and partitioning. 
-In addition, clustering serves as a subroutine in many others data mining algorithms.
-
-\subsection{Hierarchical clustering}
-We applied hierarchical clustering procedure to \textit{SyntheticControl} dataset clustering
-eighteen time series in total, three from each of the classes \textit{increasing trend, decreasing
-trend, upward shift, downward shift, periodic, and normal}. Figure \ref{fig:hc} shows
-clustering. Obviously, it shows superiority of SAX-SVM distance performance over Euclidean in
-hierarchical clustering.
-\todo{obviousness}
+Clustering is a common tool used for data partitioning, visualization and exploration. Furthermore, 
+clustering serves as an important subroutine in many other data mining algorithms.
 
 \begin{figure}[t]
    \centering
@@ -644,12 +637,46 @@ dataset. Complete linkage was used for these plots.
    \label{fig:hc}
 \end{figure}
 
-\subsection{kMeans clustering}
-Again, reflecting concepts of IR field, kMeans clustering based on SAX-VSM approach effectively
-is the spherical kMeans approach, which has a number of known advantages. First of all, it can be
-parallelized for efficient computation \cite{modha}, and usually converges quickly. Furthermore,
-computed centroids generalize cluster members and can be used as a ``model'' to classify future 
-time series.
+\subsection{Hierarchical clustering}
+Probably, one of the most used clustering algorithms is hierarchical clustering which requires no
+parameters to be specified \cite{hcs}. It computes pairwise distances between all objects and 
+produces a nested hierarchy of the clusters offering a great data visualization power. 
+Previously it was shown  \cite{bag_patterns} that the bag-of-patterns 
+representation of time-series ``outperforms leading existing approaches and produces more 
+accurate clustering''. 
+
+We performed similar to \cite{bag_patterns} experiments which differ only in distance metrics - 
+we relied on Cosine Similarity. Affirming the previous work, we found, that the combination of 
+SAX and Vector space model outperforms other distance metrics. We applied 
+hierarchical clustering procedure to \textit{SyntheticControl} dataset clustering
+nine time series in total: three from each of the classes \textit{normal, decreasing trend}, and 
+\textit{upward shift}. Figure \ref{fig:hc} depicts the clustering results. 
+As one can see, SAX-SVM is superior in clustering performance to Euclidean and DTW distance 
+metrics in this particular setup producing a hierarchy which properly partitions the data set 
+into three branches.
+
+\subsection{k-Means clustering}
+Another popular choice for data partitioning is a k-Means clustering algorithm \cite{kmeans}.
+The basic intuition behind this algorithm is that through the iterative reassignment of objects 
+into different clusters the intra-cluster distance is minimized. As was shown, kMeans 
+algorithm scales much better than hierarchical partitioning techniques \cite{kscale}.
+
+This clustering technique is well studied in IR field. Previously, in \cite{zhao}, the authors 
+extensively examined seven different criterion functions for partitional document clustering 
+and found that \textit{k}-prototypes partitioning with cosine dissimilarity delivers a very good 
+performance. 
+
+We implemented a similar to \cite{modha} \textit{spherical k-means algorithm}. Similarly to
+\cite{bag_patterns} we found that algorithm converges quickly delivering good partitioning
+on synthetic datasets. While we have not conducted further experimental evaluation study, 
+our implementation was applied to recurrent  behaviors discovery in software development 
+\cite{android}. We used bag of words time series representation and k-Means clustering in
+order to capture the specific temporal features corresponding to the software release cycle.
+Specifically, we optimized SAX parameters in order to obtain a proper partitioning of known 
+development behaviors represented by telemetry streams collected through analysis of 
+software artifact trails. In turn, the centroids of these clusters were used to classify unlabeled 
+telemetry streams. This technique allowed us to successfully classify unlabeled behaviors 
+achieving over eighty percent accuracy rate.
 
 \section{Conclusion}
 In this paper, we have proposed a novel technique for characteristic patterns discovery 
@@ -684,8 +711,7 @@ classifier, our implementation lacks this capacity. Certainly this is a
 major limitation since shapelet-based techniques \cite{bagnal} not only provide such a feature
 but prove its superior performance.
 
-A choice of most appropriate SAX-VSM parameters for domain problem remains a serious challenge. 
-While DIRECT optimization provides satisfiable performance, it is designed for function
+
 A choice of right parameters for the SAX-VSN algorithm remains a serious challange. While DIRECT
 optimization provides satisfiable performance, it is designed for function
 While DIRECT optimization provides satisfiable performance, it is designed for function
@@ -812,23 +838,22 @@ Rakthanamanon, T., Keogh, E.
 In proc of SIAM Conference on Data Mining (SDM13).
 
 %18
+\bibitem {larsen_marx}
+Larsen, Richard J. and Marx, Morris L. 2000. 
+An Introduction to Mathematical Statistics and Its Applications (3rd Edition).
+Prentice Hall.
+
+%19
 \bibitem {goldin_kanellakis}
 D.Q., Kanellakis, P.C., 1995.
 On Similarity Queries for Time-Series Data: Constraint Specification and Implementation. 
 In Proc CP '95. 137-153.
 
-%19
-\bibitem {paa}
-Keogh, E., Pazzani, M.J. 2000.
-A Simple Dimensionality Reduction Technique for Fast Similarity Search in Large Time Series
-Databases. 
-In Proc PADKK '00. 122-133.
-
 %20
-\bibitem {larsen_marx}
-Larsen, Richard J. and Marx, Morris L. 2000. 
-An Introduction to Mathematical Statistics and Its Applications (3rd Edition).
-Prentice Hall.
+\bibitem {motifs}
+Bill Chiu, Eamonn Keogh, and Stefano Lonardi. 2003. 
+Probabilistic discovery of time series motifs. 
+In Proc. of  9th ACM SIGKDD (KDD '03).
 
 %21
 \bibitem {streaming_sax}
@@ -837,16 +862,16 @@ A symbolic representation of time series, with implications for streaming algori
 In Proc 8th ACM SIGMOD workshop DMKD '03. 2-11.
 
 %22
-\bibitem {jmotif}
-Paper Authors. 
-Accompanying information for this paper. 
-\url{https://code.google.com/p/jmotif/}
-
-%23
 \bibitem {hamming}
 Hamming, R.W. 1950.
 Error detecting and error correcting codes. 
 Bell System Technical Journal 29, pp. 147--160
+
+%23
+\bibitem {jmotif}
+Paper Authors. 
+Accompanying information for this paper. 
+\url{https://code.google.com/p/jmotif/}
 
 %24
 \bibitem {direct-original}
@@ -877,40 +902,73 @@ Contributions to Decision Tree Induction: bias/variance tradeoﬀ and time serie
 PhD thesis, University of Lige, Belgium.
 
 %29
+\bibitem {gun}
+Ratanamahatana C. A., Keogh, E. 2004.
+Making time-series classification more accurate using learned constraints. 
+In SDM '04.
+
+%30
 \bibitem {osuleaf}
 Gandhi, A. 2002.
 Content-Based Image Retrieval: Plant Species Identification. 
 Master thesis, Oregon State University.
 
-%30
+%31
 \bibitem {dirr}
 Dirr, M. A. 2013.
 Manual of Woody Landscape Plants: Their Identification, Ornamental Characteristics,
 Culture, Propogation and Uses.
 Stipes Pub Llc, ed. 6 Revised.
 
-%31
+%32
 \bibitem {coffee}
 Briandet, R., Kemsley, E.K., Wilson, R.H. 1996
 Discrimination of Arabica and Robusta in Instant Coffee by Fourier Transform Infrared Spectroscopy
 and Chemometrics.
-J. Agric. Food Chem. 1996, 44, 170−174
+J. Agric. Food Chem. 1996, 44, 170--174
 
-%32
+%33
+\bibitem {hcs}
+Johnson C.S., 1967.
+Hierarchical clustering schemes
+Psychometrika, 32(3), 241--254.
+
+%34
+\bibitem {kmeans}
+MacQueen, J. 1967.
+Some methods for classification and analysis of multivariate observations
+Proc. of the Fifth Berkeley Symp. On  Math. Stat. and Prob., 1, 281-296.
+
+%35
+\bibitem {kscale}
+Bradley, P., Fayyad, U., Reina, C. 1998.
+Scaling clustering algorithms to large databases. 
+In Proc. 4 Intl Conference on KDD, 9--15.
+
+%36
+\bibitem {zhao}
+Zhao Y, Karypis G. 2004.
+Empirical and Theoretical Comparisons of Selected Criterion Functions for Document Clustering.
+Machine Learning, 55, 311--331.
+
+%37
 \bibitem {modha}
-Dhillon, S.I., Modha, D.S. 1996., May 2002
-A Data-Clustering Algorithm on Distributed Memory Multiprocessors. 
-In Proc Workshop on Large-Scale Parallel KDD Systems, SIGKDD, 245-260.
+Dhillon I.S., Modha D.S. 2001.
+Concept Decompositions for Large Sparse Text Data Using Clustering.
+Machine Learning, 42(1), 143--175.
 
-\bibitem {gun}
-Ratanamahatana C. A., Keogh, E. 2004.
-Making time-series classification more accurate using learned constraints. 
-In SDM '04.
+%38
+\bibitem {android}
+Senin, P. 2012.
+Recognizing recurrent development behaviors corresponding to Android OS release life-cycle
+In Proc SERP-12.
 
-\bibitem {motifs}
-Bill Chiu, Eamonn Keogh, and Stefano Lonardi. 2003. 
-Probabilistic discovery of time series motifs. 
-In Proc. of  9th ACM SIGKDD (KDD '03).
+%not used
+%\bibitem {paa}
+%Keogh, E., Pazzani, M.J. 2000.
+%A Simple Dimensionality Reduction Technique for Fast Similarity Search in Large Time Series
+%Databases. 
+%In Proc PADKK '00. 122-133.
 
 
 \end{thebibliography}
