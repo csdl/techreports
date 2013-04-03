@@ -43,17 +43,17 @@
 \makeatother
 %
 %% Make URLs clickable
-\usepackage[colorlinks, bookmarks=true]{hyperref}
-\hypersetup{
-    linktoc=all,     %set to all if you want both sections and subsections linked
-    linkcolor=blue,  %choose some color if you want links to stand out
-    colorlinks=false, %set true if you want colored links
+%\usepackage[colorlinks, bookmarks=true]{hyperref}
+%\hypersetup{
+    %linktoc=all,     %set to all if you want both sections and subsections linked
+%    linkcolor=blue,  %choose some color if you want links to stand out
+    %colorlinks=false, %set true if you want colored links
     %citecolor=black,
     %filecolor=black,
     %linkcolor=black,
     %urlcolor=black
-}
-
+%}
+%\newcommand\abs[1]{\left|#1\right|}
 %
 \begin{document}
 %
@@ -282,8 +282,8 @@ For two vectors $\boldsymbol{a}$ and $\boldsymbol{b}$ that is:
 %\mbox{similarity}(\boldsymbol{a},\boldsymbol{b}) = cos(\theta) = \frac{ \sum\limits^{n}_{i=1} a_{i}
 %\times b_{i} }{
 %\sqrt{\sum\limits^{n}_{i=1} a_{i}} \times \sqrt{\sum\limits^{n}_{i=1} b_{i}} }
-\mbox{similarity}(\boldsymbol{a},\boldsymbol{b}) = cos(\theta) =  
-\mathbf{a} \mathbf{b} / ||a||||b|| }
+\mbox{similarity}(\boldsymbol{a},\boldsymbol{b}) = cos(\theta) = \frac{ 
+\mathbf{a} \mathbf{b} } {\left| \left| a \right| \right| \left| \left| b \right| \right|}
 \end{equation} 
 
 \subsection{A note on numerosity reduction}
@@ -561,10 +561,11 @@ of 1NN Euclidean classifier \ref{fig:precision-runtime}.
 
 \subsection{Robustness to noise}
 In our experimentation we observed, that the dimension of \textit{tf$\ast$idf} weights vectors 
-grows following the grows of the training set size. While it grows rapidly at the beginning, once
-the dictionary is saturated, growth tend to slow down (left panel of Figure \ref{fig:corrupted}). 
-Nevertheless, by adjusting alphabet and PAA sizes it is possible to keep the number of terms
-significantly large. 
+grows following the grows of the training set size. 
+%While it grows rapidly at the beginning, once
+%the dictionary is saturated, growth tend to slow down (left panel of Figure \ref{fig:corrupted}). 
+%Nevertheless, by adjusting alphabet and PAA sizes it is possible to keep the number of terms
+%significantly large. 
 
 %\begin{figure}[t]
 %   \centering
@@ -574,23 +575,28 @@ significantly large.
 %   1000 series of each class.}
 %   \label{fig:venn}
 %\end{figure}
+This observation, and the fact that each of SAX words is covering only a small part of time 
+series, prompted the idea that SAX-VSM classifier might be robust to the loss of signal 
+in unlabeled series. Intuitively, in such a case, the cosine similarity might not
+degrade significantly enough to cause missclassification.
 
-This observation and the fact that terms are originating from the full span of time series prompted
-the idea that SAX-VSM classifier might be robust to the loss of signal in unlabeled
-series. Intuitively, if some of the class representative terms will be lost, the cosine
-similarity might not degrade significantly enough to cause missclassification.
+While we plan to perform more exploration, current experimentation with CBF dataset revealed 
+promising results. In one series of experiments, we randomly replaced up to fifty percent of a
+time series span with a random noise and found, that SAX-VSM is performing consistently better 
+than 1NN Euclidean classifier regardless of a training set size which we varied from five to
+ten thousands. In another series of experiments, we introduced a random noise into unlabeled
+series, ranging its varying its standard deviation up to XX percent. In this experiments, SAX-VSM
+also performed significantly better than 1NN Euclidean classifier. However, this result we
+attribute to the PAA and SAX ability to withstand the noise.
 
-While we plan to perform more exploration, at this point we found, that by randomly replacing up
-to 30\% span of CBF test series with random noise, SAX-VSM performing consistently better
-than 1NN Euclidean classifier as shown at the right panel of Figure \ref{fig:corrupted}
-
-\begin{figure}[t]
-   \centering
-   \includegraphics[width=120mm]{figures/corrupted.ps}
-   \caption{Left panel: Illustration of classification performance with presence of noise (left panel), 
-   and with signal loss (right panel).}
-   \label{fig:corrupted}
-\end{figure}
+%\begin{figure}[t]
+ %  \centering
+  % \includegraphics[width=120mm]{figures/corrupted.ps}
+%\caption{Left panel: Illustration of classification performance with presence of noise
+%(left panel), 
+%   and with signal loss (right panel).}
+ %  \label{fig:corrupted}
+%\end{figure}
 
 \subsection{Exploratory data analysis}
 While classification results reported in previous section show that SAX-VSM classifier
@@ -640,6 +646,15 @@ Also, similarly to the original work \cite{gun}, SAX-VSM highlighted as second t
 patterns in \textit{Point} class the lack of distinguishing subtle extra movements required
 for lifting a hand above a holster and reaching down for the gun.
 
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=115mm]{figures/AcerCircunatum.eps}
+   \caption{Illustration of the best discriminating patterns found by SAX-VSM for
+\textit{OSULeaf dataset}. These patterns align with well known in botany discrimination techniques
+by lobe shapes, serrations, and the leaf tip type.}
+   \label{fig:shapelet-acer-patterns}
+\end{figure}
+
 \subsection{OSU Leaf data}
 According to the original data source, Ashid Grandhi \cite{osuleaf}, with the current growth of
 digitized data, there is a huge demand for automatic management and retrieval of various images. The
@@ -649,15 +664,6 @@ Circinatum, Acer Glabrum, Acer Macrophyllum, Acer Negundo, Quercus Garryana and 
 While the authors of the original work were able to solve the problem of leaf boundary curves
 classification by use of DTW achieving 60\% accuracy, DTW, as we pointed above, provides a very
 little information about why it succeeds of fails. 
-
-\begin{figure}[t]
-   \centering
-   \includegraphics[width=115mm]{figures/AcerCircunatum.eps}
-   \caption{Illustration of the best discriminating patterns found by SAX-VSM for
-\textit{OSULeaf dataset}. These patterns align with well known in botany discrimination techniques
-by lobe shapes, serrations, and the leaf tip type.}
-   \label{fig:shapelet-acer-patterns}
-\end{figure}
 
 In contrast, SAX-VSM application yielded a set of class-specific characteristic patterns for each of
 six leafs classes from the \textit{OSULeaf} dataset which closely match known techniques of leafs
@@ -692,10 +698,10 @@ generate these plots. Only SAX-VSM was able to partition series properly.
 Probably, one of the most used clustering algorithms is hierarchical clustering which requires no
 parameters to be specified \cite{hcs}. It computes pairwise distances between all objects and 
 produces a nested hierarchy of the clusters offering a great data visualization power. 
+
 Previously it was shown  \cite{bag_patterns} that the bag-of-patterns 
 representation of time-series ``outperforms leading existing approaches and produces more 
 accurate clustering''. 
-
 We performed similar to \cite{bag_patterns} experiments which differ only in distance metrics - 
 we relied on Cosine Similarity. Affirming the previous work, we found, that the combination of 
 SAX and Vector space model outperforms other distance metrics. We applied 
