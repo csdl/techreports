@@ -4,6 +4,7 @@
 % version 2.4 for LaTeX2e as of 16. April 2010
 %
 \documentclass{llncs}
+\usepackage[font={small}]{caption, subfig}
 \usepackage{epsfig}
 \usepackage{graphicx}
 \usepackage{xcolor}
@@ -19,8 +20,8 @@
 \belowdisplayshortskip.50ex
 %\restylefloat{figure}
 %\restylefloat{table}
-\usepackage{todonotes}
-\usepackage{makeidx}  % allows for indexgeneration
+%\usepackage{todonotes}
+%\usepackage{makeidx}  % allows for indexgeneration
 %
 \newcolumntype{C}[1]{>{\Centering}m{#1}}
 \renewcommand\tabularxcolumn[1]{C{#1}}
@@ -55,6 +56,20 @@
 %}
 %\newcommand\abs[1]{\left|#1\right|}
 %
+\newcommand{\myfigureshrinker}{\vspace{-1cm}}
+\newcommand{\bibfont}{\small}
+\addtolength{\topmargin}{-9mm}
+\addtolength{\topskip}{-6mm}
+\addtolength{\textfloatsep}{-4mm}
+
+\renewcommand\floatpagefraction{.9}
+\renewcommand\topfraction{.9}
+\renewcommand\bottomfraction{.9}
+\renewcommand\textfraction{.1}   
+\setcounter{totalnumber}{50}
+\setcounter{topnumber}{50}
+\setcounter{bottomnumber}{50}
+
 \begin{document}
 %
 \mainmatter              % start of the contributions
@@ -131,7 +146,9 @@ were introduced \cite{shapelet} and gained popularity. A shapelet is a \textit{s
 series ``snippet''} that is a representative of class membership. Thus, potentially, this 
 approach combines the best of two categories - the superior precision of shape-based 
 similarity methods, and the high-throughput capacity and efficiency of feature-based 
-methods \cite{logical}. However, while demonstrating a superior interpretability, robustness, 
+methods.
+%\cite{logical}. 
+However, while demonstrating a superior interpretability, robustness, 
 and similar to kNN algorithms performance, shapelets-based approaches are quite time-consuming 
 - which makes their adoption for many-classes classification problems difficult \cite{bagnal}. 
 
@@ -169,6 +186,7 @@ This scheme is based on the divided rectangles (DIRECT) algorithm \cite{direct},
 a derivative-free global optimization process which does not require any parameters.
 Furthermore, DIRECT possesses both local and global-optimization properties. 
 
+\enlargethispage{0.5cm} 
 \subsection{Symbolic Aggregate approXimation (SAX)}
 Symbolic representation of time series, once introduced \cite{sax}, has attracted much attention by
 enabling an application of numerous string-processing algorithms, bioinformatics, and text mining 
@@ -210,7 +228,7 @@ classification using bag of patterns \cite{bag_patterns}.
 We use this sliding window technique to convert a time series $T$ of a length $n$ into 
 the set of $m$ SAX words, where $m=(n-l_{s})+1$ and $l_{s}$ is the sliding window length. 
 By sliding a window of length $l_{s}$ across time series $T$, extracting subsequences, 
-converting them to SAX words, and placing them into an unordered collection, 
+converting them to SAX words, and placing these words into an unordered collection, 
 we obtain the \textit{bag of words} representation of the original time series $T$.
 
 \subsection{Vector Space Model (VSM)}
@@ -271,12 +289,10 @@ Then, $\textit{tf$\ast$idf}$ value for a term $t$ in the document $d$ of a corpu
  \label{formula:tfidf}
 \end{equation} 
 for the all cases where $\mbox{f}_{t,d}>0$ and $\mbox{df}_{t}>0$, or zero otherwise.
+Once all terms of a corpus are weighted, the columns of a sparse matrix are used 
+as class \textit{term-weight vectors} which facilitate the classification using Cosine similarity. 
 
-Once all terms of a corpus are weighted, the columns of a sparse matrix used as class 
-\textit{term-weight vectors} which facilitate the classification using Cosine similarity. 
-
-\subsection{Cosine similarity}
-Cosine similarity is a similarity measure between two vectors based on the inner product. 
+Cosine similarity measure between two vectors based on the inner product. 
 For two vectors $\boldsymbol{a}$ and $\boldsymbol{b}$ that is:
 \begin{equation}
 %\mbox{similarity}(\boldsymbol{a},\boldsymbol{b}) = cos(\theta) = \frac{ \sum\limits^{n}_{i=1} a_{i}
@@ -351,7 +367,7 @@ and the classification. In the following sections we shall explain the algorithm
 while this section presents its overview and its main differences from other techniques.
 
 The training phase of the SAX-VSM classifier is relatively computationally expensive 
-(Figure \ref{fig:precision-runtime}) because it involves construction of a corpus by
+(Fig. \ref{fig:precision-runtime}) because it involves construction of a corpus by
 extraction of SAX words from all labeled series and its post-processing with VSM. 
 However, there is no need to maintain an index of training series, or to keep any of 
 them in the memory at runtime: the algorithm simply iterates over all labeled series
@@ -372,6 +388,7 @@ similarity is another main difference of SAX-VSM from competing techniques.
 
 \begin{figure}[t]
    \centering
+   \myfigureshrinker
    \includegraphics[width=115mm]{figures/overview.eps}
    \caption{
    An overview of the SAX-VSM algorithm: 
@@ -406,6 +423,7 @@ in the training phase. Then, we compute Cosine similarities between this terms v
 The series is assigned to the class whose vector yields the maximal Cosine similarity value.
 
 \begin{figure}[t]
+   \myfigureshrinker
    \centering
    \includegraphics[width=120mm]{figures/figure_direct.eps}
    \caption{Illustration of parameters optimization with DIRECT 
@@ -474,7 +492,7 @@ We have proposed a novel algorithm for time series classification based on the S
 representation of time series and Vector space model called SAX-VSM. Here, we present a range of
 experiments assessing its performance in classification and clustering.
 
-{\scriptsize
+\begin{small}
 \begin{table}[t]
 \caption{\bf Classifiers error rates comparison.}
  \label{perf_table}
@@ -507,7 +525,7 @@ Trace             & 0.240   & \textbf{0.0}    & 0.020     & 0.020            & \
 \end{table}
 %\hline
 %\end{tabular}
-}
+\end{small}
 
 \subsection{Analysis of classification accuracy}
 To evaluate our approach, we selected thirty one data set. Majority of the data sets was taken 
@@ -522,9 +540,11 @@ assert, that there will not be a single dominant classifier for all TSC problems
 Table \ref{perf_table} compares the performance of SAX-VSM and four competing classifiers: 
 two 1NN classifiers based on Euclidean distance and DTW, and two classifiers 
 based on the recently proposed shapelet technique: the shapelet decision tree \cite{shapelet}
-\cite{logical} classifier and the shapelet transform classifier \cite{bagnal}. We use this 
-particular subset of known data sets, because it contains performance metrics for all four
-classifiers. The performance of SAX-VSM for the rest of data sets can be found online along with 
+%\cite{logical} 
+classifier and the shapelet transform classifier \cite{bagnal}. We use these 
+particular datasets, because they represent a subset for which we were able to collect
+classification accuracy results of all four classifiers. 
+The performance of SAX-VSM for the rest of data sets can be found online along with 
 our reference implementation \cite{jmotif}.
 
 In our evaluation we followed train/test split of the data. We exclusively used train data in 
@@ -535,6 +555,7 @@ of the Table \ref{perf_table}.
 
 
 \begin{figure}[t]
+   \myfigureshrinker
    \centering
    \includegraphics[width=120mm]{figures/precision-runtime.ps}
    \caption{Comparison of classification precision and runtime of SAX-VSM and 1NN 
@@ -551,13 +572,14 @@ We used CBF data set \cite{cbf} to investigate the performance of SAX-VSM and 1N
 classifier on increasingly large training data sets of size 10, 50, 125, ..., 1000, and a fixed test
 dataset of 10000 instances. For small training data sets, SAX-VSM is signiﬁcantly more accurate
 than 1NN Euclidean classifier, however, by the time we have more than 500 time series in
-our training set, there was no statistically signiﬁcant diﬀerence in accuracy (see Fig.3 LEFT). 
+our training set, there was no statistically signiﬁcant diﬀerence in accuracy (Fig.
+\ref{fig:precision-runtime}). 
 As per classification runtime cost, SAX-VSM was found more expensive than 1NN Euclidean classifier
 when training set is small mostly due to the training cost. For the large training sets, there was
-no significant difference in the overall runtime speed for both classifiers  (see Fig.3 RIGHT). 
+no significant difference in the overall runtime speed for both classifiers.
 However, SAX-VSM allows to perform training offline and load \textit{tf$\ast$idf} weights vector as
 needed. If this option utilized, the classification time cost is always significantly less than that
-of 1NN Euclidean classifier \ref{fig:precision-runtime}.
+of 1NN Euclidean classifier (Fig. \ref{fig:precision-runtime}).
 
 \subsection{Robustness to noise}
 In our experimentation we observed, that the dimension of \textit{tf$\ast$idf} weights vectors 
@@ -612,6 +634,7 @@ could be significant. Contrary, SAX-VSM provides numerous weighted patterns at n
 allowing further insight into interpretability.
 
 \begin{figure}[t]
+   \myfigureshrinker
    \centering
    \includegraphics[width=120mm]{figures/gun-point.eps}
    \caption{Examples of best weighted patterns from each class of \textit{GunPoint} dataset. 
@@ -647,6 +670,7 @@ patterns in \textit{Point} class the lack of distinguishing subtle extra movemen
 for lifting a hand above a holster and reaching down for the gun.
 
 \begin{figure}[t]
+   \myfigureshrinker
    \centering
    \includegraphics[width=115mm]{figures/AcerCircunatum.eps}
    \caption{Illustration of the best discriminating patterns found by SAX-VSM for
@@ -677,23 +701,20 @@ along with their highlighted features at leafs images and within corresponding c
 Further, we found, that in the \textit{Coffee} spectrogram dataset SAX-VSM highlighted spectrogram
 intervals corresponding to Caffeine and Chlorogenic acid - two chemical compounds responsible for
 the differences in coffee flavor, which also aligns with previously reported findings \cite{coffee}.
-
-
 \section{Clustering}
 Clustering is a common tool used for data partitioning, visualization and exploration. Furthermore, 
 clustering serves as an important subroutine in many other data mining algorithms.
-
 \begin{figure}[t]
+   \myfigureshrinker
    \centering
    \includegraphics[width=115mm]{figures/clustering.eps}
    \caption{A comparison of hierarchical clustering application to a subset 
 \textit{SyntheticControl} classes: \textit{Normal, Decreasing trend}, and \textit{Upward shift}. 
 Euclidean distance, Dynamic time warping, SAX-VSM and Complete linkage were used to 
-generate these plots. Only SAX-VSM was able to partition series properly.
+generate these plots. Only SAX-VSM was able to partition series properly.                           
    }
    \label{fig:hc}
 \end{figure}
-
 \subsection{Hierarchical clustering}
 Probably, one of the most used clustering algorithms is hierarchical clustering which requires no
 parameters to be specified \cite{hcs}. It computes pairwise distances between all objects and 
@@ -776,7 +797,7 @@ Data Mining and Knowledge Discovery, 26, 2, 275--309 (2013)
 
 %2
 \bibitem {1NN}
-Xi, X., Keogh, E., Shelton, C., Wei, L., Ratanamahatana, C.A.
+Xi, X., Keogh, E., Shelton, C., Wei, L., Ratanamahatana, C.A.:
 Fast time series classification using numerosity reduction. 
 In Proc of the 23rd international conference on Machine learning (ICML '06), 1033--1040 (2006)
 
@@ -818,11 +839,11 @@ In Proc of the 15th ACM SIGKDD international conference on Knowledge discovery a
 mining, 947--956 (2009)
 
 %9
-\bibitem {logical}
-Mueen, A., Keogh, E., Young, N.:
-Logical-shapelets: an expressive primitive for time series classification.
-In Proc of the 17th ACM SIGKDD international conference on Knowledge discovery and data
-mining, 1154--1162 (2011)
+%\bibitem {logical}
+%Mueen, A., Keogh, E., Young, N.:
+%Logical-shapelets: an expressive primitive for time series classification.
+%In Proc of the 17th ACM SIGKDD international conference on Knowledge discovery and data
+%mining, 1154--1162 (2011)
 
 %10
 \bibitem {bagnal}
