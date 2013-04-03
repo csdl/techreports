@@ -4,8 +4,6 @@
 % version 2.4 for LaTeX2e as of 16. April 2010
 %
 \documentclass{llncs}
-\usepackage{algorithm}
-\usepackage{algorithmic}
 \usepackage{epsfig}
 \usepackage{graphicx}
 \usepackage{xcolor}
@@ -14,6 +12,11 @@
 \usepackage{subfig}
 \usepackage{tabularx,ragged2e,booktabs}
 \usepackage{float}
+\DeclareMathSizes{10}{9}{6}{5}
+\abovedisplayskip.50ex
+\belowdisplayskip.50ex
+\abovedisplayshortskip.50ex
+\belowdisplayshortskip.50ex
 %\restylefloat{figure}
 %\restylefloat{table}
 \usepackage{todonotes}
@@ -233,7 +236,9 @@ Rows of this matrix correspond to the set of all SAX words found in
 training set. Each element of this matrix is an observed frequency of a word
 in a class. 
 Many elements of this matrix are zeros - because words extracted from one class 
-are often not found in others (Figure \ref{fig:venn}). By its design, this sparse 
+are often not found in others 
+%(Figure \ref{fig:venn}). 
+By its design, this sparse 
 term frequency matrix is a dictionary of all SAX words extracted from all time 
 series of a training set, which accounts for frequencies of each word in each of 
 the training classes.
@@ -274,9 +279,11 @@ Once all terms of a corpus are weighted, the columns of a sparse matrix used as 
 Cosine similarity is a similarity measure between two vectors based on the inner product. 
 For two vectors $\boldsymbol{a}$ and $\boldsymbol{b}$ that is:
 \begin{equation}
- \mbox{similarity}(\boldsymbol{a},\boldsymbol{b}) = cos(\theta) = \frac{ \sum\limits^{n}_{i=1} a_{i}
-\times b_{i} }{
-\sqrt{\sum\limits^{n}_{i=1} a_{i}} \times \sqrt{\sum\limits^{n}_{i=1} b_{i}} }
+%\mbox{similarity}(\boldsymbol{a},\boldsymbol{b}) = cos(\theta) = \frac{ \sum\limits^{n}_{i=1} a_{i}
+%\times b_{i} }{
+%\sqrt{\sum\limits^{n}_{i=1} a_{i}} \times \sqrt{\sum\limits^{n}_{i=1} b_{i}} }
+\mbox{similarity}(\boldsymbol{a},\boldsymbol{b}) = cos(\theta) =  
+\mathbf{a} \mathbf{b} / ||a||||b|| }
 \end{equation} 
 
 \subsection{A note on numerosity reduction}
@@ -366,7 +373,8 @@ similarity is another main difference of SAX-VSM from competing techniques.
 \begin{figure}[t]
    \centering
    \includegraphics[width=115mm]{figures/overview.eps}
-   \caption{An overview of the SAX-VSM algorithm: 
+   \caption{
+   An overview of the SAX-VSM algorithm: 
    at first, labeled series are converted into bags of words using SAX; 
    secondly, \textit{tf$\ast$idf} statistics is computed resulting in 
    a single weights vector per training class. An unlabeled series is converted 
@@ -505,29 +513,26 @@ Trace             & 0.240   & \textbf{0.0}    & 0.020     & 0.020            & \
 To evaluate our approach, we selected thirty one data set. Majority of the data sets was taken 
 from the UCR time series repository \cite{ucr}, the Ford data was originally used in a competition
 at the IEEE World Congress on Computational Intelligence \cite{ford}, the Electrical Devices
-dataset was downloaded from supporting website for \cite{bagnal}.
+dataset was downloaded from supporting website for \cite{bagnal}. Overall, SAX-VSM classification 
+performance found to be at the level of best performing 1-NN classifiers (whether based on 
+Euclidean distance, DTW, or SAX), shapelet tree, or a shapelet-based SVM. 
+This result is not surprising taking in account ``No Free Lunch theorems'' \cite{nfl}, which 
+assert, that there will not be a single dominant classifier for all TSC problems.
 
-Overall, SAX-VSM classification performance found to be at the level of best
-performing 1-NN classifiers (whether based on Euclidean distance, DTW, or SAX), shapelet tree, or a
-shapelet-based SVM. This result is not surprising taking in account ``No Free Lunch theorems''
-\cite{nfl}, which assert, that there will not be a single dominant classifier for all TSC problems.
+Table \ref{perf_table} compares the performance of SAX-VSM and four competing classifiers: 
+two 1NN classifiers based on Euclidean distance and DTW, and two classifiers 
+based on the recently proposed shapelet technique: the shapelet decision tree \cite{shapelet}
+\cite{logical} classifier and the shapelet transform classifier \cite{bagnal}. We use this 
+particular subset of known data sets, because it contains performance metrics for all four
+classifiers. The performance of SAX-VSM for the rest of data sets can be found online along with 
+our reference implementation \cite{jmotif}.
 
-Table \ref{perf_table} includes twelve known datasets representing a variety of possible 
-applications for which we were able to recover performance metrics for four classifiers:
-1NN classifiers based on Euclidean distance and DTW, and recently proposed classifiers 
-based on the shapelet decision tree \cite{shapelet} \cite{logical} and on the 
-shapelet transform \cite{bagnal}. 
-
-Following simple train/test split of the data, we exclusively used train data for selection
-of SAX parameters and numerosity reduction strategy in cross-validation experiments as 
-explained in Section \ref{section-direct}. Once selected, the optimal set of parameters 
-was used to access SAX-VSM classification accuracy which is reported in the last column 
+In our evaluation we followed train/test split of the data. We exclusively used train data in 
+cross-validation experiments for selection of SAX parameters and numerosity reduction strategy
+using DIRECT (Section \ref{section-direct}). Once selected, the optimal set of parameters 
+was used to assess SAX-VSM classification accuracy which is reported in the last column 
 of the Table \ref{perf_table}.
 
-In addition to the reported in this paper experiments, we use additional asessed the classification
-accuracy 
-of our SAX-VSM implementation implementation 
-Our algorithm implementation is publicly available at \cite{jmotif}.
 
 \begin{figure}[t]
    \centering
@@ -561,18 +566,18 @@ the dictionary is saturated, growth tend to slow down (left panel of Figure \ref
 Nevertheless, by adjusting alphabet and PAA sizes it is possible to keep the number of terms
 significantly large. 
 
-\begin{figure}[t]
-   \centering
-   \includegraphics[width=120mm]{figures/Venn.eps}
-   \caption{Left panel: illustration of terms growth for CBF corpus and individual classes with 
-   training set size. Right panel: distribution of SAX terms in CBF corpus for training set of 
-   1000 series of each class.}
-   \label{fig:venn}
-\end{figure}
+%\begin{figure}[t]
+%   \centering
+%   \includegraphics[width=120mm]{figures/Venn.eps}
+%   \caption{Left panel: illustration of terms growth for CBF corpus and individual classes with 
+%   training set size. Right panel: distribution of SAX terms in CBF corpus for training set of 
+%   1000 series of each class.}
+%   \label{fig:venn}
+%\end{figure}
 
 This observation and the fact that terms are originating from the full span of time series prompted
 the idea that SAX-VSM classifier might be robust to the loss of signal in unlabeled
-series. Intuitevely, if some of the class representative terms will be lost, the cosine
+series. Intuitively, if some of the class representative terms will be lost, the cosine
 similarity might not degrade significantly enough to cause missclassification.
 
 While we plan to perform more exploration, at this point we found, that by randomly replacing up
@@ -615,7 +620,7 @@ allowing further insight into interpretability.
 \end{figure}
 
 \subsection{Gun Point data}
-Following previosly mentioned shapelet-based work \cite{shapelet} and\cite{bagnal}, 
+Following previously mentioned shapelet-based work \cite{shapelet} and\cite{bagnal}, 
 we used a well-studied \textit{GunPoint} data set \cite{gun} to explore the 
 interpretability of classification results. This data set contains two classes: 
 time-series in \textit{Gun} class correspond to the actors hands motion when drawing a 
@@ -697,7 +702,7 @@ SAX and Vector space model outperforms other distance metrics. We applied
 hierarchical clustering procedure to \textit{SyntheticControl} dataset clustering
 nine time series in total: three from each of the classes \textit{normal, decreasing trend}, and 
 \textit{upward shift}. Figure \ref{fig:hc} depicts the clustering results. 
-As one can see, SAX-SVM is superior in clustering performance to Euclidean and DTW distance 
+As one can see, SAX-VSM is superior in clustering performance to Euclidean and DTW distance 
 metrics in this particular setup producing a hierarchy which properly partitions the data set 
 into three branches.
 
