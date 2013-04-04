@@ -320,46 +320,49 @@ To clarify this issue, we experimented with original combination of a sampling s
 and a distance function and found it useful in the parameters optimization scheme. 
 For most of the datasets, inclusion of the reduction significantly reduced the DIRECT 
 scheme convergence time and improved its accuracy. 
-Moreover, once we relaxed the ``triviality constraints'' we were able to improve the 
-SAX-VSM classification accuracy. Thus, we shall explain this in greater detail.
-
-As noted in \cite{sax}, given a character subsequence $\hat{S_{i}}$ extracted by the use 
-of sliding window and SAX, it is very likely, that $\hat{S_{i}}$ is very similar to its
-neighboring subsequences, $\hat{S_{i-1}}$ and $\hat{S_{i+1}}$ (i.e. those that start one 
-point to the left, and one point to the right of $\hat{S_{i}}$), especially if $\hat{S_{i}}$
-is in the smooth region of the time series - due to the dimensionality reduction. 
-This phenomena results in mapping of multiple consecutive subsequences
-to the same string. The authors called these subsequences as ``trivial matches'' of 
-$\hat{S_{i}}$, and suggested to avoid their over-counting by introducing a 
-``numerosity reduction technique''. This technique is based on the custom distance 
-function \textit{MINDIST} \cite{streaming_sax}, and accounts only for the first 
-occurrence of $\hat{S_{i}}$. 
-
-Similarly to \textit{MINDIST} we define a $dist$ function for two
-SAX words $\hat{Q}$ and $\hat{C}$ as
-\begin{equation}
- dist(\hat{q_{i}},\hat{c_{i}})=
-        \begin{cases} \qquad  0, & \mbox{, if } | \hat{q_{i}} - \hat{c_{i}} | \leq 1 \\
-         ASCIIdist( \hat{q_{i}} , \hat{c_{i}} ) & \mbox{, otherwise } 
-        \end{cases}
-\end{equation} 
-where $ASCIIdist( \hat{q_{i}}, \hat{c_{i}} )$ is the absolute value of the difference between 
-ASCII codes for letters $\hat{q_{i}}$ and $\hat{c_{i}}$.
-
-By using this function we modified the process a bag of words construction: 
-while sliding a window across a time series and extracting consecutive words
-as explained in Section \ref{bow_representation}, we compare each newly 
-extracted word to the last word added to the bag using $dist$ function. 
-If these words appear to be equal, we discard the new (to be added) word and 
-continue as usual. Since this numerosity reduction strategy is based 
-on previous work we called it $CLASSIC$.
-
-By further experimentation, we discovered, that if we relax this numerosity reduction
-strategy by using Hamming distance \cite{hamming} instead of $dist$ function
-defined above, it is possible to further improve SAX-VSM accuracy for fourteen 
-out of thirty one datasets we used for validation (see \cite{jmotif}). 
-We called this numerosity reduction strategy EXACT, since the use of Hamming 
-distance prevents only exact consecutive trivial matches to be placed into the bag. 
+Moreover, once we relaxed the ``triviality constraints'' by substitution of 
+\textit{MINDIST} function \cite{streaming_sax} with Hamming distance \cite{hamming}, 
+we were able to improve the SAX-VSM classification accuracy for fourteen 
+out of thirty one datasets we used for validation (see \cite{jmotif}).
+%
+%Thus, we shall explain this in greater detail.
+%As noted in \cite{sax}, given a character subsequence $\hat{S_{i}}$ extracted by the use 
+%of sliding window and SAX, it is very likely, that $\hat{S_{i}}$ is very similar to its
+%neighboring subsequences, $\hat{S_{i-1}}$ and $\hat{S_{i+1}}$ (i.e. those that start one 
+%point to the left, and one point to the right of $\hat{S_{i}}$), especially if $\hat{S_{i}}$
+%is in the smooth region of the time series - due to the dimensionality reduction. 
+%This phenomena results in mapping of multiple consecutive subsequences
+%to the same string. The authors called these subsequences as ``trivial matches'' of 
+%$\hat{S_{i}}$, and suggested to avoid their over-counting by introducing a 
+%``numerosity reduction technique''. This technique is based on the custom distance 
+%function \textit{MINDIST} \cite{streaming_sax}, and accounts only for the first 
+%occurrence of $\hat{S_{i}}$. 
+%
+%Similarly to \textit{MINDIST} we define a $dist$ function for two
+%SAX words $\hat{Q}$ and $\hat{C}$ as
+%\begin{equation}
+ %dist(\hat{q_{i}},\hat{c_{i}})=
+        %\begin{cases} \qquad  0, & \mbox{, if } | \hat{q_{i}} - \hat{c_{i}} | \leq 1 \\
+         %ASCIIdist( \hat{q_{i}} , \hat{c_{i}} ) & \mbox{, otherwise } 
+        %\end{cases}
+%\end{equation} 
+%where $ASCIIdist( \hat{q_{i}}, \hat{c_{i}} )$ is the absolute value of the difference between 
+%ASCII codes for letters $\hat{q_{i}}$ and $\hat{c_{i}}$.
+%
+%By using this function we modified the process a bag of words construction: 
+%while sliding a window across a time series and extracting consecutive words
+%as explained in Section \ref{bow_representation}, we compare each newly 
+%extracted word to the last word added to the bag using $dist$ function. 
+%If these words appear to be equal, we discard the new (to be added) word and 
+%continue as usual. Since this numerosity reduction strategy is based 
+%on previous work we called it $CLASSIC$.
+%
+%By further experimentation, we discovered, that if we relax this numerosity reduction
+%strategy by using Hamming distance \cite{hamming} instead of $dist$ function
+%defined above, it is possible to further improve SAX-VSM accuracy for fourteen 
+%out of thirty one datasets we used for validation (see \cite{jmotif}). 
+%We called this numerosity reduction strategy EXACT, since the use of Hamming 
+%distance prevents only exact consecutive trivial matches to be placed into the bag. 
 
 At this point we unable to further comment on these experimental results and 
 leaving this phenomena for the future research.
@@ -571,6 +574,7 @@ of the Table \ref{perf_table}.
    \label{fig:precision-runtime}
 \end{figure}
 
+\enlargethispage{0.5cm} 
 \subsection{Scalability analysis}
 For synthetic data sets, it is possible to create as many instances as one need for experimentation.
 We used CBF data set \cite{cbf} to investigate the performance of SAX-VSM and 1NN Euclidean
@@ -611,19 +615,20 @@ While we plan to perform more exploration, current experimentation with CBF data
 promising results. In one series of experiments, we randomly replaced up to fifty percent of a
 time series span with a random noise and found, that SAX-VSM is performing consistently better 
 than 1NN Euclidean classifier regardless of a training set size which we varied from five to
-ten thousands. In another series of experiments, we introduced a random noise into unlabeled
+ten thousands (Fig.\ref{fig:corrupted}). 
+In another series of experiments, we introduced a random noise into unlabeled
 series, ranging its varying its standard deviation up to XX percent. In this experiments, SAX-VSM
-also performed significantly better than 1NN Euclidean classifier. However, this result we
-attribute to the PAA and SAX ability to withstand the noise.
+also performed significantly better than 1NN Euclidean classifier (Fig.\ref{fig:corrupted}). 
+However, this result we attribute to the PAA and SAX ability to withstand the noise.
 
-%\begin{figure}[t]
- %  \centering
-  % \includegraphics[width=120mm]{figures/corrupted.ps}
-%\caption{Left panel: Illustration of classification performance with presence of noise
-%(left panel), 
-%   and with signal loss (right panel).}
- %  \label{fig:corrupted}
-%\end{figure}
+\begin{figure}[t]
+  \myfigureshrinker
+  \centering
+  \includegraphics[width=115mm]{figures/corrupted.ps}
+  \caption{Left panel: Illustration of classification performance with presence of noise
+ (left panel),  and with signal loss (right panel).}
+  \label{fig:corrupted}
+\end{figure}
 
 \subsection{Exploratory data analysis}
 While classification results reported in previous section show that SAX-VSM classifier
@@ -754,41 +759,43 @@ short, synthetic datasets. However, when we applied our technique on the long ti
 originating from PhysioNet archive \cite{physionet}, similarly to \cite{bag_patterns} we found, 
 that our approach consistently delivers .... \cite{kmetrics}
 
-While we have not conducted further experimental evaluation study, previously, our 
-implementation was applied to recurrent behaviors discovery in software development 
-\cite{android}. We have used bag of words time series representation and k-Means clustering in
-order to capture the specific temporal features corresponding to the software release cycle.
+While we have not yet conducted a further experimental evaluation study, previously, we 
+applied our implementation to recurrent behaviors (motifs) discovery in software development 
+telemetry streams\cite{android}. 
+These behavioral time series were extracted from software change repositories and are 
+structurally similar to \textit{ElectricDevices} dataset. 
+We have used the bag of words 
+time series representation and spherical k-Means clustering in order to discover specific 
+temporal features corresponding to the software release cycle. 
 Specifically, we optimized SAX parameters in order to obtain a proper partitioning of known 
-development behaviors represented by telemetry streams collected through analysis of 
-software artifact trails. In turn, the centroids of these clusters were used to classify unlabeled 
-telemetry streams. This technique allowed us to successfully classify unlabeled behaviors 
-achieving over eighty percent accuracy rate.
+development behaviors before and after the software release. In turn, the centroids of these 
+clusters represented by \textit{tf$\ast$idf} weights vectors were used to classify unlabeled  
+temporal intervals. This technique allowed us to successfully classify pre- and post-release
+behaviors with accuracy above eighty percents.
 
 \section{Conclusion and Future Work}
 In this paper, we have proposed a novel technique for time series classification based on 
 characteristic patterns discovery. We have shown, that our approach is competitive with, 
-or superior to, other techniques on a variety of classic data mining problems. 
-
-Our approach has several advantages over existing structure-based similarity measures.
+or superior to, other techniques on a variety of classic data mining problems. In addition, 
+we described several advantages of SAX-VSM over existing structure-based similarity measures.
 Specifically, it is capable to simultaneously consider local and global structural similarity by 
-using time series subsequences and vector space model. In addition, by employing
-\textit{tf$\ast$idf} weighting scheme, SAX-VSM allows users to discriminate time series
-subsequences by their class characterization power.
+using short overlapping time series subsequences and Vector space model. 
+In addition, by employing \textit{tf$\ast$idf} weighting scheme, SAX-VSM allows users to 
+discriminate time series subsequences by their class characterization power.
 
 The current limitations of our SAX-VSM implementation suggest a number of future work directions. 
-First of all, while Vector space model naturally supports processing of bags of words composed of
-of terms of variable length, our implementation lacks this capacity. Since accounting for variable 
-lengths shapelets demonstrated superior performance \cite{bagnal} in shapelet-based classifiers,
-we prioritize the further development in this direction
-. Secondly, the choice of optimal parameter set for the SAX-VSM algorithm remains challenging - 
-while DIRECT optimization provides satisfiable performance, it is designed for functions of a real 
+First of all, while Vector space model naturally supports processing of bags of words composed 
+of terms of variable length, our implementation lacks this capacity. We prioritize the development in 
+this direction inspired by the recently reported superior performance of multi-shapelets based
+classifiers \cite{bagnal}.
+Secondly, the choice of optimal parameter set for SAX-VSM remains challenging.
+While DIRECT optimization provides satisfiable performance, it is designed for a function of a real 
 variable. By using rounding in our implementation, we have observed DIRECT iteratively sampling 
-redundant locations, thus, more appropriate optimization scheme is our next priority. 
-Finally, we experimented with application of our technique to multidimensional time 
-series classification. 
-In one series of experiments we used a single bag of words for all dimensions by adding 
-prefixes to words extracted from different dimensions. 
-In another series of experiments, we used a single bag of words for a single dimension. 
+redundant locations. 
+Finally, we are working on the extension of SAX-VSM to multidimensional time series classification.
+For this, we are experimenting with two implementations: the first is based on a single bag of words
+accommodating all dimensions by prefixing SAX words extracted from different dimensions;
+while the second implementation is based on the use of a single bag of words per dimension.
 The preliminary results look promising and we are considering further experimentation.
 
 %
@@ -1010,7 +1017,6 @@ Proc. of the Fifth Berkeley Symp. On  Math. Stat. and Prob., 1, 281--296 (1967)
 Bradley, P., Fayyad, U., Reina, C.:
 Scaling clustering algorithms to large databases. 
 In Proc. KDD, 9--15 (1998)
-\enlargethispage{0.5cm} 
 
 %36
 \bibitem {zhao}
