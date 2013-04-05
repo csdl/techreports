@@ -412,8 +412,8 @@ symbolic representation.  For this, our algorithm converts a real valued time se
 into SAX string representation configured by four parameters: the sliding window
 length (\textit{W}), the number of PAA frames per window (\textit{P}), the SAX alphabet size
 (\textit{A}), and by the numerosity (complexity) reduction strategy (\textit{S}). 
-As we mentioned, each of the extracted with sliding window subseries is normalized
-before being processed with PAA 
+As we mentioned, each of the extracted with sliding window subseries is z-normalized
+before being processed with PAA.
 %\cite{goldin_kanellakis}. 
 If, however, 
 the standard deviation of the time-series values is below a fixed epsilon threshold, 
@@ -439,7 +439,7 @@ The series is assigned to the class whose vector yields the maximal Cosine simil
    Left panel shows all points sampled by DIRECT in the space $PAA*Window*Alphabet$; here
    red points correspond to high error values in cross-validation experiments, while green color 
    indicates low error values. Note the green points concentration at $W$=42.\\ 
-   Middle panel shows the error-rate heatmap when the sliding window size is fixed to 42, 
+   Middle panel shows the error-rate heat map when the sliding window size is fixed to 42, 
    this figure was obtained by a complete scan of all 432 points of the slice.\\ 
    Right panel shows the optimized by DIRECT sampling. The optimal solution 
    ($W$=42,$P$=8,$A$=4) was found by sampling of 43 points.}
@@ -455,9 +455,9 @@ designed to search for global minima of a real valued function over a bound-cons
 In our implementation we use rounding of parameters by nearest integer function.
 
 The algorithm iteratively performs two procedures - partitioning the search domain, 
-and identifying potentially optimal hyperrectangles (i.e., having potential to contain good
+and identifying potentially optimal hyper-rectangles (i.e., having potential to contain good
 solutions). 
-It begins by scaling the search domain to a n-dimentional unit hypercube which is considered 
+It begins by scaling the search domain to a n-dimensional unit hypercube which is considered 
 as potentially optimal. The error function is then evaluated at the center of this hypercube. Next, 
 other points are created at one-third of the distance from the center in all coordinate directions. 
 The hypercube is then divided into smaller rectangles which are identified by their center point 
@@ -483,16 +483,17 @@ This weighting scheme naturally improves the selectivity of classification
 by  lowering the contribution of ``confusive'' multi-class terms, and  increasing  the 
 contribution  of  class' ``defining'' terms to the final similarity value.   
 
-These particular specificities make SAX-VSM time series classification approach unique:
-an unlabeled time series is broken into a set of subsequences which, in turn, are 
-compared with all known subsequences from all training time series. Thus, an unlabeled 
-time series is assigned a label by its similarity not to a fixed number of sequences 
-(as in kNN classifiers) or to a fixed number of features (as in shapelet-based classifiers)
-but by a value of product of its subsequences similarity to all known subsequences.
-This, as we shall show, contribute to excellent classification performance on temporal data 
-sets where time series have low intraclass similarity at the full length, but embed 
-characteristic for the class subsequences. In particular, note SAX-VSM performance 
-on Electrical Devices data set \ref{perf_table}, and our experimentation results on 
+When combined, these particular specificities make SAX-VSM time series classification 
+approach unique: basically, within a classification phase, it compares a set of short 
+overlapping subsequences extracted from a full length of an unlabeled time series with 
+sets of weighted characteristic subsequences representing training classes.
+Thus, an unlabeled time series is assigned a label by its similarity not to a fixed number 
+of sequences (as in kNN classifiers) or to a fixed number of features (as in shapelet-based 
+classifiers) but by a value of product of its subsequences similarity to all known subsequences.
+This, as we shall show, contributes to the excellent classification performance on temporal 
+data sets where time series have very low intraclass similarity at the full length, but 
+embed characteristic for classes subsequences. In particular, note SAX-VSM performance 
+on Electrical Devices data set \ref{perf_table}, and our previous experimental results on 
 software process artifact trails \ref{trajectory}.
    
 \section{Results}
@@ -579,9 +580,9 @@ of the Table \ref{perf_table}.
 For synthetic data sets, it is possible to create as many instances as one need for experimentation.
 We used CBF data set \cite{cbf} to investigate the performance of SAX-VSM and 1NN Euclidean
 classifier on increasingly large training data sets of size 10, 50, 125, ..., 1000, and a fixed test
-dataset of 10000 instances. For small training data sets, SAX-VSM is signiﬁcantly more accurate
+dataset of 10000 instances. For small training data sets, SAX-VSM is significantly more accurate
 than 1NN Euclidean classifier, however, by the time we had more than 500 time series in
-our training set, there was no statistically signiﬁcant diﬀerence in accuracy (Fig.
+our training set, there was no statistically signifiant difference in accuracy (Fig.
 \ref{fig:precision-runtime}). 
 As per classification runtime cost, SAX-VSM was found more expensive than 1NN Euclidean classifier
 when training set is small mostly due to the training cost. For the large training sets, there was
@@ -609,7 +610,7 @@ grows following the grows of the training set size.
 This observation, and the fact that each of SAX words is covering only a small part of time 
 series, prompted the idea that SAX-VSM classifier might be robust to the loss of signal 
 in unlabeled series. Intuitively, in such a case, the cosine similarity might not
-degrade significantly enough to cause missclassification.
+degrade significantly enough to cause misclassification.
 
 While we plan to perform more exploration, current experimentation with CBF dataset revealed 
 promising results. In one series of experiments, we randomly replaced up to fifty percent of a
@@ -666,7 +667,7 @@ time-series in \textit{Gun} class correspond to the actors hands motion when dra
 a replicate gun from a hip-mounted holster, pointing it at a target for a second,
 and returning the gun to the holster; 
 time-series in \textit{Point} class correspond to the actors hands motion when pretending
-of drawing a gun - the actors point their index fngers to a target for about a second, 
+of drawing a gun - the actors point their index fingers to a target for about a second, 
 and then return their hands to their sides. 
 
 Similarly to previously reported results \cite{shapelet} \cite{bagnal}, 
@@ -753,20 +754,24 @@ authors extensively examined seven different criterion functions for partitional
 clustering and found that \textit{k}-prototypes partitioning with cosine dissimilarity delivers a
 very good performance. 
 
-We implemented a similar to \cite{modha} \textit{spherical k-means algorithm} an found through
+We implemented a similar to \cite{modha} \textit{spherical k-means algorithm} and found through
 experimentation, that algorithm converges quickly delivering satisfactory partitioning on
-short, synthetic datasets. However, when we applied our technique on the long time series 
-originating from PhysioNet archive \cite{physionet}, similarly to \cite{bag_patterns} we found, 
-that our approach consistently delivers .... \cite{kmetrics}
+short, synthetic datasets. In addition, we evaluated our technique on the long time series 
+originating from PhysioNet archive \cite{physionet}. We extracted 250 series corresponding
+to five vital signals: two ECG leads, RESP wave, PLETH wave, and  CO2 wave,
+trimming them to 2'048 points. Similarly to \cite{bag_patterns}, we run a reference k-Means 
+algorithm implementation based on Euclidean distance, which achieved the maximum 
+clustering quality of 0.39, when measured as proposed in \cite{kmetrics} on the best 
+clustering (the one with the smallest objective function in 10 runs). 
+SAX-VSM k-Means implementation outperformed the reference technique yielding clusters 
+with a quality of 0.67 (for a $W$=33, $P$=8, $A$=6).
 
-While we have not yet conducted a further experimental evaluation study, previously, we 
-applied our implementation to recurrent behaviors (motifs) discovery in software development 
-telemetry streams\cite{android}. 
+Note also, that previously, we applied our implementation to recurrent behaviors (motifs) 
+discovery in software development telemetry streams\cite{android}. 
 These behavioral time series were extracted from software change repositories and are 
 structurally similar to \textit{ElectricDevices} dataset. 
-We have used the bag of words 
-time series representation and spherical k-Means clustering in order to discover specific 
-temporal features corresponding to the software release cycle. 
+We have used the bag of words time series representation and spherical k-Means clustering 
+in order to discover specific temporal features corresponding to the software release cycle. 
 Specifically, we optimized SAX parameters in order to obtain a proper partitioning of known 
 development behaviors before and after the software release. In turn, the centroids of these 
 clusters represented by \textit{tf$\ast$idf} weights vectors were used to classify unlabeled  
