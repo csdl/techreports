@@ -167,25 +167,27 @@ insight into the data, while the next is that it needs a significantly large tra
 
 In this work, we propose yet another alternative to 1NN algorithm. Similarly to shapelets, our
 technique rests on finding time series subsequences that are characteristic representatives of
-classes. 
-However, instead of iterative search for shapelets, our algorithm finds and weights by
+class. 
+However, instead of iterative search for these (as in shapelets case), our algorithm finds and weights by
 ``importance'' all potential candidate subsequences at once. 
 In addition, being built upon SAX approximation which facilitates smoothing and elasticity, 
 our technique performs well on noisy data and learns efficiently from a small training set.
-All these characteristics, in turn, enable precise classification, clustering, and facilitate 
+All these specificities, in turn, enable precise classification, clustering, and facilitate 
 a discovery of characteristic patterns.
 
-\enlargethispage{0.5cm} 
+\enlargethispage{0.6cm} 
 \section{Background}
 Our methodology is based on two well-known techniques. The first technique is 
 Symbolic Aggregate approXimation \cite{sax}, which is a high-level symbolic  representation 
 of time series data. The second technique is a well known in Information Retrieval (IR) 
 Vector Space Model \cite{salton}. 
-By utilizing SAX, our algorithm transforms labeled time series into collections of SAX 
-words (terms). At the following step, it utilizes \textit{tf$\ast$idf} terms weighting for a 
-classifier construction. The SAX-VSM classification relies on cosine similarity metric.
+By utilizing a sliding window subsequence extraction and SAX, our algorithm transforms 
+labeled time series into collections of SAX words (terms). 
+At the following step, it utilizes \textit{tf$\ast$idf} terms weighting for a classifier 
+construction. 
+The SAX-VSM classification relies on cosine similarity metric.
 
-SAX algorithm, however, requires three parameters to be provided as an input, and as per 
+SAX algorithm, however, requires two parameters to be provided as an input, and as per 
 today, there is no efficient solution for parameters selection known to the best of our knowledge. 
 To solve this problem, we employ a global optimization scheme based on the divided rectangles
 (DIRECT) algorithm \cite{direct}. DIRECT is a derivative-free global optimization process
@@ -220,15 +222,15 @@ allowed significant shapelets discovery speed improvement in Fast-Shapelets \cit
 %distribution space into $\alpha$ equiprobable regions \cite{sax}.
 Configured by two parameters - a desired word size $w$ and an alphabet size $A$,
 SAX produces a symbolic approximation of a time-series $T$ of a length $n$ by compressing 
-it into a string of a defined length $w$ ($w << n$) where letters are taken from an alphabet $\alpha$
-($|\alpha|=A$). 
+it into a string of the length $w$ (usually $w<<n$), whose letters are taken from 
+the alphabet $\alpha$ ($|\alpha|=A$). 
 At the first step of the algorithm, $T$ is z-normalized (to unit of standard deviation) \cite{goldin_kanellakis}. 
 At the second step, a dimensionality of the normalized time series is reduced from $n$ to $w$ by
 obtaining its Piecewise Aggregate Approximation (PAA); for this, the normalized time series is
 divided into $w$ equal-sized segments and mean values for points within each segment are computed.
 The aggregated sequence of these mean values forms PAA approximation of $T$. Finally, each of $w$
 PAA coefficients is converted into a letter of an alphabet $\alpha$ by the use of the lookup table.
-This table is built by defining a set of breakpoints that divide the normalized time series distribution 
+This table is pre-built by defining a set of breakpoints that divide the normalized time series distribution 
 space into $\alpha$ equiprobable regions. The design of these tables rests on the assumption 
 that normalized series tend to have Gaussian distribution \cite{larsen_marx}.
 
@@ -455,8 +457,7 @@ cosine similarity value.
    \myfigureshrinker
    \centering
    \includegraphics[width=115mm]{figures/figure_direct.eps}
-   \caption{Illustration of parameters optimization with DIRECT 
-   for \textit{SyntheticControl} dataset. 
+   \caption{Parameters optimization with DIRECT for \textit{SyntheticControl} dataset. 
    Left panel shows all points sampled by DIRECT in the space $PAA*Window*Alphabet$; here
    red points correspond to high error values in cross-validation experiments, while green color 
    indicates low error values. Note the green points concentration at $W$=42.\\ 
@@ -467,12 +468,12 @@ cosine similarity value.
    \label{fig:direct-sampling}
 \end{figure}
 
-\subsection{SAX parameters selection} \label{section-direct}
-As explained, at this point of SAX-VSM algorithm development, it requires SAX parameters 
-to be specified upfront. Currently, in order to select the optimal parameters set while
-knowing only the training set, we use a common cross-validation scheme and the 
-DIRECT (DIviding RECTangles) algorithm, which was introduced by 
-Jones et al. \cite{direct-original}.
+\subsection{Sliding window size and SAX parameters selection} \label{section-direct}
+At this point of SAX-VSM classification algorithm development, it requires a sliding 
+window size and SAX parameters to be specified upfront. 
+Currently, in order to select optimal parameters values while knowing only a 
+training data set, we use a common cross-validation scheme and DIRECT (DIviding RECTangles) 
+algorithm, which was introduced by Jones et al. \cite{direct-original}.
 However, DIRECT optimization scheme is designed to search for global minima of a real 
 valued function over a bound-constrained domain. In order to overcome this limitation, we 
 employ the rounding of reported solution values to the nearest integer.
@@ -487,7 +488,8 @@ The hypercube is then divided into smaller rectangles which are identified by th
 and their error function value. This procedure continues interactively until error function
 converges.
 For brevity, we omit the detailed explanation of the algorithm, and refer the 
-interested reader to \cite{direct} for additional details about our implementation.
+interested reader to \cite{direct} for additional details. Figure  \ref{fig:direct-sampling} 
+illustrates the application of DIRECT to \textit{SyntheticControl} data set.
 
 \subsection{Intuition behind SAX-VSM}
 First of all, by combining \textit{\textbf{all}} SAX words observed in \textit{\textbf{all}}
@@ -544,10 +546,10 @@ classifiers: two 1NN classifiers based on Euclidean distance and DTW,
 and two classifiers based on the recently proposed shapelet technique: 
 the shapelet decision tree \cite{shapelet, logical} classifier and 
 the shapelet transform classifier \cite{bagnal}. 
-We selected these techniques in order to position SAX-VSM in terms of accuracy 
-and interpretability. 
-These particular datasets,represent a subset of known benchmark data for which 
-we were able to collect classification accuracy results of all four classifiers. 
+We selected these particular techniques in order to position SAX-VSM 
+in terms of accuracy and interpretability. 
+The presented comparison data sets selection is limited to the number 
+of previously published benchmark results for all of four competing classifiers. 
 The performance of SAX-VSM for the rest of the data sets can be found online 
 along with our reference implementation \cite{jmotif}.
 
