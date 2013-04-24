@@ -1,56 +1,125 @@
 \chapter{System Design}
 \label{cha:system-description}
 
-The system to be evaluated is a combination of an energy competition between residents of two freshman residence halls, and an associated competition website to be used by the residents participating in the event. The system has three goals:
+Makahiki, represents research intended to create synergy between the need to create knowledge and engagement regarding energy and the ability of so-called ``serious game'' techniques and energy feedback to create participation and engagement \cite{Deterding2011mt,darby-review-2006,Faruqui09,petersen-dorm-energy-reduction}. In Makahiki, online game mechanics are employed with the goal of affecting real-world energy behaviors~\cite{csdl2-10-07}.  The ultimate goal is to not just affect energy behaviors during the course of the game, but to produce long lasting, sustained change in energy behaviors and outlooks by participants. Figure \ref{fig:makahiki-architecture} illustrates the architecture of Makahiki.
 
-\begin{itemize}
-	\item Enable research into fostering sustainable environmental behavior change
-	\item Improve the energy literacy of the participants
-	\item Reduce the energy consumption of the residence halls
-\end{itemize}
+\begin{figure}
+\begin{center}
+\epsfig{file=makahiki-system-architecture, width=0.95\columnwidth}
+\end{center}
+\caption{Architecture of Makahiki}
+\label{fig:makahiki-architecture}
+\end{figure}
 
-The participants compete both to reduce energy consumption in the participating residence halls, and to accumulate points by performing tasks related to energy literacy and conservation through the competition website.
+Makahiki consists of a configurable game engine that can be customized to the needs of different organizations.  It includes a library of pre-built game ``widgets'' that implement a variety of game mechanics.  Using the widgets, an organization can create a custom energy challenge in which players can compete individually and/or in teams to earn the most points by reducing their energy consumption as well as by learning about energy concepts in general.  The next sections present some of the most important widgets in Makahiki.
 
-This chapter describes the components of the system, and ends with a discussion of the factors that pose a risk to the successful implementation and evaluation of the system.
+\section{Configurable Game Elements}
 
-\section{Responsive UI Design}
+\subsection{Smart Grid Game}
 
-We will examine the behavior of freshmen residents in student housing at the University of \Hawaii at \Manoa in the context of a energy competition. An student housing energy competition typically involves residence halls attempting to reduce their energy consumption during the competition period by the greatest amount. The competition planned here is more complicated than standard competitions so that we can obtain data on a wider variety of behavior. The working name for the competition is the Kukui Cup. The kukui nut was burned by Native Hawaiians to provide light, making it an early form of energy in \Hawaii.
+The Smart Grid Game widget shown in Figure \ref{fig:SmartGrid}, is the primary place players go to learn about energy issues and earn points. Actions are organized into a grid of squares (hence the name ``Smart Grid'') and organized by category columns. The game supports levels so that a large number of actions can be presented in a sequence of smaller grids. Each grid contains four different types of actions: activities, commitments, events, and excursions.
 
-\section{Cloud-based Deployment}
+\begin{figure}[th]
+  \center
+  \includegraphics[width=0.95\columnwidth]{smart-grid.eps}
+  \caption{\em Smart Grid Game widget}
+  \label{fig:SmartGrid}
+\end{figure}
 
-The core infrastructure required to enable an energy competition is electricity metering. In \Hawaii, the vast majority of energy used in buildings is electricity, so measuring direct energy use reduces to measuring electricity use. While building-level metering is common for energy competitions, for this competition we plan to have floor-level metering of electricity. Metering at the floor level has several advantages:
-
-\begin{itemize}
-	\item Finer-grained data about electricity usage
-	\item Individual behavior changes more likely to be visible in data
-	\item Makes the residents of a floor a natural `unit' of competition
-\end{itemize}
-
-We also require that the meters provide sub-minute sampling times, preferably 10 to 15 seconds. This is an unusual requirement for meters used outside the home. We term this requirement \emph{near-realtime} monitoring. As discussed in \autoref{sec:energy-feedback}, providing near-realtime feedback on energy use is associated with greater reductions in energy consumption. Near-realtime feedback also enables participants to empirically determine how much electricity different devices consume, and become more aware of their energy use.
-
-The other meter requirements are provision of an open API to allow retrieval of the data, and affordable pricing.
-
-We have evaluated several building energy meters based on these criteria, and found 4 meters that meet all the criteria. All 4 meters support the Modbus/TCP protocol \cite{modbus-website}, which allows the meters to be queried over the Internet using a standardized protocol. Final selection of the meter will be done based on feedback from UHM facilities and the results of development of software to read data from the meters.
-
-Installation of the meters involves placing current transformers over the incoming power lines in the electrical room on each floor. The current transformers convert current flowing over lines providing each phase into a small voltage which is then measured by the electrical meter. The electrical meters under consideration all have Ethernet ports, allowing them to be connected directly into the residence hall LAN. Once connected to the UHM network, they can be queried from any location.
-
-The other infrastructure required is to place large TV display connected to an Internet-connected computer in the lobby of each building. This display will be used as a `billboard' that cycles through information about the competition, such as the floor standings and upcoming events (see \autoref{sec:billboard-design}). The Hale Aloha towers already have flat panel displays present in the lobby, which might be suitable for billboard display. Otherwise, two displays will need to be purchased. Some manufacturers make large format displays that embed a Windows PC in the display and are designed for this type of usage (such as the Samsung 460UXN-2, which costs approximately \$2,000).
-
-\section{Pluggable Game Components}
-
-Using the competition metrics, we can define various awards that can be won in the competition. In the event of ties, the winner will be resolved by random selection. Since the competition consists of 4 rounds, a common pattern is to have an award for each of rounds 1 through 3, and then an award for the entire competition (all 4 rounds). To incentivize participation, each award has an associated prize. We define the following awards for individuals. Note that all individual awards relate to KN since energy data only goes down to the floor level, not individual:
-
-\section{Configurable Game Instance}
+{\em Activities} are the most basic actions available in the Smart Grid. In order to get points for an activity, a player will have to provide a response to the administrators. These responses can be a short textual answer or an uploaded picture. Administrators access a special section of the web application to approve or deny submissions. If a submission is approved, the player will receive points, as well as website notification about the approval. If a submission is rejected, the player will be sent a website notification informing them that their submission was not approved, and a textual description by the administrator of why it was rejected. The player can change and resubmit their response and still earn the full point value for that activity.
 
 
-While the impetus for the website is to support the competition, it is also intended to be provide information about the competition and residence hall energy consumption to the public (non-participants). Therefore, the website is conceived as a general portal into residence hall energy usage that will be available before and after the competition. During the competition period, the competition-specific portions of the website will be made available to participants. \autoref{fig:website-home} shows a mockup of the front page of the website, where we can see overall residence hall energy consumption.
+{\em Commitments} are pledges that the player will do something related to energy or sustainability for a period of five days. Examples include: reducing shower time, taking the stairs, and turning off the lights when leaving a room. Although these commitments are not verifiable, they are public and visible to other players in the same team and worth fewer points than activities. Furthermore, a player is limited to five active commitments at any given time. After the five day period is up, the player can then declare that they completed the commitment and immediately earn their points. They can then sign up for another commitment, including the one they just completed.
 
-\section{Energy Literacy Contents}
+{\em Events and excursions} are tied to real world activities. Events are held locally while excursions require transportation. Seating is limited, so players are asked to sign up for events or excursions they wish to attend. Players that do so are provided with a 2 point signup bonus. Players can also set up a reminder that is sent to their email and/or their mobile phone before the event takes place. At the event, an administrator will hand out attendance codes printed on slips of paper that can be entered on the website. These attendance codes are generated by Makahiki and can only be used once. To discourage players from signing up and not attending, a 2 point penalty is applied to players who do not submit an attendance code. If the player submits an attendance code for the event after receiving this penalty, the penalty is reversed.
 
-Competition participants will be able to log into the website using their UH username and password, which will lead them to a personalized home page. The website will provide the following information to participants:
+Not all of the actions and levels in the Smart Grid Game are necessarily available at
+the start of the game. We provide a set of predicates that can be used to determine if an action or level is locked or unlocked for a player. These predicates include: completed a certain number of actions within a category, completed all actions within a category, completed  a certain action, and unlocking of an action or level after a certain date.
+
+These predicates are implemented using a limited subset of Python and can
+be changed within the administrative interface. Challenge designers can use
+logical operators to combine any of these functions in order to organize
+the players' path through the Smart Grid Game.
+
+\subsection{Power Meter}
+
+A fundamental requirement for enabling more active participation by consumers in the smart grid is feedback regarding their energy usage.  One of the most simple mechanisms provided by Makahiki for this purpose is the Power Meter widget, illustrated in Figure \ref{fig:PowerMeter}.
+
+\begin{figure}[th]
+  \center
+  \includegraphics[width=0.95\columnwidth]{power-meter.eps}
+  \caption{\em Power Meter widget}
+  \label{fig:PowerMeter}
+\end{figure}
+
+The Power Meter widget provides basic feedback on energy consumption via a display of the team's power consumption, updated every few seconds.  The visualization can normalized using baseline values so that when the needle is pointing straight up, the power consumption is the average for that team during that specific hour of that specific day of the week.  Thus, if the needle leans left toward the green side, the team's power consumption at that moment in time is below average, while if the needle leans right toward the red side, the team's power consumption at that moment in time is above average.
+
+The Power Meter widget obtains its values by querying the WattDepot system for the latest power data consumed by the associated team.  The use of WattDepot, rather than directly querying the meter(s), simplifies the widget design significantly.  First, the physical meters can vary significantly in the protocol implemented to obtain current power consumption.   These protocol variations are handled by the WattDepot sensors, so this widget can simply query the WattDepot server using a single HTTP request that is independent of the physical meter characteristics.  Second, the power consumed by a team might be measured by one or multiple meters.  Again, the WattDepot source aggregation capability means that this physical difference can be abstracted away by WattDepot, enabling the widget to obtain the aggregate power for the team through a single HTTP request.
+
+The Power Meter widget is a useful, though simple mechanism for energy feedback that uses the WattDepot+Makahiki stack.   The next section presents a more sophisticated mechanism called the Daily Energy Goal Game.
+
+\subsection{Daily Energy Goal Game}
+
+The Daily Energy Goal Game widget provides a way for players to earn points by reducing their current energy consumption from a baseline. This baseline can be calculated using historical data or dynamically throughout the competition. Both the baseline data and the current consumption is typically provided by API calls from Makahiki to an underlying WattDepot server.
+Figure \ref{fig:DailyEnergyGoal} illustrates this widget.
+
+\begin{figure}[th]
+  \center
+  \includegraphics[width=0.95\columnwidth]{daily-energy-goal-game.eps}
+  \caption{\em Daily Energy Goal Game widget}
+  \label{fig:DailyEnergyGoal}
+\end{figure}
+
+The goal for each team is typically a percent reduction from their baseline usage. When a player goes to the energy page of Makahiki, they can view their team's current progress toward their daily energy goal. Near the end of the day, Makahiki checks the energy data from Wattdepot to see if a floor reached their goal. If the floor did reach their goal, each member of the floor that is participating in the game receives points. The energy goal game provides a link between the energy conservation competition and the point competition.
+
+The Daily Energy Goal display shows both their current progress and their goal so far. We have noticed that our participants use more energy at night rather than during the day. Thus, it is easy to be under their actual energy goal for most of the day and then jump over the goal at the very end. Displaying their progress toward the goal so far provides a pace for players to follow.
+
+\subsection{Raffle Game}
+
+The Raffle Game widget provides a way to incentivize participation from all individuals, even those who are not in the running for a top prize. For every 25 points a player earns, they receive one virtual raffle ticket. Players can dynamically allocate their tickets to any raffle prizes they are interested in at any time, up to the end of the raffle. Figure \ref{fig:RaffleGame} shows an example of the Raffle Game.
 
 
-\autoref{fig:website-maile} shows a mockup of the personalized home page for a participant named Maile. On the left hand side we see Maile's profile, showing her name, room number, and how many Kukui Nut points she has accumulated during the competition. The center column of the page relates to the tasks that Maile can perform to gain Kukui Nut points (\autoref{sec:competition-tasks} describes the task system in detail). The right hand side displays both power data and competition standings. The upper number is the near-realtime power usage for Maile's floor, which is colored in red as an indicator that this value is above the pre-competition baseline. The lower number is the total electrical consumption for Maile's floor in this round, which is colored in green since it is below the baseline and on target to meet the floor's goal of a 10\% reduction in energy usage for this round. The box in the lower right hand corner displays the competition standings that are most relevant to Maile.
+\begin{figure}[th]
+  \center
+  \includegraphics[width=0.95\columnwidth]{raffle-small.eps}
+  \caption{\em Raffle Game widget}
+  \label{fig:RaffleGame}
+\end{figure}
+
+Each round of the competition has its own set of raffle prizes and any unused raffle tickets carry over to the next round. Raffle tickets are independent from a player's score, and allocating a raffle ticket does not affect their rank. The system provides random selection of the winner of each raffle item at the end of a round.
+
+\subsection{Social and Referral Bonuses Game Mechanics}
+
+The Social and Referral Bonus widgets are the game mechanics that help encourage participation by providing additional points to players who participate in activities with other players, and facilitate the entry of new players into an energy challenge.
+
+The social bonus is an configurable option when an action is created in the Smart Grid Game. Players earn extra points if they perform the action with another player. Examples of actions with a social bonus include attending an event, recording a song related to energy, or measuring a shower water flow rate. When a player submits a response for an action with a social bonus, the player can provide the email address of the person who jointly completed the action. Once the other player completes the action, the social bonus is awarded. Social bonuses are not bi-directional; if the second player doesn't provide the first player's email address, only the first player will get the social bonus.
+
+Players are led through a setup process when logging into Makahiki for the first time. One of the steps in this process is the referral bonus. If a player was referred by another player in the system, they can use this step to input their email address. Once the new player earns a certain number of points in the competition, both players are awarded a referral bonus of a configurable number of points. Typically, going through the setup process gives you 25 points, so setting a point threshold of 30 points encourages the new player to at least complete one additional action in order to get the referral bonus.
+
+\subsection{Quest Game Mechanics}
+
+One challenge we faced when designing Makahiki was providing adequate help to the player. The game needed to be intuitive, even if a new player is not familiar with energy challenges. Unlike many web applications, such as email, Makahiki players generally do not know in advance what specific actions they wish to accomplish. In an effort to provide a player with guidance through Makahiki after the setup process, we implemented the Quest Engine. Quests are used to guide the player through the various workflows of the site, such as completing a action, signing up for an event, or allocating a raffle ticket. These quests can be created using the administrative interface. Quests use a set of predicates to determine unlock and completion conditions. These predicates include: participating in a action or type of action, completing an action or type of action, having a certain number of points (in a round or overall), completing a certain number of actions in a category or of a given type, being awarded a badge, and adding a picture to their profile.
+
+\subsection{Badge Game Mechanics}
 
 
+\section{Real-time Analytics}
+
+Makahiki is designed to support energy challenges involving hundreds or thousands of users lasting weeks or months.  In these circumstances, effective use of the technology requires the ability to understand the state of the game, such as: Who is using it? What are they doing? What is the player response to activities, commitments, excursions, and events?   Such state information is important for planning purposes, such as assessing the transportation needs for an upcoming excursion by seeing how many players signed up.   It can also be used for making in-game changes to game design, such as changing the point values associated with activities to encourage or discourage participation.  It can also help identify breakdowns in game play, such as significant numbers of unallocated raffle tickets indicating that users do not understand the nature of that game mechanic.
+
+To address these needs and others, Makahiki includes a variety of widgets that work together to provide high level overview of game play state to the administrators of a challenge. Figure \ref{fig:status} shows an example of two game analytic widgets.
+
+\begin{figure}[t!]
+  \center
+  \includegraphics[width=0.95\columnwidth]{status.eps}
+  \caption{Game analytic widgets: User Stats and Energy Goal Status}
+  \label{fig:status}
+\end{figure}
+
+The top widget, User Stats, shows trends in the total number of players, the total number of new users, and the total number of players visiting the site each day.  The bottom widget provides information on the ability of teams to achieve their daily energy goal each day and over time.
+
+\section{Configurable resource}
+
+\section{Mobile support}
+
+\section{Cloud deployment support}
