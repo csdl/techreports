@@ -1,5 +1,5 @@
-\documentclass[11pt,oneside]{article}
-\usepackage{fullpage}
+\documentclass[12pt,oneside]{article}
+%\usepackage{fullpage}
 
 %%% Load some useful packages:
 \usepackage{graphicx}
@@ -45,7 +45,7 @@
 \usepackage[colorlinks, bookmarks=true]{hyperref}
 
 \begin{document}
-\title{Contribution chapter abstract for Ph.D. dissertation: \\
+\title{Abstract for Ph.D. dissertation: \\
        \textsc{Software Trajectory Analysis:} \\
        \textsc{An empirically based method for automated software process discovery} \\
        \author{Pavel Senin \\
@@ -56,7 +56,7 @@
                CSDL Technical Report 09-13 \\
                \url{http://csdl.ics.hawaii.edu/techreports/09-13/09-13.pdf}
        }
-       \date{February 2013}
+       \date{May 2013}
 }
 \maketitle
 
@@ -65,201 +65,134 @@
 
 \section{Introduction}
 Software engineering is a unique area of engineering field having almost no cost associated with
-materials
-and fabrication, which dominate cost in all other engineering disciplines. 
+materials and fabrication which dominate cost in all other engineering disciplines. 
 However, ironically, software engineering is suffering from the costs and challenges
-associated with continuous re-design of the software design (development) processes - the issue
-which is rarely seen at all in any other engineering areas. 
+associated with continuous re-design of the product design (\textit{software development}) 
+processes - the issue which is rarely seen at all in any of other engineering areas. 
 
 In order to efficiently deal with this issue, many universal design processes - known as 
 software development methodologies - were proposed up to date. 
-For example, the Waterfall Model process proposes a sequential pattern in which developers 
-first create a Requirements document, then create a Design, then create an Implementation, 
-and finally develop Tests. 
-In contrast, the Test Driven Development process proposes an iterative pattern,
-in which the developer  must first write a test case, then write the code to implement 
-that test case, then refactor  the system for maximum clarity and minimal code duplication.
+Nevertheless, these methodologies known to fail in delivering of the software. 
+One of the reasons for these failures is the overall immaturity of these models, which
+traditionally designed through a top-down approach, where at the first place, someone has to
+``invent'' the process. As was shown, the software development methodology invention is a difficult
+and error-prone process, which may take decades for validation and tend to produce ``paper lions'' -
+process models which are disconnected from reality, disruptive, and simply unacceptable by the end
+users.
 
-Nevertheless, despite to decades of the development, these universal methodologies known to fail in
-delivering of the final product - the software. One of the reasons for these failures thought to be
-in somewhat rigid structure of these models, which makes difficult accommodating the change.
-Another reason is the overall immaturity of these models. These, in turn, thought to be the
-consequences of the traditional, top-down approach to software process design which requires the
-developer or manager to ``invent'' the process in the first place. 
+The alternative, bottom-up approach of inferring process models through observation and
+study of already established processes is also not new and was around for decades. 
+Unfortunately, this technique is also facing a number of issues which are dominated by privacy
+concerns, high cost of observations, and limited generalization of results.
 
-Whether a software methodology invention happens through noticing of recurrent development
-patterns, or through a decomposition of a larger process, invention is a non-trivial, difficult,
-and error-prone task \cite{citeulike:5043104}. In addition, inventors, limited in their scope, 
-tend to assume an idealized versions of real processes, thus, likely to produce ``paper lions''
-- process models which are likely to be disruptive and unacceptable for end users, at least 
-in their proposed form \cite{citeulike:9758924}. Finally, the full study cycle from a process
-proposal, through its evaluation, to its full understanding and, potentially, acceptance is usually
-measured by years \cite{citeulike:113403}.
+Potentially, the outlined above issues can be addressed by an \textit{automated system} which is
+capable of process discovery from offline collections of common process artifacts, such as change
+records, bug/issue reports, and other entities created merely for supporting of software development
+activities rather than collected for the process discovery. However, the ability of such system to
+infer software processes is questionable.
 
-In my research, I attempt to contribute to an alternative - the bottom-up - approach to software
-process design. The idea ``at large'', is that through the observation of the performed 
-by developers processes it is possible to \textit{automatically discover recurrent behaviors}, which
-could be further generalized and associated with building blocks of a larger software development
-process model. If such a tool is in place, it would potentially improve and shorten in time the
-process analysis time, and, in addition, might shed new light on the development process itself.
-In addition, such tool would benefit to other areas of process research - such as process
-analysis, enactment, and to the process improvement.
+In the thesis, I am addressing the question of the possibility of such an automated system
+construction and its performance. As a result, I show the implementation of an
+automated software artifacts mining system based on the novel knowledge discovery algorithm,
+and investigate its performance in discovery of software process primitives - the recurrent
+behaviors.
+\clearpage
+ 
+\section{Methodology}
+Traditionally, offline process mining techniques rely on the extraction of event sequences from
+collected in a controlled environment logs. However, as indicated by previous research,
+these techniques usually fail when applied to publicly available process artifacts, which are
+information-poor integrals of many, potentially self-canceling, concurrent events. 
 
-This idea of inferring a process model through observing and studying performed processes is
-not new and was around for decades \cite{citeulike:328044}. The problem with its further
-development is usually associated with a number of ``show-stoppers'': the biggest issue is the
-privacy concerns, the next is the overall cost of the observations, and the least, but not
-the last, is the validity of such studies - it is difficult to make an unbiased judgment in
-controlled environment. 
+In these context, I chose to work at somewhat higher, more general level of process
+abstractions - at the level of behaviors. Examples of such behaviors include unusually large churns
+or decreasing frequency of branch merges. Thus, effectively, I am re-framing the approach to the
+research problem - instead of mining for atomic events in order to reconstruct sequences of actions,
+I am mining for different kind of primitives - recurrent features in the trajectories of
+measured values, in a hope, that their analysis will shed a light on higher processes.
 
-In my work, I am addressing outlined above issues through leveraging of knowledge
-discovery techniques applied to software artifact trails. Thus, working with \textit{offline
-public data}, I am avoiding privacy concerns and the cost of the surveillance, while, potentially, 
-inferring \textit{true behaviors} from the real data.
+This problem of knowledge discovery from trajectories is not new and there are plenty of
+algorithms, which rely on the use of a number of primitives such as periods, bursts,
+motifs, discords, and shapelets as building blocks. These methods can be classified into two
+categories - techniques based on the exact or on the approximate search. Through the
+experimentation, I found that only approximate techniques are capable of producing results with
+adequate support. However, the traditional frequency- or distance-based primitives discovered 
+by this techniques are far from optimal. This poor performance can be attributed to the
+high noise of and frequent ``chimeric'' features in software process artifact trails.
 
-\section{Background, research landscape}
-Within my PhD Thesis Proposal, I have outlined the plan of performing the experimentation on
-Hackystat-collected data, which consists of fine grained and well-organized data streams, with possible 
-extension to publicly available software repositories. 
-However, later, the decision was made to focus solely on publicly available software repositories. This
-decision, while increasing reproducibility and statistical significance of findings, along with extending 
-the applicability of my contribution, brought a number of unforeseen challenges. First of all, the data
-collection, storage, and indexing mechanisms had to be designed from scratch. Secondly, I had to
-completely redesign the methods for data analysis - adapting to the public data specificities:
-coarseness, noise and corruption.
+In order to advance in this direction, I designed a novel \textit{characteristic primitives
+discovery and ranking algorithm} presented in the thesis and called SAX-VSM. 
+These primitives were described recently in the literature and called \textit{shapelets}. They
+are subsequences which characterize a time series class differentiation and can be used for
+classification and the knowledge discovery. As I show through the experimental evaluation and
+case-studies, ranked shapelets discovered with SAX-VSM 
+allow not only to build well-performing classifiers, but offer excellent interpretability of complex
+concepts.
 
-In this new perspective, the phrase which I wrote - ``...many temporal knowledge discovery and
-data mining methods developed in the last decade can be applied to the software process domain...''
-- turned out to be a very optimistic statement. During the evaluation of mentioned methods on the
-real data, most of them produced insensible results, especially non-data adaptive ones - those which
-assume sequential events, or based on a periodicity. While these would be my own, speculative
-statement from my own experience, the failure of common sequential or associative pattern
-mining techniques can be directly contributed to inherent aperiodicity, inconsistency and
-granularity of public data. The numerous software process artifacts, that I have collected from
-public software repositories, just do not reflect all those, atomic events such as coding,
-compiling, building, and testing. Moreover, events which are possible to recognize, such as change,
-are usually misplaced in time and very often merged together by the commit process. (I have tried a
-number of techniques: Apriori-like algorithms, state-machines like techniques based on ProM, etc.)
+The use of this novel technique enabled a discovery of characteristic behaviors in a case studies
+which I conducted in order to address the research hypothesis. Two of these case studies are
+concerned with discovery of known behaviors - the software release pattern and the software
+maintenance pattern, while the third case study is concerned with discovery of recurrent
+behaviors from logs of Q\&A sites.
 
-What I would like to convey here, is that all the work in my thesis is done on the large volume
-of incomplete, displaced in time, noisy, spurious and aperiodic data. Moreover, it is
-important to understand, that this data is essentially a product of two components. First component
-is a behavioral one - the human-driven, probably non-recurrent, aperiodic, creative process of
-coding, while second component is the technology and methodology in use. While latter probably
-provides a potentially well-measurable, marginal effect, it is still another source of noise in the
-data since it is mostly impossible to recover any data about each individual development
-environment and professional settings from software process artifacts.
+\clearpage
+\section{Contribution}
+The contribution of my thesis can be summarized as follows:
 
-Realizing these facts about the data in hands and the lack of proper instrumentation, in order to
-advance my research work, I had no other choice, but turn to the literature review
-again. Fortunately, through extensive review and experimentation, I was able to design \textit{a
-novel, generic algorithm for temporal data analysis, which, in turn, demonstrate an excellent
-performance and interpretability} of results. This method, which I called SAX-VSM, is one of the
-contributions of my thesis and will be outlined in the following chapter.
-
-Another, equally important contribution of my work, it the \textit{evaluation of SAX-VSM method
-ability to discover recurrent behaviors}. For this, I have conducted three case studies. The
-discovery of software release patterns My initial experimentation was performed on the data
-collected from the Android SCM (Software Change Management) system. By application 
-
-\subsection{Mining software process artifacts trails}
-Software artifacts are abundant and thought to carry a significant amount of information about
-performed processes. However, the vast majority of artifacts are concerned about the software itself
-and largely associated  with a specific development methodology. Examples of such artifacts are
-design documents, use cases, class diagrams and requirements, user manuals, etc. The payload of this
-artifacts aids in understanding of a function, architecture, and the design of software, while
-carrying a very little information about the applied effort and underlying behaviors. 
-
-Due to this fact, I put the content of such artifacts outside of my immediate attention,
-however, their layout in time - the density of their appearance, change, and death, are under
-analysis.
-
-Let me step back a bit here and explain a larger picture: the process recognition is built upon two
-fundamental tasks: description and classification. Given a process, a recognition system first
-generates a description of it (i.e., reconstructs the process in full or partially) and then
-classifies the process based on that description (i.e., the recognition).
-
-There are two general approaches for implementing such recognition systems - statistical and
-structural. These employ different techniques for description and classification. Statistical
-approaches to process recognition use theoretical concepts to discriminate among objects belonging
-to different groups based upon their quantitative features. Structural approaches use syntactic
-grammars to discriminate among objects belonging to different groups based upon the arrangement of
-their morphological (structural organization) features. Finally, there are hybrid approaches to
-pattern recognition combining aspects of both statistical and structural pattern recognition. This
-last, hybrid approach I will take in the thesis.
-
-The reasons for taking this route were explained above - the insufficient granularity of
-available information and its spurious temporal arrangement. Thus, instead of inferring
-process structures by ordering observed events, I rather look on these events densities and, by
-using the statistical apparatus, I relate these patterns to performed activities. 
-
-The idea is that 
-By using larger
-time intervals, 
-
-Then, these
-
-building structural
-iasI focus on the layout of activities in time and their density. By using 
-
-
-Many engineering, scientific, and production fields (such as movie-making or advertisement) have explicit 
-and formalized design processes which are well studied to at least some degree. In contrast, in software 
-development we are treating the process of design itself as a thing to be designed and, potentially, 
-re-designed along the way. While there are ``best practices'', they prone to fail and it is commonplace
-to alter these through combination or a systematic change.
-
-
-
-Software artifacts are abundant and thought to carry a significant amount of information about performed 
-processes.
-
-However, the vast majority of artifacts are concerned about the software itself and largely associated 
-with a specific development methodology. Examples of such artifacts are design documents, use cases, class 
-diagrams and requirements, user manuals, etc. The payload of this artifacts aids in understanding of 
-a function, architecture, and the design of software, while carrying a very little information about the 
-applied effort and underlying behaviors. Due to this fact, I put such artifacts outside of this thesis
-immediate attention.
-
-What is studied in this work, is the informational content of software development process byproducts 
-which accompany software change. It is long known that change Change not only provides an evidence about performed activities, and, potentially, 
-carry an informational load about
-recurrent behaviors. Such artifacts span in time, as behaviors do, and usually reflect both: the applied 
-effort (process), and the evolution of the software itself. 
-Examples of such artifacts are source code changes, bug reports, and developers discussions.
-
-Note, however, that developers do not intentionally create these artifacts to enable research, or to keep 
-things in some order - mainly, these artifacts are the pure byproduct helping to the development of a 
-software project. Thus, we must assume here, that this data is inconsistent, that any kind of annotations 
-used by developers might be erroneous, and the amount of disclosed information could simply be not enough
-to determine the actual generative behavior - which ultimately leads to uncertainty of any claims about
-process correctness, ``productivity'', or any other performance-related metrics. 
-
-The focus of my work is to explore the informational content of software process artifacts designing 
-a toolkit capable to handle the discovery of recurrent behaviors automatically. Ideally, such a toolkit 
-must have following properties:
 \begin{itemize}
- \item it must be Effective: the reported findings, with respect to behaviors reconstruction, must agree 
- with human intuition.
- \item it should be Scalable: currently software process artifact trails for a single project could easily 
-       grow beyond dozens of gigabytes, thus, the computation technique should ideally be able to utilize 
-       parallelization and be capable to pre-compute intermediate results alleviating the overall space-time 
-       complexity to enable an online (fast turn-around) interactive mining.
- \item Efficient: the set of reported findings should not exceed a certain threshold simly becoming an 
-        overwhelming stream of spurious facts.
+
+\item 
+I show an efficient, generic algorithm for interpretable time series data mining (classification,
+and exploration). The algorithm outputs optimal\footnote{"optimal" statement is not proven
+mathematically, but is expected by design - I understand that this can be regarded as a weak
+statement - but then, in order to prove the optimality by myself, I need to resort into building a
+construct upon Shannon's information theory, Zipf's law, terms arrival event space (Poisson models),
+and hit the problem of overall relevance of weights - all these, in turn, could stall my research
+and ultimately result in yet another study on tf*idf heuristics. Instead, in this statement, I am
+relying on previous studies on time series distribution and on the previous research on TF*IDF.}
+class characteristic patterns, and demonstrates classification performance superior to or comparable
+with the current state of the art. It is based on the adjustable aggregation and
+approximation properties of SAX and on metric properties of Vector Space model - in other words it
+is not exact and naturally generalizes class characteristic patterns (outputs less patterns with
+higher support). 
+
+Overall, I expect this algorithm to play an important role in future because of the growing ubiquity
+of time series and growing interest in behaviors.
+
+\item 
+I show, that the application of the algorithm to software process artifacts yields patterns
+(features) corresponding to recurrent behaviors, thus positively confirming the research
+hypothesis. Further, I show applications of the algorithm as a knowledge discovery tool to software
+process artifacts through case studies based on comparative analyses. In particular, I show, that
+the temporal primitives discovered by the algorithm provide not only quantitative evidence for
+processes interpretation, but can\footnote{ I use word "can" here because of the baselines - these
+are basically not established - it is hard to tell what are the "normal" behaviors for a project.} 
+be used for a qualitative assessment of discovered recurrent behaviors.
+
+\item 
+Finally, I provide an implementation of SAX-VSM time series classification algorithm and STA
+analysis framework to the community. This algorithm implementation uses several computational
+tricks to optimize, reduce, and reuse computation. 
 \end{itemize}
 
+Within last years, the SAX-VSM implementation was downloaded numerous times, as well as codebase
+was extended by a number of contributors from academia and industry. Current codebase has grown
+beyond the scope of the reference implementation and become a part of a scientific and two
+industrial research projects in which I participate - these concerned with temporal motif discovery
+through grammatical inference with Sequitur, behaviors prediction using n-Gram language models, and
+multivariate time series classification.
 
-\section{Methodology} \label{JMotif}
-Given multiple trails of software process artifacts, how to find recurrent behaviors? In this chapter, 
-I will describe the design and an implementation of research methodology employed in Software Trajectory 
-Analysis. In short, the implemented approach enables aggregation, indexing and mining of software 
-artifact trails allowing the discovery of recurrent behaviors. 
+\section{Results}
+Close examination of SAX-VSM performance, case studies of its application to software process
+artifacts, and analysis of the discovered behaviors constitute the Results section of my thesis.
 
-\section{Temporal attributes of software process artifacts}
-The close examination and analysis of temporal dynamics of artifact-generating events laying the foundation 
-of STA methodology. The extraction of software process-related metrics, their temporal partitioning and the
-ability of finding the relevant information is the 
+SAX-VSM was evaluated on 31 benchmark datasets known in the field of time series classification.
+Overall, the algorithm demonstrated a superior classification performance. Further, its ability to
+discover characteristic to class shapelets, was proven through the close examination of discovered
+and ranked features in a number of synthetic and real datasets.
+
+The STA performance was assessed through three case studies.
+
 
 
 
