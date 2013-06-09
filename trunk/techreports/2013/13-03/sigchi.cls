@@ -127,7 +127,7 @@
 %%%     dvips -e 0 foo.dvi >foo.ps
 %%%
 
-\typeout{Document Class sigchi' <Oct 19, 2011>. Updated for chi 2012
+\typeout{Document Class `sigchi' <Oct 19, 2011>. Updated for chi 2012
   based on chi2012.cls by William Hudson and Jean-Daniel Fekete.} % DLC
 \typeout{Document Class `chi2011' <October 19, 2010>. Tweaked by Manas Tungare.} % DLC
 \typeout{Shamelessly copied from}
@@ -619,7 +619,8 @@
 \def\ext@figure{lof}
 \def\fnum@figure{Figure \thefigure}
 \def\figure{\@float{figure}}
-\let\endfigure\end@float
+%\let\endfigure\end@float
+\def\endfigure{\end@float}
 \@namedef{figure*}{\@dblfloat{figure}}
 \@namedef{endfigure*}{\end@dblfloat}
 
@@ -630,7 +631,8 @@
 \def\ext@table{lot}
 \def\fnum@table{Table \thetable}
 \def\table{\@float{table}}
-\let\endtable\end@float
+%\let\endtable\end@float
+\def\endtable{\end@float}
 \@namedef{table*}{\@dblfloat{table}}
 \@namedef{endtable*}{\end@dblfloat}
 
@@ -672,7 +674,7 @@
 
 \if@ll
   \NeedsTeXFormat{LaTeX2e}
-  \ProvidesClass{chi2012} [2011/06/06 - V0.16]  % DLC
+  \ProvidesClass{sigchi} [2011/06/06 - V0.16]  % DLC
   \RequirePackage{latexsym}% QUERY: are these two really needed?
   \let\dooptions\ProcessOptions
 \else
