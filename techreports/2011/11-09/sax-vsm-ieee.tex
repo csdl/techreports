@@ -460,14 +460,14 @@ Email: sergey.b.malinchik@lmco.com}}
 
 \begin{abstract}
 %\boldmath
-n this paper, we propose a novel method for characteristic patterns discovery in 
+In this paper, we propose a novel method for characteristic patterns discovery in 
 time series. This method, called SAX-VSM, is based on two existing techniques - 
 Symbolic Aggregate approXimation and Vector Space Model. SAX-VSM is capable 
 to automatically discover and rank time series patterns (features) by their 
 “importance” to the class, which not only creates well-performing classifiers, 
 but also provides interpretable class generalization and facilitates clustering. 
 The accuracy of the method, as shown through experimental evaluation, is at the 
-level of a current state of the art. 
+level of the current state of the art. 
 While being relatively computationally expensive within a learning phase, 
 our method provides fast, precise, and interpretable classification.
 \end{abstract}
@@ -480,33 +480,28 @@ our method provides fast, precise, and interpretable classification.
 
 % no keywords
 
-
-
-
 % For peer review papers, you can put extra information on the cover
 % page as needed:
 % \ifCLASSOPTIONpeerreview
-% \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
+ \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
 % \fi
 %
 % For peerreview papers, this IEEEtran command inserts a page break and
 % creates the second title. It will be ignored for other modes.
-\IEEEpeerreviewmaketitle
-
-
+%\IEEEpeerreviewmaketitle
 
 \section{Introduction}
 %
 Time series classification is an increasingly popular area of the research. 
 Within last decades, many time series representations, similarity measures, 
 and classification algorithms were proposed \cite{review}. 
-These methods can be divided in two major categories. 
-The first category of classification techniques is based on the shape-based 
+These can be divided in two major categories. 
+The first category of classification techniques is based on shape-based 
 similarity metrics - where distance is measured directly between time series points. 
-Examples of methods from this category are the classical nearest neighbor (kNN)
-classifier built upon Euclidean distance \cite{1NN} and SpADe \cite{spade}. 
+Classical example of methods from this category is a nearest neighbor (kNN)
+classifier built upon Euclidean distance \cite{1NN} or SpADe \cite{spade}. 
 The second category consists of classification techniques based on the 
-structural similarity metrics, which employ some high-level representations 
+structural similarity metrics which employ some high-level representations 
 of time series based on their global or local features. 
 Examples from this category include DFT based classifier \cite{DFT}
 and bag-of-patterns representation (BOP) \cite{bag_patterns}. 
@@ -518,54 +513,54 @@ often pre-processed, time series data \cite{benchmark},
 they usually fail on long and noisy data sets \cite{indexing},
 where structure-based techniques demonstrate a superior performance. 
 Furthermore, structure-based methods require less storage space and, usually, 
-have a faster classification time, thus they often implemented in industrial settings. 
+have a faster classification time, thus, they often implemented in industrial settings. 
 
-As one of the possible alternatives to this two categories, recently, the time series shapelets
-were introduced \cite{shapelet} and gained popularity. A shapelet is a \textit{short time 
-series ``snippet''}, that is a representative of class membership. Potentially, this 
-approach combines best of two categories - the superior precision of shape-based 
-similarity methods, and the high-throughput capacity and efficiency of feature-based 
-techniques \cite{logical}. 
-However, while demonstrating a superior interpretability, robustness, 
-and similar to kNN algorithms performance, shapelets-based approaches are quite time-consuming 
-- which makes their adoption for many class classification problems difficult \cite{bagnal}. 
+Recently, as one of a possible alternatives to this two categories, the time series
+shapelets were introduced \cite{shapelet} and gained popularity. A shapelet is a \textit{short 
+time series ``snippet''}, that is a representative of class membership. Being exact, this 
+approach, potentially, combines the superior precision of shape-based similarity methods, 
+and the high-throughput capacity and efficiency of feature-based techniques \cite{logical}. 
+However, while demonstrating a superior interpretability, robustness, and similar to kNN algorithms
+performance, shapelets-based techniques are quite time-consuming, which makes their
+adoption for many class classification problems difficult \cite{bagnal}. 
 
 As per current state of the art, it is worth noting, that despite to recent development, to date,
-the best overall algorithm in the field is the simple nearest neighbor classifier, which is 
-accurate and robust. Moreover, it depends on a very few parameters 
-\cite{review, benchmark, comparison, classifiers}. Nevertheless, while possessing all these
-qualities,
-1NN technique has a number of disadvantages, where the major is that it does not offer any 
-insight into the data, while the next is that it needs a significantly large training set.
+the best algorithm in overall performance is the simple nearest neighbor classifier, that is
+accurate and robust \cite{review, benchmark, comparison, classifiers}. Moreover, it depends on a
+very few parameters. Nevertheless, while possessing all these qualities, 1NN technique has a n
+umber of disadvantages, where the major is that it does not offer any insight into the data, 
+while the next is the need for a significantly large training set.
 
 In this work, we propose yet another alternative to 1NN algorithm. Similarly to shapelets, our
 technique rests on finding time series subsequences that are characteristic representatives of
-class. 
-However, instead of iterative search for these (as in shapelets case), our algorithm finds, 
-and weights by ``importance'' all potential candidate subsequences at once. 
-In addition, being built upon SAX approximation that facilitates smoothing and elasticity, 
-our technique performs well on noisy data and learns efficiently from a small training set.
+a class. However, instead of iterative search for these (as in shapelets case), our algorithm finds 
+and ranks by ``importance'' all potential candidate subsequences at once. 
+Another difference of proposed algorithm is that it is approximate. Built upon SAX,
+which provides smoothing and generalization \cite{sax}, SAX-VSM is able to learn efficiently from a
+small training set and handles noisy data effectively. 
 All these specificities, in turn, enable precise classification, clustering, and facilitate 
 a discovery of characteristic patterns.
 
-
 \section{Background}
-Our methodology is based on two well-known techniques. The first technique is 
+SAX-VSM is based on two well-known techniques. The first technique is 
 Symbolic Aggregate approXimation \cite{sax}, which is a high-level symbolic  representation 
 of time series data. The second technique is a well known in Information Retrieval (IR) 
 Vector Space Model \cite{salton}. 
-By utilizing a sliding window subsequence extraction and SAX, our algorithm transforms 
-labeled time series into collections of SAX words (terms). 
-At the following step, it utilizes \textit{tf$\ast$idf} terms weighting for a classifier 
-construction. 
-The SAX-VSM classification relies on cosine similarity metric.
+
+By utilizing an overlapping sliding window subsequence extraction and SAX, 
+our algorithm transforms labeled time series into a single collection of SAX 
+words (terms) for each of the training classes - effectively constructing a corpus 
+of $N$ documents, where $N$ is a number of classes. 
+At the following step, it utilizes \textit{tf$\ast$idf} terms weighting, which results in 
+$N$ weight vectors used for SAX-VSM classifier construction. 
+Following vector space model, classification procedure relies on cosine similarity metric.
 
 SAX algorithm, however, requires two parameters to be provided as an input, and as per 
 today, there is no efficient solution for parameters selection known to the best of our knowledge. 
 To solve this problem, we employ a global optimization scheme based on the divided rectangles
-(DIRECT) algorithm \cite{direct}. DIRECT is a derivative-free global optimization process
-that converges relatively quickly and yields a deterministic, optimized solution. Moreover, it
-does not require any parameters while possessing both local and global optimization properties. 
+(DIRECT) algorithm which does not require any parameters \cite{direct}. DIRECT is a derivative-free
+optimization process which possess local and global optimization properties. It converges relatively
+quickly and yields a deterministic, optimized solution.
 
 \subsection{Symbolic Aggregate approXimation (SAX)}
 Symbolic representation of time series, once introduced \cite{sax}, has attracted much attention by
@@ -905,7 +900,7 @@ software process artifact trails \cite{android}.
 \enlargethispage{0.5cm} 
 \begin{footnotesize}
 \begin{table}[t]
-\myfigureshrinker
+\myfigureshrinkerless
 \caption{\bf Classifiers error rates comparison.}
  \label{perf_table}
 \centering
@@ -976,7 +971,7 @@ of the Table \ref{perf_table}.
 \begin{figure}[t]
    \myfigureshrinkerless
    \centering
-   \includegraphics[width=88mm]{figures/precision-runtime.eps}
+   \includegraphics[width=84mm]{figures/precision-runtime.eps}
    \caption{Comparison of classification precision and runtime of SAX-VSM and 1NN 
    Euclidean classifier on CBF data. SAX-VSM performs significantly better with limited 
    amount of training samples (left panel). While SAX-VSM is faster in time series 
@@ -1040,7 +1035,7 @@ to the growth of a signal loss.
 \begin{figure}[t]
   \myfigureshrinkerless
   \centering
-  \includegraphics[width=88mm]{figures/corrupted.eps}
+  \includegraphics[width=84mm]{figures/corrupted.eps}
   \caption{Classification performance with presence of noise
  (left panel), and with signal loss (right panel). \textit{SAX-VSM Opt} curves correspond to 
  results obtained with ``optimized''  for each case SAX parameters.}
