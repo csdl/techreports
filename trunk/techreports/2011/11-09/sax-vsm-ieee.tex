@@ -485,9 +485,9 @@ our method provides fast, precise, and interpretable classification.
 
 % For peer review papers, you can put extra information on the cover
 % page as needed:
- \ifCLASSOPTIONpeerreview
+ %\ifCLASSOPTIONpeerreview
  \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
- \fi
+ %\fi
 %
 % For peerreview papers, this IEEEtran command inserts a page break and
 % creates the second title. It will be ignored for other modes.
@@ -508,25 +508,26 @@ points, which contributes to a high dimensionality of classification problems,
 and which, at the same time, is often the only viable feature allowing class identification. 
 Another specificity of the field is the pervasiveness of exceptionally well performing 
 nearest-neighbor algorithm, that naturally captures the ordering and can be 
-easily fine-tuned by the choice of distance measure, approximation technique, 
-or smoothing \cite{comparison}. 
+easily tuned for a particular problem by the choice of distance measure, 
+approximation technique, or smoothing \cite{comparison}. 
 As pointed by dozens of papers, a simple ``lazy'' nearest neighbor classifier is 
 accurate and robust, depends on a very few parameters and requires no 
 training \cite{review, benchmark, comparison, classifiers}. 
 However, while possessing all these qualities, 1NN technique has a number of 
-significant disadvantages, where the major shortcoming is that it does not provide any 
-insight into the classification results.
+significant disadvantages, where the major shortcoming is that it does not 
+provide any insight into the classification results.
 Another limitation is its need for a significantly large training set representing a 
 class variance in order to achieve a good accuracy. 
 Finally, while having trivial initialization, 1NN classification is computationally expensive.
 
 In this work, we address outlined above limitation by proposing an alternative 
 to 1NN algorithm that provides a superior interpretability, learns efficiently from a
-small training set, and has a very low classification complexity.
+small training set, and has a low computational complexity in classification.
 
 The paper is structured as follows. 
-Section \ref{prior} provides background into the existing algorithms categorization and into 
-the relevant work. Section \ref{background}, provides background for a proposed algorithm. 
+Section \ref{prior} provides background into the existing algorithms categorization and 
+discusses relevant work. 
+Section \ref{background}, provides background for a proposed algorithm. 
 In Section \ref{sax-vsm}, we describe our algorithm, and in Section \ref{results}, we
 evaluate its performance. Finally, we form our conclusions and discuss future work 
 in Section \ref{conclusion}.
@@ -544,7 +545,7 @@ of time series based on their global or local features.
 Examples from this category include classifier based on Discrete Fourier Transform \cite{DFT}
 and a classifier based on Bag-Of-Patterns representation (BOP) \cite{bag_patterns}. 
 The development of these distinct categories can be explained by differences 
-in the performance of approaches built upon these techniques: 
+in the performance: 
 while shape-based similarity methods virtually unbeatable on short, 
 often pre-processed time series data \cite{benchmark}, 
 they usually fail on long and noisy data sets \cite{indexing},
@@ -612,7 +613,7 @@ of occurrence frequencies of short overlapping subsequences
 %subsequences (patterns). 
 By applying this procedure to a training set, algorithm converts the data into 
 the vector space, where each of the original time series is represented by a 
-pattern (a SAX word) occurence frequency vector. 
+pattern (a SAX word) occurrence frequency vector. 
 These vectors are classified with 1NN classifier built upon Euclidean distance, 
 or Cosine similarity on raw frequencies or with \textit{tf$\ast$idf} ranking. 
 It was shown by the authors, that BOP has several advantages: it has a linear
@@ -769,8 +770,7 @@ Rows of this matrix correspond to the set of all SAX words found in
 training set. Each element of this matrix is an observed frequency of a word
 in a class. 
 Many elements of this matrix are zeros - because words extracted from one class 
-are often not found in others.
-%(Figure \ref{fig:venn}). 
+are often not found in others (Figure \ref{fig:venn}). 
 By its design, this sparse 
 term frequency matrix is a dictionary of all SAX words extracted from all time 
 series of a training set, which accounts for frequencies of each word in each of 
@@ -793,6 +793,7 @@ is a frequency of the term in a bag.
 The inverse document frequency we compute as usual:
 \begin{equation}
  \mbox{idf}_{t, D} =  \log_{10}\frac{|D|}{|d \in D : t \in d|} = \log_{10}\frac{N}{\mbox{df}_{t}}
+ \label{formula:idf}
 \end{equation} 
 where $N$ is the cardinality of corpus $D$ (the total number of classes) and the 
 denominator $\mbox{df}_{t}$ is a number of documents where the term $t$ appears.
@@ -923,7 +924,7 @@ phase, and the classification procedure.
 \end{figure}
 
 \subsection{Training phase}
-At first, in order to utilize Vector space model, algorithm transforms all labeled 
+At first, algorithm transforms all labeled 
 time series into symbolic representation. For this, it converts time series into SAX
 representation configured by four parameters: the sliding window 
 length (\textit{W}), the number of PAA frames per window (\textit{P}), 
@@ -936,13 +937,13 @@ If, however, the standard deviation value falls below a fixed threshold, the
 normalization procedure is not applied in order to avoid a possible over-amplification 
 of a background noise.
 
-By applying the conversion procedure to all time series from $N$ training classes, 
+By applying this conversion procedure to all time series from $N$ training classes, 
 algorithm builds a corpus of $N$ bags, to which, in turn, it applies \textit{tf$\ast$idf} 
 ranking. These steps result in $N$ real-valued weight vectors of equal length 
 representing $N$ training classes. 
 
-As shown, because of the need to scan the whole training set, 
-training of SAX-VSM classifier is computationally expensive ($O(nm)$). 
+As shown, because of the need to scan the whole training set, training of SAX-VSM 
+classifier is computationally expensive ($O(nm)$). 
 However, there is no need to maintain an index of training series, or to keep any of 
 them in the memory at a runtime: the algorithm simply iterates over all training time 
 series incrementally building a single bag of SAX words for each of training classes. 
@@ -1001,15 +1002,15 @@ illustrates the application of DIRECT to \textit{SyntheticControl} data set prob
 \end{figure}
 
 \subsection{Intuition behind SAX-VSM}
-First of all, by combining \textit{\textbf{all}} SAX words observed in \textit{\textbf{all}}
-time series of single class into a single bag of words, SAX-VSM manages not only to capture 
-observed intraclass variability, but to efficiently ``generalize'' it through smoothing
-capabilities of PAA and SAX.  
+First of all, by combining \textit{\textbf{all}} SAX words extracted from 
+\textit{\textbf{all}} time series of single class into a \textit{\textbf{single bag}} of 
+words, SAX-VSM manages not only to capture observed intraclass variability, 
+but to efficiently ``generalize'' it through smoothing with PAA and SAX.  
 
-Secondly, by partially discarding the original ordering of time series subsequences, and
-through subsequence normalization, SAX-VSM is capable to capture and to recognize 
+Secondly, by partially discarding the original ordering of time series subsequences and
+through subsequence normalization, SAX-VSM is capable to capture, and to recognize 
 characteristic subsequences in distorted by rotation or shift time series, as well,
-as to recover a signal from corrupted or altered by a noise data. 
+as to recover a signal from partially corrupted or altered by noise. 
 
 Thirdly, the \textit{tf$\ast$idf} statistics naturally ``highlights'' terms unique to a
 class by assigning them higher weights, while terms observed in multiple classes are 
@@ -1030,7 +1031,7 @@ unique.
 Ultimately, algorithm compares a set of subsequences extracted from an unlabeled time series 
 with a weighted set of all characteristic subsequences representing a whole of a training class. 
 Thus, unknown time series is classified by its similarity not to a given number of ``neighbors'' 
-(as in kNN classifiers or BOP), or to a pre-fixed number of characteristic features (as in
+(as in kNN or BOP classifiers), or to a pre-fixed number of characteristic features (as in
 shapelets-based classifiers), but by its combined similarity to all known discriminative
 subsequences found in a whole class during training.
 
@@ -1067,22 +1068,31 @@ embed characteristic to the class subsequences.
 
 %\bf Data set &\bf \#Classes &\bf 1NN-Euclidean &\bf 1NN-DTW &\bf Shapelet Tree &\bf  BOP &\bf 
 %SAX-VSM\\\midrule
-Data set & Nb. of classes & 1NN-Euclidean & 1NN-DTW & Shapelet Tree &  Bag Of \mbox{Patterns} & SAX-VSM\\\midrule
+Data set & Nb. of classes & 1NN-Euclidean & 1NN-DTW & Fast Shapelet Tree &  Bag Of \mbox{Patterns}
+& SAX-VSM\\\midrule
+%50words           &50  & 0.369   & 0.310           &
 Adiac             &37  & 0.389   & 0.396           & 0.515        & 0.432         & \textbf{0.381}\\
 Beef              &5   & 0.467   & 0.467           & 0.447        & 0.400         & \textbf{0.033}\\
 %ChlorineConcentration  & 0.350 & 0.350        & 0.412        & n/a     & \textbf{0.332} \\
+CBF             & 3   & 0.148    & 0.003     & 0.053    & 0.013 & \textbf{0.002} \\
 Coffee           &2    & 0.250   & 0.180           & 0.067     & 0.036     & \textbf{0.0} \\
 ECG200          &2   & 0.120   & 0.230           & 0.227     & 0.140   & \textbf{0.09} \\
 %ElectricDevices   & 0.913   & 0.913           & 0.451     & n/a            & \textbf{0.329} \\
-FaceFour        &4     & 0.216   & 0.170           & 0.159     & 0.011   & \textbf{0.0} \\
+FaceAll        &14     & 0.286   & \textbf{0.192}  & 0.402     & 0.219   & 0.207\\
+FaceFour        &4     & 0.216   & 0.170           & 0.089     & 0.011   & \textbf{0.0} \\
 Fish               &7   & 0.217   & 0.167           & 0.197    & 0.074   & \textbf{0.017} \\
-Gun Point      &2      & 0.087   & 0.093           & 0.107     & \textbf{0.002}     & 0.007 \\
-Lightning7     &7      & 0.425   & \textbf{0.274}  & 0.507     & 0.356            & 0.301 \\
-OSU Leaf      &15   & 0.483   & 0.409  & 0.359     & 0.236            & \textbf{0.107} \\
+Gun-Point      &2      & 0.087   & 0.093           & 0.060     & \textbf{0.002}     & 0.007 \\
+Lightning2     &2      & 0.246   & \textbf{0.131}  & 0.295     & 0.164            & 0.196 \\
+Lightning7     &7      & 0.425   & \textbf{0.274}  & 0.403     & 0.466            & 0.301 \\
+Olive Oil      &4   & 0.133   & 0.133  & 0.213     & 0.133            & 0.133 \\
+OSU Leaf      &6   & 0.483   & 0.409  & 0.359     & 0.236            & \textbf{0.107} \\
 %SonyAIBO          & 0.306   & 0.274           & \textbf{0.155}     & n/a-   & 0.176 \\
-Syn.Control  &6   & 0.120   & \textbf{0.007}  & 0.057     & 0.037            & 0.010 \\
-Trace            &4   & 0.240   & \textbf{0.0}    & 0.020     & \textbf{0.0} & \textbf{0.0} \\
+Syn.Control  &6   & 0.120   & \textbf{0.007}  & 0.081     & 0.037            & 0.010 \\
+Swed.Leaf   &15  & 0.213   & 0.210 & 0.270 & \textbf{0.198} & 0.251 \\
+Trace            &4   & 0.240   & \textbf{0.0}    & 0.002     & \textbf{0.0} & \textbf{0.0} \\
 Two patterns     &4   & 0.090   & \textbf{0.0}    & 0.113   & 0.129      & 0.004 \\
+Wafer            &2    & 0.005   & 0.020     & 0.004  & 0.003 & \textbf{0.0006} \\
+Yoga             &2    & 0.170   & \textbf{0.164}  & 0.249 & 0.170 & \textbf{0.164} \\
 \bottomrule[1pt]
 \end{tabularx}
 \end{table}
@@ -1107,23 +1117,23 @@ This result is not surprising taking in account ``No Free Lunch theorems'' \cite
 which assert, that there will not be a single dominant classifier for all TSC problems.
 
 Table \ref{perf_table} compares the performance of SAX-VSM and four competing 
-classifiers: two 1NN classifiers based on Euclidean distance and DTW, 
-a classifiers based on the recently proposed shapelet technique: 
-the shapelet decision tree \cite{shapelet, logical}, and 
-the best performing shapelet transform classifier based on SVM \cite{bagnal}. 
+classifiers: two state-of-the-art 1NN classifiers based on Euclidean distance and DTW, 
+the classifier based on the recently proposed Fast-Shapelets technique \cite{fast-shapelets},
+and the classifier based on BOP \cite{bag_patterns}. 
 We selected these particular techniques in order to position SAX-VSM 
 in terms of accuracy and interpretability. 
 The presented comparison data sets selection is limited to the number 
-of previously published benchmark results for all of four competing classifiers. 
+of previously published or provided by the authors benchmark results for all of 
+four competing classifiers. 
 The performance of SAX-VSM for the rest of the data sets \textit{will be made online
- along with our reference implementation}
+ along with our reference implementation}.
 %\cite{jmotif}.
 
-In our evaluation, we followed train/test split of the data. We exclusively used train data in 
-cross-validation experiments for selection of SAX parameters and numerosity reduction strategy
-using DIRECT (Section \ref{section-direct}). Once selected, the optimal set of parameters 
-was used to assess SAX-VSM classification accuracy which is reported in the last column 
-of the Table \ref{perf_table}.
+In our evaluation, we followed train/test split of the data (exactly as provided by UCR or other
+sources). We exclusively used train data in cross-validation experiments for selection of SAX
+parameters and numerosity reduction strategy using our DIRECT implementation. 
+Once selected, the optimal set of parameters was used to assess SAX-VSM classification 
+accuracy which is reported in the last column of the Table \ref{perf_table}.
 
 \begin{figure}[t]
    \myfigureshrinkerless
@@ -1138,25 +1148,51 @@ of the Table \ref{perf_table}.
 \end{figure}
 
 \subsection{Scalability analysis}
-For synthetic data sets, it is possible to create as many instances as one need for experimentation.
-We used CBF data set \cite{cbf} to investigate the performance of SAX-VSM and 1NN Euclidean
-classifier on increasingly large training data sets of size from ten to one thousand, and a fixed
-test data set of ten thousands instances. For small training data sets, SAX-VSM is significantly
-more accurate than 1NN Euclidean classifier. However, by the time we had more than 500 time series
-in our training set, there was no statistically significant difference in accuracy (Fig.
-\ref{fig:precision-runtime}). 
-Regarding the runtime cost, due to the comprehensive training, SAX-VSM is more expensive than 
-1NN Euclidean classifier on small training sets while more efficient on large sets.
-However, SAX-VSM allows to perform training offline and load \textit{tf$\ast$idf} weight vectors
-when needed. If this option utilized, our method performs classification significantly faster than 
-1NN Euclidean classifier (Fig. \ref{fig:precision-runtime}).
+For synthetic data sets, it is possible to create as many instances as one needs for
+experimentation.
+We used CBF \cite{cbf} in order to investigate and compare the performance of SAX-VSM and 1NN
+Euclidean classifier on increasingly large data sets.
 
-%While it grows rapidly at the beginning, once
+In one series of experiments, we varied a training size from ten to one thousand, while test data
+set size remained fixed to ten thousands instances. 
+For small training data sets, SAX-VSM was found significantly more accurate than 1NN Euclidean
+classifier. However, by the time we had more than 500 time series in our training set, there was no
+statistically significant difference in accuracy (Fig. \ref{fig:precision-runtime}). 
+As per the running time cost, due to the comprehensive training, SAX-VSM was found to be more
+expensive than 1NN Euclidean classifier on small training sets while dealing more efficiently with
+large sets.
+However, SAX-VSM allows to perform training offline and load \textit{tf$\ast$idf} weight vectors
+when needed. If this option can be utilized, our method performs classification significantly
+faster than 1NN Euclidean classifier (Fig. \ref{fig:precision-runtime}).
+
+In another series of experiments we investigated the scalability of our algorithm with
+unrealistic training set sizes - up to one million of instances of each of CBF classes.
+As expected, with the grows of a training set size, the curve for a total number of distinct SAX
+words and curves for dictionary sizes of each of CBF classes reflected significant saturation 
+(Fig. \ref{fig:venn}, left). For the largest of training sets - one million instances of each
+class - the size of the dictionary peaked at 67'324 of distinct words (which is less than 10\% of
+all possible words of length 7 from an alphabet of 7 letters), and the longest tf$\ast$idf vector 
+accounted 23'569 value, Fig. \ref{fig:venn}. In our opinion, this result reflects two
+specificities: the first is that the diversity of words which are possible to extract from CBF
+dataset is quite limited by its classes configuration and by our choice of SAX parameters. The
+second specificity is that idf (Inverse document Frequency, \ref{formula:idf}) limits the growth 
+of dictionaries by eliminating those words, which are observed in all of them.
+
+%dictionary of the
+%with While it grows rapidly at the beginning, once
 %the dictionary is saturated, growth tend to slow down (left panel of Figure \ref{fig:corrupted}). 
 %Nevertheless, by adjusting alphabet and PAA sizes it is possible to keep the number of terms
 %significantly large. 
-
-
+\begin{figure}[b]
+   \myfigureshrinker
+   \centering
+   \includegraphics[width=84mm]{figures/Bubbles.eps}
+   \caption{Left panel: illustration of dictionaries size evolution for CBF with
+   increasingly large training set size. 
+   Right panel: distribution of SAX terms in CBF corpus for training set of 
+   one million series of each class.}
+   \label{fig:venn}
+\end{figure}
 
 \subsection{Robustness to noise}
 In our experimentation with many data sets, we observed, that the dimensionality of
@@ -1167,14 +1203,15 @@ series, prompted the idea that SAX-VSM classifier might be robust to noise and l
 Intuitively, in such a case, the cosine similarity between high dimensional 
 vectors might not degrade significantly enough to cause misclassification.
 
-\begin{figure}[b]
+\begin{figure}[t]
   \myfigureshrinkerless
   \centering
   \includegraphics[width=84mm]{figures/corrupted.eps}
   \caption{Classification performance with presence of noise
- (left panel; the noise level varies up to 100\% of standard deviation(???) ), and with signal loss
-(right panel). \textit{SAX-VSM Opt} curves correspond to 
- results obtained with ``optimized''  for each case SAX parameters.}
+ (left panel; the noise level varies up to 100\% of signal value (6.0),
+ and with a signal loss (right panel). \textit{SAX-VSM Opt} curves correspond to 
+ results obtained with ``optimized'' for each case SAX parameters 
+ (we re-trained a classifier).}
   \label{fig:corrupted}
 \end{figure}
 
@@ -1187,10 +1224,11 @@ with the growth of a noise level (Fig.\ref{fig:corrupted} Left).
 Further improvement of SAX-VSM performance was achieved by proportionally increasing
 the size of SAX sliding window following the noise growth (Fig.\ref{fig:corrupted}
 Left, \textit{SAX-VSM Opt} curve). 
-In another series of experiments, we randomly replaced up to fifty percent of a span of unlabeled
-time series with a random noise. Again, SAX-VSM performed consistently better than 
-1NN Euclidean classifier regardless of a training set size, which we varied from five to
-one thousand. The \textit{SAX-VSM Opt} curve at Fig.\ref{fig:corrupted} (Right) depicts the case
+In another series of experiments, we randomly replaced up to fifty percent of a span of an 
+unlabeled time series with a random noise. 
+Again, SAX-VSM performed consistently better than 1NN Euclidean classifier regardless of a 
+training set size, which we varied from five to one thousand. 
+The \textit{SAX-VSM Opt} curve at Fig.\ref{fig:corrupted} (Right) depicts the case
 with fifty training series when the sliding window size was decreased inversely proportionally 
 to the growth of a signal loss.
 
@@ -1217,15 +1255,15 @@ classification in many class problems.
    \myfigureshrinker
    \centering
    \includegraphics[width=87mm]{figures/gun-point.eps}
-   \caption{Best characteristic subsequences discovered by SAX-VSM in \textit{Gun/Point}
-   data set. 
+   \caption{Best characteristic subsequences (right panels, bold lines) discovered by SAX-VSM in
+   \textit{Gun/Point} data set. 
    Left panel shows actor's stills and time series annotations made by an expert, 
-   right panels show (bold lines) locations of characteristic subsequences.
-   Note, that while the upward arm motion found more ``important'' in \textit{Gun} 
+   right panels show locations of characteristic subsequences.
+   Note, that while the upward arm motion found to be more ``important'' in \textit{Gun} 
    class (gun retrieval and aiming), the downward arm motion better characterizes 
    \textit{Point} class (an ``overshoot'' phenomena in propless arm return). 
    This result aligns with previous work \cite{shapelet} and \cite{bagnal}.
-   (Stills and annotation used with permission from E. Keogh) }
+   (Stills and annotation used with a permission from E. Keogh) }
    \label{fig:shapelet-like-patterns}
 \end{figure}
 
@@ -1254,7 +1292,8 @@ for lifting a hand above a holster and reaching down for the gun.
    \myfigureshrinker
    \centering
    \includegraphics[width=87mm]{figures/AcerCircunatum.eps}
-   \caption{Best characteristic subsequences discovered by SAX-VSM in \textit{OSULeaf data set}.
+   \caption{Best characteristic subsequences (top panels, bold lines) discovered by SAX-VSM in
+      \textit{OSULeaf data set}.
 These patterns align with well known in botany discrimination techniques
 by lobe shapes, serrations, and leaf tip types \cite{dirr}.}
    \label{fig:shapelet-acer-patterns}
@@ -1296,10 +1335,12 @@ as discriminative when used in PCA-based technique by the authors of the origina
    \centering
    \includegraphics[width=84mm]{figures/coffee_patterns.ps}
    \caption{
-   Discrimination of Arabica and Robusta Coffee based on spectrogram analysis (Coffee
-   data set). SAX-VSM  discovered the discriminative subsequences in both classes corresponding to chlorogenic
-   acid (best subsequence) and to caffeine (second to best). This result aligns with
-   the original work with PCA-based technique  \cite{coffee}.
+   Best characteristic subsequences (left panels, bold lines) discovered by SAX-VSM in
+   {Coffee data set}. Right panels show zoom-in view on these subsequences in Arabica
+   and Robusta spectrograms.
+   These discriminative subsequences correspond to chlorogenic acid (best subsequence) 
+   and to caffeine (second to best) regions of spectra. This result aligns with
+   the original work based on PCA \cite{coffee} exactly.
    %Best characteristic subsequences discovered by SAX-VSM in \textit{Coffee data set}.
    %The best subsequences in both classes correspond to chlorogenic acid, while
    %second to best subsequences - to caffeine. This result aligns with previous 
@@ -1353,7 +1394,7 @@ We extracted two hundred fifty series corresponding to five vital signals: two E
 distance, which achieved the maximum clustering quality of 0.39, when measured as proposed in
 \cite{kmetrics} on the best clustering (the one with the smallest objective function in 10 runs). 
 SAX-VSM spherical k-Means implementation outperformed the reference technique yielding 
-clusters  with the quality of 0.67 (on 10 runs with SAX parameters set of 
+clusters  with the quality of 0.67 (on 10 runs with SAX parameters set to 
 $W$=33, $P$=8, $A$=6).
 
 %Note also, that previously, we applied our implementation to recurrent behaviors (motifs) 
@@ -1395,27 +1436,15 @@ First of all, while Vector space model naturally supports processing of bags of 
 of terms of variable length, our current ``stable'' implementation lacks this capacity.
 Inspired by the recently reported superior performance of multi-shapelets based classifiers
 \cite{bagnal}, we prioritize this development.
-Secondly, while DIRECT optimization provides satisfactory performance, it is designed for a 
-function of a real variable. By using rounding in our implementation, we have observed DIRECT 
-iteratively sampling redundant locations in suboptimal neighborhood, thus, a more appropriate 
-optimization scheme is needed.
+Secondly, as mentioned before, DIRECT optimization it is designed for a function of a real variable.
+By using rounding in our implementation, we have observed DIRECT iteratively sampling redundant
+locations in suboptimal neighborhood, thus, a more appropriate optimization scheme is needed.
 Finally, we are designing and experimenting with an extension of SAX-VSM to multidimensional time
 series. Currently we are evaluating two candidate implementations: the first is based on a
 single bag of words accommodating all dimensions for a class (by prefixing SAX words extracted from
 different dimensions); while the second is based on the use of a single bag of words per each of
 dimensions. The preliminary results on synthetic data sets look promising and we expect to report 
 our finding soon.
-
-\begin{figure}[t]
-   \myfigureshrinker
-   \centering
-   \includegraphics[width=84mm]{figures/Bubbles.eps}
-   \caption{Left panel: illustration of terms growth for CBF corpus and individual classes with 
-   training set size. Right panel: distribution of SAX terms in CBF corpus for training set of 
-   1000 series of each class.}
-   \label{fig:venn}
-\end{figure}
-
 
 % An example of a floating figure using the graphicx package.
 % Note that \label must occur AFTER (or within) \caption.
