@@ -410,21 +410,21 @@
 % paper title
 % can use linebreaks \\ within to get better formatting as desired
 \title{SAX-VSM: \\Interpretable Time Series Classification\\ Using SAX and Vector Space Model,
-ver.20-06/1}
+ver.Solstice/1}
 
 
 % author names and affiliations
 % use a multiple column layout for up to three different
 % affiliations
-\author{\IEEEauthorblockN{Pavel Senin}
-\IEEEauthorblockA{Information and Computer Sciences Department,\\
-University of Hawaii at Manoa, Honolulu, HI, 96822\\
-Email: senin@hawaii.edu}
-\and
-\IEEEauthorblockN{Sergey Malinchik}
-\IEEEauthorblockA{Lockheed Martin Advanced Technology Laboratories,\\
-3 Executive Campus, Suite 600, Cherry Hill, NJ, 08002\\
-Email: sergey.b.malinchik@lmco.com}}
+% \author{\IEEEauthorblockN{Pavel Senin}
+% \IEEEauthorblockA{Information and Computer Sciences Department,\\
+% University of Hawaii at Manoa, Honolulu, HI, 96822\\
+% Email: senin@hawaii.edu}
+% \and
+% \IEEEauthorblockN{Sergey Malinchik}
+% \IEEEauthorblockA{Lockheed Martin Advanced Technology Laboratories,\\
+% 3 Executive Campus, Suite 600, Cherry Hill, NJ, 08002\\
+% Email: sergey.b.malinchik@lmco.com}}
 
 % conference papers do not typically use \thanks and this command
 % is locked out in conference mode. If really needed, such as for
@@ -485,9 +485,9 @@ our method provides fast, precise, and interpretable classification.
 
 % For peer review papers, you can put extra information on the cover
 % page as needed:
-% \ifCLASSOPTIONpeerreview
-% \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
-% \fi
+ \ifCLASSOPTIONpeerreview
+ \begin{center} \bfseries EDICS Category: 3-BBND \end{center}
+ \fi
 %
 % For peerreview papers, this IEEEtran command inserts a page break and
 % creates the second title. It will be ignored for other modes.
@@ -503,63 +503,64 @@ Within last decades, many time series representations, similarity measures,
 and classification algorithms were proposed following the rapid
 progress in data collection and storage technologies \cite{review}. 
 
-One of the distinct challenges presented in the field is the ordering of collected 
-measurements (variables). Often, particularly in cases featuring periodic, 
-repetitive measurements, the ordering is the only viable feature allowing 
-class disambiguation. 
-Another specificity of the field is the pervasiveness of exceptionally well-performing 
-nearest-neighbor algorithms, which vary in underlying distance measures, 
-approximation techniques, or smoothing \cite{comparison}. 
+One of the distinct challenges presented in the field is the ordering of time series 
+points, which contributes to a high dimensionality of classification problems,
+and which, at the same time, is often the only viable feature allowing class identification. 
+Another specificity of the field is the pervasiveness of exceptionally well performing 
+nearest-neighbor algorithm, that naturally captures the ordering and can be 
+easily tuned by the choice of distance measure, approximation technique, 
+or smoothing \cite{comparison}. 
 As pointed by dozens of papers, a simple ``lazy'' nearest neighbor classifier is 
 accurate and robust, depends on a very few parameters and requires no 
 training \cite{review, benchmark, comparison, classifiers}. 
 However, while possessing all these qualities, 1NN technique has a number of 
 significant disadvantages, where the major shortcoming is that it does not provide any 
 insight into the classification results. 
-Another significant limitation is the need for a significantly large training set 
-representing a class variance in order to achieve a good accuracy. 
-Finally, while having lazy initialization, 1NN classification is computationally expensive.
+Another limitation is its need for a significantly large training set representing a 
+class variance in order to achieve a good accuracy. 
+Finally, while having trivial initialization, 1NN classification is computationally expensive.
 
 In this work, we address outlined above limitation by proposing an alternative 
-to 1NN algorithm, that provides a superior interpretability, learns efficiently from a
+to 1NN algorithm that provides a superior interpretability, learns efficiently from a
 small training set, and has a very low classification complexity.
 
 The paper is structured as follows. 
 Section \ref{prior} provides background into the existing algorithms categorization and into 
 the relevant work. Section \ref{background}, provides background for a proposed algorithm. 
 In Section \ref{sax-vsm}, we describe our algorithm, and in Section \ref{results}, we
-evaluate its performance. Finally, in Section \ref{conclusion}, we form our conclusions 
-and discuss future work.
+evaluate its performance. Finally, we form our conclusions and discuss future work 
+in Section \ref{conclusion}.
 
 \section{Prior and related work} \label{prior}
-Almost all of the existing algorithms for time series classification can be divided 
+Almost all of the existing techniques for time series classification can be divided 
 in two major categories \cite{survey}. 
 The first category of classification techniques is based on 
 shape-based similarity metrics - where distance is measured directly between time 
 series points. Classical example of methods from this category is a nearest neighbor 
 (kNN) classifier built upon Euclidean distance \cite{1NN} or SpADe \cite{spade}. 
-The second category consists of classification techniques based on the 
+The second category consists of classification techniques is based on the 
 structural similarity metrics which employ some high-level representations 
 of time series based on their global or local features. 
-Examples from this category include DFT based classifier \cite{DFT}
-and a classifier based on Bag-of-patterns representation (BOP) \cite{bag_patterns}. 
-The development of these categories can be explained by differences in the 
-performance of these techniques: while shape-based similarity methods virtually 
-unbeatable on short, often pre-processed time series data \cite{benchmark}, 
+Examples from this category include classifier based on Discrete Fourier Transform \cite{DFT}
+and a classifier based on Bag-Of-Patterns representation (BOP) \cite{bag_patterns}. 
+The development of these distinct categories can be explained by differences 
+in the performance of approaches built upon these techniques: 
+while shape-based similarity methods virtually unbeatable on short, 
+often pre-processed time series data \cite{benchmark}, 
 they usually fail on long and noisy data sets \cite{indexing},
-where structure-based techniques demonstrate a superior performance. 
+where structure-based solutions demonstrate a superior performance. 
 %In addition, structure-based methods require less storage space and, usually, 
 %have a faster classification time, thus, they often implemented in industrial settings. 
 
-Additionally, in the context of our work, it is worth to note, that classification 
-techniques from both categories can be also attributed as exact or approximate.
-While former are based on exact metrics, and typically are brute force 
-algorithms which guarantee results through an exhaustive search, 
-the latter are usually built upon an approximate representation of 
-time series, or upon an approximate similarity metric, and do not guarantee 
-global correctness. Nevertheless, while allowing a higher error rate,
-approximate techniques effectively reduce the search space, thus dealing with 
-large unprocessed data much more efficiently \cite{paa, sax, streaming_sax}.
+%Additionally, in the context of our work, it is worth to note, that classification 
+%techniques from both categories can be also attributed as exact or approximate.
+%While former are based on exact metrics, and typically are brute force 
+%algorithms which guarantee results through an exhaustive search, 
+%the latter are usually built upon an approximate representation of 
+%time series, or upon an approximate similarity metric, and do not guarantee 
+%global correctness. Nevertheless, while allowing a higher error rate,
+%approximate techniques effectively reduce the search space, thus dealing with 
+%large unprocessed data much more efficiently \cite{paa, sax, streaming_sax}.
 
 %
 %Further, similarity search techniques can be further categorized as exact 
@@ -574,59 +575,92 @@ large unprocessed data much more efficiently \cite{paa, sax, streaming_sax}.
 %umber of disadvantages, where the major is that it does not offer any insight into the data, 
 %while the next is the need for a significantly large training set.
 
-Recently, two relevant to our work techniques, were proposed. 
+%Recently, two relevant to our work techniques, were proposed. 
+As possible alternatives to these two categories, two relevant to our work techniques, 
+were recently proposed. 
 The first technique is the time series shapelets algorithm,
-which was introduced in \cite{shapelet} and featuring a superior interpretability 
-and compactness of a delivered solution. 
+that was introduced in \cite{shapelet} and is featuring a superior interpretability 
+and a compactness of delivered solution. 
 A shapelet is a short time series ``snippet'', that is a representative of class
 membership and is used for a decision tree construction facilitating class 
-disambiguation and interpretability \cite{logical}.
+identification and interpretability \cite{logical}.
 In order to find a branching shapelet, the algorithm exhaustively searches for a best 
 discriminatory shapelet on data split via an information gain measure. 
 The algorithm's classification is built upon the similarity measure between a branching shapelet 
 and a full time series, defined as a distance between the shapelet and a closest 
 subsequence in the series when measured by the normalized Euclidean distance. 
-This technique is exact and, potentially, combines the superior precision of 
+%This technique is exact and, potentially, combines the superior precision of
+This technique, potentially, combines the superior precision of 
 shape-based exact similarity methods, and the high-throughput 
 classification capacity and efficiency of feature-based approximate techniques. 
 However, while demonstrating a superior interpretability, robustness, and similar to kNN 
 algorithms performance, shapelets-based algorithms are computationally expensive 
 ($O(n^{2}m^{3})$, where $n$ is a number of objects and $m$ is the length of a 
-longest timeseries),
+longest time series),
 which makes difficult its adoption for many class classification problems \cite{bagnal}. 
-While better solution was recently proposed ($O(nm^{2})$), it is an approximate 
+While a better solution was recently proposed ($O(nm^{2})$), it is an approximate 
 algorithm, that is based on iSAX approximation and indexing \cite{fast-shapelets}.
 
-The second, highly relevant to our work approach is the 1NN classifier built upon the 
+The second relevant to our work approach is the 1NN classifier built upon the 
 Bag-Of-Patterns (BOP) representation of time-series \cite{bag_patterns}.
-BOP representation of a time series is equated to IR ``bag of words" concept
-and is obtained by extraction, symbolic approximation with SAX, 
-and counting of occurrence frequencies of short overlapping 
-subsequences (patterns). By applying this procedure to all of a data set time series, 
-algorithm converts the original data into the vector space, where it is classified
-by 1NN classifier built upon Euclidean distance, raw Cosine similarity, or \textit{tf$\ast$idf}. 
-It was shown by the authors, that BOP has a several advantages: 
-it is rotation-invariant, it considers local and global structures simultaneously, 
-and it provides an insight into patterns distribution through frequency histograms.
+BOP representation of a time series is equated to IR ``bag of words" concept,
+and is obtained by extraction, symbolic approximation with SAX, and counting
+of occurrence frequencies of short overlapping subsequences 
+(patterns) along a time series.
+%and is obtained by extraction, symbolic approximation with SAX, 
+%and counting of occurrence frequencies of short overlapping 
+%subsequences (patterns). 
+By applying this procedure to all of a training set time series, 
+algorithm converts the data into the vector space, where each of the original
+time series is represented by a patterns frequency vector. 
+These vectors are classified with 1NN classifier built upon Euclidean distance, 
+raw Cosine similarity, or with  \textit{tf$\ast$idf} ranking. 
+It was shown by the authors, that BOP has a several advantages: it has a low
+complexity ($O(nm)$), it is rotation-invariant and considers local and global 
+structures simultaneously, and it provides an insight into patterns 
+distribution through frequency histograms.
+Through an experimental evaluation the authors concluded, that the best classification
+accuracy of BOP-represented time series is achieved by using 1NN classifier based 
+on Euclidean distance between frequency vectors.
+%classifier (not Cosine similarity) 
+%and word  (pattern) frequency vectors (not tf_idf weights).    
 
 %accurate and robust \cite{review, benchmark, comparison, classifiers}. Moreover, it depends on a
 %very few parameters. Nevertheless, while possessing all these qualities, 1NN technique has a n
 %umber of disadvantages, where the major is that it does not offer any insight into the data, 
 %while the next is the need for a significantly large training set.
+%
+%We propose the algorithm, that is approximate and based on a similar to shapelets concept - 
+%finding time series subsequences which are characteristic representatives of a class. 
+%For this, SAX-VSM also pre-process all of the training time series, which brings the training 
+%computational complexity up to $O(nm)$.
+%However, instead of recursive search for discriminating shapelets, 
+%\textit{our algorithm ranks by ``importance'' all potential candidate subsequences at once}.
+%As we shall show, this ranking not only provides a superior insight into the classification 
+%results and data specificities but enables intuitive, heat-map like visualization. 
+%In the same time, SAX-VSM is very similar to BOP technique. It also converts time series into 
+%the vector space model with SAX, and relies on 1NN classification. Nonetheless, instead of 
+%building $n$ bags for each of the training time series, our algorithm builds \textit{a single 
+%bag of words for each data class}, thus not only providing fast classification ($O(m)$), 
+%but efficiently learning from a small training set by its generalization.
 
-We propose the algorithm, that is approximate and based on a similar to shapelets concept - 
-finding time series subsequences which are characteristic representatives of a class. 
-For this, SAX-VSM also pre-process all of the training time series, which brings the training 
-computational complexity up to $O(nm^{2})$.
+Our proposed algorithm has similarities with aforementioned techniques. 
+Similarly to shapelet-based approach, it finds time series subsequences
+which are characteristic representatives of a whole class, thus enabling
+superior interpretability.
 However, instead of recursive search for discriminating shapelets, 
-\textit{our algorithm ranks by ``importance'' all potential candidate subsequences at once}.
-As we shall show, this ranking not only provides a superior insight into the classification 
-results and data specificities but enables intuitive, heat-map like visualization. 
-In the same time, SAX-VSM is very similar to BOP technique. It also converts time series into 
-the vector space model with SAX, and relies on 1NN classification. Nonetheless, instead of 
-building $n$ bags for each of the training time series, our algorithm builds \textit{a single 
-bag of words for each data class}, thus not only providing fast classification ($O(m)$), 
-but efficiently learning from a small training set by its generalization.
+our algorithm ranks by “importance” all potential candidate subsequences 
+\textit{at once} with a \textit{linear computational complexity} of $O(nm)$.
+To achieve this, similarly to BOP, \mbox{SAX-VSM} converts all of the 
+training time series into the vector space and computes tf$\ast$idf ranking.
+But instead of building of $n$ bags (for each of the training time series), 
+our algorithm builds a \textit{single bag of words for each of classes}, 
+that effectively provides a compact solution of $N$ weight vectors 
+($N$ is the number of classes, $N<<n$), and a fast classification time of $O(m)$.
+
+As we shall show, these distinct features: the generalization of the class' 
+patterns with a single bag and tf$\ast$idf-based ranking, allow SAX-VSM 
+to achieve high accuracy,  and tolerate noise in classification process.
 
 \section{Background} \label{background}
 SAX-VSM is based on two well-known techniques. The first technique is 
@@ -894,6 +928,7 @@ time series into symbolic representation. For this, it converts time series into
 representation configured by four parameters: the sliding window 
 length (\textit{W}), the number of PAA frames per window (\textit{P}), 
 the SAX alphabet size (\textit{A}), and by the numerosity reduction strategy (\textit{S}). 
+The choice of  these parameters we discuss later.
 Each of the subsequences, extracted with overlapping sliding window, 
 is normalized to unit standard deviation before being processed with PAA 
 \cite{goldin_kanellakis}. 
@@ -1015,7 +1050,7 @@ embed characteristic to the class subsequences.
 \caption{\bf Classifiers error rates comparison.}
  \label{perf_table}
 \centering
-\begin{tabularx}{\linewidth}{@{} l *6X @{}}\toprule[1.5pt]
+\begin{tabularx}{\linewidth}{@{} l *6X @{}}\toprule[1pt]
 %\bf Data set &\bf 1NN-Euclidean &\bf 1NN-DTW &\bf Shapelet Tree &\bf  Shapelet SVM &\bf 
 %SAX-VSM\\\midrule
 %SyntheticControl  & 0.120   & \textbf{0.007}  & 0.057     & 0.127            & 0.010 \\
@@ -1049,7 +1084,7 @@ OSU Leaf      &15   & 0.483   & 0.409  & 0.359     & 0.236            & \textbf{
 Syn.Control  &6   & 0.120   & \textbf{0.007}  & 0.057     & 0.037            & 0.010 \\
 Trace            &4   & 0.240   & \textbf{0.0}    & 0.020     & \textbf{0.0}            & \textbf{0.0} \\
 
-\bottomrule[1.25pt]
+\bottomrule[1pt]
 \end{tabularx}
 \end{table}
 %\hline
@@ -1062,7 +1097,7 @@ representation of time series and Vector Space Model called SAX-VSM. Here, we pr
 a range of experiments assessing its performance in classification and clustering.
 
 \subsection{Analysis of classification accuracy}
-To evaluate our approach, we selected thirty one data sets. Majority of the data sets was taken 
+To evaluate our approach, we selected thirty three data sets. Majority of the data sets was taken 
 from the UCR time series repository \cite{ucr}, the Ford data set was downloaded from 
 IEEE World Congress on Computational Intelligence \cite{ford} website, the 
 ElectricDevices data set was downloaded from supporting website for \cite{bagnal}. 
@@ -1081,8 +1116,9 @@ We selected these particular techniques in order to position SAX-VSM
 in terms of accuracy and interpretability. 
 The presented comparison data sets selection is limited to the number 
 of previously published benchmark results for all of four competing classifiers. 
-The performance of SAX-VSM for the rest of the data sets can be found online 
-along with our reference implementation \cite{jmotif}.
+The performance of SAX-VSM for the rest of the data sets \textit{will be made online
+ along with our reference implementation}
+%\cite{jmotif}.
 
 In our evaluation, we followed train/test split of the data. We exclusively used train data in 
 cross-validation experiments for selection of SAX parameters and numerosity reduction strategy
@@ -1372,7 +1408,7 @@ our finding soon.
 \begin{figure}[t]
    \myfigureshrinker
    \centering
-   \includegraphics[width=84mm]{figures/Venn.eps}
+   \includegraphics[width=84mm]{figures/bubbles.eps}
    \caption{Left panel: illustration of terms growth for CBF corpus and individual classes with 
    training set size. Right panel: distribution of SAX terms in CBF corpus for training set of 
    1000 series of each class.}
@@ -1657,10 +1693,10 @@ Error detecting and error correcting codes.
 Bell System Technical Journal 29, pp. 147--160 (1950)
 
 %23
-\bibitem {jmotif}
-Paper Authors:
-Accompanying information for this paper. 
-\url{https://code.google.com/p/jmotif/}
+%\bibitem {jmotif}
+%Paper Authors:
+%Accompanying information for this paper. 
+%\url{https://code.google.com/p/jmotif/}
 
 %24
 \bibitem {direct-original}
