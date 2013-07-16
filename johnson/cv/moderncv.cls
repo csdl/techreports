@@ -337,6 +337,7 @@
 % makes a publication line with a header and a corresponding text
 % usage: \cvpubitem[spacing]{header}{text}
 \newcommand*{\cvpubitem}[5][.50em]{}
+\newcommand*{\cvpubitemlink}[6][.50em]{}
 
 % makes a grant line with a header and a corresponding text
 % usage: \cvgrantitem[spacing]{header}{text}
