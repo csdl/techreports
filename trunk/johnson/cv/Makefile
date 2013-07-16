@@ -1426,6 +1426,7 @@ endef
 # $(call ps2pdf,infile,outfile,[embed fonts])
 define ps2pdf
 	$(GS) \
+                -dUseCIEColor \
 		-dSAFER -dCompatibilityLevel=$(PS_COMPATIBILITY) \
 		$(if $3,$(PS_EMBED_OPTIONS)) \
 		-q -dNOPAUSE -dBATCH \
