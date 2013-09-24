@@ -3375,7 +3375,7 @@ between column types.}%
 
 % adjustment spacing from title (or special paper notice) to author name blocks (confmode)
 % can be negative
-\def\@IEEEauthorblockconfadjspace{-0.25em}
+\def\@IEEEauthorblockconfadjspace{-0.3em}
 % compsoc conferences need more space here
 \@IEEEcompsocconfonly{\def\@IEEEauthorblockconfadjspace{0.75\@IEEEnormalsizeunitybaselineskip}}
 
