@@ -350,7 +350,7 @@
 %
 % A little bit of space can be gained by abbreviating references
 \renewcommand{\figurename}{Fig.}
-\renewcommand{\tablename}{Tab.}
+%\renewcommand{\tablename}{Tab.}
 %
 % it is possible to change the spacing in and around floats using these lengths
 \setlength{\abovecaptionskip}{1ex}
@@ -368,7 +368,8 @@
 %
 % Changing math formatting
 %
-\DeclareMathSizes{10}{9}{6}{5}
+\DeclareMathSizes{10}{9}{8}{5}
+%\DeclareMathSizes{10}{10}{8}{6}
 \abovedisplayskip.50ex
 \belowdisplayskip.50ex
 \abovedisplayshortskip.50ex
@@ -712,55 +713,50 @@ the training and the classification.
 \end{figure}
 
 \subsection{Training phase}
-The training starts by transforming of all labeled time series into SAX representation
+The training starts by transforming all of labeled time series into SAX representation
 configured by three parameters: the sliding window length (\textit{W}), 
-the number of PAA intervals per window (\textit{P}), 
+the number of PAA segments per window (\textit{P}), 
 and SAX alphabet size (\textit{A}).
-Each of the subsequences, extracted with overlapping sliding window, 
+Each of subsequences extracted with overlapping sliding window 
 is normalized (Sec. \ref{section-sax}) before being processed with PAA. 
-If, however, the standard deviation value falls below a fixed threshold, the 
+However, if the standard deviation value falls below a fixed threshold, the 
 normalization is not applied in order to avoid over-amplification 
-of a background noise. 
+of a background noise \cite{sax}. 
 
 By applying this procedure to all time series from $N$ training classes, 
 algorithm builds a corpus of $N$ bags, to which, in turn, 
-it applies \textit{tf$\ast$idf} ranking. 
-These steps result in $N$ real-valued weight vectors of equal length 
-representing $N$ training classes. 
+it applies \textit{tf$\ast$idf} weighting and outputs $N$ real-valued weight 
+vectors of equal length representing training classes. 
 
-Because of the need to scan the whole training set, training of SAX-VSM 
-classifier is relatively computationally expensive ($O(nm)$). 
+Because of the need to process the whole of the training set, 
+training of SAX-VSM classifier is relatively computationally expensive ($O(nm)$). 
 However, there is no need to maintain an index of training time series, 
 or to keep any of them in the memory at the runtime: 
 the algorithm simply iterates over all training time series incrementally building 
-a single bag of SAX words for each of training classes. 
-Once built and processed with \textit{tf$\ast$idf}, corpus is discarded - 
-only a resulting set of $N$ real-valued weight vectors is retained for classification. 
+bags of SAX words. Once built and weighted with \textit{tf$\ast$idf}, 
+the corpus is discarded - only a resulting set of $N$ real-valued weight vectors 
+is retained for classification. 
 
 \subsection{Classification}
 In order to classify an unlabeled time series, SAX-VSM transforms it into a
-terms frequency vector using the same overlapping sliding window technique 
+terms frequency vector using exactly the same sliding window technique 
 and SAX parameters that were used for training. 
-Then, it computes cosine similarity values between this terms frequency vector 
+Then, it computes cosine similarity values between this term frequency vector 
 and $N$ \textit{tf$\ast$idf} weight vectors representing the training classes. 
 The unlabeled time series is assigned to the class whose vector yields the
 maximal cosine similarity value.
 
 \subsection{Sliding window size and SAX parameters selection} \label{section-direct}
-As shown, SAX-VSM requires four parameters to be specified upfront. 
-In order to optimize their selection using only a training data we adopt a common 
-cross-validation technique and DIRECT optimization scheme \cite{direct-original}.
-%However, DIRECT optimization scheme is designed to search for global minima of a real 
-%valued function over a bound-constrained domain. In order to overcome this limitation, we 
-%employ the rounding of reported solution values to the nearest integer.
+As shown, SAX-VSM requires three parameters to be specified upfront. 
+In order to optimize their selection using only a training data set, we propose a solution based 
+on a common cross-validation and DIRECT optimization scheme \cite{direct-original}.
 Since DIRECT is designed to search for global minima of a real valued function 
 over a bound constrained domain, we use the rounding of a reported solution values 
 to the nearest integer.
 
 DIRECT iteratively performs two procedures - partitioning the search domain and identifying 
 potentially optimal hyper-rectangles.
-%(i.e., having potential to contain good solutions). 
-In our case, it begins by scaling the search domain to a 4-dimensional unit hypercube 
+In our case, it begins by scaling the search domain to a 3-dimensional unit hypercube 
 which is considered as potentially optimal. 
 The error function is then evaluated at the center of this hypercube. Next, other points are 
 created at one-third of the distance from the center in all coordinate directions. 
@@ -769,52 +765,53 @@ and their error function value. This procedure continues interactively until err
 converges.
 For brevity, we omit the detailed explanation of the algorithm, and refer the 
 interested reader to \cite{direct} for additional details. Figure \ref{fig:direct-sampling} 
-illustrates the application of DIRECT to \textit{SyntheticControl} dataset problem, 
-in this case, algorithm converged after sampling just 130 out of 13860 points.
-% a 106X speedup
+illustrates the application of leave-one-out cross-validation and DIRECT to 
+\textit{SyntheticControl} data set, in this case, algorithm converged after sampling 
+just 130 out of 13'860 points (\textgreater100x speedup).
 
 \begin{figure}[t]
-   %\myfigureshrinker
    \centering
+   \vspace{-0.2cm}
    \includegraphics[width=90mm]{figures/figure_direct.eps}
    \caption{Parameters optimization with DIRECT for \textit{SyntheticControl} data. 
    Left panel shows all points sampled by DIRECT in the space $PAA*Window*Alphabet$ where
    red points correspond to high error values in cross-validation experiments, 
    while green points indicate low error values. 
    Note the green points concentration at $W$=42. 
-   Middle panel shows an error-rate heat map when the sliding window size is fixed to 42; 
-   this plot was obtained by a complete scan of all 432 points of the slice. 
-   Right panel shows the optimized by DIRECT sampling. The optimal solution 
-   ($W$=42,$P$=8,$A$=4) was found by sampling of 43 points.}
+   Middle panel shows an error rate heat map of a hypercube slice ($W$ is fixed to 42)
+   obtained by a complete scan of all 432 points. 
+   Right panel shows an error rate heat map of the same slice when 
+   the sampling process optimized by DIRECT, 
+   the optimal solution ($P$=8,$A$=4) was found by sampling of 43 points.}
+   \vspace{-0.1cm}
    \label{fig:direct-sampling}
 \end{figure}
 
 \section{Results} \label{results}
 We have proposed a novel algorithm for time series classification based on SAX
 approximation of time series and Vector Space Model called SAX-VSM. 
-Here, we present a range of experiments assessing its performance and show its 
-ability to provide an insight into classification results.
+Here, we present a range of experiments assessing its performance and showing
+its ability to provide an insight into classification results.
 
 \subsection{Analysis of the classification accuracy}
 We evaluated our approach on 45 datasets whose majority was taken from benchmark 
 data disseminated through UCR repository \cite{ucr}. While all the detail are available at 
 project's homepage \cite{jmotif}, Table \ref{perf_table} compares the classification accuracy 
-of SAX-VSM with previously published values of four competing classifiers: 
+of SAX-VSM with previously published performance results of four competing classifiers: 
 two state-of-the-art 1NN classifiers based on Euclidean distance and DTW, 
-the classifier based on the recently proposed Fast-Shapelets technique \cite{fast-shapelets}, 
+the classifier based on recently proposed Fast-Shapelets technique \cite{fast-shapelets}, 
 and the classifier based on BOP \cite{bag_patterns}.
 We selected these particular techniques in order to position SAX-VSM in terms of 
 classification accuracy and interpretability. 
 
 In our evaluation, we followed a train/test data split as provided by UCR. 
 Train data were used in cross-validation experiments for optimization of 
-SAX parameters using DIRECT. 
-Once selected, optimal parameters was used to assess SAX-VSM classification accuracy 
-which is reported in the last column of Table \ref{perf_table}.
+SAX parameters using \mbox{DIRECT}. 
+Once selected, optimal parameters were used to assess SAX-VSM classification 
+accuracy on test data which is reported in the last column of Table \ref{perf_table}.
 
 \begin{footnotesize}
 \begin{table}[t]
-%\myfigureshrinkerless
 \vspace{-0.3cm}
 \caption{\bf Classifiers error rates comparison.}
  \label{perf_table}
@@ -850,37 +847,37 @@ Yoga        &2    & 0.170   & \textbf{0.164}  & 0.249 & 0.170 & \textbf{0.164} \
 \end{footnotesize}
 
 \subsection{Scalability analysis} \label{scalability}
-For synthetic datasets, it is possible to create as many instances as one needs for
-experimentation.
-We used CBF \cite{cbf} in order to investigate and compare the performance of 
-SAX-VSM and 1NN Euclidean classifier on increasingly large datasets.
+For synthetic datasets, it is possible to create as many time series instances as 
+one needs for experimentation.
+We used CBF \cite{cbf} domain in order to investigate and assess the performance 
+of SAX-VSM on increasingly large datasets.
 
-In one series of experiments, we varied a training size from 10 to 1000, while 
-the test dataset size remained fixed to 10'000 instances. 
-For small training datasets, SAX-VSM was found to be significantly more accurate than 
+In one series of experiments, we varied a training set size from 10 to $10^{3}$, while 
+the test set size remained fixed to $10^{4}$ instances. 
+For small training sets, SAX-VSM was found to be significantly more accurate than 
 1NN Euclidean classifier, but by the time we had more than 500 time series in a training set, 
 there was no significant difference in accuracy (Fig. \ref{fig:precision-runtime}, left). 
-As per the running time cost, due to the comprehensive training, SAX-VSM was found to 
+As per the runtime cost, due to the comprehensive training, SAX-VSM was found to 
 be more expensive than 1NN Euclidean classifier on small training sets, 
-but outperformed 1NN on large training sets. SAX-VSM allows to perform training offline and 
-load weight vectors ``on demand'' - in this scenario, it performs classification significantly
-faster than 1NN Euclidean classifier (Fig. \ref{fig:precision-runtime}, right).
+but outperformed 1NN on large training sets. Note that SAX-VSM allows to perform training 
+offline and load weight vectors when needed - in this scenario, it performs classification 
+significantly faster than 1NN Euclidean classifier (Fig. \ref{fig:precision-runtime}, right).
 
 In another series of experiments we investigated the scalability of our algorithm with
-unrealistic training set sizes - up to 1'000'000 of instances of each of CBF classes.
+unrealistic training set sizes - up to $\normalsize{10^{9}}$ of instances of each of CBF classes.
 As expected, with the grows of a training set size, the growth curve of a total number of 
-distinct SAX words for each class' dictionary reflected significant dictionary saturation
-peaking at 67'324 of distinct words (less than 10\% of all possible words of length 7
-from 7 letters alphabet).
-This result reflects SAX-VSM ability to learn from large datasets efficiently: 
+distinct SAX words for each class' dictionary showed significant saturation 
+(similar to logarithmic curve) peaking at about 10\% of all possible words for selected 
+PAA and alphabet sizes.
+This result reflects SAX-VSM ability to learn efficiently from large datasets: 
 while SAX smoothing limits the generation of new words corresponding to 
 relatively similar sub-sequences, the \textbf{\textit{idf}} factor of the weighting 
-schema (Eq. \ref{formula:idf}) efficiently prunes words that are loosing their 
-discriminative power, i.e. those which appear in all classes.
+schema (Eq. \ref{formula:idf}) efficiently prunes SAX words (patterns) 
+that are loosing their discriminative power, i.e. those which appear in all classes.
 
-\begin{figure}[t]
-   %\myfigureshrinkerless
+\begin{figure}[b]
    \centering
+   \vspace{0.4cm}
    \includegraphics[width=88mm]{figures/precision-runtime_new.eps}
    \caption{Comparison of classification precision and run time of SAX-VSM and 1NN 
    Euclidean classifier on CBF data. 
@@ -891,7 +888,7 @@ discriminative power, i.e. those which appear in all classes.
    (the random noise level varies up to 100\% of CBF signal value)
    }
    \label{fig:precision-runtime}
-   \vspace{-0.1cm}
+   \vspace{-0.45cm}
 \end{figure}
 
 %dictionary of the
@@ -912,47 +909,25 @@ discriminative power, i.e. those which appear in all classes.
 
 \subsection{Robustness to noise}
 Since the weight of each of the overlapping SAX words is contributing only a small 
-fraction to a final similarity value, prompted an idea that 
-SAX-VSM classifier might be robust to the noise and to the partial loss of a signal in
-test time series. Intuitively, in this case the cosine similarity between high dimensional 
+fraction to a final similarity value, we hypothesized that SAX-VSM classifier might be 
+robust to the noise and to the partial loss of a signal in test time series. 
+Intuitively, in this case the cosine similarity between high dimensional 
 weight vectors might not degrade significantly enough to cause a misclassification.
-
-%\begin{figure}[t]
-  %\myfigureshrinkerless
-%  \centering
-%  \includegraphics[width=84mm]{figures/corrupted.eps}
-%  \caption{Classification performance with added noise
-%  (left panel; the random noise level varies up to 100\% of the signal value,
-%  and with a signal loss (right panel). \textit{SAX-VSM Opt} curves correspond to 
-%  results obtained with ``optimized'' for each case SAX parameters 
-%  (we re-trained a classifier).}
-%  \label{fig:corrupted}
-% \end{figure}
 
 We investigated this hypothesis using CBF data. By fixing a training set size to 250 
 time series, we varied the standard deviation of Gaussian noise in CBF model.
-%(whose default value is about 17\% of a signal level). We found, that SAX-VSM 
-%increasingly outperformed 1NN
 SAX-VSM outperformed 1NN Euclidean classifier with the growth of a noise level 
 confirming our hypothesis (Fig.\ref{fig:precision-runtime}). 
 Further improvement of SAX-VSM performance was achieved by fine tuning of smoothing 
 through a gradual increase of the SAX sliding window size proportionally to the growth of 
 the noise level (\textit{SAX-VSM Opt} curve, Fig.\ref{fig:precision-runtime}). 
 
-%In other experiments, we randomly replaced up to 50\% of a span of an 
-%unlabeled time series with a random noise. Again, SAX-VSM performed consistently better 
-%than 1NN Euclidean classifier regardless of a training set size, which we varied from 
-%five to one thousand. The \textit{SAX-VSM Opt} curve at Fig.\ref{fig:corrupted} (Right) depicts
-%the case with 50 series when the sliding window size was decreased inversely proportionally 
-%to the growth of a signal loss.
-
-
 \begin{figure}[b]
    %\myfigureshrinker
    \centering
    \vspace{0.3cm}
    \includegraphics[width=88mm]{figures/CBF-HEAT.eps}
-   \caption{An example of the heatmap-like visualization of subsequence ``importance''
+   \caption{An example of the heat map-like visualization of subsequence ``importance''
    to a class identification. Color value of each point was obtained by combining 
    \textit{tf$\ast$idf} weights of all patterns which cover the point.
    Highlighted by the visualization features correspond to a sudden rise, plateau, 
@@ -963,28 +938,28 @@ the noise level (\textit{SAX-VSM Opt} curve, Fig.\ref{fig:precision-runtime}).
 \end{figure}
 
 \subsection{Interpretable classification}
-While the classification performance results show that SAX-VSM classifier has 
-a very good potential, its major strength is in the level of allowed 
-interpretability of classification results. 
+While the classification performance evaluation results show that SAX-VSM classifier has 
+a very good potential, its major strength is in the level of allowed interpretability of 
+classification results. 
 
-Previously, it was shown by the authors, that the shapelet-based decision tree provides 
-interpretable classification and offers an insight into the data specific features \cite{shapelet}. 
+Previously it was shown that shapelet-based decision trees provide interpretable 
+classification and offer an insight into underlying data features \cite{shapelet}. 
 Later, it was shown that the discovery of multiple shapelets provides even 
 better resolution and intuition into the interpretability of classification \cite{bagnal}. 
-However, as the authors noted, a time cost of multiple shapelets discovery
+However, as the authors noted, the time cost of multiple shapelets discovery
 in many class problems could be very significant. 
-Contrary, SAX-VSM extracts and weights all patterns at once without
+In contrast, SAX-VSM extracts and weights all patterns at once without
 any added cost. Thus, it could be the only choice for interpretable classification 
 in many class problems. 
-Here, we show a few examples in which we exploit the subsequence ranking 
-data provided by our technique.
+Here, we show a few examples in which we exploit the subsequence weighting 
+provided by our technique.
 
 \subsubsection{Heatmap-like visualization}
 Since SAX-VSM outputs tf$\ast$idf weight vectors of all subsequences extracted from a
 class, it is possible to find out a weight of any arbitrary selected subsequence.
-This feature enables a novel heatmap-like visualization technique that provides an immediate
-insight into the layout of ``important'' class-characterizing subsequences as shown at Figure
-\ref{fig:heat}.
+This feature enables a novel heat map-like visualization technique that provides an immediate
+insight into the layout of ``important'' class-characterizing subsequences 
+as shown at Figure \ref{fig:heat}.
 
 \begin{figure}[]
    %\myfigureshrinker
