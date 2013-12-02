@@ -1,196 +1,142 @@
 \chapter{SAX-VSM: A Novel Technique For Interpretable Time Series Classification}
 
-\section{Introduction}
-%
-Time series classification is an increasingly popular area of research providing 
-solutions to the wide range of fields including data mining, 
-image and motion recognition, signal processing, environmental sciences, 
-health care, and chemometrics. 
-Within last decades, many time series representations, similarity measures, 
+\textit{In this chapter I show a novel algorithm for interpretable time-series classification based on
+characteristic patterns discovery. }
+
+\section{Background}
+Time series classification is an increasingly popular area of research, providing 
+solutions to a wide range of fields, including data mining, 
+image and motion recognition, environmental sciences, health care, and chemometrics. 
+Within the last decade, many time series representations, similarity measures, 
 and classification algorithms were proposed following the rapid
 progress in data collection and storage technologies \cite{citeulike:10358271}. 
-Nevertheless, to date, the best overall performing classifier in the field is
-a nearest-neighbor algorithm (1NN), that can be easily tuned for a 
-particular problem by the choice of a distance measure, 
+NNevertheless, to date, the best overall performing classifier in the field is
+the nearest-neighbor algorithm (1NN), that can be easily tuned for a 
+particular problem by choosing either a distance measure, 
 an approximation technique, or smoothing \cite{citeulike:11796594}. 
-As pointed by dozens of papers, a simple ``lazy'' nearest neighbor classifier is 
-accurate and robust, depends on a very few parameters and requires no 
-training \cite{citeulike:10358271, citeulike:532340, citeulike:11796594, citeulike:12563424}. 
-However, while possessing these qualities, 1NN technique has a number of 
-significant disadvantages, where the major shortcoming is that it does not 
-offer any insight into the classification results.
-Another limitation is its need for a significantly large training set, that represents a 
-class variance, in order to achieve a good accuracy. 
+The 1NN classifier is simple, accurate and robust, depends on a very few parameters 
+and requires no training \cite{citeulike:10358271, citeulike:532340, citeulike:11796594, citeulike:12563424}. 
+However, the 1NN technique has a number of significant disadvantages, 
+where the major shortcoming is the inability to offer any insight into the classification results.
+Another limitation is its need for a significantly large training set 
+representing a within-class variance in order to achieve desired accuracy. 
 Finally, while having trivial initialization, 1NN classification is computationally expensive. 
-Thus, the demand for a simple, efficient, and interpretable classification technique 
-capable of processing of large data collections remains.
+Thus, the demand for an efficient and interpretable classification technique 
+capable of processing of large data volumes remains.
 
-In this work, we address outlined above limitation by proposing an alternative 
-to 1NN algorithm that provides a superior interpretability, learns efficiently from a
-small training set, and has a low computational complexity in classification.
-
-The paper is structured as follows. 
-Section \ref{prior} provides background into the existing algorithms and discusses relevant work. 
-Section \ref{background}, provides background for a proposed algorithm. 
-In Section \ref{sax-vsm}, we describe our algorithm, and in Section \ref{results}, we
-evaluate its performance. 
-Finally, we form our conclusions and discuss future work 
-in Section \ref{conclusion}.
+In this thesis, I propose an alternative to 1NN algorithm that addresses 
+aforementioned limitations. Specifically, it provides a superior interpretability, 
+learns efficiently from a small training set, and has a low classification 
+computational complexity. As I shall show in the following chapters, these algorithm's
+properties, make it the best choice for the problem in hands.
 
 \section{Prior and related work} \label{prior}
 Almost all of the existing techniques for time series classification can be divided 
 in two major categories \cite{citeulike:10249370}. 
-The first category of classification techniques is based on 
-shape-based similarity metrics - where distance is measured directly between time 
-series points. Classical example of methods from this category is a nearest neighbor 
-classifier built upon Euclidean distance \cite{citeulike:4214336} or SpADe \cite{citeulike:12563361}. 
+The first category includes techniques based on shape-based similarity metrics 
+where distance is measured directly between time series points. 
+Classical examples from this category is 1NN classifier 
+built upon Euclidean distance \cite{citeulike:4214336} or DTW \cite{citeulike:3496861}. 
 The second category consists of classification techniques based on 
-structural similarity metrics which employ some high-level representations 
+structural similarity metrics, which employ a high-level representations 
 of time series based on their global or local features. 
-Examples from this category include classifier based on Discrete Fourier Transform \cite{citeulike:5094223}
-and a classifier based on Bag-Of-Patterns representation (BOP) \cite{citeulike:10525778}. 
-The development of these distinct categories can be explained by differences 
-in their performance: 
-while shape-based similarity methods virtually unbeatable on short, 
-often pre-processed time series data \cite{citeulike:532340}, 
-they usually fail on long and noisy data sets \cite{citeulike:12563380},
-where structure-based solutions demonstrate a superior performance. 
-%In addition, structure-based methods require less storage space and, usually, 
-%have a faster classification time, thus, they often implemented in industrial settings. 
+Examples from this category include classifiers based on 
+time series representation obtained with Discrete Fourier Transform \cite{citeulike:5094223}
+or Bag-of-Patterns \cite{citeulike:10525778}. 
+The development of these distinct categories can be explained by 
+the difference in their performance: 
+while shape-based similarity methods are virtually unbeatable on short 
+pre-processed time series \cite{citeulike:532340}, 
+they usually fail on long and noisy data sets 
+where structure-based solutions demonstrate a superior performance \cite{citeulike:12563380}. 
+In addition, structure-based methods usually memory and runtime-effective, 
+thus, they often implemented in industrial settings. 
 
-%Additionally, in the context of our work, it is worth to note, that classification 
-%techniques from both categories can be also attributed as exact or approximate.
-%While former are based on exact metrics, and typically are brute force 
-%algorithms which guarantee results through an exhaustive search, 
-%the latter are usually built upon an approximate representation of 
-%time series, or upon an approximate similarity metric, and do not guarantee 
-%global correctness. Nevertheless, while allowing a higher error rate,
-%approximate techniques effectively reduce the search space, thus dealing with 
-%large unprocessed data much more efficiently \cite{paa, sax, citeulike:532335}.
+Additionally, in the context of my work, it is worth to note, that classification 
+techniques from both categories can be also attributed as exact or approximate.
+While former are based on exact metrics, and typically are brute force 
+algorithms which guarantee results through an exhaustive search, 
+the latter are usually built upon an approximate representation of 
+time series, or upon an approximate similarity metric, and do not guarantee 
+global correctness. Nevertheless, while allowing a potentially higher error rate,
+approximate techniques effectively reduce the search space, thus dealing with 
+large unprocessed data much more efficiently.
 
-%
-%Further, similarity search techniques can be further categorized as exact 
-%or approximate, where fast but approximate retrieval is often preferred over an 
-%exact but slower one with the current growth of the data volumes, .
-%
-%As per current state of the art, it is worth noting, that despite to recent development,
-%to date,
-%the best algorithm in overall performance is the simple nearest neighbor classifier, that is
-%accurate and robust \cite{review, benchmark, comparison, classifiers}. Moreover, it depends on a
-%very few parameters. Nevertheless, while possessing all these qualities, 1NN technique has a n
-%umber of disadvantages, where the major is that it does not offer any insight into the data, 
-%while the next is the need for a significantly large training set.
 
-%Recently, two relevant to our work techniques, were proposed. 
-As possible alternatives to these two categories, two relevant to our work techniques, 
-were recently proposed. 
-The first technique is the time series shapelets algorithm,
+As possible alternatives to these two categories, two relevant to my approach techniques, 
+were recently proposed. The first technique is the time series shapelets algorithm,
 that was introduced in \cite{citeulike:7344347} and is featuring a superior interpretability 
 and a compactness of delivered solution. 
-A shapelet is a short time series ``snippet'', that is a representative of class
+A Shapelet is a short time series ``snippet'' that is a representative of class
 membership and is used for a decision tree construction facilitating class 
-identification and interpretability \cite{citeulike:11957982}.
-In order to find a branching shapelet, the algorithm exhaustively searches for a best 
-discriminatory shapelet on data split via an information gain measure. 
-The algorithm's classification is built upon the similarity measure between a branching shapelet 
-and a full time series, defined as a distance between the shapelet and a closest 
-subsequence in the series when measured by the normalized Euclidean distance. 
-%This technique is exact and, potentially, combines the superior precision of
-This technique, potentially, combines the superior precision of 
-shape-based exact similarity methods, and the high-throughput 
-classification capacity and efficiency of feature-based approximate techniques. 
-However, while demonstrating a superior interpretability, robustness, and similar to kNN 
-algorithms performance, shapelets-based algorithms are computationally expensive 
-($O(n^{2}m^{3})$, where $n$ is a number of objects and $m$ is the length of a 
-longest time series),
-which makes difficult its adoption for many-class classification problems \cite{citeulike:11345338}. 
-While a better solution was recently proposed ($O(nm^{2})$), it is an approximate 
-algorithm, that is based on iSAX approximation and indexing \cite{citeulike:12563493}.
+identification and interpretability. In order to find a branching shapelet, 
+the algorithm exhaustively searches for a best discriminatory shapelet on data split via 
+an information gain measure. The algorithm's classification is built upon the similarity 
+measure between a branching shapelet and a full time series, defined as a distance 
+between the shapelet and a closest subsequence in the series when measured by the 
+normalized Euclidean distance.  
+This exact technique, potentially, combines the superior precision of 
+exact shape-based similarity methods, and the high-throughput 
+classification capacity of feature-based approximate techniques. 
+However, while demonstrating a superior interpretability, robustness, 
+and similar to 1NN algorithm performance, shapelets-based technique is 
+computationally expensive, $O(n^{2}m^{3})$, where $n$ is a number of 
+objects and $m$ is the length of a longest time series, making 
+its adoption for many-class classification problems difficult \cite{citeulike:11345338}. 
+While the faster solution was recently proposed ($O(nm^{2})$), it is an 
+approximate solution that is based on indexing \cite{citeulike:12563493}.
 
-The second relevant to our work approach is the 1NN classifier built upon the 
-Bag-Of-Patterns (BOP) representation of time-series \cite{citeulike:10525778}.
-BOP representation of a time series is equated to IR ``bag of words" concept,
-and is obtained by extraction, symbolic approximation with SAX, and counting
-of occurrence frequencies of short overlapping subsequences 
-(patterns) along the time series.
-%and is obtained by extraction, symbolic approximation with SAX, 
-%and counting of occurrence frequencies of short overlapping 
-%subsequences (patterns). 
-By applying this procedure to a training set, algorithm converts the data into 
-the vector space, where each of the original time series is represented by a 
-pattern (a SAX word) occurrence frequency vector. 
-These vectors are classified with 1NN classifier built upon Euclidean distance, 
-or Cosine similarity on raw frequencies or with \textit{tf$\ast$idf} ranking. 
-It was shown by the authors, that BOP has several advantages: it has a linear
-complexity ($O(nm)$), it is rotation-invariant and considers local and global 
-structures simultaneously, and it provides an insight into patterns 
-distribution through frequency histograms.
-Through an experimental evaluation the authors concluded, that the best classification
-accuracy of BOP-represented time series is achieved by using 1NN classifier based 
-on Euclidean distance between frequency vectors.
-%classifier (not Cosine similarity) 
-%and word  (pattern) frequency vectors (not tf_idf weights).    
+The second technique with interpretable results is 1NN classifier built upon the 
+Bag-Of-Patterns (BOP) representation of time series \cite{citeulike:10525778},
+which is equated to an Information Retrieval (IR) ``bag of words" concept 
+and is obtained by extraction, transformation with Symbolic Aggregate 
+approXimation (SAX) \cite{sax}, and counting the frequencies
+of short overlapping subsequences (patterns) along the time series.
+By applying this procedure to a training set, the algorithm converts the data into 
+the vector space, where the original time series are represented by a 
+pattern (SAX word) occurrence frequency vector. 
+These vectors are classified with 1NN classifier built with Euclidean distance 
+or Cosine similarity applied to raw frequencies or their \textit{tf$\ast$idf} weighting. 
+It was shown that BOP has several advantages: its complexity is linear 
+($O(nm)$), it is rotation-invariant and considers local and global structures 
+simultaneously, and it provides an insight into patterns distribution through 
+frequency histograms.
+The authors concluded, that the best classification accuracy of BOP-represented 
+time series is achieved by using 1NN classifier based on Euclidean distance.
 
-%accurate and robust \cite{review, benchmark, comparison, classifiers}. Moreover, it depends on a
-%very few parameters. Nevertheless, while possessing all these qualities, 1NN technique has a n
-%umber of disadvantages, where the major is that it does not offer any insight into the data, 
-%while the next is the need for a significantly large training set.
-%
-%We propose the algorithm, that is approximate and based on a similar to shapelets concept - 
-%finding time series subsequences which are characteristic representatives of a class. 
-%For this, SAX-VSM also pre-process all of the training time series, which brings the training 
-%computational complexity up to $O(nm)$.
-%However, instead of recursive search for discriminating shapelets, 
-%\textit{our algorithm ranks by ``importance'' all potential candidate subsequences at once}.
-%As we shall show, this ranking not only provides a superior insight into the classification 
-%results and data specificities but enables intuitive, heat-map like visualization. 
-%In the same time, SAX-VSM is very similar to BOP technique. It also converts time series into 
-%the vector space model with SAX, and relies on 1NN classification. Nonetheless, instead of 
-%building $n$ bags for each of the training time series, our algorithm builds \textit{a single 
-%bag of words for each data class}, thus not only providing fast classification ($O(m)$), 
-%but efficiently learning from a small training set by its generalization.
-
-Our proposed algorithm has similarities with aforementioned techniques. 
+The proposed algorithm has similarities with aforementioned techniques. 
 Similarly to shapelet-based approach, it finds time series subsequences
 which are characteristic representatives of a whole class, thus enabling
 superior interpretability.
 However, instead of recursive search for discriminating shapelets, 
-our algorithm ranks by “importance” all potential candidate subsequences 
+the algorithm ranks by “importance” all potential candidate subsequences 
 \textit{at once} with a \textit{linear computational complexity} of $O(nm)$.
 To achieve this, similarly to BOP, \mbox{SAX-VSM} converts all of the 
 training time series into the vector space and computes tf$\ast$idf ranking.
 But instead of building of $n$ bags (for each of the training time series), 
-our algorithm builds a \textit{single bag of words for each of classes}, 
+the algorithm builds a \textit{single bag of words for each of classes}, 
 that effectively provides a compact solution of $N$ weight vectors 
 ($N$ is the number of classes, $N<<n$), and a fast classification time of $O(m)$.
 
-As we shall show, these distinct features: the generalization of the class' 
+As I shall show, these distinct features: the generalization of the class' 
 patterns with a single bag and tf$\ast$idf ranking, allow SAX-VSM 
 to achieve high accuracy, and tolerate noise in data.
 
 \section{Background} \label{background}
 SAX-VSM is based on two well-known techniques. The first technique is 
-Symbolic Aggregate approXimation \cite{citeulike:2821475}, which is a high-level symbolic  representation 
+Symbolic Aggregate approXimation \cite{sax}, which is a high-level symbolic  representation 
 of time series data. The second technique is a well known in Information Retrieval (IR) 
 Vector Space Model \cite{citeulike:300428}. By utilizing a sliding window subsequence extraction and SAX, 
 our algorithm transforms labeled time series into collections of SAX words (terms). 
 At the following step, it utilizes \textit{tf$\ast$idf} terms weighting for a classifier construction. 
 The SAX-VSM classification relies on cosine similarity metric.
 
-%By utilizing an overlapping sliding window subsequence extraction and SAX, 
-%our algorithm transforms labeled time series into a single collection of SAX 
-%words (terms) for each of the training classes - effectively constructing a corpus 
-%of $N$ documents, where $N$ is a number of classes. 
-%At the following step, it utilizes \textit{tf$\ast$idf} terms weighting, which results in 
-%$N$ weight vectors used for SAX-VSM classifier construction. 
-%Following vector space model, classification procedure relies on cosine similarity metric.
-
-SAX algorithm, however, requires two parameters to be provided as an input, and as per 
-today, there is no efficient solution for parameters selection known to the best of our knowledge. 
-To solve this problem, we employ a global optimization scheme based on the divided rectangles
-(DIRECT) algorithm that does not require any parameters \cite{citeulike:12563460}. DIRECT is a derivative-free
-optimization process that possesses local and global optimization properties. It converges
-relatively quickly and yields a deterministic, optimized solution.
+SAX, however, requires two parameters to be provided as an input and 
+no efficient solution for their selection exists to the best of my knowledge. 
+I address this issue by using an optimization scheme based on the dividing 
+rectangles (DIRECT) algorithm that does not require any input \cite{citeulike:12563460}. 
+DIRECT is a derivative-free optimization process that possesses local and global optimization properties. 
+It converges relatively quickly and yields a deterministic, optimized solution.
 
 \subsection{Symbolic Aggregate approXimation (SAX)}
 Symbolic representation of time series, once introduced \cite{citeulike:2821475}, has attracted much attention by
