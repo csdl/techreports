@@ -1,5 +1,6 @@
 \chapter{Prior and related work}\label{chapter_background_work}
-My work is based on previous research from multiple research areas: software engineering, 
+My research focuses on the techniques which aide in the knowledge discovery from a process of 
+software development. There is much previous relevant work related to my goal processes; work combines is based on previous research from multiple research areas: software engineering, 
 software repository mining, process mining, knowledge discovery from time series,
 and information retrieval. 
 
@@ -143,6 +144,106 @@ effect on this human-based and human-driven process. While this effect can be me
 the common approach by using a control environment factoring out human component, the most of 
 the difference, which lies in human creativity, motivation and productivity is unknown and yet, 
 mostly immeasurable.
+
+\section{Software process discovery}\label{process.discovery} 
+Although process mining in the business domain is a well-established field with much software developed up to date (ERP, WFM and other systems), ``Business Process Intelligence'' tools usually do not perform process discovery and typically offer relatively simple analyses that depend upon a correct a-priori process model \cite{citeulike:3718014} \cite{citeulike:5044991}. This fact restricts direct application of business domain process mining techniques to software engineering, where processes are usually performed concurrently by many agents, are more complex and typically have a higher level of noise. Taking this fact in account, I will review only the approaches to the mining for which applicability to software process mining was expressed. 
+
+Three papers are reviewed in this section: 
+\begin{itemize}
+	\item Cook \& Wolf in \cite{citeulike:328044} discuss an event-based framework for process discovery based on grammar inference and finite state machines. The authors directly applied their framework to Software Configuration Management (SCM) logs demonstrating satisfactory results. 
+	\item Van der Aalst et al. \cite{citeulike:3718014} demonstrate the applicability of Transition Systems and labeled Petri nets to process discovery in general. While this paper does not apply its results directly to software process, the subsequent work by van der Aalst and Rubin \cite{citeulike:1885717} discusses software process application.
+	\item The third paper, by Jensen \& Scacchi \cite{citeulike:5043664}, while not presenting a pattern mining strategy, describes an interesting framework built upon an universal generic meta-model and specific to the observed processes models which are iteratively built and revised during case studies. The value of this paper is in the demonstration of the importance of the correct mapping between process artifacts and process entities as well as a demonstration of iterative, human-involved technique of process revision which is emphasizing importance of pre-existing domain knowledge in the effective pruning of the search space.
+\end{itemize}
+As pointed by the authors in the reviewed papers, the proposed methods have difficulties dealing with concurrency, which, in turn, is inevitable in the software process usually performed by many agents. Much successive work has been done extending reviewed approaches to the concurrent processes. Among others, Weijters \& van der Aalst in \cite{citeulike:5128101} propose heuristics to handle concurrency and noise issues, while van der Aalst et al. in \cite{citeulike:5128110} discuss a genetic programming application. 
+
+\subsection{Incremental Workflow Mining with Petri Nets}
+Another set of findings relevant to my research approach was developed by Rubin
+et al. \cite{citeulike:1885717} and van der Aalst et al.
+\cite{citeulike:3718014} and is called \textit{incremental workflow mining}. The
+authors not only designed sophisticated algorithms but built a software system
+using a business process mining framework called ProM by van Dongen et al.
+\cite{citeulike:5043673} which synthesizes a Petri Net corresponding to the
+observed process. The system was tested on SCM logs and while the process
+artifacts retrieved from the SCM system are rather high-level, the approach
+discussed is very promising for the modeling of software processes from the
+low-level product and process data.
+
+\begin{figure}[tbp]
+   \centering
+   \includegraphics[height=65mm]{petri.eps}
+   \caption{Illustration of the ``Generation and Synthesis Approach'' from
+\cite{citeulike:5043673}: a) Transition System with regions shown; b),c) Petri
+Nets synthesized from the Transition System.}
+   \label{fig:petri}
+\end{figure}
+
+Within the incremental workflow mining framework, the input data from the SCM
+audit trail information is mapped to the event chain which corresponds to the
+software process artifacts. The authors call this process \textit{abstraction on
+the log level} which is implemented as a set of filters which not only
+aggregates basic events into single high-level entities but also removes data
+irrelevant to the mining process (noise). 
+
+The event chain constructed through the abstraction is then treated with the
+\textit{Generate} part of the \textit{``Generate and Synthesis''}
+\cite{citeulike:3718014} algorithm in order to generate a \textit{Transition
+System} which represents an ordered series of events. This algorithm looks at
+the history (prefix) and the future (suffix) sequences of events related to the
+current one in order to discover transitions.  When applied to the abstracted
+log information, the algorithm generates a rather large Transition System graph
+where edges connect to abstracted events. This transition system is then
+successively simplified by using various reduction strategies such as ``Kill
+Loops'', ``Extend'', ``Merge by Output'' and others; it is possible to combine
+these reduction strategies in order to achieve a greater simplification.
+
+At the last step of the incremental workflow mining approach, Transition Systems
+are used to \textit{Synthesize} labeled Petri nets (where different transition
+can refer to the same event) with the help of \textit{``regions theory''}
+\cite{citeulike:5128170}. As with the Transition System generation, the authors
+investigate many different strategies of Petri nets synthesis, showing
+significant variability in the results achieved. (see Figure \ref{fig:petri}).
+
+The significant contribution of this research is in the generality of the
+method. It was shown that by tuning the ``Generate'' and ``Synthesize'' phases
+it is possible to tailor the algorithm to a wide variety of processes. In
+particular, as mentioned before, Rubin et al. successfully applied this
+framework to the SCM logs analysis.
+
+\subsection{Process discovery through Grammar Inference} \label{grammar}
+Perhaps, the research most relevant to my own was done by Cook \& Wolf in \cite{citeulike:328044}. The authors developed a \textit{``process discovery''} techniques intended to discover process models from event streams. The authors did not really intend to generate a complete model, but rather to generate sub-models that express the most frequent patterns in the event stream. They designed a framework which collects process data from ongoing software process or from history logs, and generates a set of recurring patterns of behavior characterizing observed process. In this work they extended two methods of \textit{grammar inference} from previous work: purely statistical (neural network based \textit{RNet}) and purely algorithmic (\textit{KTail}) as well as developing their own Markovian method (\textit{Markov}). 
+
+\textit{Process discovery}, in the author's opinion, resembles the process of \textit{grammar inference}, which can be defined as the process of inferring a language grammar from the given set (sample) of sentences in this language. In the demonstrated approach, words of the language are atomic events of the dynamic process, whether sentences built from such words, are describing the behavior of a process. Consequently, the inferred grammar of that language is the formal model of the process. Cook \& Wolf expressed such grammars as Finite State Machines (FSMs) and implemented a software tool for the mining of the software process. This tool was successfully tested in an industrial case study.
+
+\begin{figure}[tbp]
+   \centering
+   \includegraphics[height=70mm]{inference.eps}
+   \caption{Process discovery through the grammar inference: panel a) a sample event stream (simple process involving three types of events: Edit, Review, and Checkin); and FNA results obtained by applying three methods of process discovery from Cook \& Wolf \cite{citeulike:328044}.}
+   \label{fig:inference}
+\end{figure}
+
+The first method extended by the authors, the neural-network based grammar inference, RNet algorithm, defines a recurrent neural network architecture which is trained by the sequences of events. After training, this neural net is able to characterize a current system state by looking on past behavior. The authors extract the FSM from the trained neural network by presenting different strings to it and extracting the hidden neurons activity through observations. Due to the nature of Neural Net, closely related activation patterns are clustered into the same state; therefore, by noting the current pattern, the input token, and the next activation pattern, transitions are recorded and compiled into the inferred FSM.
+
+The second method investigated, is a purely algorithmic KTail method, which was taken from the work of Biermann \& Feldman \cite{citeulike:5120603}. The idea is that a current state is defined by what future behaviors can occur from it. The \textit{future} is defined as the set of next $k$ tokens. By looking at a window of successor events, the KTail algorithm can build the equivalence classes that compose the process model. The authors extensively modified the original KTail algorithm improving the folding in the mined model making to make it more robust to noise.
+
+The Markov based method developed by the authors is based on both algorithmic and statistical approaches. It takes to account past and future system behavior in order to guess the current system state. Assuming that a finite number of states can define the process, and that the probability of the next state is based only on the current state (Markov property), the authors built a $n^{th}$-order Markov model using the first and second order probabilities. Once built, the transition probability table corresponding to the Markov model is converted into FSM which is in turn reduced based on the user-specified cut-off threshold for probabilities.
+
+The authors implemented all three of these algorithms in a software tool called \textsc{DaGama} as a plugin for larger software system called Balboa \cite{citeulike:5120757}. By performing benchmarking, Cook \& Wolf found that the Markov algorithm was superior to the two others. RNet was found to be the worst of the three algorithms. 
+
+Overall, while having some issues with the complexity of produced output and noise handling, the authors proved applicability of implemented algorithms to real-world process data by demonstrating an abstraction of the actual process executions and capturing important properties of the process behavior. The major backdraw of the approach, as stated by the authors, lies in the inability of the FSMs to model concurrency of processes which limits its applicability to the software development process. Later, Cook et al. in \cite{citeulike:5128143} addressed this limitation.
+
+\subsection{Reference model for Open Source Software Processes Discovery}
+Jensen \& Scacchi in \cite{citeulike:5043664} take a somewhat different approach from the previously discussed research efforts. The authors are follow a top-down approach and do not try to build a software process model from available process artifacts. Instead, they try to develop a software process \textit{reference model} by iteratively refining mapping between observed artifacts and the model entities. 
+
+The proposed software process \textit{reference model} is a layer which provides a mapping from the underlying recognized software process artifacts into a higher level software-process meta-model by Mi \& Sacchi \cite{citeulike:5128872}. The iterative revision of the reference model vocabulary of mapped terms (Figure \ref{fig:refterm}) is performed through case studies. During such a study, the observed process artifacts such as SCM logs, defect reports and others are queried with terms from the reference model pulling correlated artifacts which are revised and curated by the process expert and lead to the further revisions of the terms taxonomy on the next iteration.
+
+\begin{figure}[tbp]
+   \centering
+   \includegraphics[height=35mm]{refterm.eps}
+   \caption{Example of the reference model mapping from \cite{citeulike:5043664}.}
+   \label{fig:refterm}
+\end{figure}
+
+In the relation to my research, I am envisioning the application of such iterative ``meta-model driven approach'' for characterization of the discovered recurrent patterns with unknown generative phenomena. The creation of the low-level recurrent patterns taxonomy through successive mapping into the meta-model assures from a ``nonsense patterns'' discovery.
 
 \section{Mining software repositories}
 However, in these and other research work based on mining of software process artifacts it was shown, 
