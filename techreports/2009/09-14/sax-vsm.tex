@@ -1,186 +1,250 @@
 \chapter{SAX-VSM: A Novel Technique For Interpretable Time Series Classification}\label{chapter_sax_vsm}
 
-\textit{In this chapter I show a novel algorithm for interpretable time-series classification based on
-characteristic patterns discovery. }
+\textit{In this chapter I show a novel algorithm for interpretable time-series classification based on characteristic 
+patterns discovery. }
 
 \section{Background}
-Time series classification is an increasingly popular area of research, providing 
-solutions to a wide range of fields, including data mining, 
-image and motion recognition, environmental sciences, health care, and chemometrics. 
-Within the last decade, many time series representations, similarity measures, 
-and classification algorithms were proposed following the rapid
-progress in data collection and storage technologies \cite{citeulike:10358271}. 
-NNevertheless, to date, the best overall performing classifier in the field is
-the nearest-neighbor algorithm (1NN), that can be easily tuned for a 
-particular problem by choosing either a distance measure, 
-an approximation technique, or smoothing \cite{citeulike:11796594}. 
+Time series classification is an increasingly popular area of research, providing solutions to a wide range of fields, 
+including data mining, image and motion recognition, environmental sciences, health care, and chemometrics. 
+Within the last decade, many time series representations, similarity measures, and classification algorithms were 
+proposed following the rapid progress in data collection and storage technologies \cite{citeulike:10358271}. 
+Nevertheless, to date, the best overall performing classifier in the field is the nearest-neighbor algorithm (1NN), 
+that can be easily tuned for a particular problem by choosing either a distance measure, an approximation technique, 
+or smoothing \cite{citeulike:10358271}.
 The 1NN classifier is simple, accurate and robust, depends on a very few parameters 
-and requires no training \cite{citeulike:10358271, citeulike:532340, citeulike:11796594, citeulike:12563424}. 
-However, the 1NN technique has a number of significant disadvantages, 
-where the major shortcoming is the inability to offer any insight into the classification results.
-Another limitation is its need for a significantly large training set 
-representing a within-class variance in order to achieve desired accuracy. 
+and requires no training \cite{citeulike:10358271}, \cite{citeulike:532340}, \cite{citeulike:12563424}.
+However, the 1NN technique has a number of significant disadvantages, where the major shortcoming is the 
+inability to offer any insight into the classification results. Another limitation is its need for a significantly large 
+training set representing a within-class variance in order to achieve desired accuracy. 
 Finally, while having trivial initialization, 1NN classification is computationally expensive. 
-Thus, the demand for an efficient and interpretable classification technique 
-capable of processing of large data volumes remains.
+Thus, the demand for an efficient and \textit{interpretable} classification technique capable of processing of large 
+data volumes remains.
 
-In this thesis, I propose an alternative to 1NN algorithm that addresses 
-aforementioned limitations. Specifically, it provides a superior interpretability, 
-learns efficiently from a small training set, and has a low classification 
-computational complexity. As I shall show in the following chapters, these algorithm's
-properties, make it the best choice for the problem in hands.
+In this thesis, I propose an alternative to 1NN algorithm that addresses aforementioned limitations. 
+In particular, the proposed technique provides a superior interpretability, learns efficiently from a small training set,
+and has a low classification computational complexity. As I shall show in the following chapters, these algorithm's
+properties, make it the best choice for the problem of recurrent behaviors discovery from software process artifacts trails.
 
-\section{Prior and related work} \label{prior}
-Almost all of the existing techniques for time series classification can be divided 
-in two major categories \cite{citeulike:10249370}. 
-The first category includes techniques based on shape-based similarity metrics 
-where distance is measured directly between time series points. 
-Classical examples from this category is 1NN classifier 
-built upon Euclidean distance \cite{citeulike:4214336} or DTW \cite{citeulike:3496861}. 
-The second category consists of classification techniques based on 
-structural similarity metrics, which employ a high-level representations 
-of time series based on their global or local features. 
-Examples from this category include classifiers based on 
-time series representation obtained with Discrete Fourier Transform \cite{citeulike:5094223}
-or Bag-of-Patterns \cite{citeulike:10525778}. 
-The development of these distinct categories can be explained by 
-the difference in their performance: 
-while shape-based similarity methods are virtually unbeatable on short 
-pre-processed time series \cite{citeulike:532340}, 
-they usually fail on long and noisy data sets 
-where structure-based solutions demonstrate a superior performance \cite{citeulike:12563380}. 
-In addition, structure-based methods usually memory and runtime-effective, 
-thus, they often implemented in industrial settings. 
+\section{Prior and related work} \label{sax_vsm_prior}
+Almost all of the existing techniques for time series classification can be divided in two major categories \cite{citeulike:11796594}. 
+The first category includes techniques based on shape-based similarity metrics where distance is measured directly between time 
+series points. Classical examples from this category is 1NN classifier built upon Euclidean distance \cite{citeulike:4214336} and 
+DTW \cite{citeulike:3496861}. The second category consists of classification techniques based on structural similarity metrics, 
+which employ a high-level representations of time series based on their global or local features. 
+Examples from this category include classifiers based on time series representation obtained with DFT \cite{citeulike:5094223} or 
+Bag-Of-Patterns \cite{citeulike:10525778}. 
+The development of these distinct categories can be explained by the difference in their performance: 
+while shape-based similarity methods are virtually unbeatable on short pre-processed time series \cite{citeulike:532340}, 
+they usually fail on long and noisy data, where structure-based solutions demonstrate a superior performance \cite{citeulike:10525778}. 
 
-Additionally, in the context of my work, it is worth to note, that classification 
-techniques from both categories can be also attributed as exact or approximate.
-While former are based on exact metrics, and typically are brute force 
-algorithms which guarantee results through an exhaustive search, 
-the latter are usually built upon an approximate representation of 
-time series, or upon an approximate similarity metric, and do not guarantee 
-global correctness. Nevertheless, while allowing a potentially higher error rate,
-approximate techniques effectively reduce the search space, thus dealing with 
-large unprocessed data much more efficiently.
+Two techniques, relevant to my work, were recently proposed as possible alternatives to these two categories.
+The first is the Time Series Shapelet technique which features a superior interpretability and a compactness of delivered solution 
+\cite{citeulike:7344347}. A Shapelet is a short time series ``snippet'' that is a representative of class
+membership and is used for a decision tree construction facilitating class identification and interpretability.
+In order to find a branching shapelet, the algorithm exhaustively searches for a best discriminatory shapelet on data split 
+via an information gain measure. The algorithm's classification is built upon the similarity measure between a branching 
+shapelet and a full time series, defined as a distance between the shapelet and a closest subsequence in the series 
+when measured by the normalized Euclidean distance. This exact technique, potentially, combines the superior precision of 
+exact shape-based similarity methods, and the high-throughput classification capacity of feature-based approximate techniques. 
+However, while demonstrating a superior interpretability, robustness, and similar to 1NN algorithm performance, shapelets-based 
+technique is computationally expensive, $O(n^{2}m^{3})$, where $n$ is a number of objects and $m$ is the length of a longest 
+time series, making its adoption for many-class classification problems difficult\cite{citeulike:11345338}. 
+While the better solution was recently proposed ($O(nm^{2})$), it is an approximate solution based on indexing \cite{citeulike:12563493}.
 
-
-As possible alternatives to these two categories, two relevant to my approach techniques, 
-were recently proposed. The first technique is the time series shapelets algorithm,
-that was introduced in \cite{citeulike:7344347} and is featuring a superior interpretability 
-and a compactness of delivered solution. 
-A Shapelet is a short time series ``snippet'' that is a representative of class
-membership and is used for a decision tree construction facilitating class 
-identification and interpretability. In order to find a branching shapelet, 
-the algorithm exhaustively searches for a best discriminatory shapelet on data split via 
-an information gain measure. The algorithm's classification is built upon the similarity 
-measure between a branching shapelet and a full time series, defined as a distance 
-between the shapelet and a closest subsequence in the series when measured by the 
-normalized Euclidean distance.  
-This exact technique, potentially, combines the superior precision of 
-exact shape-based similarity methods, and the high-throughput 
-classification capacity of feature-based approximate techniques. 
-However, while demonstrating a superior interpretability, robustness, 
-and similar to 1NN algorithm performance, shapelets-based technique is 
-computationally expensive, $O(n^{2}m^{3})$, where $n$ is a number of 
-objects and $m$ is the length of a longest time series, making 
-its adoption for many-class classification problems difficult \cite{citeulike:11345338}. 
-While the faster solution was recently proposed ($O(nm^{2})$), it is an 
-approximate solution that is based on indexing \cite{citeulike:12563493}.
-
-The second technique with interpretable results is 1NN classifier built upon the 
-Bag-Of-Patterns (BOP) representation of time series \cite{citeulike:10525778},
-which is equated to an Information Retrieval (IR) ``bag of words" concept 
-and is obtained by extraction, transformation with Symbolic Aggregate 
-approXimation (SAX) \cite{sax}, and counting the frequencies
+The second technique with interpretable results is 1NN classifier built upon the Bag-Of-Patterns (BOP) representation of time series 
+\cite{citeulike:10525778}, which is equated to an Information Retrieval (IR) ``bag of words" concept 
+and is obtained by extraction, transformation with Symbolic Aggregate approXimation (SAX) \cite{sax}, and counting the frequencies
 of short overlapping subsequences (patterns) along the time series.
-By applying this procedure to a training set, the algorithm converts the data into 
-the vector space, where the original time series are represented by a 
-pattern (SAX word) occurrence frequency vector. 
-These vectors are classified with 1NN classifier built with Euclidean distance 
-or Cosine similarity applied to raw frequencies or their \textit{tf$\ast$idf} weighting. 
-It was shown that BOP has several advantages: its complexity is linear 
-($O(nm)$), it is rotation-invariant and considers local and global structures 
-simultaneously, and it provides an insight into patterns distribution through 
-frequency histograms.
-The authors concluded, that the best classification accuracy of BOP-represented 
-time series is achieved by using 1NN classifier based on Euclidean distance.
+By applying this procedure to a training set, the algorithm converts the data into the vector space, where the original time series are 
+represented by a pattern (SAX word) occurrence frequency vector. These vectors are classified with 1NN classifier built with Euclidean 
+distance or Cosine similarity applied to raw frequencies or their \textit{tf$\ast$idf} weighting. 
+It was shown that BOP has several advantages: its complexity is linear ($O(nm)$), it is rotation-invariant and considers local and 
+global structures simultaneously, and it provides an insight into patterns distribution through frequency histograms.
+The authors concluded, that the best classification accuracy of BOP-represented time series is achieved by using 1NN classifier based 
+on Euclidean distance. 
 
-The proposed algorithm has similarities with aforementioned techniques. 
-Similarly to shapelet-based approach, it finds time series subsequences
-which are characteristic representatives of a whole class, thus enabling
-superior interpretability.
-However, instead of recursive search for discriminating shapelets, 
-the algorithm ranks by “importance” all potential candidate subsequences 
+I propose the algorithm that is called \mbox{SAX-VSM} that has similarities to the aforementioned techniques. 
+Similar to shapelets-based approaches, the algorithm discovers time series subsequences which are characteristic representatives of a 
+class, that enables a superior interpretability. 
+However, instead of recursive search for class-discriminating shapelet, it ranks by “importance” all potential candidate subsequences 
 \textit{at once} with a \textit{linear computational complexity} of $O(nm)$.
-To achieve this, similarly to BOP, \mbox{SAX-VSM} converts all of the 
-training time series into the vector space and computes tf$\ast$idf ranking.
-But instead of building of $n$ bags (for each of the training time series), 
-the algorithm builds a \textit{single bag of words for each of classes}, 
-that effectively provides a compact solution of $N$ weight vectors 
-($N$ is the number of classes, $N<<n$), and a fast classification time of $O(m)$.
+To achieve this, similarly to BOP, \mbox{SAX-VSM} converts all training time series into bags of SAX words and relies \textit{tf$\ast$idf} 
+weighting and Cosine similarity for classification. Nonetheless, instead of building $n$ bags for each of the training time series, 
+it builds a \textit{single bag of words for each of the classes}, that effectively provides a compact solution of $N$ weight vectors 
+($N$ is the number of classes, typically $N<<n$), and a fast classification time of $O(m)$.
 
-As I shall show, these distinct features: the generalization of the class' 
-patterns with a single bag and tf$\ast$idf ranking, allow SAX-VSM 
-to achieve high accuracy, and tolerate noise in data.
+As I shall show, these distinct features - the generalization of the class' patterns with a single bag and their weighting - allow 
+SAX-VSM to achieve a high classification accuracy and to provide an exceptional interpretability.
 
-\section{Background} \label{background}
-SAX-VSM is based on two well-known techniques. The first technique is 
-Symbolic Aggregate approXimation \cite{sax}, which is a high-level symbolic  representation 
-of time series data. The second technique is a well known in Information Retrieval (IR) 
-Vector Space Model \cite{citeulike:300428}. By utilizing a sliding window subsequence extraction and SAX, 
-our algorithm transforms labeled time series into collections of SAX words (terms). 
-At the following step, it utilizes \textit{tf$\ast$idf} terms weighting for a classifier construction. 
-The SAX-VSM classification relies on cosine similarity metric.
 
-SAX, however, requires two parameters to be provided as an input and 
-no efficient solution for their selection exists to the best of my knowledge. 
-I address this issue by using an optimization scheme based on the dividing 
-rectangles (DIRECT) algorithm that does not require any input \cite{citeulike:12563460}. 
-DIRECT is a derivative-free optimization process that possesses local and global optimization properties. 
-It converges relatively quickly and yields a deterministic, optimized solution.
+\section{SAX-VSM classification algorithm} \label{sax_vsm_background}
+SAX-VSM is based on two well-known techniques. The first technique is Symbolic Aggregate approXimation, which is a high-level symbolic
+representation of time series \cite{sax}. The second technique is the classic Vector Space Model based on \textit{tf$\ast$idf} weighting 
+scheme \cite{citeulike:300428}. 
+Using SAX, the algorithm transforms real-valued time series into combined collections of SAX words. 
+Next, by using \textit{tf$\ast$idf} weighting, it transforms these collections into class-characteristic weight vectors, 
+which, in turn, are used in classification built upon Cosine similarity.
+
+SAX, however, requires two parameters to be provided as an input and no efficient solution for their selection exists to the best of my knowledge. 
+In this work I address this issue by using cross-validation and the parameters optimization scheme based on the dividing rectangles (DIRECT) 
+algorithm that does not require any input \cite{citeulike:12563460}. 
+DIRECT is a derivative-free optimization process that possesses local and global optimization properties; it converges relatively quickly and yields 
+a deterministic, optimized solution. While other optimization techniques exist and some of them may perform better, the performance 
+evaluation of the parameters selection is beyond the scope of my current work.
 
 \subsection{Symbolic Aggregate approXimation (SAX)}
-Symbolic representation of time series, once introduced \cite{citeulike:2821475}, has attracted much attention by
-enabling an application of numerous string-processing algorithms, bioinformatics, and text mining 
-tools to temporal data. The method provides a significant reduction of the time series 
-dimensionality and a low-bounding to Euclidean distance metric, which guarantees no false 
-dismissal \cite{citeulike:3175749}.
-These properties are often leveraged by other techniques, which embed SAX representation 
-in their algorithms for indexing and approximation. For example, adoption of SAX indexing 
-allowed significant shapelets discovery speed improvement in Fast-Shapelets \cite{citeulike:12563493}
-(but made the algorithm approximate).
+Symbolic representation of time series, once introduced, has attracted much attention by enabling the application of numerous 
+string-processing algorithms, bioinformatics tools, and text mining techniques to time series \cite{sax}. 
+The method provides a significant reduction of the time series dimensionality and a low-bounding to Euclidean distance 
+metrics, which guarantees no false dismissal \cite{citeulike:2821475}. 
+These properties are often leveraged by many time series analysis techniques which embed SAX representation for indexing and 
+approximation. For example, adoption of SAX indexing allowed significant improvement in shapelet discovery speed in Fast-Shapelets 
+algorithm \cite{citeulike:12563493} (but made the algorithm approximate). 
 
-%Given a time-series $T$ of a length $n$, SAX produces its symbolic approximation $\hat{S}$ of 
-%a length $w$ where letters are taken from an alphabet $\alpha$. 
-%Along with $T$, two parameters must be specified as the input: an alphabet size $\alpha$ and 
-%a size of the word to produce $w$. Algorithm works as follows. 
+Given a time-series $T$ of a length $n$, SAX produces its symbolic approximation $\hat{S}$ of a length $w$ where letters are taken 
+from an alphabet $\alpha$. Along with $T$, two parameters must be specified as the input: the alphabet size $\alpha$ and the size of 
+the word to produce $w$. Algorithm works as follows. 
 
-%At first, since SAX rests on the assumption that normalized time series tend to have Gaussian 
-%distribution \cite{larsen_marx}, the time-series $T$ is normalized to unit of standard deviation
-%\cite{goldin_kanellakis}. 
-%At the second step, the dimensionality of the normalized time series is reduced to $w$ by 
-%obtaining a Piecewise Aggregate Approximation (PAA) of $T$. 
-%Specifically, this approximation is obtained by dividing the time series $T$ into $w$ 
-%equal-sized segments and computing the mean values for points within each segment. 
-%The aggregated sequence of these mean values forms PAA approximation of $T$ of length $w$.
-%Finally, each of PAA coefficients is converted into a letter of the alphabet $\alpha$ by the use 
-%of lookup tables. These tables are built by defining a set of breakpoints that divide the 
-%distribution space into $\alpha$ equiprobable regions \cite{sax}.
-Configured by two parameters - a desired word size $w$ and an alphabet size $A$,
-SAX produces a symbolic approximation of a time-series $T$ of a length $n$ by compressing 
-it into a string of the length $w$ (usually $w<<n$), whose letters are taken from 
-the alphabet $\alpha$ ($|\alpha|=A$). 
-At the first step of the algorithm, $T$ is z-normalized (to unit of standard deviation)
-\cite{citeulike:3815880}. 
-At the second step, a dimensionality of the normalized time series is reduced from $n$ to $w$ by
-obtaining its Piecewise Aggregate Approximation (PAA) \cite{citeulike:4406444}; for this, the normalized time
-series is
-divided into $w$ equal-sized segments and mean values for points within each segment are computed.
-The aggregated sequence of these mean values forms PAA approximation of $T$. Finally, each of $w$
-PAA coefficients is converted into a letter of an alphabet $\alpha$ by the use of the lookup table.
-This table is pre-built by defining a set of breakpoints that divide the normalized time series
-distribution 
-space into $\alpha$ equiprobable regions. The design of these tables rests on the assumption 
-that normalized series tend to have Gaussian distribution \cite{citeulike:10141990}.
+\begin{figure}[tbp]
+   \centering
+   \includegraphics[height=45mm]{sax_intro}
+   \caption{The illustration of the SAX approach taken from \cite{citeulike:2821475} depicts two pre-determined breakpoints for the 
+   three-symbols alphabet and the conversion of the time-series of length $n=128$ into PAA representation followed by mapping of 
+   the PAA coefficients into SAX symbols with $w=8$ and $a=3$ resulting in the string \textbf{baabccbc}.}
+   \label{fig:sax_intro}
+\end{figure}
+
+At first, since it is meaningless to compare time series with different offsets and amplitudes \cite{citeulike:532340} the time series 
+$T$ is normalized to unit of standard deviation. This normalization procedure, also known as \textit{z-normalization} or 
+``normalization to Zero Mean and Unit of Energy'', allows to minimize the effect of the time series amplitude while preserving time 
+series structural specificities \cite{citeulike:3815880}. In order to obtain the normalized time series $\widetilde{T}$ the time series 
+mean $\mu$ is subtracted from each point and the resulted value is divided by the time series' standard deviation $\omega$:
+\begin{equation}
+\Large
+\widetilde{t}_{i} = \frac{x_{i}-\mu}{\sigma}, i \in {1,..,n}
+\label{eq:znorm}
+\end{equation}
+If, however, the standard deviation value falls below a fixed threshold, the normalization procedure is not applied in order to avoid 
+possible over-amplification of a background noise.
+
+At the second step, the dimensionality of the normalized time series is reduced to $w$ by obtaining its 
+Piecewise Aggregate Approximation (PAA). The PAA transforms the normalized time series $\widetilde{T}$ into a vector 
+of PAA coefficients $C$ ($|C|=\omega$) by dividing it into equal-sized segments and computing their mean values:
+\begin{equation}
+\Large
+c_{i} = \frac{w}{n} \sum_{j=\frac{n}{w}(i-1)+1}^{\frac{n}{w}i} \widetilde{x}_{j}
+\label{eq:paa}
+\end{equation}
+It was shown by Keogh et al. \cite{citeulike:3000416} for PAA and by Yi \& Faloutsos \cite{citeulike:2946589} for any $L_{p}$ norm,
+that this transformation satisfies to a bounding condition and guarantees no false dismissals.
+
+Discretization is performed at the final step of SAX algorithm. Each of the PAA representation coefficients obtained at the previous step 
+is converted into a letter $\widehat{c}$ of the alphabet $\alpha$ of the size $a$ by the use of lookup tables (\ref{sax_table}) which define a 
+list of breakpoints $B=\beta_{1}, \beta_{2}, ... , \beta_{a-1}$ such that $\beta_{i-1} < \beta_{i}$ and $\beta_{0} = -\infty$, $\beta_{a} = \infty$ 
+that divide the area under $N(0,1)$ into $a$ equal areas. The design of these tables rests on the assumption that normalized series tend to have 
+Gaussian distribution \cite{citeulike:10141990}.
+By assigning a corresponding alphabet symbol $alpha_{j}$ to each interval $[\beta_{j-1},\beta_{j})$, the conversion of the vector of PAA coefficients 
+$C$ into the string $\widehat{C}$ implemented as follows: 
+\begin{equation}
+\Large
+\widehat{c}_{i} = alpha_{j}, \; \text{iif} \; \bar{c}_{i} \in [\beta_{j-1},\beta_{j})
+\label{eq:sax_alphabet}
+\end{equation}
+
+\begin{table}[t]
+ \caption{An example of the SAX alphabet lookup table that contains the breakpoints dividing a Gaussian distribution in an arbitrary 
+number (from 2 to 12) of equiprobable regions.}
+ \label{sax_table}
+ \small
+\begin{tabularx}{\textwidth}{|l|X|X|X|X|X|X|X|X|X|X|X|}
+\hline
+\backslashbox{$\beta_{i}$}{$\alpha$} & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 \\
+\hline
+$\beta_{1}$ & 0,00 & -0,43 & -0,67 & -0,84 & -0,97 & -1,07 & -1,15 & -1,22 & -1,28 & -1,34 & -1,38 \\
+\hline
+$\beta_{2}$ &\cellcolor{gray!25}& 0,43 & 0,00 & -0,25 & -0,43 & -0,57 & -0,67 & -0,76 & -0,84 & -0,91 & -0,97 \\
+\hline
+$\beta_{3}$ &\cellcolor{gray!25}&\cellcolor{gray!25}& 0,67 & 0,25 & 0,00 & -0,18 & -0,32 & -0,43 & -0,52 & -0,60 & -0,67 \\
+\hline
+$\beta_{4}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 0,84 & 0,43 & 0,18 & 0,00 & -0,14 & -0,25 & -0,35 & -0,43 \\
+\hline
+$\beta_{5}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 0,97 & 0,57 & 0,32 & 0,14 & 0,00 & -0,11 & -0,21 \\
+\hline
+$\beta_{6}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,07 & 0,67 & 0,43 & 0,25 & 0,11 & 0,00 \\
+\hline
+$\beta_{7}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,15 & 0,76 & 0,52 & 0,35 & 0,21 \\ 
+\hline
+$\beta_{8}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,22 & 0,84 & 0,60 & 0,43 \\
+\hline
+$\beta_{9}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,28 & 0,91 & 0,67 \\
+\hline
+$\beta_{10}$&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,34 & 0,97 \\
+\hline
+$\beta_{11}$&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,38 \\
+ \hline
+\end{tabularx}
+\vspace{0.1cm}
+\end{table}
+
+SAX introduces new metrics for measuring distance between strings by extending Euclidean and PAA (\ref{eq:paa_distance}) distances. 
+The function returning the minimal distance between two string representations of original time series $\widehat{Q}$ and $\widehat{C}$ is defined as
+\begin{equation}
+MINDIST(\widehat{Q},\widehat{C}) \equiv \sqrt{ \frac{n}{w} } \sqrt{ \sum_{i=1}^{w} ( dist( \widehat{q}_{i}, \widehat{c}_{i} ) )^{2}}
+\label{eq:sax_mindist}
+\end{equation} 
+where the $dist$ function is implemented by using the lookup table for the particular set of the breakpoints (alphabet size) as shown in 
+Table \ref{tbl:sax_lookup}, and where the singular value for each cell $(r,c)$ is computed as 
+\begin{equation}
+cell_{(r,c)} = 
+\begin{cases} 
+0, \text{ if }\left| r-c \right| \leq 1 \\
+\beta_{\max(r,c) - 1} - \beta_{\min(r,c) - 1}, \text{ otherwise}
+\end{cases}
+\label{eq:cell}
+\end{equation}
+
+
+\begin{table}
+\caption{A lookup table used by the MINDIST function for the $a=12$}
+\label{tbl:sax_lookup}
+\small
+\begin{tabularx}{\textwidth}{|l|X|X|X|X|X|X|X|X|X|X|X|}
+\hline
+&\textbf{a}&\textbf{b}&\textbf{c}&\textbf{d}&\textbf{e}&\textbf{f}&\textbf{g}&\textbf{h}&\textbf{i}&\textbf{j}&\textbf{k} \\
+\hline
+\textbf{a}& 0,00 & 0,00 & 0,43 & 0,73 & 0,99 & 1,22 & 1,45 & 1,68 & 1,94 & 2,24 & 2,67 \\
+\hline
+\textbf{b}& 0,00 & 0,00 & 0,00 & 0,30 & 0,56 & 0,79 & 1,02 & 1,26 & 1,51 & 1,82 & 2,24 \\
+\hline
+\textbf{c}& 0,43 & 0,00 & 0,00 & 0,00 & 0,26 & 0,49 & 0,72 & 0,95 & 1,21 & 1,51 & 1,94 \\ 
+\hline
+\textbf{d}& 0,73 & 0,30 & 0,00 & 0,00 & 0,00 & 0,23 & 0,46 & 0,70 & 0,95 & 1,26 & 1,68 \\ 
+\hline
+\textbf{e}& 0,99 & 0,56 & 0,26 & 0,00 & 0,00 & 0,00 & 0,23 & 0,46 & 0,72 & 1,02 & 1,45 \\ 
+\hline
+\textbf{f}& 1,22 & 0,79 & 0,49 & 0,23 & 0,00 & 0,00 & 0,00 & 0,23 & 0,49 & 0,79 & 1,22 \\ 
+\hline
+\textbf{g}& 1,45 & 1,02 & 0,72 & 0,46 & 0,23 & 0,00 & 0,00 & 0,00 & 0,26 & 0,56 & 0,99 \\ 
+\hline
+\textbf{h}& 1,68 & 1,26 & 0,95 & 0,70 & 0,46 & 0,23 & 0,00 & 0,00 & 0,00 & 0,30 & 0,73 \\ 
+\hline
+\textbf{i}& 1,94 & 1,51 & 1,21 & 0,95 & 0,72 & 0,49 & 0,26 & 0,00 & 0,00 & 0,00 & 0,43 \\ 
+\hline
+\textbf{j}& 2,24 & 1,82 & 1,51 & 1,26 & 1,02 & 0,79 & 0,56 & 0,30 & 0,00 & 0,00 & 0,00 \\ 
+\hline
+\textbf{k}& 2,67 & 2,24 & 1,94 & 1,68 & 1,45 & 1,22 & 0,99 & 0,73 & 0,43 & 0,00 & 0,00 \\ 
+\hline
+\end{tabularx}
+\end{table}
+
+As shown by Li et al., this SAX distance metrics lower-bounds the PAA distance, i.e.
+\begin{equation}
+\sum_{i=1}^{n} (q_{i} - c_{i})^{2} \geq n(\bar{Q} - \bar{C})^{2} \geq n(dist(\hat{Q},\hat{C}))^2
+\label{eq:sax_bounding}
+\end{equation}
+
+The SAX lower bound was examined by Ding et al. \cite{citeulike:4501572} in great detail and found to be superior in precision to
+the spectral decomposition methods on bursty (non-periodic) data sets.
 
 \subsection{Bag of words representation of time series} \label{bow_representation}
 Following its introduction, SAX was shown to be an efficient tool for solving problems 
