@@ -1,9 +1,9 @@
-\chapter{SAX-VSM: A Novel Technique For Interpretable Time Series Classification}\label{chapter_sax_vsm}
+\chapter{Interpretable Time Series Classification}\label{chapter_sax_vsm}
 
 \textit{In this chapter I show a novel algorithm for interpretable time-series classification based on characteristic 
 patterns discovery. }
 
-\section{Background}
+\section{Introduction}
 Time series classification is an increasingly popular area of research, providing solutions to a wide range of fields, 
 including data mining, image and motion recognition, environmental sciences, health care, and chemometrics. 
 Within the last decade, many time series representations, similarity measures, and classification algorithms were 
@@ -37,7 +37,7 @@ The development of these distinct categories can be explained by the difference 
 while shape-based similarity methods are virtually unbeatable on short pre-processed time series \cite{citeulike:532340}, 
 they usually fail on long and noisy data, where structure-based solutions demonstrate a superior performance \cite{citeulike:10525778}. 
 
-Two techniques, relevant to my work, were recently proposed as possible alternatives to these two categories.
+Two techniques, relevant to my work, were recently proposed as possible alternatives to these two categories.Monoprice Enhanced Bas
 The first is the Time Series Shapelet technique which features a superior interpretability and a compactness of delivered solution 
 \cite{citeulike:7344347}. A Shapelet is a short time series ``snippet'' that is a representative of class
 membership and is used for a decision tree construction facilitating class identification and interpretability.
@@ -96,6 +96,40 @@ In the following subsections, I will review algorithms which are used by SAX-VSM
 discretization technique, Subsection \ref{section_numerosity_reduction} discusses numerosity reduction strategies,
 Subsection \ref{bow_representation} reviews bag of words abstraction, terms weighting and Vector Space Model are discussed in the 
 Subsection \ref{vsm}. 
+
+
+\subsection{Definitions}
+\begin{defn}\label{def_timeseries}
+A \textbf{\textit{Time Series}} time series is a sequence $T=(t_{1},t_{2},...,t_{m})$ that is an ordered set of $m$ real values.
+\end{defn}
+While the ordering is typically temporal, ordering in other kinds of data such as shapes \cite{citeulike:4384496} and spectrograms 
+\cite{citeulike:12550833} also can be well defined to be considered as “time series” for the purpose of indexing and mining. 
+Without loss of generality in the research literature the equispaced data is typically considered, which is not true
+for mining of software process artifact trails where time spacing varies between successive artifacts. 
+However, for simplicity and without loss of generality, in this chapter I consider equispaced time series in this chapter.
+
+\begin{defn}\label{def_tsdatabase}
+A \textbf{\textit{Time Series Database}} $D$ is an unordered collection (a set) of $n$ time series which are possibly of a different 
+length.
+\end{defn}
+
+\begin{defn}\label{def_subsequence}
+A time series \textbf{\textit{subsequence}} of length $k$ of a time series $T = (t_{1}, t_{2},...,t_{m})$ of length $m$ is a time 
+series $T_{i,k} = (t_{i},t_{1+1},...,t_{i+k-1})$  where $1 \leq i \leq m - k + 1$, i.e. a contiguous subsequences of the time series.
+\end{defn}
+
+As discussed in Section \ref{section_numerosity_reduction}, SAX-VSM is built upon the bag-of-words representation of time
+series which are obtained from overlapping subsequences. Usually, overlapping subsequences are extracted with the 
+\textit{sliding window} as shown at the Figure \ref{fig:sliding_window} \cite{citeulike:3977965} \cite{citeulike:3175749}.
+
+\begin{figure}[tbp]
+   \centering
+   \includegraphics[height=45mm]{sliding-window.eps}
+   \caption{An illustration of the sliding window technique from \cite{citeulike:2821475}: a time series T of length 128, 
+   the subsequence $C67$ (of length $m$=16), and the first 8 overlapping subsequences extracted by a sliding window.}
+   \label{fig:sliding_window}
+\end{figure}
+
 
 \subsection{Symbolic Aggregate approXimation (SAX)}\label{section-sax}
 Symbolic representation of time series, once introduced, has attracted much attention by enabling the application of numerous 
@@ -158,34 +192,32 @@ $C$ into the string $\widehat{C}$ implemented as follows:
 
 \begin{table}[t]
  \caption{An example of the SAX alphabet lookup table that contains the breakpoints dividing a Gaussian distribution in an arbitrary 
-number (from 2 to 12) of equiprobable regions.}
+number (from 2 to 11) of equiprobable regions.}
  \label{sax_table}
  \small
-\begin{tabularx}{\textwidth}{|l|X|X|X|X|X|X|X|X|X|X|X|}
+\begin{tabularx}{\textwidth}{|l|X|X|X|X|X|X|X|X|X|X|}
 \hline
-\backslashbox{$\beta_{i}$}{$\alpha$} & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 \\
+\backslashbox{$\beta_{i}$}{$\alpha$} & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 \\
 \hline
-$\beta_{1}$ & 0,00 & -0,43 & -0,67 & -0,84 & -0,97 & -1,07 & -1,15 & -1,22 & -1,28 & -1,34 & -1,38 \\
+$\beta_{1}$ & 0,00 & -0,43 & -0,67 & -0,84 & -0,97 & -1,07 & -1,15 & -1,22 & -1,28 & -1,34  \\
 \hline
-$\beta_{2}$ &\cellcolor{gray!25}& 0,43 & 0,00 & -0,25 & -0,43 & -0,57 & -0,67 & -0,76 & -0,84 & -0,91 & -0,97 \\
+$\beta_{2}$ &\cellcolor{gray!25}& 0,43 & 0,00 & -0,25 & -0,43 & -0,57 & -0,67 & -0,76 & -0,84 & -0,91  \\
 \hline
-$\beta_{3}$ &\cellcolor{gray!25}&\cellcolor{gray!25}& 0,67 & 0,25 & 0,00 & -0,18 & -0,32 & -0,43 & -0,52 & -0,60 & -0,67 \\
+$\beta_{3}$ &\cellcolor{gray!25}&\cellcolor{gray!25}& 0,67 & 0,25 & 0,00 & -0,18 & -0,32 & -0,43 & -0,52 & -0,60  \\
 \hline
-$\beta_{4}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 0,84 & 0,43 & 0,18 & 0,00 & -0,14 & -0,25 & -0,35 & -0,43 \\
+$\beta_{4}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 0,84 & 0,43 & 0,18 & 0,00 & -0,14 & -0,25 & -0,35 \\
 \hline
-$\beta_{5}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 0,97 & 0,57 & 0,32 & 0,14 & 0,00 & -0,11 & -0,21 \\
+$\beta_{5}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 0,97 & 0,57 & 0,32 & 0,14 & 0,00 & -0,11  \\
 \hline
-$\beta_{6}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,07 & 0,67 & 0,43 & 0,25 & 0,11 & 0,00 \\
+$\beta_{6}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,07 & 0,67 & 0,43 & 0,25 & 0,11 \\
 \hline
-$\beta_{7}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,15 & 0,76 & 0,52 & 0,35 & 0,21 \\ 
+$\beta_{7}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,15 & 0,76 & 0,52 & 0,35  \\ 
 \hline
-$\beta_{8}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,22 & 0,84 & 0,60 & 0,43 \\
+$\beta_{8}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,22 & 0,84 & 0,60  \\
 \hline
-$\beta_{9}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,28 & 0,91 & 0,67 \\
+$\beta_{9}$ &\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,28 & 0,91  \\
 \hline
-$\beta_{10}$&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,34 & 0,97 \\
-\hline
-$\beta_{11}$&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,38 \\
+$\beta_{10}$&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}& 1,34  \\
  \hline
 \end{tabularx}
 \vspace{0.1cm}
@@ -194,7 +226,7 @@ $\beta_{11}$&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellcolor{gray!25}&\cellco
 SAX introduces new metrics for measuring distance between strings by extending Euclidean and PAA (\ref{eq:paa_distance}) distances. 
 The function returning the minimal distance between two string representations of original time series $\widehat{Q}$ and $\widehat{C}$ is defined as
 \begin{equation}
-MINDIST(\widehat{Q},\widehat{C}) \equiv \sqrt{ \frac{n}{w} } \sqrt{ \sum_{i=1}^{w} ( dist( \widehat{q}_{i}, \widehat{c}_{i} ) )^{2}}
+\text{MINDIST}(\widehat{Q},\widehat{C}) \equiv \sqrt{ \frac{n}{w} } \sqrt{ \sum_{i=1}^{w} ( dist( \widehat{q}_{i}, \widehat{c}_{i} ) )^{2}}
 \label{eq:sax_mindist}
 \end{equation} 
 where the $dist$ function is implemented by using the lookup table for the particular set of the breakpoints (alphabet size) as shown in 
@@ -210,7 +242,7 @@ cell_{(r,c)} =
 
 
 \begin{table}
-\caption{A lookup table used by the MINDIST function for the $a=12$}
+\caption{A lookup table used by the MINDIST function for the $a=11$}
 \label{tbl:sax_lookup}
 \small
 \begin{tabularx}{\textwidth}{|l|X|X|X|X|X|X|X|X|X|X|X|}
@@ -251,110 +283,18 @@ As shown by Li et al., this SAX distance metrics lower-bounds the PAA distance, 
 The SAX lower bound was examined by Ding et al. \cite{citeulike:4501572} in great detail and found to be 
 superior in precision to the spectral decomposition methods on bursty (non-periodic) data sets.
 
-\subsection{SAX representation of time series}\label{sec_sax_representation}
+\subsection{SAX discretization of time series}\label{sec_sax_representation}
 One of the ways to represent the time series in symbolic form is to reduce the dimensionality and to 
 discretize the whole time series. The drawback with this approach is that due to the rough approximation 
 it often does not capture enough local details in the data, which severely affects many pattern discovery
-techniques. 
-Another way to represent a time series is by a discretization of a collection of overlapping subsequences 
-extracted with a sliding window. to 
+techniques \cite{\cite{citeulike:10525778}}.  Another way to represent a time series is by a discretization 
+of a collection of overlapping subsequences extracted with a sliding window. 
 
-\begin{figure}[tbp]
-   \centering
-   \includegraphics[height=45mm]{sliding-window.eps}
-   \caption{An illustration of the sliding window technique from \cite{citeulike:2821475}: a time series T of length 128, 
-   the subsequence $C67$ (of length $m$=16), and the first 8 overlapping subsequences extracted by a sliding window.}
-   \label{fig:sliding_window}
-\end{figure}
-
-Following its introduction, SAX was shown to be an efficient tool for solving problems of finding motifs 
-and discords in time series \cite{citeulike:3977965} \cite{citeulike:3175749}. 
-The authors employed a sliding window-based subsequence extraction technique and augmented data 
-structures: the hash table in \cite{citeulike:3977965} and the trie in \cite{citeulike:3175749},
-in order to build SAX words ``vocabularies''.
-
-While on of the ways to represent the it is possible 
-
-Further, by analyzing their frequencies and locations, they were able to capture frequent and rare SAX 
-words representing motifs and discords subsequences. 
-Later, the same technique based on the combination of sliding window and SAX was used in the numerous 
-works, most notably in time series classification using bag of patterns \cite{citeulike:10525778}. 
-
-I also utilize this sliding window technique to convert a time series $T$ of a length $n$ into 
-the set of $m$ SAX words, where $m=(n-l_{s})+1$ and $l_{s}$ is the sliding window length. 
+SAX-VSM relies on this sliding window technique to convert a time series $T$ of a length $m$ into 
+the set of $k$ SAX words, where $k=(m-l_{s})+1$ and $l_{s}$ is the sliding window length. 
 By sliding a window of length $l_{s}$ across time series $T$, extracting subsequences, 
-converting them to SAX words, and placing these words into an unordered collection, 
-we obtain the \textit{bag of words} representation of the original time series $T$.
-
-
-\subsection{A note on SAX numerosity reduction}\label{section_numerosity_reduction}
-The analysis of the results showed that the best matches for an extracted by sliding window subsequence 
-tend to be its immediate neighbors, in particular the subsequence one point to the right and the subsequence
-one point to the left. The authors defined these matching subsequences as the “trivial matches.” 
-They found, that in the smooth regions of the time series, the amount of trivial matches might be large and  
-they would dominate over true patterns in any sliding-window technique due to over-counting. 
-This not only distorts the results, but often makes them meaningless \cite{citeulike:227029}. 
-Therefore, when extracting subsequences from the time series by a 
-sliding window, the trivial matches should be excluded. 
-
-In further SAX development, particularly in its application to problems of discords discovery,
-streaming data analyses, and clustering \cite{citeulike:3175749} \cite{citeulike:532335}, the authors 
-proposed a sampling strategy based on a distance function designed in the order to avoid 
-``trivial and degenerative solutions''. 
-While the inclusion of a numerosity reduction was found vital for mentioned applications, intuitively, 
-in the case of SAX-VSM, the over-counting effect is significantly mediated by design of \textit{tf$\ast$idf}
-statistics \eqref{formula:tfidf}. Moreover, the exclusion of ``trivial matches'' may degrade the overall performance 
-of bag of words based approach, as pointed in \cite{citeulike:10525778}.
-
-In order to clarify this issue, I conducted a series of experiments for three sampling strategies \ref{nr_study} and found, 
-that for most of the data sets, the inclusion of the numerosity reduction significantly reduced DIRECT scheme convergence time 
-and improved its accuracy. 
-Furthermore, once I relaxed the ``triviality constraints'' by substitution of \textit{MINDIST} function \cite{citeulike:532335} 
-with Hamming distance \cite{hamming}, I was able to improve the classification accuracy for fourteen out of thirty one 
-data sets that I have used for the performance evaluation (see \cite{citeulike:12563560}). Thus, in this section, I explain 
-numerosity reduction strategies in detail.
-
-As noted in \cite{citeulike:2821475}, given a character subsequence $\hat{S_{i}}$ extracted by the use 
-of sliding window and SAX, it is very likely, that $\hat{S_{i}}$ is very similar to its
-neighboring subsequences, $\hat{S_{i-1}}$ and $\hat{S_{i+1}}$ (i.e. those that start one 
-point to the left, and one point to the right of $\hat{S_{i}}$), especially if $\hat{S_{i}}$
-is in the smooth region of the time series - due to the dimensionality reduction. 
-This phenomena results in mapping of multiple consecutive subsequences
-to the same string. The authors called these subsequences as ``trivial matches'' of 
-$\hat{S_{i}}$, and suggested to avoid their over-counting by introducing a 
-``numerosity reduction technique''. This technique is based on the custom distance 
-function \textit{MINDIST} \cite{citeulike:532335}, and accounts only for the first 
-occurrence of $\hat{S_{i}}$. 
-
-Similarly to \textit{MINDIST} we define a $dist$ function for two
-SAX words $\hat{Q}$ and $\hat{C}$ as
-\begin{equation}
-dist(\hat{q_{i}},\hat{c_{i}})=
-       \begin{cases} \qquad  0, & \mbox{, if } | \hat{q_{i}} - \hat{c_{i}} | \leq 1 \\
-        ASCIIdist( \hat{q_{i}} , \hat{c_{i}} ) & \mbox{, otherwise } 
-        \end{cases}
-\end{equation} 
-where $ASCIIdist( \hat{q_{i}}, \hat{c_{i}} )$ is the absolute value of the difference between 
-ASCII codes for letters $\hat{q_{i}}$ and $\hat{c_{i}}$.
-
-By using this function we modified the process a bag of words construction: 
-while sliding a window across a time series and extracting consecutive words
-as explained in Section \ref{bow_representation}, we compare each newly 
-extracted word to the last word added to the bag using $dist$ function. 
-If these words appear to be equal, we discard the new (to be added) word and 
-continue as usual. Since this numerosity reduction strategy is based 
-on previous work we called it $CLASSIC$.
-
-By further experimentation, we discovered, that if we relax this numerosity reduction
-strategy by using Hamming distance \cite{hamming} instead of $dist$ function
-defined above, it is possible to further improve SAX-VSM accuracy for fourteen 
-out of thirty one datasets we used for validation (see \cite{citeulike:12563560}). 
-We called this numerosity reduction strategy EXACT, since the use of Hamming 
-distance prevents only exact consecutive trivial matches to be placed into the bag. 
-
-At this point we unable to further comment on these experimental results and 
-leaving this phenomenon for the future research.
-
+converting them to SAX words, and placing these words into an unordered collection (a database), 
+it obtains the \textit{bag of words} representation of the original time series $T$.
 
 \subsection{Bag of words representation of time series}\label{bow_representation}
 Following its introduction, SAX was shown to be an efficient tool for solving problems 
@@ -365,7 +305,7 @@ in order to build SAX words ``vocabularies''. Further, by analyzing words freque
 and locations, they were able to capture frequent and rare SAX words representing 
 motifs and discords subsequences. Later, the same technique based on the combination 
 of sliding window and SAX was used in the numerous works, most notably in time series 
-classification using bag of patterns \cite{citeulike:10525778}. 
+classification using bag of patterns (BOP) \cite{citeulike:10525778}. 
 
 We also use this sliding window technique to convert a time series $T$ of a length $n$ into 
 the set of $m$ SAX words, where $m=(n-l_{s})+1$ and $l_{s}$ is the sliding window length. 
@@ -373,67 +313,141 @@ By sliding a window of length $l_{s}$ across time series $T$, extracting subsequ
 converting them to SAX words, and placing these words into an unordered collection, 
 we obtain the \textit{bag of words} representation of the original time series $T$.
 
-\subsection{Vector Space Model (VSM) adaptation}\label{vsm}
-We use Vector space model exactly as it is known in information retrieval (IR) \cite{citeulike:300428}. 
-Similarly to IR, we define and use terms \textit{document}, \textit{bag of words}, 
-\textit{corpus}, and \textit{sparse matrix} in our workflow. 
-Note however, that we use terms \textit{bag of words} and \textit{document} 
-for abbreviation of an unordered collection of SAX words interchangeably, while 
-in IR these usually bear different meaning, where a \textit{document} usually 
-presumes certain words ordering (semantics). 
-Although, similar definitions, such as \textit{bag of features} or 
-\textit{bag of patterns}, were previously proposed for techniques built upon 
-SAX \cite{citeulike:10525778}, we use \textit{bag of words} since it reflects our 
-workflow precisely. The term \textit{corpus} is used for a structured collection 
-of bags of words. 
+\subsection{SAX numerosity reduction}\label{section_numerosity_reduction}
+Previously, the analysis of the results showed that the best matches for an extracted by sliding window subsequence 
+tend to be its immediate neighbors, in particular the subsequence one point to the right and the subsequence
+one point to the left \cite{citeulike:3977965} \cite{citeulike:3175749}. 
+The authors defined these matching subsequences as the \textit{trivial matches}.
+They found, that in the smooth regions of the time series, the amount of trivial matches can be large and enough that 
+they would dominate over true patterns in any sliding-window technique due to over-counting. 
+This would not only distorts the results, but could make them meaningless \cite{citeulike:227029}. 
+Therefore, when extracting subsequences from the time series by a 
+sliding window, the trivial matches should be excluded. 
 
-Given a training set, SAX-VSM builds bags of SAX-generated words representing 
-each of the training classes and assembles them into a corpus. 
-This corpus, by its construction, is a sparse \textit{term frequency matrix}. 
-Rows of this matrix correspond to the set of all SAX words found in 
-\textit{all classes}, while each column of the matrix denotes a class of the 
-training set. Each element of this matrix is an observed frequency of a word
-in a class. 
-Many elements of this matrix are zeros - because words extracted from one class 
-are often not found in others (Figure \ref{fig:venn}). 
-By its design, this sparse 
-term frequency matrix is a dictionary of all SAX words extracted from all time 
-series of a training set, which accounts for frequencies of each word in each of 
-the training classes.
+The authors proposed a sampling strategy based on a \textit{MINDIST} \ref{eq:sax_mindist} designed in the order to avoid 
+``trivial and degenerative solutions''. 	If $l$ consecutive SAX words 
+{$\widehat{S}_{i,k}, \widehat{S}_{i+1,k},...,\widehat{S}_{i+l-1,k},...$}  
+corresponding to subsequences $T_{i,k}, T_{i+1,k},...,T_{i+l-1,k},...$ extracted with sliding window are 
+equal (when using \textit{MINDIST}), they kept only the first entry $C_{i,k}$. 
+Intuitively, similarly to the run length encoding data compression techniques, if one would ever need to 
+retrieve all occurrences of $C_{i,k}$, it will be possible to find its first occurrence and slide to the right until the 
+word which is different from $C_{i,k}$. While the authors found the inclusion of the numerosity reduction 
+vital for motif and discords discovery, intuitively, in the case of SAX-VSM, the over-counting effect is significantly 
+mediated by design of \textit{tf$\ast$idf} statistics \eqref{formula:tfidf}. 
+Moreover, the exclusion of ``trivial matches'' may degrade the overall performance of bag of words based 
+approach, as pointed in \cite{citeulike:10525778}.
 
-Following to the common in IR workflow, we employ the \textit{tf$\ast$idf} weighting 
-scheme for each element of this matrix in order to transform a frequency value into
-the weight coefficient. 
-The \textit{tf$\ast$idf} weight for a term is defined as a 
-product of two factors: term frequency (\textit{tf}) and inverse document 
-frequency (\textit{idf}). 
-For the first factor, we use logarithmically scaled term frequency \cite{citeulike:4469058}:
+In order to clarify this issue, I have conducted a series of experiments for three sampling strategies \ref{nr_study} 
+and found, that for most of the data sets, the inclusion of the numerosity reduction significantly reduced DIRECT 
+scheme convergence time and improved its accuracy. 
+Furthermore, once I have relaxed the ``triviality constraints'' by substitution of \textit{MINDIST} function \ref{eq:sax_mindist}
+with Hamming distance \cite{hamming}, I was able to improve the classification accuracy for fourteen out of thirty one 
+data sets that I have used for the performance evaluation (see \cite{citeulike:12563560}). Thus, in this section, I explain 
+this numerosity reduction strategies in detail.
+
+As noted in \cite{citeulike:2821475}, given a character subsequence $\widehat{S}_{i}$ extracted by the use 
+of sliding window and SAX, it is very likely, that $\widehat{S}_{i}$ is very similar to its
+neighboring subsequences, $\widehat{S}_{i-1}$ and $\widehat{S}_{i+1}$ (i.e. those that start one 
+point to the left, and one point to the right of $\widehat{S}_{i}$), especially if $\widehat{S}_{i}$
+is in the smooth region of the time series - due to the smoothing effect of PAA \ref{section-sax}. 
+
+Similarly to the numerosity reduction based on \textit{MINDIST} I define a \textit{HAMMING} distance function for 
+two SAX words $\hat{Q}$ and $\hat{C}$ of the same length $w$ as
 \begin{equation}
- \mbox{tf}_{t, d} =  \begin{cases} \log(1 + \mbox{f}_{t,d}), &\mbox{if f}_{t,d}>0  \\
+\text{HAMMING}(\widehat{Q},\widehat{C}) \equiv \sum_{i=1}^{w} ascii\_dist( \widehat{q}_{i}, \widehat{c}_{i} ) 
+\label{eq:hamming}
+\end{equation} 
+where $ascii\_dist( \widehat{q_{i}}, \widehat{c_{i}} )$ is the absolute value of the difference between ASCII codes for 
+letters $\widehat{q_{i}}$ and $\widehat{c_{i}}$.
+
+By using this function I modified the process a bag of words construction: while sliding a window 
+across a time series and extracting consecutive words as explained in Section \ref{bow_representation}, 
+SAX-VSM compares each newly extracted word to the last word added to the bag using a distance function. 
+If these words appear to be equal, it discards the new (to be added) word and continues as usual. 
+For further use, I abbreviate the numerosity reduction strategy based on previous work and \textit{MINDIST} 
+function as \textit{CLASSIC}, while the one based on \textit{HAMMING} distance as \textit{EXACT}.
+
+\subsection{Vector Space Model (VSM) adaptation}\label{vsm}
+I use Vector space model exactly as it is known in information retrieval (IR) \cite{citeulike:300428} for 
+manipulations with abstracted by SAX words timeseries. 
+
+Similarly to IR, define and use the following expressions:
+\begin{itemize}
+  \item \textit{term} - a single SAX word, 
+  \item \textit{bag of words} - an unordered collection of SAX words, 
+  \item \textit{corpus} - a set of bags, and 
+  \item \textit{weight matrix} - a matrix defining weights of all words in a corpus. 
+\end{itemize}
+Note however, that I use terms \textit{bag of words} and \textit{document} for abbreviation of an unordered 
+collection of SAX words interchangeably, while in IR these usually bear different meaning: \textit{document} 
+usually presumes certain words ordering (semantics). 
+Although similar definitions, such as \textit{bag of features} \cite{citeulike:12636726} 
+or \textit{bag of patterns} \cite{citeulike:10525778}, were recently proposed for techniques built 
+upon SAX \cite{citeulike:10525778}, I use the traditional \textit{bag of words} definition since it reflects 
+my workflow precisely. 
+
+Given a training set of time series, SAX-VSM builds a bag of SAX words for each of its classes by processing 
+each time series with a sliding window and SAX. Then, bags are combined into a corpus, which is built as a 
+\textit{term frequency matrix}, whose rows correspond to the set of all SAX words (terms) 
+found in \textit{all classes}, whereas each column denotes a class of the training set. 
+Each element of this matrix is an observed frequency of a term in a class. 
+Because SAX words extracted from the time series of one class are often not 
+found in others, as shown in Section \ref{scalability}, this matrix is usually sparse. 
+%Many elements of this matrix are zeros - because words extracted from one class 
+%are often not found in others (Figure \ref{fig:venn}). 
+%By its design, this sparse term frequency matrix is a dictionary of all SAX words extracted from all time 
+%series of a training set, which accounts for frequencies of each word in each of 
+%the training classes.
+
+\begin{table}
+\caption{The SMART notation \cite{citeulike:4469058}. }
+\vspace{0.4cm}
+\label{tbl:smart}
+\begin{tabularx}{\textwidth}{l l l}
+\textbf{Term frequency} &\textbf{Document frequency} &\textbf{Normalization} \\[0.5ex]
+\hline
+n (natural):  $\text{tf}_{t,d}$ & n (no): 1 & n (none): 1 \\[2ex]
+l (logarithm): $1+log(\text{tf}_{t,d}$) & t (idf): $log\tfrac{N}{df_{t}}$ & c (cosine): $\tfrac{1}{\sqrt{w_1^2 + w_2^2 + ... + w_M^2}}$ \\[2ex]
+a (augmented): $0.5 + \tfrac{0.5 \times \text{tf}_{t,d}}{\text{max(tf}_{t,d})}$ & p (prob idf): $\textbf{max}\left( 0,\text{log}\tfrac{N-df_{t}}{df_{t}} \right) $ & 
+b (byte size): $\tfrac{1}{CharLength^\alpha}, \alpha < 1 $ \\[2ex]
+b (boolean): $\begin{cases} 1, & \text{if tf}_{t,d} > 0 \\ 0, & \text{otherwise} \end{cases} $ & & \\[3ex]
+L (log average): $ \tfrac{1+\text{log}(\text{tf}_{t,d})}{1+\text{log}(\text{ave}_{t \epsilon d}( \text{tf}_{t,d}))}$ & & \\[1ex]
+\hline
+\end{tabularx}
+\end{table}
+
+Following to the common in IR workflow, SAX-VSM employs the $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ weighting scheme 
+\cite{citeulike:4469058} for each element of this matrix in order to transform a frequency value into the 
+weight coefficient. 
+The $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ weight for a term is defined as a product of two factors: term frequency ($\text{\textbf{tf}}$) 
+and inverse document frequency ($\text{\textbf{idf}}$). 
+For the first factor, I use logarithmically scaled term frequency (Table \ref{tbl:smart}) \cite{citeulike:4469058}:
+\begin{equation}
+ \mbox{\textbf{tf}}_{t, d} =  \begin{cases} \log(1 + \mbox{\textbf{f}}_{t,d}), &\mbox{if \textbf{f}}_{t,d}>0  \\
 0, & \mbox{otherwise} \end{cases}
 \end{equation} 
-where $t$ is the term, $d$ is a bag of words (a \textbf{d}ocument), and $\mbox{f}_{t,d}$ 
-is a frequency of the term in a bag.
+where $t$ is a term and $d$ is a bag of words (the document in IR terms), and $\mbox{\textbf{f}}_{t,d}$ 
+is a frequency of the term in the bag.
 
-The inverse document frequency we compute as usual:
+For document frequency I use inverse document frequency:
 \begin{equation}
- \mbox{idf}_{t, D} =  \log_{10}\frac{|D|}{|d \in D : t \in d|} = \log_{10}\frac{N}{\mbox{df}_{t}}
+ \mbox{\textbf{idf}}_{t, D} =  \log_{10}\frac{|D|}{|d \in D : t \in d|} = \log_{10}\frac{N}{\mbox{\textbf{df}}_{t}}
  \label{formula:idf}
 \end{equation} 
 where $N$ is the cardinality of corpus $D$ (the total number of classes) and the 
-denominator $\mbox{df}_{t}$ is a number of documents where the term $t$ appears.
+denominator $\mbox{\textbf{df}}_{t}$ is a number of documents where the term $t$ appears.
 
-Then, $\textit{tf$\ast$idf}$ value for a term $t$ in the document $d$ of a corpus $D$ is defined as 
+Thus, the $\text{\textbf{tf}} \ast \text{\textbf{idf}}$ value for a term $\text{\textbf{t}}$ in the document 
+$\text{\textbf{d}}$ of a corpus $\text{\textbf{D}}$ is defined as:
 \begin{equation}
- \mbox{tf * idf}(t, d, D) =  \mbox{tf}_{t, d} \times \mbox{idf}_{t, D} = \log(1 + \mbox{f}_{t,d})
-\times \log_{10}\frac{N}{\mbox{df}_{t}}
+ \text{\textbf{tf}} \ast \text{\textbf{idf}}(t, d, D) =  \text{\textbf{tf}}_{t, d} \times \text{\textbf{idf}}_{t, D} = \log(1 + \text{\textbf{f}}_{t,d})
+\times \log_{10}\frac{N}{\mbox{\textbf{df}}_{t}}
  \label{formula:tfidf}
 \end{equation} 
-for the all cases where $\mbox{f}_{t,d}>0$ and $\mbox{df}_{t}>0$, or zero otherwise.
+for the all cases where $\mbox{\textbf{f}}_{t,d}>0$ and $\mbox{\textbf{df}}_{t}>0$, or zero otherwise.
 Once all terms of a corpus are weighted, the columns of a sparse matrix are used 
 as \textit{class term weights vectors} that facilitate the classification using cosine similarity. 
 
-\enlargethispage{0.5cm} 
 Cosine similarity measure between two vectors is based on their inner product. 
 For two vectors $\mathbf{a}$ and $\mathbf{b}$ that is:
 \begin{equation}
@@ -467,7 +481,7 @@ phase, and the classification procedure.
 
 %The use of cosine similarity for classification is another key difference of SAX-VSM 
 %from competing techniques. SAX-VSM facilitates a fast classification procedure, 
-%which consists of the conversion of an unlabeled time series into a terms 
+%which consists of the conversion of an unlabeled time series into a terms \\[10ex]
 %frequency vector, and its successive classification by the computation of $N$ cosine 
 %values. The unlabeled time series is assigned to a class whose weight vector 
 %yields a maximal cosine. 
