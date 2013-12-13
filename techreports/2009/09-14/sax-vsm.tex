@@ -92,7 +92,12 @@ DIRECT is a derivative-free optimization process that possesses local and global
 a deterministic, optimized solution. While other optimization techniques exist and some of them may perform better, the performance 
 evaluation of the parameters selection is beyond the scope of my current work.
 
-\subsection{Symbolic Aggregate approXimation (SAX)}
+In the following subsections, I will review algorithms which are used by SAX-VSM. Subsection \ref{section-sax} reviews SAX - a symbolic 
+discretization technique, Subsection \ref{section_numerosity_reduction} discusses numerosity reduction strategies,
+Subsection \ref{bow_representation} reviews bag of words abstraction, terms weighting and Vector Space Model are discussed in the 
+Subsection \ref{vsm}. 
+
+\subsection{Symbolic Aggregate approXimation (SAX)}\label{section-sax}
 Symbolic representation of time series, once introduced, has attracted much attention by enabling the application of numerous 
 string-processing algorithms, bioinformatics tools, and text mining techniques to time series \cite{sax}. 
 The method provides a significant reduction of the time series dimensionality and a low-bounding to Euclidean distance 
@@ -108,7 +113,7 @@ the word to produce $w$. Algorithm works as follows.
 \begin{figure}[tbp]
    \centering
    \includegraphics[height=45mm]{sax_intro}
-   \caption{The illustration of the SAX approach taken from \cite{citeulike:2821475} depicts two pre-determined breakpoints for the 
+   \caption{An illustration of the SAX approach taken from \cite{citeulike:2821475} depicts two pre-determined breakpoints for the 
    three-symbols alphabet and the conversion of the time-series of length $n=128$ into PAA representation followed by mapping of 
    the PAA coefficients into SAX symbols with $w=8$ and $a=3$ resulting in the string \textbf{baabccbc}.}
    \label{fig:sax_intro}
@@ -243,10 +248,115 @@ As shown by Li et al., this SAX distance metrics lower-bounds the PAA distance, 
 \label{eq:sax_bounding}
 \end{equation}
 
-The SAX lower bound was examined by Ding et al. \cite{citeulike:4501572} in great detail and found to be superior in precision to
-the spectral decomposition methods on bursty (non-periodic) data sets.
+The SAX lower bound was examined by Ding et al. \cite{citeulike:4501572} in great detail and found to be 
+superior in precision to the spectral decomposition methods on bursty (non-periodic) data sets.
 
-\subsection{Bag of words representation of time series} \label{bow_representation}
+\subsection{SAX representation of time series}\label{sec_sax_representation}
+One of the ways to represent the time series in symbolic form is to reduce the dimensionality and to 
+discretize the whole time series. The drawback with this approach is that due to the rough approximation 
+it often does not capture enough local details in the data, which severely affects many pattern discovery
+techniques. 
+Another way to represent a time series is by a discretization of a collection of overlapping subsequences 
+extracted with a sliding window. to 
+
+\begin{figure}[tbp]
+   \centering
+   \includegraphics[height=45mm]{sliding-window.eps}
+   \caption{An illustration of the sliding window technique from \cite{citeulike:2821475}: a time series T of length 128, 
+   the subsequence $C67$ (of length $m$=16), and the first 8 overlapping subsequences extracted by a sliding window.}
+   \label{fig:sliding_window}
+\end{figure}
+
+Following its introduction, SAX was shown to be an efficient tool for solving problems of finding motifs 
+and discords in time series \cite{citeulike:3977965} \cite{citeulike:3175749}. 
+The authors employed a sliding window-based subsequence extraction technique and augmented data 
+structures: the hash table in \cite{citeulike:3977965} and the trie in \cite{citeulike:3175749},
+in order to build SAX words ``vocabularies''.
+
+While on of the ways to represent the it is possible 
+
+Further, by analyzing their frequencies and locations, they were able to capture frequent and rare SAX 
+words representing motifs and discords subsequences. 
+Later, the same technique based on the combination of sliding window and SAX was used in the numerous 
+works, most notably in time series classification using bag of patterns \cite{citeulike:10525778}. 
+
+I also utilize this sliding window technique to convert a time series $T$ of a length $n$ into 
+the set of $m$ SAX words, where $m=(n-l_{s})+1$ and $l_{s}$ is the sliding window length. 
+By sliding a window of length $l_{s}$ across time series $T$, extracting subsequences, 
+converting them to SAX words, and placing these words into an unordered collection, 
+we obtain the \textit{bag of words} representation of the original time series $T$.
+
+
+\subsection{A note on SAX numerosity reduction}\label{section_numerosity_reduction}
+The analysis of the results showed that the best matches for an extracted by sliding window subsequence 
+tend to be its immediate neighbors, in particular the subsequence one point to the right and the subsequence
+one point to the left. The authors defined these matching subsequences as the “trivial matches.” 
+They found, that in the smooth regions of the time series, the amount of trivial matches might be large and  
+they would dominate over true patterns in any sliding-window technique due to over-counting. 
+This not only distorts the results, but often makes them meaningless \cite{citeulike:227029}. 
+Therefore, when extracting subsequences from the time series by a 
+sliding window, the trivial matches should be excluded. 
+
+In further SAX development, particularly in its application to problems of discords discovery,
+streaming data analyses, and clustering \cite{citeulike:3175749} \cite{citeulike:532335}, the authors 
+proposed a sampling strategy based on a distance function designed in the order to avoid 
+``trivial and degenerative solutions''. 
+While the inclusion of a numerosity reduction was found vital for mentioned applications, intuitively, 
+in the case of SAX-VSM, the over-counting effect is significantly mediated by design of \textit{tf$\ast$idf}
+statistics \eqref{formula:tfidf}. Moreover, the exclusion of ``trivial matches'' may degrade the overall performance 
+of bag of words based approach, as pointed in \cite{citeulike:10525778}.
+
+In order to clarify this issue, I conducted a series of experiments for three sampling strategies \ref{nr_study} and found, 
+that for most of the data sets, the inclusion of the numerosity reduction significantly reduced DIRECT scheme convergence time 
+and improved its accuracy. 
+Furthermore, once I relaxed the ``triviality constraints'' by substitution of \textit{MINDIST} function \cite{citeulike:532335} 
+with Hamming distance \cite{hamming}, I was able to improve the classification accuracy for fourteen out of thirty one 
+data sets that I have used for the performance evaluation (see \cite{citeulike:12563560}). Thus, in this section, I explain 
+numerosity reduction strategies in detail.
+
+As noted in \cite{citeulike:2821475}, given a character subsequence $\hat{S_{i}}$ extracted by the use 
+of sliding window and SAX, it is very likely, that $\hat{S_{i}}$ is very similar to its
+neighboring subsequences, $\hat{S_{i-1}}$ and $\hat{S_{i+1}}$ (i.e. those that start one 
+point to the left, and one point to the right of $\hat{S_{i}}$), especially if $\hat{S_{i}}$
+is in the smooth region of the time series - due to the dimensionality reduction. 
+This phenomena results in mapping of multiple consecutive subsequences
+to the same string. The authors called these subsequences as ``trivial matches'' of 
+$\hat{S_{i}}$, and suggested to avoid their over-counting by introducing a 
+``numerosity reduction technique''. This technique is based on the custom distance 
+function \textit{MINDIST} \cite{citeulike:532335}, and accounts only for the first 
+occurrence of $\hat{S_{i}}$. 
+
+Similarly to \textit{MINDIST} we define a $dist$ function for two
+SAX words $\hat{Q}$ and $\hat{C}$ as
+\begin{equation}
+dist(\hat{q_{i}},\hat{c_{i}})=
+       \begin{cases} \qquad  0, & \mbox{, if } | \hat{q_{i}} - \hat{c_{i}} | \leq 1 \\
+        ASCIIdist( \hat{q_{i}} , \hat{c_{i}} ) & \mbox{, otherwise } 
+        \end{cases}
+\end{equation} 
+where $ASCIIdist( \hat{q_{i}}, \hat{c_{i}} )$ is the absolute value of the difference between 
+ASCII codes for letters $\hat{q_{i}}$ and $\hat{c_{i}}$.
+
+By using this function we modified the process a bag of words construction: 
+while sliding a window across a time series and extracting consecutive words
+as explained in Section \ref{bow_representation}, we compare each newly 
+extracted word to the last word added to the bag using $dist$ function. 
+If these words appear to be equal, we discard the new (to be added) word and 
+continue as usual. Since this numerosity reduction strategy is based 
+on previous work we called it $CLASSIC$.
+
+By further experimentation, we discovered, that if we relax this numerosity reduction
+strategy by using Hamming distance \cite{hamming} instead of $dist$ function
+defined above, it is possible to further improve SAX-VSM accuracy for fourteen 
+out of thirty one datasets we used for validation (see \cite{citeulike:12563560}). 
+We called this numerosity reduction strategy EXACT, since the use of Hamming 
+distance prevents only exact consecutive trivial matches to be placed into the bag. 
+
+At this point we unable to further comment on these experimental results and 
+leaving this phenomenon for the future research.
+
+
+\subsection{Bag of words representation of time series}\label{bow_representation}
 Following its introduction, SAX was shown to be an efficient tool for solving problems 
 of finding motifs and discords in time series \cite{citeulike:3977965, citeulike:3175749}. 
 The authors employed a sliding window-based subsequence extraction technique 
@@ -263,7 +373,7 @@ By sliding a window of length $l_{s}$ across time series $T$, extracting subsequ
 converting them to SAX words, and placing these words into an unordered collection, 
 we obtain the \textit{bag of words} representation of the original time series $T$.
 
-\subsection{Vector Space Model (VSM) adaptation}
+\subsection{Vector Space Model (VSM) adaptation}\label{vsm}
 We use Vector space model exactly as it is known in information retrieval (IR) \cite{citeulike:300428}. 
 Similarly to IR, we define and use terms \textit{document}, \textit{bag of words}, 
 \textit{corpus}, and \textit{sparse matrix} in our workflow. 
@@ -334,68 +444,6 @@ For two vectors $\mathbf{a}$ and $\mathbf{b}$ that is:
 \mathbf{a} \cdot \mathbf{b} } {\left| \left| a \right| \right| \cdot \left| \left| b \right|
 \right|}
 \end{equation} 
-
-\subsection{A note on numerosity reduction}
-In further SAX development, particularly in its application to problems of discords discovery,
-streaming data analyses, and clustering \cite{citeulike:3175749, citeulike:532335}, the authors 
-proposed a combination of a sampling strategy and a distance function specifically 
-designed in order to avoid ``trivial and degenerative solutions''. While the inclusion of
-a numerosity reduction was found vital for mentioned applications, intuitively, in our case, 
-the over-counting effect is significantly mediated by the design of \textit{tf$\ast$idf}
-statistics \eqref{formula:tfidf}. Moreover, by enforcing the exclusion of ``trivial matches'', we
-may degrade the overall performance of bag of words based approach, as pointed
-in \cite{citeulike:10525778}.
-
-In order to clarify this issue, we experimented with original combination of a sampling 
-strategy and a distance function and found, that for most of the data sets, the inclusion 
-of a numerosity reduction significantly reduced DIRECT scheme convergence time 
-and improved its accuracy. 
-Furthermore, once we relaxed the ``triviality constraints'' by substitution of 
-\textit{MINDIST} function \cite{citeulike:532335} with Hamming distance \cite{hamming}, 
-we were able to improve the classification accuracy for fourteen out of thirty one 
-data sets that we have used for the performance evaluation (see \cite{citeulike:12563560}).
-
-Thus, we shall explain this in greater detail.
-As noted in \cite{citeulike:2821475}, given a character subsequence $\hat{S_{i}}$ extracted by the use 
-of sliding window and SAX, it is very likely, that $\hat{S_{i}}$ is very similar to its
-neighboring subsequences, $\hat{S_{i-1}}$ and $\hat{S_{i+1}}$ (i.e. those that start one 
-point to the left, and one point to the right of $\hat{S_{i}}$), especially if $\hat{S_{i}}$
-is in the smooth region of the time series - due to the dimensionality reduction. 
-This phenomena results in mapping of multiple consecutive subsequences
-to the same string. The authors called these subsequences as ``trivial matches'' of 
-$\hat{S_{i}}$, and suggested to avoid their over-counting by introducing a 
-``numerosity reduction technique''. This technique is based on the custom distance 
-function \textit{MINDIST} \cite{citeulike:532335}, and accounts only for the first 
-occurrence of $\hat{S_{i}}$. 
-
-Similarly to \textit{MINDIST} we define a $dist$ function for two
-SAX words $\hat{Q}$ and $\hat{C}$ as
-\begin{equation}
-dist(\hat{q_{i}},\hat{c_{i}})=
-       \begin{cases} \qquad  0, & \mbox{, if } | \hat{q_{i}} - \hat{c_{i}} | \leq 1 \\
-        ASCIIdist( \hat{q_{i}} , \hat{c_{i}} ) & \mbox{, otherwise } 
-        \end{cases}
-\end{equation} 
-where $ASCIIdist( \hat{q_{i}}, \hat{c_{i}} )$ is the absolute value of the difference between 
-ASCII codes for letters $\hat{q_{i}}$ and $\hat{c_{i}}$.
-
-By using this function we modified the process a bag of words construction: 
-while sliding a window across a time series and extracting consecutive words
-as explained in Section \ref{bow_representation}, we compare each newly 
-extracted word to the last word added to the bag using $dist$ function. 
-If these words appear to be equal, we discard the new (to be added) word and 
-continue as usual. Since this numerosity reduction strategy is based 
-on previous work we called it $CLASSIC$.
-
-By further experimentation, we discovered, that if we relax this numerosity reduction
-strategy by using Hamming distance \cite{hamming} instead of $dist$ function
-defined above, it is possible to further improve SAX-VSM accuracy for fourteen 
-out of thirty one datasets we used for validation (see \cite{citeulike:12563560}). 
-We called this numerosity reduction strategy EXACT, since the use of Hamming 
-distance prevents only exact consecutive trivial matches to be placed into the bag. 
-
-At this point we unable to further comment on these experimental results and 
-leaving this phenomenon for the future research.
 
 \section{SAX-VSM classification algorithm} \label{sax-vsm}
 As many other classification techniques, SAX-VSM consists of two parts - the training
