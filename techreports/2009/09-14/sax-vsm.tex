@@ -313,36 +313,36 @@ motifs and discords subsequences. Later, the same technique based on the combina
 of sliding window and SAX was used in the numerous works, most notably in time series 
 classification using bag of patterns (BOP) \cite{citeulike:10525778}. 
 
-We also use this sliding window technique to convert a time series $T$ of a length $n$ into 
+I also use this sliding window technique to convert a time series $T$ of a length $n$ into 
 the set of $m$ SAX words, where $m=(n-l_{s})+1$ and $l_{s}$ is the sliding window length. 
 By sliding a window of length $l_{s}$ across time series $T$, extracting subsequences, 
 converting them to SAX words, and placing these words into an unordered collection, 
-we obtain the \textit{bag of words} representation of the original time series $T$.
+the algorithm builds the \textit{bag of words} representation of the original time series $T$.
 
 \subsection{SAX numerosity reduction}\label{section_numerosity_reduction}
 Previously, the analysis of the SAX-based algorithms performance revealed that the best matches for an extracted 
 by sliding window subsequence tend to be its immediate neighbors, in particular the subsequence one point to the 
-right and the subsequence one point to the left \cite{citeulike:3977965} \cite{citeulike:3175749}. 
-The authors defined these matching subsequences as the \textit{trivial matches} and found that in the smooth regions
-of the time series, the amount of trivial matches can be large enough to dominate over true patterns in any 
-sliding-window technique due to over-counting - which might not only distorts the results, but could make them 
-meaningless \cite{citeulike:227029}. 
+right and the subsequence one point to the left \cite{citeulike:3977965} \cite{citeulike:3175749}, 
+due to the smoothing effects of PAA approximation and SAX discretization \ref{section-sax}. 
+The authors defined these matching subsequences as the \textit{trivial matches} and found that in the smooth 
+regions of the time series, the amount of trivial matches can be large enough to dominate over true patterns due to 
+over-counting, which may not only distort results, but could make them meaningless \cite{citeulike:227029}. 
 Therefore, they concluded, when extracting subsequences from the time series by a sliding window, the trivial 
 matches should be excluded. 
 
-The authors proposed a sampling strategy based on a \textit{MINDIST} \ref{eq:sax_mindist} distance function designed 
-in order to avoid the ``trivial and degenerative solutions''.
-If $l$ consecutive SAX words \newline $\widehat{S}_{i,k}, \widehat{S}_{i+1,k},...,\widehat{S}_{i+l-1,k},...$
-corresponding to subsequences $T_{i,k}, T_{i+1,k},...,T_{i+l-1,k},...$ that extracted with sliding window are 
-equal when using \textit{MINDIST}, they kept only the first entry $C_{i,k}$. 
-Intuitively, similarly to the run length encoding data compression techniques, if one would ever need to 
-retrieve all occurrences of $S_{i,k}$, they can be found by sliding the window from the first occurrence to the right
-until the word which is different from $C_{i,k}$ is found. 
-While the authors found the inclusion of the numerosity reduction vital for motif and discords discovery, intuitively, 
-in the case of SAX-VSM, the over-counting effect is significantly mediated by the design of 
+The authors proposed a sampling strategy based on a \textit{MINDIST} \ref{eq:sax_mindist} distance 
+function designed in order to avoid the ``trivial and degenerate solutions'': if $l$ consecutive SAX words \newline 
+$\widehat{S}_{i,k}, \widehat{S}_{i+1,k},...,\widehat{S}_{i+l-1,k},...$
+corresponding to subsequences $T_{i,k}, T_{i+1,k},...,T_{i+l-1,k},...$ extracted with sliding window are 
+equal when using \textit{MINDIST}, they kept only the first entry $\widehat{S}_{i,k}$. 
+They further argued, that similarly to the run length encoding data compression techniques, if one would 
+ever need to retrieve all the occurrences of $\widehat{S}_{i,k}$, they can be found by sliding the window from 
+the first occurrence to the right until the word which is different from $\widehat{S}_{i,k}$ is found. 
+While the authors found the inclusion of the numerosity reduction vital for motif and discords discovery, 
+intuitively, in the case of SAX-VSM, the over-counting effect is significantly mediated by the design of 
 $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ statistics \eqref{formula:tfidf}. 
 Moreover, the exclusion of ``trivial matches'' may degrade the overall performance of bag of words based 
-approach, as shown in \cite{citeulike:10525778}.
+approach, as it was shown in \cite{citeulike:10525778}.
 
 In order to clarify this issue, I have conducted a series of experiments for three numerosity reduction strategies 
 \ref{nr_study} and found, that for most of the data sets, the use of the numerosity reduction significantly reduces 
@@ -351,25 +351,23 @@ Furthermore, once I have relaxed the trivial match constraints by substitution o
 with Hamming distance \cite{hamming}, I was able to improve the classification accuracy for more than half of the data 
 sets that I have used for SAX-VSM performance evaluation (see \cite{jmotif}). 
 
-Similarly to \cite{citeulike:2821475}, I found, that given a character subsequence $\widehat{S}_{i}$ extracted by 
-the use of sliding window and SAX, it is very likely, that $\widehat{S}_{i}$ is very similar to its
-neighboring subsequences, $\widehat{S}_{i-1}$ and $\widehat{S}_{i+1}$ (i.e. those that start one 
-point to the left, and one point to the right of $\widehat{S}_{i}$), especially if $\widehat{S}_{i}$
-is in the smooth region of the time series - due to the smoothing effects of PAA and SAX discretization \ref{section-sax}. 
-
-Similarly to the numerosity reduction based on \textit{MINDIST} I define a \textit{HAMMING} distance function for 
-two SAX words $\hat{Q}$ and $\hat{C}$ of the same length $w$ as
+The \textit{HAMMING} distance function for two SAX words $\hat{Q}$ and $\hat{C}$ of the same length $w$ 
+is defined as the number of letters in which they differ.
 \begin{equation}
-\text{HAMMING}(\widehat{Q},\widehat{C}) \equiv \sum_{i=1}^{w} ascii\_dist( \widehat{q}_{i}, \widehat{c}_{i} ) 
 \label{eq:hamming}
-\end{equation} 
-where $ascii\_dist( \widehat{q_{i}}, \widehat{c_{i}} )$ is the absolute value of the difference between ASCII 
-codes for letters $\widehat{q_{i}}$ and $\widehat{c_{i}}$.
+\begin{split}
+\text{HAMMING}(\widehat{Q},\widehat{C}) \equiv \sum_{i=1}^{w} I( \widehat{q}_{i}, \widehat{c}_{i} ), \\
+\text{where } I( \widehat{q}_{i}, \widehat{c}_{i} ) = \begin{cases}
+                                                       1,\text{ if } \widehat{q}_{i} \neq \widehat{c}_{i} \\
+                                                       0,\text{ if } \widehat{q}_{i} = \widehat{c}_{i}
+                                                      \end{cases}
+\end{split}                                                      
+\end{equation}
 
-By using this function I modified the process a bag of words construction: while sliding a window 
-across a time series and extracting consecutive words as explained in Section \ref{bow_representation}, 
-SAX-VSM compares each newly extracted word to the last word added to the bag using a distance function. 
-If these words appear to be equal, it discards the new (to be added) word and continues as usual. 
+While constructing bag of words as explained in Section \ref{bow_representation},  SAX-VSM compares each newly 
+extracted word to the last word added to the bag using \textit{HAMMING} distance function.
+If these words appear to be equal, i.e. distance is zero, it discards the to be added word and continues as usual. 
+
 For further use, I abbreviate the numerosity reduction strategy based on previous work and \textit{MINDIST} 
 function as \textit{CLASSIC}, while the one based on \textit{HAMMING} distance as \textit{EXACT}.
 
@@ -472,7 +470,7 @@ training and classification.
 
 \begin{figure}[t]
    \centering
-   \includegraphics[width=140mm]{figures/overview.eps}
+   \includegraphics[width=148mm]{figures/overview.eps}
    \caption{
    An overview of SAX-VSM algorithm: 
    at first, labeled time series are converted into bags of words using SAX; 
@@ -507,15 +505,15 @@ or to keep any of them in the memory at the runtime;
 the algorithm simply iterates over all training time series incrementally building 
 bags of SAX words. Once built and weighted with $\text{\textbf{tf}}\ast\text{\textbf{idf}}$, 
 the corpus is discarded - only a resulting set of $N$ real-valued weight vectors 
-is retained for classification. 
+is retained for classification.
 
 \subsection{Classification}
 In order to classify an unlabeled time series, SAX-VSM transforms it into a
 terms frequency vector using exactly the same sliding window technique 
 and SAX parameters that were used for training. 
 It computes cosine similarity values between this term frequency vector 
-and $N$ $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ weight vectors representing the 
-training classes. The unlabeled time series is assigned to the class whose vector yields the
+and $N$ $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ weight vectors representing the training classes. 
+The unlabeled time series is assigned to the class whose vector yields the
 maximal cosine similarity value.
 
 \section{Parameters optimization} \label{section-direct}
@@ -535,11 +533,14 @@ where $f in \mathbf{R}$ and $x, X_{L}, X_{U} \in \mathbf{R}$.
 
 At the first step DIRECT scales the search domain to be the unit hypercube. The function is then evaluated 
 at the center point of the hypercube. As pointed in \cite{citeulike:12563460}, computing the function value
-atthe center is an advantage of the method when dealing with problemsin higher dimensions.
+at
+the center is an advantage of the method when dealing with problems
+in higher dimensions.
 Then, DIRECT iteratively performs two procedures - partitioning the hypercube into smaller hyper-rectangles 
 and identifying a set of potentially-optimal by sampling their centers. At each step, the function is evaluated 
 at the center points of all potentially-optimal hyper-rectangles. Procedure continues interactively until the 
-error function converges. DIRECT is guaranteed to converge to the global optimal function value,as the number 
+error function converges. DIRECT is guaranteed to converge to the global optimal function value,
+as the number 
 of iterations goes to infinity \cite{citeulike:12563460}.
 
 Since DIRECT is designed to search for global minima of a real valued function over 
@@ -550,7 +551,7 @@ possible parameters combinations that is \textgreater100x speedup.
 
 \begin{figure}[t]
    \centering
-   \includegraphics[width=140mm]{figures/figure_direct.eps}
+   \includegraphics[width=150mm]{figures/figure_direct.eps}
    \caption{Parameters optimization with DIRECT for \textit{SyntheticControl} dataset. 
    Left panel shows all points sampled by DIRECT in the space \mbox{$PAA*Window*Alphabet$},
    red points correspond to high error values while green points correspond to low error values 
@@ -566,134 +567,88 @@ possible parameters combinations that is \textgreater100x speedup.
 
 
 \section{Intuition behind SAX-VSM}
-First of all, by combining \textit{\textbf{all}} SAX words extracted from 
-\textit{\textbf{all}} time series of single class into a \mbox{\textit{\textbf{single bag}}} of 
-words, SAX-VSM manages not only to capture observed intraclass variability, 
-but to efficiently ``generalize'' it through smoothing with PAA and SAX.  
+First, by combining \textit{\textbf{all}} SAX words extracted from 
+\textit{\textbf{all}} time series of single class into a \textit{\textbf{single bag}} of 
+words, SAX-VSM manages to capture and to ``generalize'' with PAA and SAX 
+observed intraclass variability from a small training set.  
 
-Secondly, by partially discarding the original ordering of time series subsequences and
-through subsequence normalization, SAX-VSM is capable to capture, and to recognize 
-characteristic subsequences in distorted by rotation or shift time series, as well,
-as to recover a signal from partially corrupted or altered by noise. 
+Secondly, by normalizing time series subsequences and by discarding their original 
+ordering, SAX-VSM is capable to capture and to recognize characteristic 
+subsequences in distorted and corrupted by noise or signal loss time series. 
 
-Thirdly, the \textit{tf$\ast$idf} statistics naturally ``highlights'' terms unique to a
-class by assigning them higher weights, while terms observed in multiple classes are 
-assigned weights inversely proportional to their interclass presence frequency. 
-This weighting scheme improves the selectivity of classification by  lowering a 
-contribution of ``confusive'' multi-class terms while increasing a contribution 
-of  class' ``defining'' terms to a final similarity value.   
+Thirdly,  $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ statistics naturally highlights terms unique to a
+class by assigning them higher weights whereas terms observed in multiple classes are 
+assigned weights inversely proportional to their interclass presence. This
+improves the selectivity of classification by lowering a contribution of ``confusive'' 
+multi-class terms, while increasing a contribution of class' ``defining'' terms to the
+final similarity measure.
 
-When combined, these features make SAX-VSM time series classification approach 
-unique. 
-%Ultimately, it compares a set of short overlapping subsequences extracted from a 
-%full length of an unlabeled time series with a weighted set of all characteristic subsequences
-%representing a training class.
-%Thus, an unlabeled time series is classified by its similarity not to a fixed number 
-%of sequences (as in kNN classifiers), or to a fixed number of characteristic features 
-%(as in shapelets-based classifiers), but by a product of its subsequences similarity to all 
-%known subsequences.
-Ultimately, algorithm compares a set of subsequences extracted from an unlabeled time series 
-with a weighted set of all characteristic subsequences representing a whole of a training class. 
-Thus, unknown time series is classified by its similarity not to a given number of ``neighbors'' 
-(as in kNN or BOP classifiers), or to a pre-fixed number of characteristic features (as in
-shapelets-based classifiers), but by its combined similarity to all known discriminative
-subsequences found in a whole class during training.
-
-This, as we shall show, contributes to the excellent classification performance on temporal 
-data sets where time series have a very low intraclass similarity at the full length, but 
-embed characteristic to the class subsequences. 
-%In particular, note SAX-VSM performance 
-%on human-driven, aperiodical telemetry stream with a signal loss - ElectricDevices data set
-%\cite{bagnal} (Table \ref{perf_table}), as well as our previous experimental results on 
-%software process artifact trails \cite{android}.
+Ultimately, the algorithm compares a set of subsequences extracted from an unlabeled 
+time series with a weighted set of all characteristic subsequences representing the whole 
+of a training class. 
+Thus, an unknown time series is classified by its similarity not to a given number of 
+``neighbors'' (as in kNN or BOP classifiers), or to a fixed number of characteristic features 
+(as in shapelet-based classifiers), but by the combined similarity of its subsequences to 
+all known discriminative patterns found in a whole class.
 
 \section{Results} \label{results}
-We have proposed a novel algorithm for time series classification based on SAX
-approximation of time series and Vector Space Model called SAX-VSM. Here, we present 
-a range of experiments assessing its performance in classification and clustering and show
-its ability to provide insight into classification results.
+I have proposed a novel algorithm for time series classification based on SAX
+approximation of time series and Vector Space Model called SAX-VSM. 
+In this section I present a range of experiments assessing its performance and showing
+its ability to provide an insight into classification results.
 
 \subsection{Analysis of the classification accuracy}
-To evaluate our approach, we selected thirty three data sets. Majority of the data sets was taken 
-from the UCR time series repository \cite{citeulike:12563599}, the Ford data set was downloaded from 
-IEEE World Congress on Computational Intelligence website \cite{citeulike:12563754}, the 
-ElectricDevices data set was downloaded from supporting website for \cite{citeulike:11345338}. 
-Overall, SAX-VSM classification performance was found to be at the level of 
-1NN classifiers based on Euclidean distance, DTW, or BOP, and a shapelet-tree. 
-This result is not surprising taking in account ``No Free Lunch theorems'' \cite{citeulike:404286}, 
-which assert, that there will not be a single dominant classifier for all TSC problems.
+I have evaluated SAX-VSM on 45 datasets, whose majority was taken from benchmark 
+data disseminated through UCR repository \cite{ucr}. 
 
-Table \ref{perf_table} compares the performance of SAX-VSM and four competing 
-classifiers: two state-of-the-art 1NN classifiers based on Euclidean distance and DTW, 
-the classifier based on the recently proposed Fast-Shapelets technique \cite{citeulike:12563493},
-and the classifier based on BOP \cite{citeulike:10525778}. 
-We selected these particular techniques in order to position SAX-VSM 
-in terms of accuracy and interpretability. 
-The presented comparison data sets selection is limited to the number 
-of previously published or provided by the authors benchmark results for all of 
-four competing classifiers. 
-The performance of SAX-VSM for the rest of the data sets \cite{citeulike:12563560}.
+The table \ref{perf_table1} compares the classification accuracy of SAX-VSM with 
+19 previously published performance results of four competing classifiers: two state-of-the-art 
+1NN classifiers based on Euclidean distance and DTW, 
+the classifier based on recently proposed Fast-Shapelets technique \cite{fast-shapelets}, 
+and the classifier based on BOP \cite{bag_patterns}.
+I have selected these particular techniques in order to position SAX-VSM in terms of 
+classification accuracy and interpretability. 
 
-In our evaluation, we followed train/test split of the data (exactly as provided by UCR or other
-sources). We exclusively used train data in cross-validation experiments for selection of SAX
-parameters and numerosity reduction strategy using our DIRECT implementation. 
-Once selected, the optimal set of parameters was used to assess SAX-VSM classification 
-accuracy which is reported in the last column of the Table \ref{perf_table}.
+The table \ref{perf_table2} compares the classification accuracy of SAX-VSM with 
+1NN classifiers based on Euclidean distance and DTW on the rest 26 datasets. 
 
-%\enlargethispage{0.5cm} 
+In the evaluation, I followed the train/test data split as provided by UCR. Train data were used 
+in cross-validation experiments for optimization of SAX parameters using \mbox{DIRECT}. 
+Once selected, optimal parameters were used to assess SAX-VSM classification 
+accuracy on test data which is reported in the last column of Tables \ref{perf_table1} and \ref{perf_table2}.
+
 \begin{footnotesize}
 \begin{table}[t]
 \caption{\bf Classifiers error rates comparison.}
- \label{perf_table}
+ \label{perf_table1}
 \centering
-\begin{tabularx}{\linewidth}{@{} l *6X @{}}\toprule[1pt]
-%\bf Data set &\bf 1NN-Euclidean &\bf 1NN-DTW &\bf Shapelet Tree &\bf  Shapelet SVM &\bf 
-%SAX-VSM\\\midrule
-%SyntheticControl  & 0.120   & \textbf{0.007}  & 0.057     & 0.127            & 0.010 \\
-%Adiac             & 0.389   & 0.396           & 0.700        & 0.762         & \textbf{0.381}\\
-%Beef              & 0.467   & 0.467           & 0.500        & 0.133         & \textbf{0.033}\\
-%ChlorineConcentration  & 0.350 & 0.350        & 0.412        & 0.439         & \textbf{0.332} \\
-%Coffee            & 0.250   & 0.180           & 0.036     & \textbf{0.0}     & \textbf{0.0} \\
-%ECG               & 0.120   & 0.230           & 0.149     & \textbf{0.007}   & 0.09 \\
-%ElectricDevices   & 0.913   & 0.913           & 0.451     & 0.758            & \textbf{0.329} \\
-%FaceFour          & 0.216   & 0.170           & 0.159     & 0.023            & \textbf{0.0} \\
-%Gun Point         & 0.087   & 0.093           & 0.107     & \textbf{0.0}     & 0.007 \\
-%Lightning7        & 0.425   & \textbf{0.274}  & 0.507     & 0.301            & 0.301 \\
-%SonyAIBO          & 0.306   & 0.274           & 0.155     & \textbf{0.133}   & 0.176 \\
-%Trace             & 0.240   & \textbf{0.0}    & 0.020     & 0.020            & \textbf{0.0} \\
-
-%\bf Data set &\bf \#Classes &\bf 1NN-Euclidean &\bf 1NN-DTW &\bf Shapelet Tree &\bf  BOP &\bf 
-%SAX-VSM\\\midrule
-Data set & Nb. of classes & 1NN-Euclidean & 1NN-DTW & Fast Shapelet Tree &  Bag Of \mbox{Patterns}
-& SAX-VSM\\\midrule
-%50words           &50  & 0.369   & 0.310           &
-Adiac             &37  & 0.389   & 0.396           & 0.515        & 0.432         & \textbf{0.381}\\
-Beef              &5   & 0.467   & 0.467           & 0.447        & 0.400         & \textbf{0.033}\\
-%ChlorineConcentration  & 0.350 & 0.350        & 0.412        & n/a     & \textbf{0.332} \\
-CBF             & 3   & 0.148    & 0.003     & 0.053    & 0.013 & \textbf{0.002} \\
-Coffee           &2    & 0.250   & 0.180           & 0.067     & 0.036     & \textbf{0.0} \\
-ECG200          &2   & \textbf{ 0.120 }  & 0.230           & 0.227     & 0.140   & 0.140 \\
-%ElectricDevices   & 0.913   & 0.913           & 0.451     & n/a            & \textbf{0.329} \\
-FaceAll        &14     & 0.286   & \textbf{0.192}  & 0.402     & 0.219   & 0.207\\
-FaceFour        &4     & 0.216   & 0.170           & 0.089     & 0.011   & \textbf{0.0} \\
-Fish               &7   & 0.217   & 0.167           & 0.197    & 0.074   & \textbf{0.017} \\
-Gun-Point      &2      & 0.087   & 0.093           & 0.060     & \textbf{0.002}     & 0.007 \\
-Lightning2     &2      & 0.246   & \textbf{0.131}  & 0.295     & 0.164            & 0.196 \\
-Lightning7     &7      & 0.425   & \textbf{0.274}  & 0.403     & 0.466            & 0.301 \\
-Olive Oil      &4   & 0.133   & 0.133  & 0.213     & 0.133            & 0.100\\
-OSU Leaf      &6   & 0.483   & 0.409  & 0.359     & 0.236            & \textbf{0.107} \\
-%SonyAIBO          & 0.306   & 0.274           & \textbf{0.155}     & n/a-   & 0.176 \\
-Syn.Control  &6   & 0.120   & \textbf{0.007}  & 0.081     & 0.037            & 0.010 \\
+\begin{tabularx}{\linewidth}{@{} l *6X @{}}
+\hline
+Dataset & \mbox{Num. of} classes & 1NN-Euclidean & 1NN-DTW & Fast Shapelets &  \mbox{Bag Of} \mbox{Patterns}
+& SAX-VSM\\
+\hline
+Adiac        &37  & 0.389   & 0.391  & 0.514  & 0.432  & \textbf{0.381}\\
+Beef         &5   & 0.467   & 0.467  & 0.447  & 0.433  & \textbf{0.033}\\
+CBF         & 3  & 0.148    & 0.003  & 0.053    & 0.013 & \textbf{0.002} \\
+Coffee       &2    & 0.250   & 0.180  & 0.067     & 0.036     & \textbf{0.0} \\
+ECG200     &2   & \textbf{0.120}  & 0.230  & 0.227     & 0.140   & 0.140 \\
+FaceAll      &14  & 0.286   & \textbf{0.192}  & 0.402     & 0.219   & 0.207\\
+FaceFour    &4   & 0.216   & 0.170  & 0.089     & 0.011   & \textbf{0.0} \\
+Fish         &7   & 0.217   & 0.167  & 0.197    & 0.074   & \textbf{0.017} \\
+Gun-Point    &2   & 0.087   & 0.093  & 0.060     & 0.027     & \textbf{0.007} \\
+Lightning2    &2   & 0.246   & \textbf{0.131}  & 0.295  & 0.164  & 0.196 \\
+Lightning7    &7   & 0.425   & \textbf{0.274}  & 0.403  & 0.466  & 0.301 \\
+Olive Oil     &4   & 0.133   & 0.133  & 0.213     & 0.133  & \textbf{0.100}\\
+OSU Leaf    &6   & 0.483   & 0.409  & 0.359     & 0.236  & \textbf{0.107} \\
+Syn.Control  &6   & 0.120   & \textbf{0.007}  & 0.081     & 0.037  & 0.010 \\
 Swed.Leaf   &15  & 0.213   & 0.210 & 0.270 & \textbf{0.198} & 0.251 \\
-Trace            &4   & 0.240   & \textbf{0.0}    & 0.002     & \textbf{0.0} & \textbf{0.0} \\
-Two patterns     &4   & 0.090   & \textbf{0.0}    & 0.113   & 0.129      & 0.004 \\
-Wafer            &2    & 0.005   & 0.020     & 0.004  & 0.003 & \textbf{0.0006} \\
-Yoga             &2    & 0.170   & \textbf{0.164}  & 0.249 & 0.170 & \textbf{0.164} \\
-\bottomrule[1pt]
+Trace       &4   & 0.240   & \textbf{0.0}    & 0.002  & \textbf{0.0} & \textbf{0.0} \\
+Two patterns &4   & 0.090   & \textbf{0.0}    & 0.113   & 0.129      & 0.004 \\
+Wafer        &2    & 0.005   & 0.020     & 0.004  & 0.003 & \textbf{0.0006} \\
+Yoga        &2    & 0.170   & \textbf{0.164}  & 0.249 & 0.170 & \textbf{0.164} \\
+\hline
 \end{tabularx}
 \end{table}
-%\hline
-%\end{tabular}
 \end{footnotesize}
 
 \subsection{Scalability analysis}
@@ -710,7 +665,7 @@ statistically significant difference in accuracy (Fig. \ref{fig:precision-runtim
 As per the running time cost, due to the comprehensive training, SAX-VSM was found to be more
 expensive than 1NN Euclidean classifier on small training sets, but outperformed 1NN on large
 training sets.
-However, SAX-VSM allows to perform training offline and load \textit{tf$\ast$idf} weight vectors
+However, SAX-VSM allows to perform training offline and load $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ weight vectors
 when needed. If this option can be utilized, our method performs classification significantly
 faster than 1NN Euclidean classifier (Fig. \ref{fig:precision-runtime}, right).
 
@@ -720,7 +675,7 @@ As expected, with the grows of a training set size, the curve for a total number
 words and curves for dictionary sizes of each of CBF classes reflected a significant saturation 
 (Fig. \ref{fig:venn}, left). For the largest of training sets - one million instances of each
 class - the size of the dictionary peaked at 67'324 of distinct words (which is less than 10\% of
-all possible words of length 7 from an alphabet of 7 letters), and the longest tf$\ast$idf vector 
+all possible words of length 7 from an alphabet of 7 letters), and the longest $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ vector 
 accounted for 23'569 values (Fig. \ref{fig:venn}, right). In our opinion, this result reflects two
 specificities: the first is that the diversity of words which are possible to encounter in 
 CBF dataset is quite limited by its classes configuration and by our choice of SAX 
@@ -757,7 +712,7 @@ of them.
 
 \subsection{Robustness to noise}
 In our experimentation with many data sets, we observed, that the growth of a 
-dimensionality of \textit{tf$\ast$idf} weight vectors continuously follows the growth of a
+dimensionality of $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ weight vectors continuously follows the growth of a
 training set size, which indicates that SAX-VSM is actively learning from class variability.
 This observation, and the fact that a weight of each of the overlapping SAX words is 
 contributing only a small fraction to a final similarity value, prompted an idea that 
@@ -814,7 +769,7 @@ Contrary, SAX-VSM extracts and weights all patterns at once, without any added c
 be the only choice for interpretable classification in many class problems.
 
 \subsubsection{Heatmap-like visualization}
-Since SAX-VSM builds tf$\ast$idf weight vectors using all subsequences extracted from a
+Since SAX-VSM builds $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ weight vectors using all subsequences extracted from a
 training set, it is possible to find out the weight of any arbitrary selected subsequence.
 This feature enables a novel visualization technique that can be used to gain an immediate
 insight into the layout of ``important'' class-characterizing subsequences as shown at Figure
@@ -826,7 +781,7 @@ insight into the layout of ``important'' class-characterizing subsequences as sh
    \caption{An example of the heatmap-like visualization of subsequence ``importance''
    to a class identification. 
    Here, for three CBF time series from a training set, a color value 
-   of each point was obtained by combining tf$\ast$idf weights of all patterns 
+   of each point was obtained by combining $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ weights of all patterns 
    which cover the point.
    If a pattern was found in a SAX-VSM-built dictionary corresponding to the 
    time-series class, we added its weight, if, however, a pattern was found in 
@@ -949,7 +904,7 @@ produces a nested hierarchy of clusters offering a great data visualization powe
 Previously, it was shown that the bag-of-patterns time series representation and Euclidean distance
 provide a superior clustering performance\cite{citeulike:10525778}. 
 For comparison, we performed similar experiments which differ in time series representation and
-distance metric - we relied on \textit{tf$\ast$idf} weight vectors and cosine similarity. 
+distance metric - we relied on $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ weight vectors and cosine similarity. 
 Affirming the previous work, we found, that the combination of SAX and Vector space model
 outperforms classical shape-based distance metrics. 
 For example, figure \ref{fig:hc} depicts the result of hierarchical clustering of a subset of
