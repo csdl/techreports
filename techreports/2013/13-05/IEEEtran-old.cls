@@ -3739,7 +3739,7 @@ between column types.}%
 
 \def\IEEEkeywords{\normalfont
     \if@twocolumn
-      \@IEEEabskeysecsize\bfseries\textit{\IEEEkeywordsname}-\relax
+      \@IEEEabskeysecsize\bfseries\textit{\IEEEkeywordsname}---\relax
     \else
       \begin{center}\@IEEEabskeysecsize\textbf{\IEEEkeywordsname}\end{center}\quotation\@IEEEabskeysecsize
     \fi\@IEEEgobbleleadPARNLSP}
