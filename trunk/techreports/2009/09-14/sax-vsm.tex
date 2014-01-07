@@ -102,7 +102,7 @@ series which are obtained from \textit{overlapping subsequences}. Usually, overl
 
 \begin{figure}[tbp]
    \centering
-   \includegraphics[height=45mm]{sliding-window.eps}
+   \includegraphics[width=130mm]{sliding-window.eps}
    \caption{An illustration of the sliding window technique from \cite{citeulike:2821475}: a time series T of length 128, 
    the subsequence $C67$ (of length $m$=16), and the first 8 overlapping subsequences extracted by a sliding window.}
    \label{fig:sliding_window}
@@ -130,7 +130,7 @@ Subsection \ref{bow_representation} reviews bag of words abstraction,
 terms weighting and Vector Space Model are discussed in the Subsection \ref{vsm}. 
 
 
-\section{Symbolic Aggregate approXimation (SAX)}\label{section-sax}
+\subsection{Symbolic Aggregate approXimation (SAX)}\label{section-sax}
 Discretization of real data into a small number of finite values is highly desirable and sometimes required for machine learning 
 algorithms. In addition, an effective dimensionality reduction is often vital for the ability to process datasets reflecting 
 many real life phenomenas. Thus, probably hundreds of techniques currently developed and available for researchers dealing 
@@ -506,9 +506,13 @@ For two vectors $\mathbf{a}$ and $\mathbf{b}$ that is:
 \frac{ \sum\limits_{i=1}^{n}{a_{i} \times b_{i}} }{ \sqrt{\sum\limits_{i=1}^{n}{(a_{i})^2}} \times \sqrt{\sum\limits_{i=1}^{n}{(b_{i})^2}}}
 \end{equation} 
 
-\section{SAX-VSM classification algorithm} \label{sax-vsm}
-As many other classification techniques, SAX-VSM consists of two phases - 
-training and classification. 
+\subsection{SAX-VSM implementation} \label{sax-vsm}
+As many other time series structure-based classification techniques, SAX-VSM consists of two 
+phases - training and classification. Within the training phase, SAX-VSM discretizes all labeled time-series
+with SAX and builds $N$ bags of SAX words, where $N$ is the number of classes. 
+Then, it applies $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ weighting scheme which yields $N$ 
+weight vectors used in classification based on Cosine similarity.
+
 
 \begin{figure}[t]
    \centering
@@ -524,7 +528,7 @@ training and classification.
    \label{fig:sax-vsm_overview}
 \end{figure}
 
-\subsection{Training phase}
+\subsubsection{Training phase}
 The training starts by transforming the labeled time series into SAX representation
 configured by three parameters: the sliding window length (\textit{W}), 
 the number of PAA segments per window (\textit{P}), 
@@ -549,7 +553,7 @@ bags of SAX words. Once built and weighted with $\text{\textbf{tf}}\ast\text{\te
 the corpus is discarded - only a resulting set of $N$ real-valued weight vectors 
 is retained for classification.
 
-\subsection{Classification}
+\subsubsection{Classification}
 In order to classify an unlabeled time series, SAX-VSM transforms it into a
 terms frequency vector using exactly the same sliding window technique 
 and SAX parameters that were used for training. 
@@ -635,10 +639,51 @@ approximation of time series and Vector Space Model called SAX-VSM.
 In this section I present a range of experiments assessing its performance and showing
 its ability to provide an insight into classification results.
 
-\begin{table}[ht!]
+
+\begin{table}[t!]
+\caption{\bf State of the art 1NN and interpretable classifiers error rates comparison.}
+\vspace{0.4cm}
+ \label{data_typetable1}
+\centering
+{\setlength{\extrarowheight}{2pt}%
+{\footnotesize
+\begin{tabularx}{\linewidth}{@{} l l @{}}
+\hline
+Class type Dataset & Datasets \\[0.5ex]
+\hline
+Image data & 50 words, Adiac, Yoga , Face Four, Face all, Faces UCR, Fish, \\
+ & Swedish Leaf, OSU Leaf, Arrow Head, Shield, Diatom, Medical Images \\[0.5ex]
+Motion data & Gun-Point, Cricket, Cricket-NEW, Sony AIBO walk, Pass Graph, \\ 
+ & uWaveGesture, \\[0.5ex]
+Spectroscopy data & Beef, Coffee, Olive Oil, Wheat, \\[0.5ex]
+Synthetic datasets & Cylinder-Bell-Funnel, Synthetic Control, Two Patterns, Mallat \\[0.5ex]
+Energy consumption & Italy Power Demand, Electrical Devices \\[0.5ex]
+Medical measurements & ECG200, ECG 5 days, Medical images, ECG Thorax \\[0.5ex]
+Other measurements obtained by instruments & Trace, Lightning 2, Lightning 7, Wafer, Ford A, Ford B, \\
+ & Chlorine concentration, Starlight \\[0.5ex]
+\hline
+\end{tabularx}
+}}
+\end{table}
+
+\subsection{Analysis of the classification accuracy}
+I have evaluated SAX-VSM on 45 datasets, whose majority was taken from the benchmark 
+data disseminated through UCR repository \cite{ucr}. These datasets represent a variety 
+of data which is usually represented as the time series: the measurements obtained with instruments
+
+The table \ref{perf_table1} compares the classification accuracy of SAX-VSM with 
+19 previously published performance results of four competing classifiers: two state-of-the-art 
+1NN classifiers based on Euclidean distance and DTW, 
+the classifier based on recently proposed Fast-Shapelets technique \cite{fast-shapelets}, 
+and the classifier based on BOP \cite{bag_patterns}.
+I have selected these particular techniques in order to position SAX-VSM in terms of 
+classification accuracy and interpretability. 
+
+\begin{table}[t!]
 \caption{\bf State of the art 1NN and interpretable classifiers error rates comparison.}
  \label{perf_table1}
 \centering
+{\setlength{\extrarowheight}{1.5pt}%
 {\footnotesize
 \begin{tabularx}{\linewidth}{@{} l *6X @{}}
 \hline
@@ -666,20 +711,8 @@ Wafer        &2    & 0.005   & 0.020     & 0.004  & 0.003 & \textbf{0.0006} \\
 Yoga        &2    & 0.170   & \textbf{0.164}  & 0.249 & 0.170 & \textbf{0.164} \\
 \hline
 \end{tabularx}
-}
+}}
 \end{table}
-
-\subsection{Analysis of the classification accuracy}
-I have evaluated SAX-VSM on 45 datasets, whose majority was taken from benchmark 
-data disseminated through UCR repository \cite{ucr}. 
-
-The table \ref{perf_table1} compares the classification accuracy of SAX-VSM with 
-19 previously published performance results of four competing classifiers: two state-of-the-art 
-1NN classifiers based on Euclidean distance and DTW, 
-the classifier based on recently proposed Fast-Shapelets technique \cite{fast-shapelets}, 
-and the classifier based on BOP \cite{bag_patterns}.
-I have selected these particular techniques in order to position SAX-VSM in terms of 
-classification accuracy and interpretability. 
 
 The table \ref{perf_table2} compares the classification accuracy of SAX-VSM with 
 1NN classifiers based on Euclidean distance and DTW on the rest 26 datasets. 
@@ -690,15 +723,18 @@ Once selected, optimal parameters were used to assess SAX-VSM classification
 accuracy on test data which is reported in the last column of Tables \ref{perf_table1} 
 and \ref{perf_table2}.
 
-\begin{table}[h!]
+\newpage
+
+\begin{table}[t!]
 \caption{\bf State of the art 1NN classifiers and SAX-VSM classification accuracy comparison.}
  \label{perf_table2}
 \centering
+{\setlength{\extrarowheight}{1pt}%
 {\scriptsize
 \begin{tabularx}{\linewidth}{@{} l *7X @{} l}
 %\begin{tabularx}{\linewidth}{l c c c c c c c l}
 \hline
-Dataset & \mbox{Num. of} classes & Training set size & Testing set size & Series length & 1NN-Euclidean & 1NN-DTW & SAX-VSM & Discretization \\
+Dataset & \mbox{Num. of} classes & Training set size & Testing set size & Series length & 1NN-Euclidean & 1NN-DTW & SAX-VSM & Discretization parameters \\
 \hline
 Synthetic Control & 6 & 300 & 300 & 60 & 0.12 & 0.007 & 0.0133 & 45,7,5,exact \\
 CBF & 3 & 30 & 900 & 128 & 0.148 & 0.003 & 0.0011 & 55,4,12,nored \\
@@ -747,45 +783,90 @@ ECG Thorax1 & 42 & 1800 & 1965 & 750 & 0.171 & 0.209 & 0.2340 & 44,15,14,exact \
 ECG Thorax2 & 42 & 1800 & 1965 & 750 & 0.120 & 0.135 & 0.1450 & 44,15,14,exact \\
 \hline
 \end{tabularx}
-}
+}}
 \end{table}
 
-\subsection{Scalability analysis}
-For synthetic data sets, it is possible to create as many instances as one needs for
-experimentation.
-We used CBF \cite{citeulike:12563781} in order to investigate and compare the performance of SAX-VSM and 1NN
-Euclidean classifier on increasingly large data sets.
+\newpage
 
-In one series of experiments, we varied a training size from ten to one thousand, while test data
-set size remained fixed to ten thousands instances. 
+\subsection{Scalability analysis}
+For synthetic data sets, it is possible to create as many instances as one needs for experimentation.
+I have used Cylinder-Bell-Funnel \cite{citeulike:12563781} and Two Patterns \cite{} synthetic datasets in 
+order to investigate and compare the performance of SAX-VSM and 1NN Euclidean classifier on increasingly 
+large data sets similarly to \cite{citeulike:10358271}.
+
+\begin{figure}[t!]
+   \centering
+   \includegraphics[width=140mm]{figures/cbf.ps}
+   \caption{An example of three classes from CBF dataset.}
+   \label{fig:cbf}
+\end{figure}
+
+\subsubsection{Cylinder-Bell-Funnel (CBF) dataset}
+This problem was introduced in \cite{} and used in a number of studies for illustration of classifier performance.
+The goal is to separate three classes of objects: cylinder (c), bell (b), and funnel (f).  Figure \ref{fig:cbf} 
+shows examples of each class which are characterized by a specific pattern. 
+The Cylinder class is characterized by a plateau, the Bell by an increasing liner ramp followed by a sharp drop, 
+while the Funnel is characterized by sharp increase followed by gradual decrease. The characteristic feature start,
+its duration (length of the plateau and ramps) and the amplitude are randomized. The Gaussian noise is also added 
+to each time-series point:
+\begin{equation}
+\label{eq:cbf}
+\begin{split}
+c(t)=(6+\eta)\cdot\chi_{[a,b]}(t)+\epsilon(t) \\
+b(t)=(6+\eta)\cdot\chi_{[a,b]}(t)\cdot(t-a)/(b-a)+\epsilon(t) \\
+f(t)=(6+\eta)\cdot\chi_{[a,b]}(t)\cdot(b-t)/(b-a)+\epsilon(t) \\
+\text{where} \\
+\chi_{[a,b]}=\begin{cases}
+0,t < a \\
+1,a\leq t\leq b\\
+0,t > b \end{cases}
+\end{split}                                                      
+\end{equation}
+where $\eta$ and $\epsilon(t)$ are drawn from a standard normal distribution $N(0,1)$, $a$ is an integer 
+drawn uniformly from $[16,32]$ and $b-a$ is drawn uniformly from $[32,96]$.
+
+\subsubsection{Two patterns dataset}
+The CBF dataset represents a classical problem of time-series classification where class assignment is 
+made by detection of single simple (global) pattern. 
+
+In one series of experiments, I varied a training size from ten to one thousand, while test data set size 
+remained fixed to ten thousands instances. 
 For small training data sets, SAX-VSM was found to be significantly more accurate than 1NN Euclidean
-classifier. However, by the time we had more than 500 time series in our training set, there was no
+classifier. However, by the time there were more than 500 time series in a training set, there was no
 statistically significant difference in accuracy (Fig. \ref{fig:precision-runtime}, left). 
 As per the running time cost, due to the comprehensive training, SAX-VSM was found to be more
 expensive than 1NN Euclidean classifier on small training sets, but outperformed 1NN on large
 training sets.
-However, SAX-VSM allows to perform training offline and load $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ weight vectors
-when needed. If this option can be utilized, our method performs classification significantly
+However, SAX-VSM allows to perform training offline and load $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ 
+weight vectors when needed. If this option can be utilized, our method performs classification significantly
 faster than 1NN Euclidean classifier (Fig. \ref{fig:precision-runtime}, right).
 
-In another series of experiments we investigated the scalability of our algorithm with
+\begin{figure}[t!]
+   \centering
+   \includegraphics[width=140mm]{figures/funnels.ps}
+   \caption{An example of a variation in Funnel class.}
+   \label{fig:funnel}
+\end{figure}
+
+In another series of experiments I have investigated the scalability of the algorithm with
 unrealistic training set sizes - up to one million of instances of each of CBF classes.
 As expected, with the grows of a training set size, the curve for a total number of distinct SAX
 words and curves for dictionary sizes of each of CBF classes reflected a significant saturation 
 (Fig. \ref{fig:venn}, left). For the largest of training sets - one million instances of each
 class - the size of the dictionary peaked at 67'324 of distinct words (which is less than 10\% of
-all possible words of length 7 from an alphabet of 7 letters), and the longest $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ vector 
-accounted for 23'569 values (Fig. \ref{fig:venn}, right). In our opinion, this result reflects two
+all possible words of length 7 from an alphabet of 7 letters), 
+and the longest $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ vector 
+accounted for 23'569 values (Fig. \ref{fig:venn}, right). In my opinion, this result reflects two
 specificities: the first is that the diversity of words which are possible to encounter in 
-CBF dataset is quite limited by its classes configuration and by our choice of SAX 
-parameters (smoothing). 
+CBF dataset is quite limited by its classes configuration and by the choice of SAX parameters 
+(smoothing). 
 The second specificity is that IDF (Inverse Document Frequency, Equation \ref{formula:idf})
 efficiently limits the growth of dictionaries by eliminating those words, which are observed in all
 of them.
 
-\begin{figure}[t]
+\begin{figure}[t!]
    \centering
-   \includegraphics[width=140mm]{figures/precision-runtime.eps}
+   \includegraphics[width=135mm]{figures/precision-runtime.eps}
    \caption{Comparison of classification precision and run time of SAX-VSM and 1NN 
    Euclidean classifier on CBF data. SAX-VSM performs significantly better with limited 
    amount of training samples (left panel). While SAX-VSM is faster in time series 
@@ -794,14 +875,15 @@ of them.
    \label{fig:precision-runtime}
 \end{figure}
 
+
 %dictionary of the
 %with While it grows rapidly at the beginning, once
 %the dictionary is saturated, growth tend to slow down (left panel of Figure \ref{fig:corrupted}). 
 %Nevertheless, by adjusting alphabet and PAA sizes it is possible to keep the number of terms
 %significantly large. 
-\begin{figure}[b]
+\begin{figure}[h!]
    \centering
-   \includegraphics[width=140mm]{figures/Bubbles.eps}
+   \includegraphics[width=135mm]{figures/Bubbles.eps}
    \caption{Left panel: illustration of dictionaries size evolution for CBF with
    increasingly large training set size. 
    Right panel: distribution of SAX terms in CBF corpus for training set of 
@@ -847,6 +929,18 @@ training set size, which we varied from five to one thousand.
 The \textit{SAX-VSM Opt} curve at Fig.\ref{fig:corrupted} (Right) depicts the case
 with fifty training series when the sliding window size was decreased inversely proportionally 
 to the growth of a signal loss.
+
+
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=140mm]{figures/precision-synt.ps}
+   \caption{Comparison of classification precision and run time of SAX-VSM and 1NN 
+   Euclidean classifier on CBF data. SAX-VSM performs significantly better with limited 
+   amount of training samples (left panel). While SAX-VSM is faster in time series 
+   classification, its performance is comparable to 1NN Euclidean classifier when 
+   training time is accounted for (right panel).}
+   \label{fig:precision-runtime}
+\end{figure}
 
 \subsection{Interpretable classification}
 While the classification performance results in previous sections show that SAX-VSM 
