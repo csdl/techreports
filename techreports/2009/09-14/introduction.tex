@@ -2,13 +2,13 @@
 \textit{The central issue addressed in this dissertation is the possibility of recurrent 
 behaviors discovery from publicly available software process artifacts. 
 I have explored an approach to this problem based on the transformation of artifact trails into 
-time series and application of data-mining technique based on finding characteristic features which 
-are related to recurrent behaviors. 
-This thesis presents results of my exploratory study consisting of two parts: 
-a novel algorithm for interpretable time series classification that enables finding 
-and ranking of class-characteristic features, 
-and the results of few case studies, where I have explored the algorithm's applicability to the 
-problem of recurrent behaviors discovery from public software process artifacts.}
+time series and the application of data-mining technique based on finding of characteristic 
+patterns which are related to recurrent behaviors. 
+This thesis presents results of this exploratory study consisting of two parts: 
+a novel algorithm for interpretable time series classification that enables finding and 
+ranking of class-characteristic patterns 
+and the assessment of the algorithm's applicability to the problem of recurrent behaviors 
+discovery from public software process artifacts based on case studies.}
 
 \textit{The terms used throughout the thesis are defined in the Section \ref{sec_terminology}. 
 Problem's background is given in Section \ref{sec_background}. 
@@ -19,31 +19,28 @@ and product improvement based on continuous measurements and introduces software
 Section \ref{sec_research_hypothesis} presents the research hypothesis.
 Section \ref{sec_knowledge_discovery} provides introduction into the problem of knowledge discovery 
 from time-series.
-Section \ref{section_trajectory_definition} connects two research areas and provides definitions.
 Section \ref{section_contributions} enumerates main contributions of the thesis, 
 while section \ref{section_organization} explains the thesis organization.}
 
 \section{Basic terminology}\label{sec_terminology}
 \begin{defn}\label{def_process}
 A \textbf{\textit{Software Process}} defines resources, artifacts, but most importantly a set
-of activities performed in order to design, develop, and maintain software systems.
+of activities that are performed in order to design, to develop, and to maintain software systems.
 \end{defn}
 Examples of such activities include requirements collection and creation of UML diagrams, 
-coding, system integration tests, etc. The intent behind a software process is to provide a 
-control over software development by implementing a global strategy and by structuring
+source code writing, system testing, and others. The intent behind a software process is to provide 
+the control over software development effort by implementing a global strategy and by structuring
 and coordinating human activities in order to achieve the \textit{goal} - to deliver a functional
 software system on time and under the budget. 
 
 \begin{defn}\label{def_process_desc}
 A \textbf{\textit{Process Description}} is any sort of written process description defining 
-some or all of needed resources, artifacts, actions and behaviors intended for development 
-of a software system.
+some or all of needed resources, artifacts, actions, activities and their intended behaviors.
 \end{defn}
 
 \begin{defn}\label{def_process_model}
-A \textbf{\textit{Process Model}} is a complete process description in some formal language 
-that is mathematically unambiguous. Completeness of a model guarantees a rigorous specification
-that is ready to be executed.
+A \textbf{\textit{Process Model}} is a complete, unambiguous process description that guarantees 
+a rigorous specification that is ready to be executed.
 \end{defn}
 
 \begin{defn}\label{def_metrics}
@@ -51,23 +48,23 @@ A \textbf{\textit{Software Metrics}} is a characteristic of a software system or
 objectively measured.
 \end{defn}
 Examples of software product metrics include the size of a software system measured in lines of code (LOC) or 
-in functional points (FP), and the number of defects discovered in a delivered system; 
-examples of software process metrics include the velocity of a software process called ``churn'' which is the 
-amount of LOC added per day, the response time to fix an issue, and the ``technical debt'', 
+in functional points (FP), and the number of defects discovered in a delivered system. 
+Examples of software process metrics include the velocity of a software process called ``churn'' that 
+measures the amount of LOC changed per day, the response time to fix an issue, and the ``technical debt'', 
 that measures deterioration of the code quality over time. 
-In addition, both product and process metrics, can be used to derive high-level software project metrics including 
-cost, schedule, and productivity.
+Product and process metrics, can be also used to derive high-level software project metrics including cost, 
+schedule, and productivity.
 
 \begin{defn}\label{def_artifact}
 A \textbf{\textit{Software Artifact}} is one of numerous byproducts of a software process - a use-case, 
 an UML class diagram, a change record, or a bug report. 
 \end{defn}
-Artifacts are not only produced by a processes, but typically re-used within the process to support 
-software development activities and to document the resulting software system.
+Artifacts are not only produced by a process, but often re-used within the process to support 
+software development activities and to document the resulting software.
 
 \begin{defn}\label{def_behavior}
-A \textbf{\textit{recurrent behavior}}, in context of software process, defines a \textit{frequent 
-(i.e. supported by a numerous evidence) mannerism} in which a developer, or a team, conduct their everyday work.
+A \textbf{\textit{recurrent behavior}}, in context of software process, defines a \textit{frequent mannerism} 
+in which developers, or  teams, perform their software processes. 
 \end{defn}
 
 %
@@ -80,62 +77,51 @@ A project's development and maintenance activities are usually carried out by ge
 distributed teams and individuals. The development pace, the experience, and the structure of the 
 development team continuously change with project progression and as developers joining and leaving. 
 When combined with schedule and requirements adjustments, these create numerous difficulties 
-for developers, users, and stakeholders, ultimately affecting the project success \cite{citeulike:2207657}. 
+for stakeholders, developers, and users, ultimately affecting the project success \cite{citeulike:2207657}. 
 
 This software development complexity phenomena was identified in 1968 as ``Software crisis'' 
 \cite{naur_crisis_68}, and was addressed by bringing the research and the practice of software development 
 (or as it was called ``programming'') under the umbrella of Engineering - in an effort to provide 
 the control over the process of software development. 
-Following the engineering paradigm, numerous models of software design and development 
-process, known as \textit{software processes}, were proposed \cite{citeulike:10002165}.
-Some of these were formalized and evolved into industrial standards for software development processes 
-such as CMM \textbf{cite}, ISO, PSP, and others \cite{citeulike:5043104}. 
-However, in spite of this effort, industrial software  development remains error-prone and more 
-than half of all commercial software development projects ending up failing or being very poorly executed 
+Following the engineering paradigm, numerous methodologies of software design and development 
+processes, known as \textit{software processes}, were proposed \cite{citeulike:10002165}.
+Some of these were formalized and evolved into Software Process Models - industrial standards for 
+software development such as CMM \cite{citeulike:9962021}, ISO \cite{iso-standard}, 
+PSP \cite{citeulike:8347315}, and others \cite{citeulike:5043104}. 
+
+In spite of this effort, industrial software  development remains error-prone and more than half of all 
+commercial software development projects ending up failing or being very poorly executed 
 (``Chaos Reports'', 2006 \cite{chaos2006}). Some of them are abandoned due to running 
 over budget, some are delivered with such low quality, or so late, that they are useless, and some, 
 when delivered, are never used because they do not fulfill requirements. 
 
-Through the analyses of software project failures, it was acknowledged, that the engineering 
-paradigm might not be the best way to provide a control over software development processes 
-due to the fact that Software engineering is dealing with significantly different from other 
-Engineering fields problems \cite{citeulike:3729379} \cite{citeulike:5203446} \cite{citeulike:2207657}.
+By the analysis of software project failures, it was acknowledged, that the Engineering paradigm 
+may not be an adequate way to provide the control over software development processes 
+due to the fact that Software engineering is dealing with significantly different from other engineering 
+fields problems \cite{citeulike:3729379} \cite{citeulike:5203446} \cite{citeulike:2207657}.
 The chief argument supporting this point of view is the drastic difference in the cost model:
 while in Software Engineering there is almost no cost associated with materials and 
 fabrication, these usually dominate cost in all other Engineering disciplines, but, 
-ironically, Software Engineering is suffering from the costs and challenges associated with 
+ironically, Software Engineering is suffering from cost and challenges associated with 
 continuous re-design of the product and its design processes - the issue that is 
 hardly seen at all in other Engineering areas. 
-In addition, as pointed out by numerous research, the most of engineering-like models are 
-prescriptive and rigid - i.e. they are difficult to tailor to the particular organizational structure,
-to the project specificities and to changing requirements - thus, the degree to which an adopted model 
-structures processes greatly varies between teams and projects and does not guarantee the success \cite{sacchi_2001}. 
-Finally, increasing understanding and appreciation of the human role in software development 
-processes over tools, technologies, and standards, suggests that the human-driven software process 
-aspects are likely to define a software project fate \cite{citeulike:6580825} \cite{citeulike:149387} 
-\cite{1605185} \cite{citeulike:113403} \cite{citeulike:12743107}. 
+In addition, as pointed by numerous studies, engineering-like models are typically prescriptive and rigid -
+they are difficult to adapt to the particular organizational structure, to the project specificities, and to 
+the changing requirements. 
+Thus, the degree to which an adopted model structures processes greatly varies between teams and 
+projects and does not guarantee the success \cite{sacchi_2001}. 
+Finally, an increasing understanding and appreciation of human factors in software development 
+processes over tools, technologies, and standards, suggests that the human-driven software 
+development aspects are likely to define a software project fate \cite{citeulike:6580825} 
+\cite{citeulike:149387} \cite{1605185} \cite{citeulike:113403} \cite{citeulike:12743107}. 
 
-These engineering issues has been addressed in the software development communities practicing 
-alternative to Software Engineering processes, where a number of flexible developer- and user-oriented 
-software processes emerged from academy, hobbyists, and practitioners.
-Among others, Free/Libre/Open-Source Software development model (FLOSS) and the 
-Software Craftsmanship  approaches gained a significant credibility in the community \cite{citeulike:3729379}. 
-While the former \textit{holistic} software process paradigm emphasizes loosely-organized 
-collaboration, high degree of modularity, frequent releases, and effectively removes the boundary 
-between developers and users, the latter, human-centric approach, is built upon the roles of highly 
-motivated skilled individuals \cite{citeulike:262020} \cite{citeulike:2759198}. 
-
-Nevertheless, the same complexity issues affects alternative processes.
-As it was shown, most of FLOSS projects never reach a ``magic'' 1.0 version \cite{citeulike:12480029}. 
-Among others, the great "infant mortality rate" of FLOSS projects was related to a burnout, 
-inability to acquire a critical mass of users, loss of leading developer(s), and forking \cite{richter2007critique}. 
-Software craftsmanship, from other hands, not only challenges developers with technological advances 
-requiring continuous skills improvement, but creates significant cost and effort estimation difficulties for
-stakeholders and project managers \cite{citeulike:11058784}. However, despite to these issues, 
-it was proven, that the user- and developer-centric, disciplined manner of programming, along with the high 
-degree of the software modularization allows to establish software processes that are not only comparable 
-with industrial engineering-like processes in quality, but is capable of delivering of large and 
-reliable software systems.
+However, alternative to Software Engineering developer- and user-centric software processes that are 
+popular in open-source, academic, and hobbyists communities and which address aforementioned issues 
+were also found to be affected by the same complexity issues. 
+Among others, inability to acquire a critical mass of users, loss of leading developer(s), and forking 
+were cited as the main reasons for open-source project failures \cite{richter2007critique}. 
+Similarly, agile and software craftsmanship approaches were shown to create significant difficulties with 
+software project cost and effort estimation \cite{citeulike:12933080}.
 
 Currently, it is widely acknowledged, that there exists no single ``silver bullet'' process which 
 guarantee to bring a software project to success \cite{citeulike:1986013}. 
@@ -225,6 +211,16 @@ mostly due to the  difficulties with human component benefits estimation
 % >> section
 %
 \subsection{Free/Libre/Open Source processes}\label{sec_floss_processes}
+
+. Among others, 
+Free/Libre/Open-Source Software development model (FLOSS) and the Software Craftsmanship 
+approaches gained a significant credibility in the community \cite{citeulike:3729379}. 
+While the former \textit{holistic} software process paradigm emphasizes loosely-organized 
+collaboration, high degree of modularity, frequent releases, and effectively removes the boundary 
+between developers and users, the latter, human-centric approach, is built upon the roles of highly 
+motivated skilled individuals \cite{citeulike:262020} \cite{citeulike:2759198}. 
+
+
 Another phenomenon generating novel software processes is the social movement inspired by the philosophy 
 of source code sharing and its collaborative improvement, that is called called ``free-software movement''. 
 This social phenomenon originating from 1960s was partially formalized in 1983 by Richard Stallman,
@@ -468,7 +464,7 @@ and discusses its performance evaluation based on three case-studies.
 %
 % >> section
 %
-\section{Interpretable time-series classification}\label{section_knowledge_discovery}
+\section{Interpretable time-series classification}\label{sec_knowledge_discovery}
 In data mining, time series are used as a proxy representing a large variety of real-life phenomena 
 in a wide range of fields including, but not limited to physics, medicine, meteorology, music, 
 motion capture, image recognition, signal processing, and text mining. 
