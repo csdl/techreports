@@ -3,23 +3,22 @@ A central issue addressed in this dissertation is the possibility of recurrent b
 from publicly available software process artifacts. 
 
 As recurrent behaviors are considered to be the basic building blocks of any human-driven
-goal-oriented process reflecting the development of more or less fixed ways of dealing 
-with tasks \textit{based on past performance} \cite{neal2012habits} \cite{1903} -- then
+goal-oriented process, reflecting the development of more or less fixed ways of dealing 
+with tasks \textit{based on past performance} \cite{neal2012habits} \cite{1903} -- 
 the ability to discover recurrent behaviors in the context of software development equates 
 to the ability to discover the evolution of characteristic mannerisms in which developers 
 structure their activities, which, in turn, enables the understanding of their software 
-development processes. 
+development processes.  
 
-I have explored an approach to this problem based on 
-the transformation of artifact trails into time series by measurements and 
-on the subsequent application of a novel time-series classification technique,
-that enables characteristic patterns discovery, which, 
-I hypothesize, correspond the recurrent behaviors.
+I have explored an approach to this problem based on the transformation of software artifact trails 
+into time series by measurements and on the subsequent application of a novel time-series 
+classification technique that enables characteristic patterns discovery, which, 
+I hypothesize, correspond to recurrent behaviors.
 
-The dissertation presents results of this exploratory study and consists of two parts: 
-the proposal of a novel interpretable time series classification algorithm and its 
-performance evaluation, and the empirical assessment of the approach applicability to the 
-problem of recurrent behaviors discovery from public software artifacts.
+This dissertation reviews the relevant work, proposes a novel interpretable time series 
+classification algorithm, and presents results of its performance evaluation along with 
+the results of an empirical evaluation of the proposed approach applicability to the problem 
+of recurrent behaviors discovery from public software artifacts.
 
 %\textit{The terms used throughout the thesis are defined in the Section \ref{section_terminology}. 
 %Problem's background is given in Section \ref{section_background}. 
@@ -41,7 +40,7 @@ performed in order to design, to develop, and to maintain software systems.
 Examples of such activities include requirements collection and creation of UML diagrams, 
 source code writing, system testing, and others. The intent behind a software process is to provide 
 the control over software development effort by implementing a global strategy and by structuring
-and coordinating human activities in order to achieve the goal - to deliver a functional
+and coordinating human activities in order to achieve the goal -- to deliver a functional
 software system on time and under the budget. 
 
 %\begin{defn}\label{def_process_desc}
@@ -50,7 +49,7 @@ software system on time and under the budget.
 %\end{defn}
 
 \begin{defn}\label{def_process_model}
-A Software \textbf{\textit{Process Model}} is a complete and unambiguous software process description 
+A \textbf{\textit{Software Process Model}} is a complete and unambiguous software process description 
 that guarantees a rigorous specification ready to be executed.
 \end{defn}
 
@@ -58,14 +57,15 @@ that guarantees a rigorous specification ready to be executed.
 A \textbf{\textit{Software Metric}} is a characteristic of a software or a software process that can be 
 objectively measured.
 \end{defn}
-Similarly to other sciences, measurements in Software Engineering are essential for establishing of systematic 
-research. Examples of software product metrics include the size of a software system measured in lines of code 
+Examples of software product metrics include the size of a software system measured in lines of code 
 (LOC) or in functional points (FP), and the number of defects discovered in a delivered system. 
 Examples of software process metrics include the velocity of a software process called ``churn'', that 
-measures the amount of LOC added per day; the response time to fix an issue; and the ``technical debt'', 
+measures the amount of LOC changed per day, the response time to fix an issue, and the ``technical debt'', 
 that measures deterioration of the code quality over time. 
-Product and process metrics are also important in software project management where they are used in order to 
-derive high-level software project metrics including cost, schedule, and productivity.
+
+Similarly to other sciences, measurements in Software Engineering are essential for establishing of systematic 
+research. Product and process metrics are also important in software project management where they are 
+used in order to derive high-level software project metrics including cost, schedule, and productivity.
 
 \begin{defn}\label{def_artifact}
 A \textbf{\textit{Software Artifact}} is one of numerous products and byproducts of a software process - 
@@ -74,19 +74,16 @@ a use-case, an UML class diagram, a change record, or a bug report.
 Note, that while artifacts play an important role in software processes, where they are used to support 
 software development activities and reused to document the resulting software, they are not created 
 in order to enable a scientific research. Thus, since software artifacts repertoire differs among projects 
-and processes the use of software artifacts for scientific research creates an additional threat to its 
+and processes, the use of software artifacts for scientific research creates an additional threat to its 
 external validity, i.e. generalization.
 
-%\begin{defn}\label{def_behavior}
-%A \textbf{\textit{recurrent behavior}}, in context of software process is a \textit{frequent mannerism} 
-%in which a developer or a team perform the software development. 
-%\end{defn}
-%Recurrent behaviors are the basic building blocks of any human-driven process that reflect habits - 
-%a more or less fixed way of dealing with tasks.
-%For example, if one developer frequently runs unit tests before committing changes, while another typically 
-%commits without testing, the first developer's habit of preceding to the commit code testing 
-%is a recurrent behavior that may reflect the developer's unconscious habit, or the conscious following 
-%to a process.
+\begin{defn}\label{def_artifact_trail}
+A \textbf{\textit{Software Artifact Trail}} is an ordered by the artifact's creation time collection of 
+software process artifacts.
+\end{defn}
+Examples of software artifact trails include an ordered by the commit time collection of a software project's 
+source code change records and an ordered by the post time collection of a user's questions at StackOverflow 
+website.
 
 \newpage
 %
@@ -120,7 +117,7 @@ fulfill requirements.
 
 By the analysis of software project failures, it was acknowledged, that Engineering paradigm 
 may not be an adequate way to control software development processes due to the large discrepancies 
-between problems in Software engineering and any other Engineering field 
+between problems in Software Engineering and any other Engineering field 
 \cite{citeulike:3729379} \cite{citeulike:5203446} \cite{citeulike:2207657}.
 The chief argument supporting this point of view is the drastic difference in the cost model:
 while in Software Engineering there is almost no cost associated with materials and fabrication, 
@@ -128,9 +125,9 @@ these usually dominate cost in all other Engineering disciplines, but, ironicall
 Software Engineering is suffering from cost and challenges associated with 
 continuous re-design of the product and its design processes - the issue that is 
 hardly seen at all in other Engineering areas. 
-In addition, as it was shown by the numerous studies, engineering-like models of software process 
-are typically prescriptive and rigid, they are difficult to adapt to the particular organizational 
-structure, to the project specificities, and to the changing requirements \cite{citeulike:113403}. 
+In addition, as it was shown by the numerous studies, engineering-like models of software processes 
+are typically prescriptive and rigid -- they are difficult to adapt to the particular organizational 
+structure, to the project specificities, and to changing requirements \cite{citeulike:113403}. 
 Thus, the degree to which an adopted process model structures software processes varies greatly 
 between teams and projects and cannot guarantee the success \cite{sacchi_2001}. 
 Finally, an increasing understanding and appreciation of human factors in software development 
@@ -138,17 +135,18 @@ processes over tools, technologies, and standards, suggests that the human-drive
 process aspects are likely to be defining in the software project fate \cite{citeulike:6580825} 
 \cite{citeulike:149387} \cite{1605185} \cite{citeulike:113403} \cite{citeulike:12743107}. 
 
-However, alternative to Engineering user- and developer-centric flexible and lightweight software 
-processes which often praised for their dynamism, flexibility, and encouragement for innovation -
-such as Agile and Software craftsmanship - are also affected by the same software process complexity 
-For example, many of the agile processes are unable to handle it by design - SCRUM is unable to cover 
-the whole software life-cycle, XP does not scale for large teams, and TDD demands an extensive expertise 
-from developers. In addition, the flexibility is often linked with uncertainty, which creates significant 
-difficulties with project cost and effort estimation \cite{citeulike:12933080} \cite{citeulike:9928907}.
-The FLOSS projects, which typically much less concern with the cost issues, are also affected by the complexity.
-As it was shown, most of the open-source projects never reach a ``magic'' 1.0 version \cite{citeulike:12480029}. 
-Among others, the great "infant mortality rate" of FLOSS projects was related to a burnout, 
-inability to acquire a critical mass of users, loss of leading developer(s), 
+However, current alternatives to Engineering-like processes that are flexible, user- and developer-centric,
+and which often praised for their dynamism, flexibility, and encouragement for innovation --
+such as Agile and Software craftsmanship -- are also affected by the same software process complexity. 
+For example, some of the agile processes are unable to handle it by the design: SCRUM does not cover 
+the whole software life-cycle, XP does not scale for large teams, and TDD requires an extensive expertise 
+from developers. In addition, the increase in flexibility is often directly linked with increase in uncertainty,
+which creates significant difficulties with project cost and effort estimation 
+\cite{citeulike:12933080} \cite{citeulike:9928907}.
+The FLOSS projects, which typically less concern with the cost issues, are also affected by the complexity.
+As it was shown, most of the open-source projects never reach a ``magic'' 1.0 version 
+\cite{citeulike:12480029}. Among others, the great "infant mortality rate" of FLOSS projects was related 
+to a burnout, inability to acquire a critical mass of users, loss of leading developer(s), 
 and forking \cite{richter2007critique}. 
 
 Currently, it is widely acknowledged, that there exists no ``silver bullet'' process which 
@@ -165,21 +163,21 @@ continues to provide motivation for further research on software process design 
 %
 % >> section
 %
-\section{Classical software process design and improvement}\label{section_software_process_design}
+\section{Classical approaches to software process design and improvement}\label{section_software_process_design}
 Traditionally, it was assumed that the software development is performed for a profit in 
 corporate, government, or military settings by people that are mostly collocated together. 
-This assumption shaped early research focusing on the approaches for on-site ``software manufacturing'',
+This assumption shaped early research focused on approaches for on-site ``software manufacturing'',
 which were discussed for decades in software engineering literature. 
 
-The classical techniques can be divided into two distinct categories. 
-The first approach consists of \textit{top-down techniques} which are based on proposing of a process 
-based on specific pattern of software development. 
+These classical techniques can be divided into two distinct categories. 
+The first category consists of \textit{top-down techniques} which are based on proposing of a process 
+that is based on a specific pattern of software development. 
 For example, Waterfall Model process proposes a sequential pattern in which developers first create a 
 Requirements document, then create a Design, then create an Implementation, and finally develop Tests 
 \cite{citeulike:9982731}. 
-The Test Driven Development process, from other hands, proposes an iterative development pattern in which
-the developer must first write a test case, then write the code to implement that test case, then re-factor the 
-system for maximum clarity and minimal code duplication \cite{citeulike:6086365}. 
+Alternatively,  Test Driven Development process proposes an iterative development pattern in which
+the developer must first write a test case, then write the code to implement that test case, then re-factor 
+the system for maximum clarity and minimal code duplication \cite{citeulike:6086365}. 
 
 While top-down techniques follow the usual path of trials and errors, and reflect natural to 
 humans creative processes of invention and experimentation -- the ``invention'' of an adequate to 
@@ -193,8 +191,8 @@ at least in their proposed form \cite{citeulike:9758924}.
 The second category of software process design and improvement approaches consists of 
 \textit{bottom-up} techniques that focus on knowledge extraction from process events log for 
 its reconstruction, elicitation, validation, and enhancement \cite{citeulike:12944447}. 
-Typically, the process reconstruction task is viewed as a two-levels problem where the process 
-event log is aggregated and transformed into the chain of logical development events at first, 
+Typically, this task is viewed as a two-levels problem where the process event log is aggregated and 
+transformed into the chain of logical development events at first, 
 and the process model is constructed at the second level \cite{citeulike:2703162} \cite{citeulike:12944447}.
 Cook and Wolf, in their pioneering work on software process discovery, have shown the possibility of 
 automated extraction of software process models through the mining of process event logs 
@@ -206,10 +204,10 @@ The bottom-up approaches, while appearing to be more systematic and potentially 
 are also affected by a number of issues, among which the observability is the most significant: 
 while the live project observations are technically challenging to implement due to the high cost and 
 privacy concerns \cite{citeulike:12944447}, the post-process data collection, for example through interviewing, 
-significantly affects the process reconstruction validity due to frequent discrepancies between actually 
+significantly affects the process reconstruction validity due to the frequent discrepancies between actually 
 performed and reported actions \cite{citeulike:7691059}. 
 Yet another significant issue is the insufficient capacity of currently available process discovery and 
-representation techniques to discover and to present models of distributed and concurrent processes 
+representation techniques to discover and to represent models of distributed and concurrent processes 
 \cite{citeulike:12944447}. 
 
 Nevertheless, while distinct in their nature, the traditional approaches to software process design and 
@@ -232,36 +230,36 @@ benefits estimation \cite{citeulike:12798659} \cite{citeulike:12798662} \cite{cs
 % >> section
 %
 \section{Free/Libre/Open Source software processes}
-Currently, we see the rise of alternative software development model - people are coming together 
-over the Internet and create high quality software which they distribute openly promoting its 
-modification and re-distribution. 
-Surprisingly, they provide a very little if any guidance on software processes allowing any software 
-process to be used as long as it positively contributes to the project's goal. 
-This characteristic freedom of free-software processes not only challenges traditional schools of 
-software engineering and software process research, but enables research in previously unexplored or 
-underexplored directions, among which is the research on human factors in software development.
+Currently, we see the rise of alternative to on-site Engineering software development model - 
+people are coming together over the Internet and create high quality software which they distribute 
+openly promoting its modification and re-distribution. 
+Surprisingly, they provide a very little if any guidance on software processes effectively allowing any 
+software process to be used as long as it positively contributes to the project's goal. 
+This characteristic freedom of free-software processes while challenges traditional schools of 
+Software Engineering and software process research, enables advancements in previously unexplored or 
+underexplored research directions, among which is the role human factors in software development.
 
-The free-software social movement originates from 1960s and is is inspired by the philosophy of 
+The free-software social movement originates from 1960s and is inspired by the philosophy of 
 source code sharing and its collaborative improvement. The movement was partially formalized in 1983 
 when Richard Stallman, who launched GNU Project and founded Free Software Foundation in 1985.
 The commonly used term ``open-source'' was coined later, in 1998 at the very first Open Source 
 Initiative (OSI) meeting \cite{osi-history}.
-
-The free-software software development community, consists of self-organized individuals and teams of 
+The free-software software development community consists of self-organized individuals and teams of 
 mostly non-professional programmers - amateurs, hobbyists, students, and academics. 
-By using Internet, they collaborate and develop software that is distributed freely along with source 
-code and is usually called free/libre open-source software (FLOSS). 
+By using Internet, they collaborate and develop software that is distributed free of charge as source code
+and is usually called Free/Libre Open-Source Software (FLOSS). 
+
 Over the years, this software development model has proven its ability to deliver increasingly complex 
-and surprisingly popular software in a truly ``global'' scale - when thousands of project's contributors 
+and surprisingly popular software in a truly global scale - when thousands of project's contributors 
 and users are scattered all over the world. A number of FLOSS projects such as Linux and its 
 derivatives, Gnome, Apache HTTP Server, PostgreSQL database, and others, succeeded to develop and to 
-efficiently manage distributed software processes providing control over the large development 
-team and source code base delivering the state of the art software whose quality is similar to
-or exceeding that of industrial projects \cite{coverity2012}. 
+efficiently manage distributed software processes that provide the control over the large development 
+team and source code base and deliver the state of the art software whose quality is similar to or 
+exceeding that of industrial projects \cite{coverity2012}. 
 This fact attracted a considerable attention not only from industrial companies that seek to emulate 
 successful open source software processes in traditional closed-source commercial environment 
 \cite{oss_virtual_organizations} \cite{oss_balance} \cite{oss_hp} \cite{oss_4industry}, 
-but from software process research community, that is fond of understanding the FLOSS phenomena
+but from software process research community, that is fond of understanding the FLOSS success phenomena
 \cite{citeulike:12550640} \cite{citeulike:5043664} \cite{citeulike:5128808} \cite{citeulike:10377366}.
 
 %This freedom provides a thriving human-centric 
@@ -272,9 +270,9 @@ A number of studies conducted on open source processes discovered, that they are
 different from the traditional software development at many levels. 
 In particular, their flexibility and the inherent capacity to adapt to changing requirements is often cited as 
 the most prominent. 
-For example, the most significant document shaping industrial software development - the specification - is rarely 
-considered in open-source projects. Even in the Linux kernel development, which is probably one of the few strictly 
-moderated development processes, developers prise practical reasons over specifications \ref{fig:kernel}.
+For example, the specification, that is the most significant document shaping industrial software development,
+is rarely considered in open-source projects. Even in the Linux kernel development, which is probably one of 
+the few strictly moderated development processes, developers prise practical reasons over specifications \ref{fig:kernel}.
 
 \begin{figure}[ht!]
    \centering
@@ -288,16 +286,16 @@ moderated development processes, developers prise practical reasons over specifi
 \subsection{Public software repositories}
 The proliferation of open-source development continues to create publicly available software process 
 artifacts on increasingly high rate changing the software process research landscape by providing 
-massive amounts of software process artifacts covering full software development life cycle for free. 
+the data covering full software development life cycle for free. 
 Currently, public code hosting sites such as SourceForge, GoogleCode, and GitHub host thousands of FLOSS 
 projects offering numerous software process artifacts, such as design documents, source codes, bugs and 
 issue records, and developers communications.
 In addition, Q\&A and social websites for developers such as StackOverflow, TopCoder, and others, becoming 
-increasingly popular among software developers and users as places to exchange expertise, to learn new tools, 
-and to improving skills.
+increasingly popular among software developers and users as places to discuss software issues, 
+to exchange expertise and learn new tools, and to improving skills.
 
 Scientific community response on the public availability of software process artifacts was overwhelming 
-and a number of venues was established addressing the increased interest. 
+and a number of venues was established in order to address the increased interest. 
 Since 2004, the International Conference on Software Engineering (ICSE) hosts a Working Conference on 
 Mining Software Repositories (MSR). The original call for papers stated MSR's purpose as 
 \textit{``... to use the data stored in these software repositories to further understanding of software 
@@ -309,35 +307,35 @@ International Conference on Open Source Systems, the Workshop on Public Data abo
 and the International Workshop on Emerging Trends in FLOSS Research have also played
 an important role in shaping and advancing of this research domain.
 
-Some of the previous work addresses the software process discovery. Probably most notable and relevant to 
-my research is work by Jensen \& Scacchi. In their early work, they demonstrated, that the knowledge
+Some of the work conducted in the domain addresses the problem of software process-related 
+knowledge discovery from artifacts. Probably the most notable and relevant to 
+my research is work by Jensen \& Scacchi, where they demonstrated, that the knowledge
 reflecting software processes can be gathered from public systems \cite{citeulike:12550640}. 
-Later, in \cite{citeulike:5043664} and \cite{citeulike:5128808}, they show, that it is possible to 
-reconstruct some of the FLOSS processes by manual mapping of collected process evidence to a pre-defined 
-process meta-model. 
-Another closely related to my research work is by Hindle et al. where they has shown that it is possible to 
-discover software process evidence through partitioning \cite{citeulike:10377366} as well as evidence of 
-recurrent behaviors by Fourier analysis of change events\cite{citeulike:10377345}.
+In their later work\cite{citeulike:5043664} and \cite{citeulike:5128808}, they had show, that it is possible to 
+reconstruct FLOSS processes by manual mapping of collected process evidence 
+to a pre-defined process meta-model. 
+Another closely related to my research work is by Hindle et al. where they had shown that it is possible to 
+discover software process patterns through partitioning of the observed activities \cite{citeulike:10377366} 
+and recurrent behaviors by Fourier analysis of source code change records \cite{citeulike:10377345}.
 
-However, the research work based on mining of public software process artifacts shows, that while public 
-availability of software process artifacts minimizes observability issues and privacy concerns, 
-the nature of public artifacts creates a number of challenges which limit the scope of the research and 
-significantly elevate its complexity rendering many of previously developed process research techniques 
-inefficient. For example, the granularity level of public software change records hides most of the 
-development activities, which invalidates the application of many process mining techniques 
-\cite{citeulike:10377366} \cite{citeulike:2678511}.
-Similarly, the artifacts duplication due to concurrent and often overlapping processes, 
-as well as incompleteness of public artifact trails prevent typically deterministic process discovery
-techniques from producing of consistent result \cite{citeulike:2678511}.
-
+However, the mentioned above and other research work based on mining of public software process artifacts shows, 
+that while public availability of software process artifacts minimizes observability cost issues and removes privacy concerns, 
+the nature of public artifacts creates a number of new challenges which limit the scope of the research and 
+significantly elevate its complexity, effectively rendering many of previously developed process research techniques 
+inefficient. 
+For example, the coarse granularity of public software change records hides most of the development activities, 
+which invalidates the application of many process mining techniques \cite{citeulike:10377366} \cite{citeulike:2678511}.
+Similarly, the artifacts duplication due to concurrent and often overlapping processes, as well as incompleteness of 
+public artifact trails prevent typically deterministic process discovery techniques from producing of consistent 
+result \cite{citeulike:2678511}.
 Thus, novel software process analysis and discovery techniques are needed to be developed for public software 
 process artifacts analysis \cite{citeulike:7853299}.
 
 %
 % >> section
 %
-\section{Software Trajectory}\label{section_software_trajectory}
-In addition to the establishment of engineering-like software development paradigm, the acknowledgement of 
+\section{Software Trajectory Analysis}\label{section_software_trajectory}
+In addition to the establishment of Engineering-like software development paradigm, the acknowledgement of 
 the software crisis led to the development of similar to Engineering project management techniques based on 
 software measurements.
 % The software measurement is also essential in software engineering research.
@@ -352,7 +350,7 @@ such as CMM \cite{citeulike:9962021},
 PSP \cite{citeulike:8347315}, \cite{citeulike:5090131} \cite{citeulike:12929216}, 
 ISO 9001 \cite{iso-standard}, and SPICE \cite{spice-standard}.
 
-In addition to practical applications, software measurement is extensively used in the research - 
+In addition to practical applications, software measurement is extensively used in the research --
 it is the basis of Empirical Software Engineering research area where researchers base their conclusions on 
 concrete evidence collected through experimentation and measurement of software systems and software 
 processes \cite{citeulike:766768}.
@@ -360,138 +358,130 @@ processes \cite{citeulike:766768}.
 \subsection{Software telemetry}\label{section_software_telemetry}
 Ideally, by using measurements, a software process and product can be assessed in real-time allowing efficient 
 in-process decision making.
-In \cite{citeulike:557296}, Johnson et al. pioneered this approach by defining software project telemetry as a 
+Johnson et al. \cite{citeulike:557296}, pioneered this approach by defining software project telemetry as a 
 particular style of software process and product metrics collection and analysis based on 
 \textit{automated measurements over a specified time interval}. 
+The authors hypothesized, that the visualization of multiple streams of collected measurements, 
+which are effectively \textit{equidistant time series}, captures the project and software 
+process state evolution and conveys its dynamics to the user.
 They implemented an in-process software engineering measurement and analysis system called Hackystat 
-\cite{citeulike:12929227}, that is capable of metrics collection, processing, and telemetry streams visualization. 
-The authors showed, that the visual analysis of multiple telemetry streams aids in the in-process decision making 
-and it is possible to improve existing software processes by using the knowledge extracted by visual 
-analysis of these streams. At the same time, they acknowledged, that it is impossible to extract a traditional 
-analytical model that is capable to automate that decision making process.
+\cite{citeulike:12929227} that is capable of metrics collection, processing, and telemetry streams visualization. 
+The system's empirical evaluation showed, that the visual analysis of multiple telemetry streams aids 
+in the in-process decision making, and it is possible to improve existing software processes by using 
+the knowledge extracted by visual analysis of these streams. 
+At the same time, the authors acknowledged, that it is impossible to extract a traditional analytical 
+model that is capable to automate the decision making process and that machine learning application is 
+desirable.
 
-Later, Kou et al. extended Hackystat by implementing a Software Development Stream Analysis Framework (SDSA) 
-that is capable of partitioning of telemetry streams into sequences of development ``episodes'' by using pre-defined 
-boundary conditions \cite{citeulike:6180831} \cite{citeulike:11538873}.
-Further, by designing ``operational definitions'' of test-driven development (TDD) as sets of specific rules for 
-episodes, they showed that it is possible to assign TDD compliance to episodes.
+Later, Kou et al. extended Hackystat by implementing Software Development Stream Analysis Framework (SDSA) 
+that is capable of partitioning of telemetry streams into sequences of development ``episodes'' by using 
+pre-defined boundary conditions \cite{citeulike:6180831} \cite{citeulike:11538873}.
+By designing ``operational definitions'' for test-driven development (TDD) as sets of specific rules for 
+the development episodes, they showed that it is possible to characterize and to assign TDD compliance to 
+individual software development episodes.
 They implemented their approach in Zorro, that is a software system capable of software process measurement, 
-development episodes inference, categorization, and their classification by the conformance of TDD. While Zorro is 
-based on pre-defined partitioning and classification rules, the authors acknowledged that the application of machine 
-learning techniques is desirable.
+development episodes inference, their categorization, and classification by the TDD conformance. 
+As Zorro is based on pre-defined partitioning and classification rules reflecting our understanding of 
+TDD processes, the authors acknowledged that the application of machine learning techniques may improve 
+systems performance and advance our understanding of software processes.
 
 %
 % >> section
 %
 \subsection{Knowledge discovery from time series}
-Both demands for machine learning techniques identified in previous section could be potentially met by techniques 
-developed within the research area concerned with unsupervised and semi-supervised knowledge discovery from 
-temporal data. 
-
-is one of the most studied 
-in data mining community, where time series are often used as a proxy representing a large variety of real-life 
+Both demands for machine learning methods application to the problem of software measurements analysis
+identified in the previous section can be potentially met by the techniques developed in the research 
+area concerned with unsupervised and semi-supervised knowledge discovery from time series.
+There, time series are typically used as a proxy representing a large variety of real-life 
 phenomena in a wide range of fields including, but not limited to physics, medicine, meteorology, music, 
 motion capture, image recognition, signal processing, and text mining \cite{citeulike:11796594}. 
-While time series usually directly represent observed phenomenas by recording their measurable progression in time, 
-the pseudo time series often used for representation of various high-dimensional data by combining data points into 
-ordered sequences. 
-For example in spectrography data values are ordered by the component wavelengths \cite{citeulike:12550833};
+While time series usually represent observed phenomenas directly by recording their measurable 
+progression in time, the pseudo time series often used for representation of various high-dimensional 
+data by combining data points into ordered sequences. 
+For example in spectrography data values are ordered by the component wavelengths \cite{citeulike:12550833},
 in shape analysis the order is the clockwise walk direction starting from a specific point in the outline 
-\cite{citeulike:12550835}, in image classification the numbers of pixels are sorted by color component 
+\cite{citeulike:12550835}, in image classification the this is the frequency of pixels sorted by color component 
 values \cite{citeulike:2900542}.
 
 Many important problems of knowledge discovery from time series reduce to the core task of finding 
-characteristic, likely to be repeated, sub-sequences in a longer time series. 
-In the early work these were called as 
+characteristic, likely to be repeated, short sub-sequences that efficiently capture the studied 
+phenomena specificity. In the early work these were called as 
 \textit{frequent patterns} \cite{citeulike:5159615}, 
 \textit{approximate periodic patterns} \cite{citeulike:1959582},
 \textit{primitive shapes} \cite{citeulike:5898869}, 
 \textit{class prototypes} \cite{citeulike:4406444}, 
 or \textit{understandable patterns} \cite{citeulike:3978076}. 
-Later, similarly to Bioinformatics, these were unified under the term \textit{motif} \cite{citeulike:3977965}.
-Once found, time-series motifs can be used for a research hypothesis generation by their association 
-with known or proposed phenomena \cite{citeulike:3977965}. 
-The recent advances in finding of time-series motifs, in particular work based on \textit{shapelets} 
+Later, similarly to Bioinformatics, these were unified by the term \textit{motif} \cite{citeulike:3977965}.
+Once discovered, time series motifs can be used for the research hypothesis generation by their association 
+with known or proposed phenomenas \cite{citeulike:3977965}. 
+The recent advances in finding of time series motif and in particular work based on \textit{shapelets} 
 \cite{citeulike:7344347} \cite{citeulike:11957982} \cite{citeulike:12552293} and \textit{bag of patterns} 
-\cite{citeulike:10525778}, show a great potential of time series data-mining applications to almost any 
-time-series generating phenomenas.
+\cite{citeulike:10525778} show the great potential of time series motif-based data mining application
+to almost any phenomena that can be represented as time series.
+
+Potentially, since software telemetry streams are time series representing the evolution of a software system 
+and a software process in time, their motifs can be discovered and associated with sensible product and process characteristics.
+
+%
+% >> section
+%
+\subsection{Research hypothesis}\label{section_research_hypothesis}
+In previous sections, I have outlined the evidence for a limited performance of traditional Engineering-like 
+software development as well as the oversight by traditional approaches to software process design and improvement
+of a variety of human factors that fall beyond the typical sequence of the development actions.
+In contrast, I have identified a number of key differences of FLOSS software development that 
+foster developer- and user-centric processes and which, if systematically studied, can potentially shed light on 
+the role of human-driven aspects in software development and to improve our overall understanding of 
+software processes. 
+Then, I have pointed out a growing wealth of publicly available software process artifacts that enables 
+systematic FLOSS processes analyses and highlighted the need for novel techniques capable of mining these datasets.
+Finally, I have outlined the possibility of knowledge discovery by time series mining techniques application 
+to software measurements.
+
+All these, along with the results of previous research that has shown that it possible to discover 
+recurrent behaviors on all levels of software development process hierarchy \cite{citeulike:8347315} 
+in industrial \cite{citeulike:5090131} and open-source \cite{citeulike:10377345} settings, 
+prompted a research hypothesis, that \textit{it is possible to discover the basic blocks of software 
+processes - recurrent behaviors - from public software process artifacts}. 
 
 \subsection{Software Trajectory Analysis (STA)}
-Following the advances in finding of characteristic subsequences in time-series, in a preliminary study,
-I have explored the possibility of adding an analytical module to Hackystat system that would be capable 
-of knowledge discovery from telemetry streams. 
-In particular, I have implemented a transformation layer based on Symbolic Aggregate approXimation (SAX) 
-of time series, that transforms real-valued telemetry data into symbolic space, and a characteristic symbolic 
-pattern discovery layer based on existing bioinformatics motif-discovery algorithms. 
+Following the hypothesis, I have defined a Software Trajectory - an abstract representation of software
+product and process evolution. As the term trajectory is used in Physiscs for an approximate path that the 
+moving object draws in a physical space, or in Mathematics, where trajectory defined as the reduced in 
+complexity sequence of states of a dynamic system (a Poincare' map), \textit{Software Trajectory is a curve
+that only approximately describes the path drawn by an evolving software system or by an ongoing software 
+process in the chosen metric space}. The analytical technique based on software trajectory construction
+and its analysis I have called Software Trajectory Analysis (STA).
 
-The experience with this prototype system, that was called \textit{Software Trajectory Analysis} has shown 
-promising results, moreover it helped to identify key issues that affected the performance of existing 
-symbolic motif mining techniques when applied to public software process artifacts \cite{csdl2-10-09}. 
-One of these  issues, the system's inability to rank found motifs, affected its efficiency by reporting too 
-many false-positive characteristic patterns. Another issue was the sensitivity of the system - used in 
-the implementation algorithms required input of many non-evident parameters, which if not set correctly
-affected the system efficiency.
+In a preliminary pilot study targeting the possibility of characteristic subsequences discovery from 
+software telemetry streams, I have added an analytical module based on characteristic patterns mining 
+to Hackystat system. This early STA implementation exploited the transformation of real-valued telemetry 
+streams into short overlapping symbolic sequences with Symbolic Aggregate approXimation (SAX) \cite{sax} 
+and their consequent frequency-based ranking. 
+While the pilot STA implementation required the user to specify a number of non-intuitive parameters for 
+SAX transform and a threshold for the pattern discrimination, some of the discovered frequent patterns 
+were easily associated with characteristic recurrent software development behaviors, such as consistent 
+effort or frequent testing, and the system performance was found satisfactory \cite{csdl2-10-09}.
+Later, the system was improved by the addition of borrowed from Bioinformatics symbolic motif-mining and 
+visualization algorithms, which not only made frequent patterns discovery subsystem more efficient, 
+but aided in their comprehension through intuitive visualization. 
 
-is too high to apply this technique. 
-In order to keep the research direction, I defined an alternative to software telemetry - Software Trajectory \cite{csdl2-10-09}:
-\begin{defn}\label{def_trajectory}
-A \textbf{\textit{software trajectory}} is a curve, possibly multi-dimensional, that describes a software project 
-progression in the space of chosen software metrics.
-\end{defn}
+However, when the system was applied to time series built by measurement of public software artifacts, 
+its performance significantly deteriorated affected by their coarse granularity, poor informational content,
+noise, and the significant amount of the lost values. 
 
-As discussed above, the overall lack of FLOSS processes governance, high degrees of their distribution, and its inherent flexibility make 
-it difficult to study open-source processes by using traditional approaches - through the process proposal or through 
-its observation \cite{citeulike:12550640} \cite{citeulike:10377366}.
-However, the vital open-source process characteristic - an extensive use of the efficient software change control 
-system enables scientific research. 
+Addressing the identified data-mining techniques limitations, 
+I have developed a novel unsupervised technique for time series classification called SAX-VSM, that enables 
+discovery and ranking of class-characteristic patterns, requires no input parameters, and is rotation-invariant 
+and robust to the noise and lost values \cite{sax-vsm}. 
+In turn, as I shall show later, the powered by SAX-VSM algorithm STA implementation is capable to discover 
+sensible characteristic subsequences from wide variety of software process artifacts.
 
-In order to provide flexibility many FLOSS processes consider the final software ``look and feel'' and its functionality 
-as open-ended questions, they highly encourage contributors to make only small incremental 
-improvements and to synchronize code changes as often as possible \cite{so-checkin} \cite{git-best-practices1}
-in order to enable the small change visibility allowing all developers to closely follow up with the project evolution.
-Another way to manage the distributed software development complexity is the restriction of the write access to 
-a project's source code tree. This approach establishes a workflow based on code forking by project's contributors 
-and code ``patching'' (change merging) by core developers. Code patches are typically discussed among the project's
-development team and users, and once merging decision is made, all of the contributor's changes are merged 
-with main tree and become visible to all project participants.
-
-
-Unfortunately, both techniques provide a limited insight into the data and suffer from performance issues. 
-While exact shapelet techniques allow discovery of class-characteristic patterns and facilitate classification,
-algorithm is almost quadratic and provides limited insight into class specificities. 
-The bag of patterns algorithm, while performs in a linear time, requires a previous knowledge for input parameters 
-selection and does not offer the class generalization.
-
-In this thesis I propose an alternative solution to class-characteristic patterns discovery from time series called 
-SAX-VSM. As I shall show, the proposed algorithm not only facilitates classification, but provides insights into 
-the both: classification results and class specificities. These, in turn, enable the discovery of novel phenomenas.
-
-One of the research directions that I have explored before this thesis work was the possibility of adding an analytics 
-module to Hackystat/Zorro system that would be capable of data mining and knowledge discovery from telemetry streams. 
-In particular, I have explored the application of Symbolic Aggregate approXimation (SAX) and bioinformatics 
-motif-discovery algorithms to low-level software artifacts measurements. 
-This resulted in the first prototype of \textit{Software Trajectory Analysis} system which performed fairly well 
-\textit{Software Trajectory} \cite{csdl2-10-09}. 
-
-
-As discussed above, Software Trajectory is designed for the discovery of potentially unknown recurrent 
-behaviors related to software development from software artifacts measurements. As these measurements 
-are ordered in time, they can be viewed as time-series, and the original problem can be effectively casted
-into a common data-mining problem of the knowledge discovery from time series.
-
-One of the research directions, preceding this thesis work, was to explore the possibility of extension of 
-Hackystat/Zorro system with a layer that would be capable of development episodes discovery from telemetry 
-streams obtained by measurement of public software process artifacts. 
-Unfortunately, it turned out that the granularity level of public artifacts is too high to be able to infer development 
-episodes consistently.
-Keeping the research direction, I have proposed a similar to software telemetry approach to software process analysis 
-based on software artifacts measurements and mining called \textit{Software Trajectory} \cite{csdl2-10-09}. 
-
-Software Trajectory is an automated systematic approach to software process discovery based on software process 
-artifacts measurements and mining. In contrast with previously proposed systems, that were built upon quantitative 
-analyses of atomic development entities such as actions or episodes, or were relying on some pre-defined reference 
-process model, Software Trajectory focuses on the unsupervised discovery of naturally occurring phenomena 
-- recurrent behaviors. 
+Taking in account all of the above, the Software Trajectory Analysis is an automated systematic approach to 
+recurrent behaviors discovery based on software artifacts measurements and mining. 
+In contrast with previously proposed systems, that were built upon quantitative analyses of atomic development 
+entities such as actions or episodes, or were relying on some pre-defined reference process models, 
+STA focuses on the unsupervised discovery of naturally occurring phenomena - recurrent behaviors. 
 
 By the design, Software Trajectory addresses a number of known issues that previously complicated and limited 
 large scale studies on software processes.
@@ -501,56 +491,6 @@ Secondly, Software Trajectory does not depend on any prior knowledge about softw
 unsupervised data mining techniques intended to be used in order to bootstrap knowledge by extracting of data 
 summaries. 
 
-Intuitively, Software Trajectory can be viewed as an abstract technique based on the analysis of the curve that only 
-approximately describes a path that an evolving software or an ongoing software process draws in the chosen 
-metric space. 
-This curve is the \textit{trajectory} by definition - an approximate path of the object in a physical space (Physics), 
-or a reduced in complexity sequence of states of a dynamic system (Poincare' maps in Mathematics). 
-%The results of an exploratory study of Software Trajectory properties are presented in this dissertation.
-
-%
-% >> section
-%
-\section{Research hypothesis, scope of the dissertation}\label{section_research_hypothesis}
-In previous sections, I have outlined the evidence for a limited performance of traditional engineering-like 
-software processes, as well as the oversight by traditional approaches to software process design and improvement
-of a variety of human factors that fall beyond a typical sequence of development.
-In contrast, I have identified a number of key differences in FLOSS software development that foster developer- 
-and user-centric processes and, if systematically studied, can potentially shed light on the role
-of human-driven aspects in software development and to improve our overall understanding of software processes. 
-Then, I have pointed out a growing wealth of publicly available software process artifacts that enables 
-quantitative and qualitative FLOSS processes analyses
-and highlighted the need for novel techniques capable of mining these datasets.
-Finally I have outlined the Software Trajectory Analysis -- an approach designed for the analysis of public 
-software process artifact trails targeting the discovery of recurrent behaviors.
-
-In order to evaluate the performance of STA, I hypothesized, that 
-\textbf{\textit{it is possible to discover recurrent behaviors from publicly available software process artifacts}}. 
-
-This hypothesis rests on the foundation laid by previous research which shows that it possible to discover 
-recurrent behaviors on all levels of software development process hierarchy \cite{citeulike:8347315} in 
-industrial \cite{citeulike:5090131} and open-source \cite{citeulike:200721} settings. 
-Thus, if STA will be capable to discover known recurrent behaviors, the approach would lay a foundation 
-for further studies whose purpose will be the understanding of previously unknown discovered recurrent behaviors
-and their potential associations with certain project or process traits such as pace, agility, size, complexity, 
-code quality and others. 
-In contrast if STA will fail to discover known recurrent behaviors, then this study experience will draw the limits 
-of this technique applicability and would serve as a foundation for the design of more advance analysis techniques.
-
-Following the STA hypothesis, I have implemented the pilot system and investigated its behavior on a number 
-of publicly available software repositories, their artifacts, and a number of applicable data-mining techniques 
-in a preliminary exploratory study \cite{csdl2-10-09}. 
-While similarly to other studies in the field I have discovered scope-limiting effect 
-of public software artifacts informational content and granularity, the most difficult issue that I faced 
-was the fact that there is no baseline process exists for any given software project which makes the 
-knowledge inference process difficult. 
-
-Addressing the issue, I have developed a novel unsupervised technique for time series classification 
-called SAX-VSM that enables unsupervised discovery of class-characteristic patterns. 
-By using this technique, it is possible to discover and rank by their importance class-characteristic 
-patterns compare multiple classes 
-results of its performance evaluation, details Software Trajectory Analysis approach implementation, 
-and discusses its performance evaluation based on three case-studies.
 
 \section{Contributions}\label{section_contributions}
 My contributions include Software Trajectory Analysis (STA) approach for recurrent behaviors discovery
@@ -618,8 +558,7 @@ behaviors, which include
 
 \section{Dissertation Outline}\label{section_organization}
 The rest of this dissertation is organized as follows. 
-Chapter 2 discusses related work from two research areas: software process process discovery and software artifacts mining. 
-Chapter 3 relevant work from time series mining and proposes SAX-VSM - an algorithm for interpretable time series 
-classification. 
-Chapter 4 explains Software Trajectory analysis framework implementation and presents results of its empirical evaluation. 
+Chapter 2 discusses relevant work from time series classification and knowledge discovery and proposes SXA-VSM algorithm.
+Chapter 3 discusses related work from software process process discovery and software repository mining areas.
+Chapter 4 proposes Software Trajectory analysis framework design, explains its implementation, and presents results of its empirical evaluation. 
 Chapter 5 concludes and discusses several directions for future study.
