@@ -22,7 +22,7 @@ echo "Making supplemental"
 ( set -x ; cp ini/Makefile.supplemental.ini Makefile.ini ; make ; cp nsf.supplemental.pdf pdf ; make clean )
 
 echo "Splitting project summary"
-( set -x ; ./pdfsplit.sh pdf/nsf.project.pdf 1 5 pdf/nsf.project.nobib.pdf )
-( set -x ; ./pdfsplit.sh pdf/nsf.project.pdf 6 7 pdf/nsf.project.justbib.pdf )
+( set -x ; ./pdfsplit.sh pdf/nsf.project.pdf 1 10 pdf/nsf.project.nobib.pdf )
+( set -x ; ./pdfsplit.sh pdf/nsf.project.pdf 11 14 pdf/nsf.project.justbib.pdf )
 
 
