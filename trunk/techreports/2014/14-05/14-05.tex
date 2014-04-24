@@ -124,8 +124,7 @@ Anomalies in time series can be divided into two broad categories based on their
 
 While both types of anomalies can be discovered by a na\"{\i}ve approach based on an all-to-all comparison, such a solution has quadratic complexity and is simply impractical for real-world applications. A number of techniques have been proposed to combat the algorithm's complexity \cite{outliers_survey, chan_anomaly}; however, many existing anomaly detection approaches suffer from one or more of the following limitations: (i) they examine each data point independently, without considering their sequential dependency; (ii) they work by matching data points or subsequences with known anomalies or pre-defined thresholds, thus requiring explicit formulation of what is anomalous (or normal); (iii) they require the length of a potential anomaly to be specified. While the first two limitations usually apply to point-based techniques, the third limitation is seen in most, if not all, algorithms that detect structural anomalies. 
 
-In this work we focus on the discovery of structural anomalies and address the above limitations by proposing a technique capable of efficiently detecting anomalies of variable lengths. The proposed algorithm relies on the grammar induction procedure which, once applied to a string obtained by symbolic time series discretization with SAX \cite{sax}, builds a hierarchical structure of context-free grammar rules, each of which maps to variable-length subsequences of the input time series. By analysis of the grammar's hierarchical structure, our algorithm efficiently identifies symbols that are rarely used in grammar rules and whose corresponding subsequences we relate to potential anomalies. %subsequences
-%\fxnote[inline]{(Arnold) we can define a top-k ranking criterion as follows: for anomalies of length greater or equal to L, rank these anomalies based on their rule density in ascending order, and output the top K elements of the ranked set. The L parameter provides additional flexibility by allowing anomalies to be contextualized to the application's their unique requirements. For example, if we have an application where it is costly to obtain data samples and each sample has little noise/uncertainty, then setting l=1 may make sense. However, for fast streaming and noisy data, setting a large l would make more sense.} 
+In this work we focus on the discovery of structural anomalies and address the above limitations by proposing a technique capable of efficiently detecting anomalies of variable lengths. The proposed algorithm relies on the grammar induction procedure which, once applied to a string obtained by symbolic time series discretization with SAX \cite{sax}, builds a hierarchical structure of context-free grammar rules, each of which maps to variable-length subsequences of the input time series. By analysis of the grammar's hierarchical structure, our algorithm efficiently identifies symbols that are rarely used in grammar rules and whose corresponding subsequences we relate to potential anomalies. 
 
 Before describing our algorithm in detail, consider the following motivational example showing the context-free grammar properties used in our approach. Let 
 \begin{center}
@@ -195,25 +194,14 @@ One of the most effective methods for time series anomaly detection is via disco
 \textbf{Time Series Discord}: Given a time series $T$, the time series subsequence $C \in T$ is called the discord if it has the largest distance to its nearest non-self match.
 \end{definition}
 
-%\fxnote[inline]{(Arnold) The definition above needs to be more specific and may be unclear to readers unfamiliar with HOTSAX, perhaps we can borrow additional text from the HOTSAX paper to make it clearer.}\fxnote[inline]{(Pavel) we need to formally define some sort of alternative to discord to use it throughout the paper. Discord definition is useful for discussing of previous work though.}\fxnote[inline]{(Arnold) Yes, an alternative definition is needed. Jessica made an excellent suggestion on that in one of her prior email. We can further specify the "general anomaly based on grammar coverage" to one that has low probability of occurrence with respect to its order in the time series i.e., context. More about this in my comment below..}
-
 Discords capture the sense of the most unusual subsequence within a time series and, intuitively, are likely to correspond to many possible anomalies in the generative processes -- a property which was confirmed in a recent extensive empirical study by Chandola et al., where they concluded \textit{"..on 19 different publicly available data sets, comparing 9 different techniques time series discord is the best overall technique among all techniques"} \cite{chan_anomaly}. Since discord discovery has been shown to be the state-of-the-art for time series anomaly detection, we will use the original discord discovery algorithm as the basis for comparison. 
 
 Similar to the notion of discord, we consider time series anomalies to be subsequences that are maximally different from the rest of the subsequences. However, since we work with discretized time series, the way we define ``maximally different'' is not the same. In our approach we rely on the hierarchical structure of conext-free grammar, therefore we define anomalies as substrings that are maximally different in the sense of their normal or abnormal use in the grammar. More specifically, we consider the anomaly to be the subsequence of arbitrary length whose corresponding grammar symbol usage in grammar rules is the smallest.  
-
-
-%-- \textbf{we consider not real-valued subsequences but the substrings of string that represents the discretized time series.} 
-
-%\fxnote{(Jessica) I'd remove this bolded sentence to differentiate ourselves with other SAX-based anomaly detection techniques. For example, VizTree also finds anomalies based solely on the frequency of SAX strings. Another side of the argument is that, looking at SAX strings alone does not guarantee exact answers, hence the different heuristics proposed for distance computations, early abandonment, etc in the literature. In that regard, I don't think we gain advantage by emphasizing this. What we want to emphasize is the sentence below, that we don't just look at single SAX strings, but a series of them with some hierarchical patterns discovered by grammar.}  
-
-%\fxnote[inline]{(Arnold) The statement above on defining anomalies as the subsequence with the "smallest coverage by the grammar rules" needs to be further qualified. To me, what we're really trying to say is the following: subsequence M is an anomaly if an only if the conditional probability of M given its prior temporal neighbor observations/data is the minimum out of all other subsequences. In other words, an anomaly is a subsequence that has the lowest probability of occurrence with respect to its order in the time series. How then is this related to discords? Since M has the lowest conditional probability, this should mean that M prefixed with it's prior temporal neighbors (not only M) should be a discord. We need to think about this some more since this relationship will dictate the metric by which we quantify the effectiveness of SAX Sequitur.}
 
 \subsection{Previous Work on Anomaly Detection}
 The brute force solution for the problem of time series anomaly detection, or more specifically, the discovery of a discord of a given length $n$ in time series $T$ of length $m$, needs to consider all possible distances between each subsequence $C$ of length $n$ and all of its non-self matches $M$ ($C,M \in T$). This method has $O(m^{2})$ complexity and is simply untenable for large data sets. 
 
 In order to mitigate this heavy computational requirement, previous work suggests that the subsequence comparisons should be reordered for efficient pruning. For example, the pioneering work on discord discovery suggests a fast heuristic technique called HOTSAX \cite{hot_sax} that is capable of discovering a true discord by first reordering subsequences by their potential degrees of discordance -- those with a higher chance of being discords are examined first. Secondly, for each discord candidate, the algorithm reorders the matches by their estimated similarity to the potential discord. Similarly in \cite{hashing}, the authors use locality sensitive hashing to estimate similarity between shapes with which they can efficiently reorder the search to discover unusual shapes. The authors of \cite{haar_1} and \cite{haar_2} use Haar wavelets and augmented tries to achieve effective pruning of the search space.
-
-%\fxnote[margin]{(Susan) What are augmented tries? Is it a specific method or just different uses of Haar wavelets? (Pavel) I believe that it is a highly efficient (fast to query) data structure.}
 
 While these approaches achieve several orders of magnitude of speed-up over the brute-force algorithm, their common drawback is that they all need the length of a potential discord to be specified as the input,  and they output discords of a fixed length. %They also require discretization parameters to be specified.
 In addition, even with pruning, they rely on the distance computation which, as suggested by Keogh et al.  \cite{hot_sax}, accounts for more than 99\% of the run-time of these algorithms.  
@@ -239,36 +227,12 @@ As shown above, the main limitation of current anomaly discovery techniques is t
 Here we present two algorithms for variable-length anomaly detection based on grammar induction. Configured only by discretization parameters, our algorithms are capable of efficiently discovering putative anomalous subsequences without any prior knowledge about their length, shape, or minimal occurrence frequency. While the results produced by our algorithms are approximate solutions, it has been shown recently that in many applications, approximate solutions might be sufficient or even preferable due to efficiency \cite{grammarviz}. 
 
 
-%In previous work, we introduced a linear-time, variable-length motif discovery algorithm based on grammar induction \cite{grammarviz}. Our current work is motivated by the fact that the anomaly detection problem can be viewed as inverse to motif discovery. Since motifs are frequently occurring patterns whereas anomalies are rare patterns, we propose a similar, grammar-based technique that differs in the pattern discrimination part. As we shall show, the proposed solution is capable of addressing the aforementioned limitation of identifying variable-length discords in time series without any prior knowledge. It also does not need additional parameters such as the anomaly shape or a support threshold. While it still requires SAX discretization parameters to be specified, from our experience, it successfully tolerates non-optimal discretization settings in a wide range as they are effectively mitigated by the grammar induction procedure. In addition, we present \textit{an approximate discord discovery algorithm that does not need any distance computation}. \fxnote[inline]{not sure how to make these clear...} 
-%\fxnote[inline]{(Crystal) Short, summary description of exact method was not mentioned. Also, maybe some more description or experimental proof can be provided to show how SAX parameters are more robust. There are a lot of parameters and thresholds that still need to be set for the SAX/Sequitur method, and a more convincing explanation/justification would be beneficial.} \fxnote[inline]{(Pavel) cut it short}
-
 \subsection{Discretization}
 As grammar induction algorithms are designed for discrete data, we begin by discretizing a continuous time series with SAX \cite{sax}. SAX performs discretization by dividing \textit{z}-normalized input time series into $w$ equal-sized segments. For each segment, it computes a mean value and maps it to symbols according to a pre-defined set of breakpoints dividing the distribution space into $\alpha$ equiprobable regions, where $\alpha$ is the alphabet size specified by the user. 
 
-%Dimensionality reduction is embedded into the SAX discretization process as $w$ is almost always much smaller than the original sequence length $m$. While this is a desirable feature, in some cases we also need the capability of capturing local patterns, which may be lost if the global SAX compression ratio ($m/w$) is too high. 
-
 For tasks where localized patterns are of the interest, like anomaly detection or motif discovery, SAX is often applied to a set of subsequences that represent local features. This is called subsequence discretization \cite{lin_motifs}, as opposed to whole discretization where SAX is applied to the entire time series.
 
-%\fxnote[inline]{(Arnold) The SAX compression ratio: should it be ($m/w$) instead? right it should be that.}
-
-%\begin{figure}[t]
-%   \vspace{-0.5cm}
-%   \hspace{-0.8cm}
-%   \centering
-%   \includegraphics[width=80mm]{Figure2_SAX.eps}
-%   \caption{
-%   Example of SAX for a time series. 
-%   The time series above is transformed to the string $cbccbaab$, 
-%   and the dimensionality is reduced from 128 to 8.}
-%   \label{fig:sax}
-%   \vspace{-0.5cm}
-%\end{figure} 
-
 \textit{\textbf{Subsequence discretization}}. Our algorithm extracts overlapping subsequences by sliding a window of length $n$ across the time series from its beginning to end. Each of the extracted subsequences is discretized individually using SAX. While most SAX-based techniques shuffle or hash SAX strings into some data structure like a trie or hash table, essentially throwing away the ordering information, we argue that the sequential ordering of the SAX strings provides valuable contexual information, and is the key for allowing variable-length pattern discovery. This produces an ordered set of SAX words, which are then concatenated together to form an input string for Sequitur, i.e. each SAX word is an atomic unit, equivalent to a single terminal for Sequitur. Below we show an example of a SAX-transformed sequence, which is the concatenation (delimited by space) of a set of SAX strings. Each SAX string (e.g. $aac$) represents a subsequence of length $n$ extracted by the sliding window from the original time series.
-
-%For subsequence discretization, we need to determine which subsequences to use and in which order. It is generally a good idea to consider overlapping subsequences as we have shown in \cite{lin_motifs}, since non-overlapping subsequences will likely produce coarse discretization or, worse, cause interesting patterns to span multiple segments, resulting in a significant loss of information. 
-
-%\fxnote{(Susan) Does the alphabet size have to be the same for each segment or can you have more letters for segments with greater variability? (Jessica) Currently we use the same parameter for all segments, but adaptive alphabet is an interesting idea (though I think it's been done in iSAX for indexing).}
 
 \begin{center} 
 $S1 = \textit{aac~ aac~ abc~ abb~ acd~ aac~ aac~ aac~ abc~} \dots$
@@ -285,8 +249,6 @@ where subscripts in the resulting string denote the offsets of the original SAX 
 
 \subsection{Grammar Induction on SAX Words}\label{rule_utility}
 Once we transform a time series into a string of SAX words, we can then apply Sequitur to build a context-free grammar, which essentially is a hierarchical structure that recursively reduces all \textit{digrams} occurring more than once in the input string to a single new non-terminal symbol. This corresponds to the Sequitur-specific ``rule utility'' constraint that we use later for the anomaly discovery. A digram is a consecutive pair of tokens (terminals or non-terminals). As mentioned, we consider a SAX string as an atomic unit (i.e. a terminal). A digram consisting of two terminals is thus a pair of consecutive SAX strings, e.g. \{$aac$ $abc$\}.
-
-%\fxnote{(Jessica) Added a couple sentences on digram. (Pavel) Thank you, it is clear.}
 
 To reiterate the benefit of the numerosity reduction strategy mentioned above and how it lends itself to variable length anomalies or motifs, consider the single grammar rule $R1$ generated by Sequitur from the string \textit{S1} as shown in Table \ref{table:rulesS1}:
 \begin{table}[h] 
@@ -308,7 +270,7 @@ $\text{R1}~ \rightarrow~ \text{aac}~ \text{abc} $ & $\textcolor{red}{aac}~ \text
 \vspace{-0.4cm}
 \end{table} 
 
-In this grammar, $R1$ concurrently covers intervals of different lengths: $S1_{[1:3]}$ of length 3, and $S1_{[6:9]}$ of length 4 respectively. The potential anomalous substring ``$abb_{4}$ $acd_{5}$'' has length of 2. Recall each SAX string corresponds to a time series subsequence, so these intervals correspond to subsequences of variable lengths. %\fxnote{(Jessica) Added the sentence "Recall..." for clarification.}
+In this grammar, $R1$ concurrently covers intervals of different lengths: $S1_{[1:3]}$ of length 3, and $S1_{[6:9]}$ of length 4 respectively. The potential anomalous substring ``$abb_{4}$ $acd_{5}$'' has length of 2. Recall each SAX string corresponds to a time series subsequence, so these intervals correspond to subsequences of variable lengths. 
 
 \subsection{Using Grammar Rules to Find Anomalies}
 By keeping SAX words offsets throughout the procedures of discretization and grammar construction, our algorithm is able to map rules and SAX words back to their original time series subsequences. The number of rules generated by Sequitur can be large. In this work, we rank grammar rules by their ``potential'' of being an anomaly, which, according to our intuition, is proportional to their usage frequency. Further, we discuss two concrete algorithms for variable-length anomaly discovery based on this ranking scheme.
@@ -332,19 +294,14 @@ To discover approximate anomalies efficiently, we propose to compute the ``\text
 
 Since each SAX string corresponds to a subsequence starting at some position of the time series, the points whose rule density counters have a globally minimal value thus correspond to the grammar symbols (terminals or non-terminals) whose inclusion in the grammar rules is minimal. Therefore, similar to the discussion for the rules in Table \ref{table:rules}, we argue that the \textit{rule density curve intervals which contain minimal values correspond to time series anomalies}. 
 
-%\fxnote[inline]{(Pavel) re-phrased. (Jessica) This sentence may raise some questions so maybe we should be more explicit. It might be more intuitive to reverse this: rather than saying that a time series point corresponds to a SAX string, say that a SAX string corresponds to a point (or more precisely, a subsequence that starts at this time point)?}
-
 Consider the example shown in Figure \ref{fig:ecg}. The top panel shows an excerpt of an ECG time series with a highlighted instance of an anomalous heartbeat featuring a very subtle premature ventricular contraction. The middle panel shows a significant drop in the grammar rule density in this case corresponding with the global minimum (3 rules) over the interval 462-482, which is in perfect alignment with the ground truth -- the annotation by an expert which states that an anomaly occurs in the ST interval of the ECG curve, located at the rightmost part of the red-colored heartbeat.  
 
 This rule density-based approach is capable of discovering multiple anomalies of variable-length by its design -- it simply reports contiguous points of the input time series which appear to be covered by the globally minimal number (ideally, zero) of grammar rules. If needed, an additional ranking criterion can be defined: for example a minimal anomaly length and/or a minimal coverage threshold or their ratio can be used to tolerate noisy data.
-%\fxnote{(Pavel) We can add about the thresholds allowing the anomaly extension right here.}
 
 Note, however, that from our experience, this rule density-based technique only approximately indicates an anomaly location and its accuracy largely depends on the choice of SAX discretization parameters (including the initial subsequence length) and ultimately on the data (generative process) specificity. Also note, that even though we need to specify the subsequence length, it is only the initial ``seed.'' Unlike most existing algorithms in which this subsequence length is the exact length of the anomaly, anomalies reported by our technique are not bounded by the seed length and may range from very short to considerably long values.
 \enlargethispage{\baselineskip}
 
 Another desirable characteristic of this approach is the efficiency. SAX, the discretization technique, has a linear time complexity \cite{hot_sax} as well as the grammar inference technique, Sequitur \cite{sequitur}. The coverage curve computation itself has a linear complexity too as it involves iteration over the number of grammar rules, which is always less than the input string, and simple counting. This efficiency, when combined with effective visualization (Section \ref{section_implementation}), enables the user to interactively explore the dataset and to refine discretization parameters and the anomaly selection threshold.
-
-%\fxnote[inline]{(Jessica) Pavel, would you please add more results for the approximate algorithm?(Arnold) Since a major contribution of this work is efficiency, it would be very helpful to elaborate on the derivation of the linear time and space costs.(Pavel) I've changed the text.}
 
 \begin{algorithm}[!htp]
 \caption{SAXSequitur algorithm (modified HOTSAX)}\label{algorithm2}
@@ -381,10 +338,10 @@ If the time series under analysis is aperiodic, or the discretization parameters
 
 As we mentioned before, by efficiently optimizing the search order through heuristics, HOTSAX significantly improves the brute force algorithm performance without sacrificing accuracy. The original algorithm consists of two nested loops that iterate over all possible time series subsequences in optimized order. 
 
-To facilitate fast computational time and allow for variable-length discord discovery, we propose an improvement to the original $Outer$ heuristic by utilizing the information from the grammar structure discovered by Sequitur. More specifically, we analyze the grammar and create an ordered list of subsequences called $RuleSubsequences$ which contains all subsequences for all grammar rules sorted in the ascending order of rule usage frequency. The intuition behind this ordering is simple and is a reflection of previously discussed grammar property suggesting that rarely used grammar rules are likely to correspond to anomalous subsequences. If there exist time series points with zero usage count (i.e. points that are not included in any grammar rules), they need to be added to the $Outer$ list too. %\fxnote{(Jessica) How do we get the subsequences? Do we go through the rules and collect all subsequences represented by the rules? But the ones we're interested in won't appear in rules other than the top-level rule.}
+To facilitate fast computational time and allow for variable-length discord discovery, we propose an improvement to the original $Outer$ heuristic by utilizing the information from the grammar structure discovered by Sequitur. More specifically, we analyze the grammar and create an ordered list of subsequences called $RuleSubsequences$ which contains all subsequences for all grammar rules sorted in the ascending order of rule usage frequency. The intuition behind this ordering is simple and is a reflection of previously discussed grammar property suggesting that rarely used grammar rules are likely to correspond to anomalous subsequences. If there exist time series points with zero usage count (i.e. points that are not included in any grammar rules), they need to be added to the $Outer$ list too. 
 
 We also alter the $Inner$ heuristic. First, having a candidate subsequence from a grammar rule selected in the $Outer$ loop, we consider all other subsequences from the same rule as possible nearest non-self matches. After this step, the rest of the subsequences are visited in random order. The intuition behind this ordering is also simple and similar to that of HOTSAX -- the 
-candidate subsequences corresponding to the same SAX string, or to the Sequitur rule in our case, are very likely to be highly similar. Thus, considering such subsequences in the beginning of $Inner$ heuristic allows us to potentially encounter a distance that is smaller than $best\_so\_far\_dist$ sooner and to benefit from the early abandoning (lines 8 and 9 of the Algorithm \ref{algorithm2}) while considering all other candidates in $Outer$ loop. Note that since the subsequences are of variable lengths, we cannot use the Euclidean distance directly on the subsequences. There are two potential approaches: (1) reinterpolate the subsequences to equal length and use Euclidean distance; and (2) use an elastic distance measure such as Dynamic Time Warping (DTW), and normalize the distance for meaningful comparison. For the current study, we opted for option 1, but we plan to investigate the potential of option 2 for future work. %\fxnote{(Jessica) The subsequences all have different lengths. Did you normalize them to the same length or use an elastic distance measure like DTW?}
+candidate subsequences corresponding to the same SAX string, or to the Sequitur rule in our case, are very likely to be highly similar. Thus, considering such subsequences in the beginning of $Inner$ heuristic allows us to potentially encounter a distance that is smaller than $best\_so\_far\_dist$ sooner and to benefit from the early abandoning (lines 8 and 9 of the Algorithm \ref{algorithm2}) while considering all other candidates in $Outer$ loop. Note that since the subsequences are of variable lengths, we cannot use the Euclidean distance directly on the subsequences. There are two potential approaches: (1) reinterpolate the subsequences to equal length and use Euclidean distance; and (2) use an elastic distance measure such as Dynamic Time Warping (DTW), and normalize the distance for meaningful comparison. For the current study, we opted for option 1, but we plan to investigate the potential of option 2 for future work. 
 
 \begin{figure}[!t]
    \vspace{-0.3cm}
@@ -426,16 +383,13 @@ Addressing this issue, we extended our previous grammar/motif visualization prot
 
 The user interface of our tool consists of a number of panels where the largest is the \textit{Data display} which provides an overview of the dataset under analysis. Right below, the second largest panel, presents Sequitur rules through two interface widgets: an interactive table of \textit{Sequitur rules} that provides rule statics and a \textit{Rule Subsequence Display} window that shows all subsequences corresponding to a selected rule. Other panels allow users to select and load a new dataset (\textit{Data source} panel), tune the discretization strategy, SAX parameters, and choose the numerosity reduction strategy (\textit{SAX parameters} panel). The bottom panel provides a system log. Figure \ref{fig:densityECG} shows an example of the rule density visualization for the ECG dataset discussed above.
 Our visualization approach is based on transforming the time series into the user-configured symbolic representation, building a grammar with Sequitur, and mapping the grammar rules back to the time series. After performing these steps, SAXSequitur creates a single data structure which is used in the interactive visualization. The rule statistics includes the frequency of rule's  use by other rules, the rule itself and its expanded form, frequency of occurrence, average length, and positions at which it occurs in the SAX string and in the time series; the rules table is fully interactive. 
-% By using SAXSequitur the user is able to visually and interactively examine Sequitur rules. Selection of a rule in \textit{Sequitur rules} table highlights all its occurrences on the time series and displays all the subsequences corresponding to the rule in a \textit{Rule Subsequences} window. Both chart panels: \textit{Data display} and \textit{Rule Subsequences} are capable of interactive zooming either with the mouse or through use of a pop-up menu. By selecting the \textit{Rule density} view, the user is able to visually examine Sequitur rule density which highlights all potential discord locations as shown at Figure \ref{fig:densityECG}.
 
 \section{Experimental Evaluation}
 We evaluated both proposed techniques (Rule-density-based and SAXSequitur heuristic) on a number of previously studied data sets and compared their performance with both: the brute force and HOTSAX (current state of the art \cite{chan_anomaly}) discords discovery algorithms. 
 
-As expected, discords discovered by HOTSAX matched those of brute force exactly. However, since our technique optimizes candidate anomaly selection by using Sequitur grammar structure, the locations of anomalies discovered by SAXSequitur were not exactly the same, but in close neighborhood of the true discords. In addition, we found that more stringent parameters were needed to achieve a significant overlap of discovered anomalies by the distance-based SAXSequitur algorithm. Note, that by increasing SAX discretization granularity we effectively limit the variability of rule lengths, thus, we effectively approximate HOTSAX algorithm behavior. %\fxnote{(Pavel) Is the discord found by Brute Force or HOTSAX is the ``true anomaly''? I guess not}
+As expected, discords discovered by HOTSAX matched those of brute force exactly. However, since our technique optimizes candidate anomaly selection by using Sequitur grammar structure, the locations of anomalies discovered by SAXSequitur were not exactly the same, but in close neighborhood of the true discords. In addition, we found that more stringent parameters were needed to achieve a significant overlap of discovered anomalies by the distance-based SAXSequitur algorithm. Note, that by increasing SAX discretization granularity we effectively limit the variability of rule lengths, thus, we effectively approximate HOTSAX algorithm behavior. 
 
 The SAXSequitur heuristic algorithm was also able to discover known anomalies in \textbf{all} data sets, though, more careful parameters selection were at times needed. However, we found that the rule density-based technique allows the discovery of very short anomalies that the three other techniques missed. For example, in the GPS trail dataset the rule density-based technique was the only method capable of discovering a true anomaly which was intentionally planted by taking an unusual path.
-
-%\fxnote{(Jessica) We should emphasize this, maybe mention this earlier in the paragraph. Also, does the first algorithm find all anomalies as well?; (Arnold) Pavel, to answer your question on the experiment setup, we should first think about the relationship between discords and coverage-based anomalies.}
 
 Finally, we compared algorithms performance in terms of calls to the distance computation routine, which, as pointed in \cite{hot_sax} typically accounts for up to 99\% of
 these algorithms computation time. Table \ref{perf_table} compares the number of distance function calls made by the competing techniques. 
@@ -476,7 +430,6 @@ In short, rule-density-based approach, when used alone, is fast since it does no
 
 \subsection{Parameter Setting}
 Like all SAX-based algorithms, we need to set two parameters: the number of PAA segment ($w$) and the alphabet size ($\alpha$). In addition, we need to set the initial subsequence length (the ``seed'' that will grow with grammar induction). The choice of initial length is not as critical as most existing anomaly detection algorithms, where the input length is the exact length of the anomaly. In our experiments, we try various initial length values (100-300), number of PAA segments (mostly 4 or 6, in some cases higher values), and alphabet size (4-6). The rule-density approach alone is more sensitive to the parameter choices than if it's incorporated in the SAXSequitur heuristic. Nevertheless, the rule density approach still offers the advantage of providing fast discord approximation. 
-%\fxnote{(Jessica) Pavel: Please add to each experiment the SAX parameters used to ensure reproducibility (I've seen many reviewers complain about irreproducibility of experiments, e.g. lack of details, parameters, etc, and that alone could be a reason for rejection. Also please check if the parameter ranges I mentioned above are correct.}
 
 \subsection{Spatial Trajectory Case Study}
 To demonstrate the application and effectiveness of SAXSequitur for discovering anomalies of unknown nature, we performed a case study on spatial trajectory data. The data was gathered from a GPS device which recorded location coordinates and times at certain temporal intervals while commuting. To apply SAXSequitur to the trajectory data, the trajectory data (lat, lon) was transformed into a sequence of scalars. To achieve this, the trajectory points are mapped to the visit order of a Hilbert space filling curve (SFC) embedded in the trajectory manifold space and indexing the recorded times of the visit order. The Hilbert SFC is chosen to reduce the distortion on the data's spatial locality. The sequence of SFC visit order along with their times is passed to the SAXSequitur algorithm for processing. 
@@ -496,7 +449,6 @@ In order to evaluate the proposed algorithm efficiency on this specific data, we
 
 \section{Conclusions and Future Work}
 In this work we introduced two novel algorithms for anomaly detection in time series based on grammar induction. We show that by exploiting the hierarchical structure of context-free grammar, it is possible to discover anomalous subsequences in a highly efficient way. In addition to being comparable in accuracy with the current state of the art, our algorithms demonstrate superior efficiency and are also capable of finding variable length anomalies. Furthermore, we implemented a visualization software based on the techniques proposed, that provides a highly interactive and exploratory pattern mining environment. For future research, we plan to investigate the effect of more sophisticated distance measures, such as DTW, on the algorithm performance. In addition, we would like to perform a study on the algorithms' sensitivity to parameter selection.  
-%\fxnote[margin]{(Susan) Superior performance to what?.}
 
 \begin{figure}[t]
    \centering
@@ -604,35 +556,7 @@ Circulation, 101(23), (2000)
 \bibitem {jmotif}
 Paper authors. Supporting webpage:
 \url{https://code.google.com/p/jmotif/}
-\begin{comment}
 
-%not used
-\bibitem{sax_tries} 
-\fxnote[inline]{not used} 
-Lin, J., Keogh, E., Fu, A., Herle, H. Van.:
-Approximations to Magic: Finding Unusual Medical Time Series.
-In Proc. of the 18 th IEEE Symposium on Computer-Based Medical Systems (CBMS). 329--334 (2005)
-
-%not used
-\bibitem {exp_sax}
-\fxnote[inline]{not used} 
-Lin, J., Keogh, E., Wei, L., Lonardi, S.:
-Experiencing SAX: a novel symbolic representation of time series.
-Data Min. Knowl. Discov., 107--144 (2007)
-
-%not used
-\bibitem {keogh_linear}
-\fxnote[inline]{not used} 
-Keogh, E., Lonardi, S., Chiu, B. Y.-c.:
-Finding Surprising Patterns in a Time Series Database in Linear Time and Space,
-in Proc. SIGKDD (2002)
-
-%not used
-\bibitem {motion_motif_graphs}
-\fxnote[inline]{not used} 
-P. Beaudoin, M. van de Panne, P. Poulin and S. Coros. 
-(2008) Motion-Motif Graphs. In Proc. of the Symposium on Computer Animation.
-\end{comment}
 \end{thebibliography}
 
 % \section*{Appendix: Springer-Author Discount}
