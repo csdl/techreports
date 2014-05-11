@@ -1,353 +1,507 @@
 \chapter{Prior and related work}\label{chapter_background_work}
-To understand how software trajectory relates to other research, in this chapter I will compare it is u
-My research focuses on the techniques which aide in the software process-related knowledge 
-discovery from software process artifacts. In this chapter, I review relevant previous work related to my goal.
+Software Trajectory Analysis consists of two components: 
+the \textit{software artifacts retrieval and measurement machinery}, i.e. data assimilation layer, 
+and the \textit{software trajectory characteristic patterns discovery module}, i.e. analysis layer. 
+The high-level overview of these layers show at Figure \ref{fig:STA2-results}.
 
-\section{History of Engineering in software development}
-Since the invention of Charles Babbage’s difference engine in 1822, computers (hardware) 
-have required a means of instructing them to perform a specific task. This means is known 
-as a programming language. By using programming language instructions, 
-software develeopers (programmers) write the software that is collections of computer data 
-and instructions, which is used by users to accomplish specific tasks. 
-The very first software, or more precisely a set of instructions implementing a method for 
-calculating a sequence of Bernoulli numbers using Charles Babbage's Analytical Engine, was 
-designed by Ada Lovelace in 1942 and predates modern computers. 
+The artifacts retrieval and measurement machinery refers to a way in which software artifacts are 
+collected, measured, and enriched with metadata. 
+As shown at Figure \ref{fig:sta-assimilation}, STA is capable of retrieving data from typical to 
+OSS development Software Configuration Management system (SCM) components such as version control, 
+defect management, and communications management systems. 
+In addition, the illustration shows that STA is capable to work with data from other sources, 
+such as Q\&A websites, or Hackystat system \cite{citeulike:557296}.
+As public data sources are highly heterogeneous, STA adopts the usual to software repository mining 
+field strategies for data assimilation, unification, and off-line enrichment \cite{german04_softchange}, 
+where public artifacts are retrieved and stored ``\textit{as is}'' (i.e. mirrored) at first, 
+enriched with with metadata at second, and measured at the final step.
+Similarly to other systems, the relational database is used by STA for data storage and indexing, 
+this not only enables an interactive workflow and a federated access to data, but allows an efficient 
+measurements partitioning and aggregation, which is essential for software trajectories construction.
 
-As time has progressed, computers have made giant leaps in processing power and become 
-general-purpose computing devices. Consequently, the variety of software and 
-the complexity of its development has grown ``several orders of magnitude'' \cite{naur_crisis_68}. 
-This effectively created a number of organizational problems which dominated development of 
-early software systems. Among these, historians are mentioning increasing scale of software projects, 
-excessive ambition, difficulties in estimating project cost and length, inadequate documentation, 
-skimping on design and testing \cite{mahoney_roots_1990} \cite{citeulike:12748733} 
-\cite{citeulike:833903}.
+The software trajectory characteristic patterns discovery module relies on the implementation of 
+SAX-VSM algorithm that I shall propose and discuss in the Chapter \ref{chapter:sax-vsm} of this thesis.
+The algorithm enables discovery and ranking of recurrent patterns from software trajectories, 
+which, as I shall show in Chapter \ref{chapter:results}, likely to correspond to recurrent behaviors -- 
+the antecedent features of software processes that allow better understanding of software process dynamics, 
+and aid in problem detection. Moreover, quantitative assessment of behaviors enables not only process 
+improvement hypothesis generation, but, most importantly, its empirical validation.
+The overview of the analysis module is shown at Figure \ref{fig:sta-analysis}.
+%\ref{fig:sta-overview} Classes construction, however, is performed by the user depending on the research 
+% question and requires some advanced knowledge and experience.
 
-All these problems were acknowledged at the NATO Conference on Software Engineering, held in Garmisch,
-Germany in 1968. It worth noting, that before the actual conference, as was pointed by the 
-conference proceedings editors, the engineering paradigm was chosen without actual plan of actions - 
-\textit{``the phrase ``software engineering'' was deliberately chosen as being provocative, in implying 
-the need for software manufacture to be [based] on the types of theoretical foundations and practical 
-disciplines[,] that are traditional in the established branches of engineering''} \cite{citeulike:12787786}.
-At the conference, it was recognized, that the increasing complexity of programming 
-work had overwhelmed the technical and managerial ability of software teams: software was shipped late,
-over budget, worked inefficiently, and was unreliable. Later, while working on the proceedings, the term 
-``software crisis'' was coined by the editors in order to describe the desperate state of 
-software development and its increasing complexity \cite{naur_crisis_68}.
-
-The ``software engineering'' idea happened to be provocative enough to shape the minds of researchers 
-and practitioners. At large, it was accepted that the software can be successfully ``manufactured'' 
-through ``engineering'' - i.e. with the application of a systematic, disciplined, quantifiable approach 
-to the design, development, operation, and maintenance. 
-
-Using this paradigm, researchers and practitioners designed a number of software development processes 
-providing detailed guidelines on how to reach the goal - deliver a software - efficiently and in time. 
-These processes were declared as the means for software development improvements in terms of quality, 
-speed, and execution cost over existing practices. 
-They were studied extensively within academic settings and in industry. Most efficient processes were 
-further standardized, shaping the best practices of contemporary software development \cite{citeulike:9962021}. 
-These can be found in numerous studies and described at length in academic and industrial literature. 
-Too numerous to name, they can be categorized by the level of their application:
-\begin{itemize}
- \item global organizational standards, like CMMI, ISO 9000, and SPICE. 
- \item large industrial software models, such as Waterfall, Spiral, Cleanroom, etc.
- \item smaller scale, flexible methodologies: FDD, TDD, Pair Programming, etc.
- \item general guidelines and principles aiming to improve the software process flow, 
-such as ``build before commit'' and others.
- \item and finally, the processes for improving existing processes of software development 
-on the organizational, team, and personal levels: TSP, PSP, Six Sigma, etc.
-\end{itemize}
-While some of these are products of a ``technology transfer'' - resulted by direct copying or by an 
-application of existing engineering principles to software development process (like Waterfall model), 
-some, and in particular agile methodologies, considered to be particular to software-engineering. 
-
-Currently,  there are numerous software process, models, methodologies, and coding conventions exist 
-in Software Engineering. This amount of well-grounded and documented knowledge creates an impression,
-that the area of software development is thoroughly explored, and that there always exists a deterministic 
-choice for a model and a processes for any given software project, leaving almost no doubts in 
-its faith - it will be completed according to the specification, in time, and under the budget.
-
-However, it is far from being true - software projects do fail at the very high rate and many challenges 
-exist at the level of software processes. Software projects continue to run over the budget and do not 
-meet the schedule. Some of the seemingly proper executed projects caused property 
-damage \cite{citeulike:11044022}, and a few projects caused loss of life \cite{citeulike:712058}. 
-The ``Chaos Report'' from the Standish Group concluded, that only ``35\% of software projects in 2006 
-can be categorized as successful - meaning they were completed on time, on budget and met 
-user requirements'' \cite{chaos2006}, which clearly manifested that it is somewhat illusory statement 
-that we are capable to understand and to control software processes using engineering paradigm.
-
-In recent decades, gradually, researchers and practitioners alike recognized, that a direct application 
-of classical engineering - that excludes a ``human component'' by governing software processes 
-in a top-down fashion might be erroneous. 
-Also, it was recognized that over many years, continuous formalization of the field and 
-excessive attention to software process metrics may malformed not only the software development 
-practices landscape, but education and the professional code of conduct. 
-This recognition forced some of the professional associations to review their licensing policies 
-\cite{citeulike:11045517} and even some educators to change their opinions \cite{citeulike:5203446}. 
-
-\section{Alternative software processes}
-In parallel with industrial engineering-like software processes, another phenomena, the Free/Libre Open 
-Source Software (FLOSS) development arose and proven its efficiency and effectiveness.
-The FLOSS processes are significantly different from typical SE process on many levels:
-\begin{itemize}
- \item First of all, FLOSS processes are highly geographically distributed, which significantly contradicts 
- to developers collocation usually assumed by the most of the SE processes. 
- \item Secondly, open-source processes do not explicitly define timeline, developers roles, and 
- the process itself. Typically, the project flow is rarely governed and does not require any sort of 
- documented software process. Most of FLOSS projects accept for review and embed source code from anyone.
- \item Finally, FLOSS delivers software free of charge, promoting its reuse, modification, and redistribution.
- However, mostly due to this, the maintenance and the support are rarely provided.
-\end{itemize}
-
-Nevertheless, despite to the apparent lack of the control over the software processes in FLOSS projects, they 
-has proven their ability to deliver large in size software systems of high quality for the fraction of cost 
-of similar industrial projects.
-
-Most of the success is contributed to the motivation of open source developers.
-
-Lately, third approach to software development emerged - software craftsmanship emerged 
-\cite{citeulike:11058561}, \cite{citeulike:11058554}. The followers of this methodology 
-are not only focused on the delivering ``well crafted'' software and continuously adding value,
-but on the apprenticeship - on forming communities and engaging more people in software development.
-While recommendation exists \cite{citeulike:11058784}, little known about the research 
-in software craftsmanship and apprenticeship processes.
-
-All this continues to engage thoughts and fuels the search not just for the exact definition 
-of software development, but deep, fundamental for efficient processes resolving. 
-Is software development an engineering discipline? Is it a craft \cite{citeulike:5203446}? 
-Or is it an art \cite{citeulike:11045694}?
-
-
-. Among others, 
-Free/Libre/Open-Source Software development model (FLOSS) and the Software Craftsmanship 
-approaches gained a significant credibility in the community \cite{citeulike:3729379}. 
-While the former \textit{holistic} software process paradigm emphasizes loosely-organized 
-collaboration, high degree of modularity, frequent releases, and effectively removes the boundary 
-between developers and users, the latter, human-centric approach, is built upon the roles of highly 
-motivated skilled individuals \cite{citeulike:262020} \cite{citeulike:2759198}. 
-
-Answers to these questions would require extensive interdisciplinary studies to be made, 
-but what is obviously clear, is that formal software development process, as an engineering 
-is a creative, human activity. 
-Whether software is coded 
-by team where its members have a variety of skills and experience, or by a single individual,
-they all driven by their believes and motivations. While usually developers agree on the use of 
-particular technologies, development tools, and a development process with imposed timeline and 
-a budget, the software process is - as many other human activities - highly creative and mostly 
-non-recurring. Thus, the choice of methodology, technology, or tools provides only a marginal 
-effect on this human-based and human-driven process. While this effect can be measured through 
-the common approach by using a control environment factoring out human component, the most of 
-the difference, which lies in human creativity, motivation and productivity is unknown and yet, 
-mostly immeasurable.
-
-\section{Process discovery}\label{process.discovery} 
-Process is a general term describing a phenomenon unfolding in time and has a variety of meaning depending
-on the field. While in this thesis I focus on a particular kind - software processes, moreover, on the particular process 
-building block - recurrent behaviors, in this section I outline few general conceps and previous research work that 
-was applied to software processes.
-
-\subsection{Stochastic process}
-In probability theory a stochastic (or a random) process denotes a collection of random variables which typically used
-to represent the evolution of some random value or a non-deterministic system in time. The specificity of a stochastic 
-process is that while its initial condition is known, it can evolve in infinitely many directions. 
-In the simple case of discrete time, a stochastic process amounts to a sequence of random variables usually known as 
-a stochastic time series. 
-The examples of stochastic time series include signals such as speech, audio and video, medical data such as a 
-patient's EKG, blood pressure or temperature, stock market and exchange rate fluctuations, and random movement 
-such as Brownian motion or random walks.
-
-The common approach to stochastic processes treats them as functions of one or several deterministic arguments whose 
-values are random variables that taken from parametrized probability distributions. For example the growth of a software 
-project size can be modeled by its relationship with time and effort as was shown by numerous research work 
-\cite{citeulike:330266} \cite{citeulike:12849755} \cite{citeulike:12849753} \cite{citeulike:328047} \cite{citeulike:12849771}
-which suggests that the evolution of various software metrics can be modeled with Double Pareto distribution.
-
-While stochastic process is useful for predicting of what likely to be observed, they usually are too low level to be used for
-a software process modeling. For example a variety of development events such as maintenance, correction, new function,
-and enhancement may cause change in a number of source code files and lines, but in order to discover these events 
-from the metrics changes an additional mapping procedure, such as coding performed by human experts or classification 
-with automated techiques is required. Once mapping is applied, a number of tools and techniques usually called ``business 
-intelligence tools'' can be applied to these collections of events.
-
-Although process mining in the business domain is a well-established field with much software developed up to date 
-(ERP, WFM and other systems), ``Business Process Intelligence'' (BPI) tools usually do not perform process discovery and 
-typically offer relatively simple domain-oriented analyses that depend upon a correct a-priori process model 
-\cite{citeulike:3718014} \cite{citeulike:5044991}. 
-This fact restricts off-shelf application of business domain process mining techniques to software engineering, where 
-processes are usually performed concurrently by many agents, are more complex and typically have a higher level of noise. 
-Taking this fact in account, I will review only the approaches to stochastic process mining for which applicability to software 
-process mining was expressed. 
-
-In particular I review four approaches in the rest of this section: 
-\begin{itemize}
- \item the work by Cook \& Wolf in that discuss an event-based framework for process discovery based on grammar 
-  inference and finite state machines. 
-  The authors directly applied their framework to Software Configuration Management (SCM) logs demonstrating satisfactory 
-  results \cite{citeulike:328044}.
- \item the work by Van der Aalst et al. where they demonstrate the applicability of Transition Systems and labeled Petri nets 
-  to process discovery in general \cite{citeulike:3718014} and the subsequent work by van der Aalst and Rubin 
-  that discusses software process mining \cite{citeulike:1885717}.
- \item the approach by Jensen \& Scacchi \cite{citeulike:5043664} that describes a framework built upon an universal generic 
-  meta-model and specific to the observed processes models which are iteratively built and revised during case studies. 
-  The particular value of this work is in the demonstration of the importance of the correct mapping between process artifacts 
-  and process entities as well as a demonstration of iterative process revision that emphasizes the importance of pre-existing 
-  domain knowledge in the effective pruning of the search space.
-\item the recent work by Hindle et al. \cite{citeulike:9114115} \cite{citeulike:9007622} that shows the possibilty of software 
-  process evidence discovery from software process artifacts.
-\end{itemize}
-
-Notice, that all reviewed approaches require a mapping to be provided. In addition all reviewed approaches have difficulties 
-dealing with concurrency, which, in turn, is inevitable in the software process usually performed by many agents. 
-Much successive work has been done extending reviewed approaches to the concurrent processes. 
-%Among others, Weijters \& van der Aalst in \cite{citeulike:5128101} propose heuristics to handle concurrency and noise issues, 
-%while van der Aalst et al. in \cite{citeulike:5128110} discuss a genetic programming application. 
-
-\subsection{Process discovery through Grammar Inference} \label{grammar}
-One of the pioneering process discovery techniques was developed by Cook \& Wolf in \cite{citeulike:328044}. The authors 
-developed a generic techniques intended to discover process models from event streams. The authors did not really intend to 
-generate a complete model, but rather to generate sub-models that express the most frequent patterns in the event stream.
-They designed a framework which collects process data from ongoing software process or from history logs, and generates a 
-set of recurring patterns of behavior characterizing observed process. In their work they extended two methods of 
-\textit{grammar inference} from previous work: purely statistical (neural network based \textit{RNet}) and purely algorithmic 
-(\textit{KTail}) as well as developed their own Markovian method (\textit{Markov}). 
-
-\textit{Process discovery}, in the author's opinion, resembles the process of \textit{grammar inference}, which can be defined 
-as the process of inferring a language grammar from the given set (sample) of sentences in this language. 
-In the demonstrated approach, words of the language are atomic events of the dynamic process, whether sentences built from 
-such words, are describing the behavior of a process. 
-Consequently, the inferred grammar of that language is the formal model of the process. Cook \& Wolf expressed such grammars 
-as Finite State Machines (FSMs) and implemented a software tool for the mining of the software process. 
-This tool was successfully tested in an industrial case study.
-
-\begin{figure}[tbp]
+\begin{figure}[h]
    \centering
-   \includegraphics[width=140mm]{inference.eps}
-   \caption{Process discovery through the grammar inference: panel a) a sample event stream (simple process involving three 
-   types of events: Edit, Review, and Checkin); and FNA results obtained by applying three methods of process discovery from 
-   Cook \& Wolf \cite{citeulike:328044}.}
-   \label{fig:inference}
+   \includegraphics[width=150mm]{figures/Flow-analysis.eps}
+   \caption{High-level STA overview. Software artifacts are retrieved, enhanced, and measured within the
+   data assimilation layer. Next, based on the user input, classes of software trajectories are constructed.   
+   In turn, the data analysis layer perform comparative analyses of software trajectories yielding sets
+   of ranked class-characteristic behaviors.
+   Note, that while for the clarity only two classes of trajectories shown, STA works with many classes and 
+   reports many characteristic patterns.}
+   \label{fig:sta-analysis}
 \end{figure}
 
-The first method extended by the authors, the neural-network based grammar inference, RNet algorithm, defines a recurrent 
-neural network architecture which is trained by the sequences of events. After training, this neural net is able to characterize a 
-current system state by looking on past behavior. The authors extract the FSM from the trained neural network by presenting 
-different strings to it and extracting the hidden neurons activity through observations. Due to the nature of Neural Net, closely 
-related activation patterns are clustered into the same state; therefore, by noting the current pattern, the input token, and the 
-next activation pattern, transitions are recorded and compiled into the inferred FSM.
+In this chapter, in order to relate Software Trajectory Analysis to other research and to position it 
+among other work, I am going to discuss previous work from few research areas. 
+At first, since STA is designed for measurements analysis, I provide a background on software measurements 
+and their tight coupling with software process management. 
+Next, I discuss previous STA implementations. 
+Finally, I review relevant to mining of software repositories research focusing on recurrent behaviors discovery.
+The work relevant to SAX-VSM will be reviewed in the next Chapter.
 
-The second method investigated, is a purely algorithmic KTail method, which was taken from the work of 
-Biermann \& Feldman \cite{citeulike:5120603}. The idea is that a current state is defined by what future behaviors can occur 
-from it. The \textit{future} is defined as the set of next $k$ tokens. By looking at a window of successor events, the KTail 
-algorithm can build the equivalence classes that compose the process model. The authors extensively modified the original 
-KTail algorithm improving the folding in the mined model making to make it more robust to noise.
+\section{Software measurements}
+As in all other Engineering fields, measurements are used in Software Engineering in order to establish a 
+systematic approach to software development which provides the control over software processes, facilitates
+their improvement, and, most importantly, makes their result predictable. 
 
-The Markov based method developed by the authors is based on both algorithmic and statistical approaches. 
-It takes to account past and future system behavior in order to guess the current system state. Assuming that a finite number 
-of states can define the process, and that the probability of the next state is based only on the current state (Markov property), 
-the authors built a $n^{th}$-order Markov model using the first and second order probabilities. Once built, the transition 
-probability table corresponding to the Markov model is converted into FSM which is in turn reduced based on the user-specified 
-cut-off threshold for probabilities.
+\subsection{Software measurements history}
+According to Fenton \cite{citeulike:1525462}, the history of measurements in Software Engineering dates 
+back to mid-1960's  ``\textit{...when the Lines of Code metric was used as the basis for measuring the 
+productivity and effort...}'', which, in fact, predates the establishment of Software Engineering as an 
+independent discipline \cite{naur_crisis_68}. 
+While much of early research work concerning measurements in Software engineering dates to late 1970's 
+\cite{citeulike:13158802}, probably the earliest published work outlining relevance of software measurements 
+to software process management is ``Software project forecasting'' by DeMillo and Lipton 
+\cite{demillo1980software}, where they point out that software measurements create a basis which allows 
+practitioners and researchers to be ``rational and objective'' about software processes. 
+In their same work, the authors cite notes by Perils, Sayward and Shaw, who emphasized the role of software 
+measurements in the software process management, saying that 
+`\textit{the purpose of software metrics is to provide aids for making optimal choice at several points 
+in the life cycle}''.
 
-The authors implemented all three of these algorithms in a software tool called \textsc{DaGama} as a plugin for larger software
-system called Balboa \cite{citeulike:5120757}. By performing benchmarking, Cook \& Wolf found that the Markov algorithm was 
-superior to the two others. RNet was found to be the worst of the three algorithms. 
+While the early work on software measurements was heavily driven by the need for resource prediction model
+and forecasting \cite{citeulike:1525462}, later work focused on the importance of measurements in the 
+software process management and improvement. For example, one of the pioneering strategies for global software 
+process improvement, Total Software Quality Management (TSQM), relies on the set of ten explicitly defined software 
+process and product metrics ranging from low level metrics of LOC and design complexity to high-level process 
+management metrics such as schedule and system testing progress \cite{citeulike:13071448}.
+Similarly, the local strategy for software process improvement, Personal Software Process (PSP), relies on 
+the broad range of software metrics \cite{citeulike:13072239}.
 
-Overall, while having some issues with the complexity of produced output and noise handling, the authors proved applicability 
-of implemented algorithms to real-world process data by demonstrating an abstraction of the actual process executions and 
-capturing important properties of the process behavior. The major backdraw of the approach, as stated by the authors, 
-lies in the inability of the FSMs to model concurrency of processes which limits its applicability to the software development process.
-Later, they addressed this limitation \cite{citeulike:5128143}.
+Over years, the increasing understanding of software measurements importance in software process management, 
+as well as the success of the measurements-based predictive modeling prompted the creation of the research 
+field of Empirical Software Engineering (ESE), where scientists use measurements as the basis for research 
+hypotheses generation and for their investigation \cite{citeulike:766768}. 
 
+Recently, due to the proliferation of open source software development model and advancements in public software
+project hosting solutions, a new research area called Mining Software Repositories (MSR) was established 
+within ESE field. MSR is specifically concerned with application of analytical techniques to public software 
+repositories \cite{citeulike:12550438} \cite{citeulike:4534888} \cite{citeulike:2710928}, thus, the work from 
+this field is the most relevant to my research.
 
-\subsection{Incremental Workflow Mining with Petri Nets}
-Another set of findings relevant to my research approach was developed by Rubin
-et al. \cite{citeulike:1885717} and van der Aalst et al.
-\cite{citeulike:3718014} and is called \textit{incremental workflow mining}. The
-authors not only designed sophisticated algorithms but built a software system
-using a business process mining framework called ProM by van Dongen et al.
-\cite{citeulike:5043673} which synthesizes a Petri Net corresponding to the
-observed process. The system was tested on SCM logs and while the process
-artifacts retrieved from the SCM system are rather high-level, the approach
-discussed is very promising for the modeling of software processes from the
-low-level product and process data.
+\subsection{Software measurement theory}
+In science, and in engineering, measurements allow to formally characterize attributes of an entity 
+by assigning them a numerical, boolean, or a symbolic value. 
+The choice of the value type depends on the used measurements criteria, such as a dimension, a level, or a degree. 
+Ultimately, the chosen criteria and the scale of used values shall enable the intuitive and precise quantitative 
+comparison between attributes regardless of their qualitative similarity or difference,
+as pointed by Chapin \cite{citeulike:13158806}. 
+Typically, the measurement units and scales are standardized.
 
-\begin{figure}[tbp]
+An entity in Software Engineering can be a physical object, such as a program or a use case diagram, 
+an event, such as a software release, or a software artifact, such as a bug report.
+A measurable entity's attribute can be its property or a feature, such as the program's size, the amount of 
+defects discovered during testing, and the usability of a software system.
+
+Further, attributes are generally divided into two categories: internal and external. 
+While measures for internal attributes are computed based on the entity itself, external attributes measures 
+depend on the both an entity and an environment in which the entity resides - for example a system testing 
+time varies depending on the performance of a test server.
+
+Finally, as pointed by Fenton \cite{citeulike:1803429} there are two broad types of measurements: direct
+and indirect. While direct measurement of an attribute do not depend on any other attributes, 
+indirect measurement involves the measurement of one or more other attributes. 
+As an example of a direct measurement consider the size of system source code or a time developers spent on 
+project. In contrast, a module defect density (ratio of defects and module size), 
+or a requirement stability (ratio of initial requirements and total requirements) are indirect measurements.
+
+\subsection{Software measurements in STA}
+Software Trajectory Analysis is built for the analysis of software measurements with purpose to enable recurrent 
+behaviors discovery. It relies on the previous work that has indicated a possibility of software processes inference 
+through observation of their effect on software product evolution. 
+In particular, STA exploits the sequential dependency of consecutive measurements discovering recurrent patterns 
+in their dynamics, which, I hypothesize reflect the recurrent behaviors.
+
+\begin{figure}[t]
    \centering
-   \includegraphics[height=65mm]{petri.eps}
-   \caption{Illustration of the ``Generation and Synthesis Approach'' from
-\cite{citeulike:5043673}: a) Transition System with regions shown; b),c) Petri
-Nets synthesized from the Transition System.}
-   \label{fig:petri}
+   \includegraphics[width=115mm]{figures/SEI-measurements.eps}
+   \caption{An illustration of relation between software measurements and key responsibilities in project management 
+     from SEI Guidebook \cite{citeulike:10567306}.}
+   \label{fig:sei-measures}
 \end{figure}
 
-Within the incremental workflow mining framework, the input data from the SCM
-audit trail information is mapped to the event chain which corresponds to the
-software process artifacts. The authors call this process \textit{abstraction on
-the log level} which is implemented as a set of filters which not only
-aggregates basic events into single high-level entities but also removes data
-irrelevant to the mining process (noise). 
+The idea of studying software processes through the measurements of software product evolution is not new.
+Throughout the history of the research in Software Engineering, the tight correlation between software process and 
+product dynamics was discussed in numerous studies where measurable evolution of software system attributes 
+often used for software process research.
 
-The event chain constructed through the abstraction is then treated with the
-\textit{Generate} part of the \textit{``Generate and Synthesis''}
-\cite{citeulike:3718014} algorithm in order to generate a \textit{Transition
-System} which represents an ordered series of events. This algorithm looks at
-the history (prefix) and the future (suffix) sequences of events related to the
-current one in order to discover transitions.  When applied to the abstracted
-log information, the algorithm generates a rather large Transition System graph
-where edges connect to abstracted events. This transition system is then
-successively simplified by using various reduction strategies such as ``Kill
-Loops'', ``Extend'', ``Merge by Output'' and others; it is possible to combine
-these reduction strategies in order to achieve a greater simplification.
+As a particular example discussing the observability of software processes through software product measurements 
+consider a de-facto industrial standard in software measurements provided by Software Engineering Institute (SEI) in 
+their guidebook \cite{citeulike:10567306}. In particular, the authors discuss the variability in software processes 
+execution which significantly affects the resulting software system and project faith. To address this issue, the 
+discussed throughout the guidebook methodology recommends to implement a continuous software product and 
+process measurement program that would allow to continuously control the software process variability 
+enabling a ``real-time'' software process adjustments. 
+Figure \ref{fig:sei-measures} shows a schematic illustration of such a program.
 
-At the last step of the incremental workflow mining approach, Transition Systems
-are used to \textit{Synthesize} labeled Petri nets (where different transition
-can refer to the same event) with the help of \textit{``regions theory''}
-\cite{citeulike:5128170}. As with the Transition System generation, the authors
-investigate many different strategies of Petri nets synthesis, showing
-significant variability in the results achieved. (see Figure \ref{fig:petri}).
+Hackystat, the ``parent'' system of STA, is another related study that extends the applicability of continuous 
+measurements and confirms the possibility of software process understanding through the analysis of recurrent 
+behaviors\cite{citeulike:557296}. 
+As pointed by the authors, the visual comprehension of measurements variability and patterns collocation enables 
+``emergent knowledge that one state variable appears to co-vary with another in the current project context'',
+which naturally enables self-improvement process for software developers \cite{citeulike:557296}. 
 
-The significant contribution of this research is in the generality of the
-method. It was shown that by tuning the ``Generate'' and ``Synthesize'' phases
-it is possible to tailor the algorithm to a wide variety of processes. In
-particular, as mentioned before, Rubin et al. successfully applied this
-framework to the SCM logs analysis.
+STA extends both mentioned approaches by providing an automation for characteristic patterns discovery, which, 
+as I expect, provide improved understanding of software processes dynamics and their effect on the software product.
 
-\subsection{Reference model for Open Source Software Processes Discovery}
-Jensen \& Scacchi in \cite{citeulike:5043664} take a somewhat different approach from the previously discussed research efforts. The authors are follow a top-down approach and do not try to build a software process model from available process artifacts. Instead, they try to develop a software process \textit{reference model} by iteratively refining mapping between observed artifacts and the model entities. 
+\section{Previous work on STA}
+Current implementation of Software Trajectory Analysis is generic by the design. In fact, it can be applied to almost 
+any kind of sequential software measurements that carry useful to the research question information. This generality is granted 
+by the STA's core algorithm for characteristic patterns discovery called SAX-VSM that I shall propose and discuss in the 
+following Chapter \ref{chapter_sax_vsm}. Previous STA implementations were not generic -- they were ``hard-coded'' 
+for specific studies which I discuss in this section. These exploratory studies provided valuable insights into the problem 
+of recurrent behaviors discovery and into aspects of the system design and implementation.
 
-The proposed software process \textit{reference model} is a layer which provides a mapping from the underlying recognized software process artifacts into a higher level software-process meta-model by Mi \& Sacchi \cite{citeulike:5128872}. The iterative revision of the reference model vocabulary of mapped terms (Figure \ref{fig:refterm}) is performed through case studies. During such a study, the observed process artifacts such as SCM logs, defect reports and others are queried with terms from the reference model pulling correlated artifacts which are revised and curated by the process expert and lead to the further revisions of the terms taxonomy on the next iteration.
-
-\begin{figure}[tbp]
+\begin{figure}[t]
    \centering
-   \includegraphics[height=35mm]{refterm.eps}
-   \caption{Example of the reference model mapping from \cite{citeulike:5043664}.}
-   \label{fig:refterm}
+   \includegraphics[width=150mm]{figures/STA12-schema-draft.eps}
+   \caption{The Schematic overview of two first STA implementations. 
+   Left panel shows a schematic representation of information flow in Hackystat -- raw measurements, metadata, and its 
+   abstractions seamlessly absorbed by STA, processed, and presented to the user.
+   The right panel shows an information flow in the more generic STA implementation designed for the analysis of 
+   Android OS public repository. developed for Android OS repository mining.}
+   \label{fig:STA12-schema}
 \end{figure}
 
-In the relation to my research, I am envisioning the application of such iterative ``meta-model driven approach'' for characterization of the discovered recurrent patterns with unknown generative phenomena. The creation of the low-level recurrent patterns taxonomy through successive mapping into the meta-model assures from a ``nonsense patterns'' discovery.
+\subsection{STA v. 1.0: mining Hackystat software telemetry streams}
+The very first Software Trajectory Analysis implementation was designed specifically for the analysis of Hackystat 
+data called ``software telemetry streams''. As this data is collected automatically by so-called ``sensors'' installed 
+at the developer's system and deployment environment, it is characterized by consistency and regularity, which enables 
+unprecedented insight into performed processes as it was discussed in \ref{section_software_telemetry}. 
+Effectively, by offering efficient data collection and storage mechanisms and consistent, fine-grained data, 
+Hackystat provided ideal testbed for STA feasibility study.
 
-\section{Mining software repositories}
-However, in these and other research work based on mining of software process artifacts it was shown, 
-that while public availability of artifacts is minimizing observability and privacy issues, the nature 
-of these artifacts creates a number of other challenges, which limit the possible scope of the research 
-and significantly elevate the complexity of the process discovery:
+The overview of the very first, Hackystat-based STA implementation targeting the possibility of recurrent behaviors 
+discovery is shown at the left panel of Figure  \ref{fig:STA12-schema}.
+The pilot STA implementation for mining of recurrent behaviors was based on two techniques: the first is the discretization 
+of time-series with SAX \cite{sax}, that effectively translated real-valued telemetry streams into strings, and the 
+occurrence frequency-based discovery of recurrent patterns.
+
+As I have shown in \cite{csdl2-10-09}, this approach demonstrated the feasibility of recurrent behaviors discovery 
+through the mining of frequently occurring symbolic patterns, i.e. motifs. 
+Consider an example of recurrent behaviors discovery shown at the Figure \ref{fig:STA1-results}, where trajectories of 
+measurements corresponding to development effort shown at the left panel while their clustering based on Euclidean 
+distance among vectors of symbolic patterns occurrences shown at the right. Clearly, clustering separated two 
+developers (\#2 and \#7) from the rest. Further investigation of the data revealed that these two developers 
+demonstrated the most consistent development behavior as they devoted time for development activities almost every day, 
+whether the rest of study participants did not.
+
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=145mm]{figures/STA1.eps}
+   \caption{Clustering of developers behavior using symbolic approximation and vectors of motif frequencies. 
+   This analysis captures similar development behavior among developers. 
+   Developers \#2 and \#7 were consistent (no bursts observed) in both, coding and measuring effort during whole time interval, 
+   while all others can be characterized with bursty, inconsistent effort.}
+   \label{fig:STA1-results}
+\end{figure}
+
+In addition to indication of feasibility of automated recurrent behaviors discovery through the analysis of measurements, 
+the experience with the pilot system highlighted a number of issues to be addressed in the future work. 
+Among them, the chief issue was the external validity of the study, as the small scale of class-room 
+experimentation does not provide an adequate coverage of the studied phenomena and as it has significant external 
+treats. For example, in the discussed above development activity behaviors study, it is possible that some developers 
+that demonstrated inconsistent behaviors may simply had their systems mis-configured.
+The second significant issue identified by the pilot version was the problem of the mining algorithm parameter selection:
+the sliding window size and two discretization parameters must be defined before mining, but their values are difficult 
+to guess.
+
+Note, that the pilot STA also implemented a recurrent behaviors mining workflow based on application of Apriori algorithm 
+\cite{citeulike:775528} to development event records. As I have shown in \cite{citeulike:13159603}, this approach also
+offered a satisfactory performance. However, since development events are impossible to recover from public software 
+artifacts, this approach was not implemented in following STA implementations.
+
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=145mm]{figures/STA2-draft.eps}
+   \caption{Clustering of developers behavior using symbolic approximation and vectors of motif frequencies. 
+   This analysis captured similar development behavior among developers. 
+   Developers \#2 and \#7 were consistent (no bursts observed) in both, coding and measuring effort during whole time interval, 
+   while all others can be characterized with bursty, inconsistent effort.}
+   \label{fig:STA2-results}
+\end{figure}
+
+\subsection{STA v. 2.0: experience with Android OS repository}
+The second STA implementation was developed targeting analyses of measurement streams obtained by measuring of public
+software repositories.
+
+The decision to use public software repositories in the next to pilot exploratory study was made in order to increase its 
+significance by addressing all of the proposed by Gasser et al. \cite{citeulike:13058334} essential characteristics for 
+empirical studies based on mining of software artifacts:  
+(1) they must reflect a real-life phenomena, 
+(2) provide adequate phenomena's coverage, 
+(3) examine representative levels of variance, 
+(4) demonstrate an adequate level of statistical significance,
+(5) provide results that are comparable across projects,
+(6) be reproducible. 
+
+Unfortunately, due to much coarser granularity and inconsistency of measurements collected from artifacts, as discussed 
+further in this Chapter, the original approach to the data analysis based on the observed patterns frequency failed, 
+and an additional exploratory study of time series mining techniques was conducted.
+By experimenting with a number of discretization and aggregation techniques, as well as with various
+distance functions and ranking schema, I found, that the common to Information Retrieval (IR) toolkit called 
+Vector Space Model (VSM) based on \tfidf weighting schema and Cosine similarity demonstrated a satisfiable performance. 
+As I have shown in \cite{csdl2-11-10}, STA based on discretization with SAX and mining with VSM was capable to discover 
+characteristic behaviors.
+
+Consider an example shown at Figure \ref{fig:STA2-results} for two sets of software measurements: pre- and post- release 
+counts of new lines of code in Android OS kernel repository. While the details of data processing and recurrent behaviors 
+discovery will be discussed later in the Chapter \ref{chapter_results}, left panel of the figure show that it was possible to
+obtain clustering of characteristic behaviors sets corresponding to different time intervals where pre- and post- release 
+behaviors are clearly separated. By using cluster's centroids, it was also possible to correctly classify other time-intervals,
+which validates the approach applicability and correctness.
+
+Similarly to the pilot implementation, the experience with this STA highlighted the same problem of an expected pattern 
+length and the discretization parameters selection. This problem I have addressed by further development of the proposed 
+in \cite{csdl2-11-10} approach into a generic algorithm for time series characteristic pattern discovery and classification 
+called SAX-VSM \cite{sax-vsm} which I present in the next Chapter.
+
+Note, that while I shall discuss difficulties associated with mining of public software repositories further in this Chapter, 
+in order to combat the lack of their explicit external and internal connectivity along with the heterogeneity of data formats,
+the second STA implementation followed typical to MSR approaches for data integration \cite{citeulike:13058334} \cite{cvsanaly}. 
+In particular, similarly to previously developed solution called softChange \cite{german04_softchange} whose 
+architecture is shown at Figure \ref{fig:softchange} STA builds its own data storage facility called STA-DB and 
+relies on its own data storage format, as shown at the Figure \ref{fig:sta-assimilation}.
+
+\section{Mining Software Repositories}
+The discussed in this thesis STA implementation deals with data (i.e. artifacts and metadata) collected from public software 
+repositories, and is concerned with the discovery of recurrent behaviors which are abstracted as recurrent, structurally 
+similar, subsequences of longer sequences composed of temporally ordered artifacts measurements. 
+This research direction is not new and much work has been done previously in mining of software repositories and in mining 
+of public software repositories in particular. 
+For the last decade, researchers working on these problems discuss their approaches and findings in two specialized venues: 
+The Predictive Model in Software Engineering (PROMISE) Workshop and the Working Conference on Mining Software Repositories 
+(MSR) which held within annual International Conference on Software Engineering (ICSE).
+In order to enable comparative analyses of studied techniques, both venues encourage researchers to investigate 
+reference datasets. While PROMISE maintains the same datasets over years \cite{promise12}, MSR offers a so-called 
+MSR challenge dataset annually \cite{MSRChallenge2013}.
+Note however, that PROMISE research is typically concerned with development of predictive models \cite{Menzies13},
+MSR traditionally \cite{citeulike:12550438} \cite{citeulike:2710928} \cite{citeulike:7853299}, thus, when discussing the 
+specificity of public data from software repositories I mostly refer to MSR research.
+
+First of all, note, that while previous work in MSR \cite{citeulike:4534888} suggests source-control systems, 
+defect-tracking systems, and archived communications as the main data sources, in this work, I also use public data from 
+StackOverflow -- a popular software development community-based question answering service \cite{MSRChallenge2013}.
+In particular, I am going to study recurrent behaviors in the daily activity of top-rated contributors.
+
+Secondly, note, that previous research in MSR pointed out a number of issues which a typical study has to deal with and which
+not only create technical difficulties, but also affect its validity. 
+The chief problem is that software project public repositories are highly heterogeneous - each is managed and operated 
+mostly in isolation serving a particular project needs having no explicit interactions with other projects. 
+Moreover, within a project's repository, its SCM subsystems, such as version control, defect-tracking, and mailing list, 
+are rarely ``connected'  \cite{citeulike:13058334}. 
+This issue of heterogeneity directly affects MSR studies generality as tools working for and results obtained from one repository,
+are not applicable to another.
+Another issue is that while public availability of software artifacts is minimizing observability and privacy issues, 
+the nature of these artifacts creates a number of other challenges, which limit the possible scope of the research and 
+significantly elevate the complexity of the process discovery. Among others, four issues are typically cited as the most significant:
 \begin{itemize}
-\item First of all, the artifacts are created by developers and users not in order to enable the research,
+ \item First of all, the artifacts are created by developers and users not in order to enable the research,
 but merely to support software development activities. Thus, the process-related information content of these
-artifacts is questionable.
-\item Secondly, the majority of these artifacts (change records, defect reports, assigned tasks, etc) 
+artifacts is rather poor, and additional evidence is often needed \cite{citeulike:342840} \cite{citeulike:7954249} 
+\cite{citeulike:7260421}.
+ \item Secondly, the majority of these artifacts (change records, defect reports, assigned tasks, etc) 
 typically represent a snapshot of the software project state rather than reflect any of performed actions, 
 thus it might be simply impossible to infer any of completed software development events \cite{citeulike:1296888}.
 This fact effectively renders obsolete a majority of previously developed event-based process discovery tools.
-\item Thirdly, developers and users not only create and submit to repositories artifacts on their own volition,
+ \item Thirdly, developers and users not only create and submit to repositories artifacts on their own volition,
 but most of the change management system (such as Git, Subversion, and Gerrit) offer an asynchronous workflow, 
 where the locally created artifacts might never be committed \cite{citeulike:2280690} \cite{citeulike:9037939}. 
 Therefore, artifacts are displaced in time and it is often impossible to know exactly when their content was created.
-\item Finally, the high volume of produced artifacts and their dimensionality demands for automated, high throughput 
+ \item Finally, the high volume of produced artifacts and their dimensionality demands for automated, high throughput 
 techniques robust to the noise \cite{citeulike:12550438}, \cite{citeulike:7853299}, \cite{citeulike:4534888}.
 \end{itemize}
 
-While many behaviors are simply not observable through artifacts because they are never recorded
-and do not leave any quantifiable evidence behind, for example phone-calls, face-to-face meetings, and 
-private communications. 
+These data-specific issues associated with mining of public software repositories not only create significant external treats 
+to MSR research, but they are impossible to resolve without altering the normal flow of generative software process, 
+for example by implementing special measurement programs or by introducing instrumented source code editing or building tools. 
+Typically, MSR researchers deal with these external treats by finding of additional evidence supporting their 
+claims \cite{citeulike:5043664} \cite{citeulike:5128808}.
 
-\section{Knowledge discovery in time series}
+\subsection{Public software artifacts}
+Public software repositories software offer a wide range of software process and product artifacts for analyses.
+Among others, source code change records, defect reports, feature requests, assigned tasks, developers communications, 
+tutorials, etc. All these public artifacts allow a developer or a user to instantly obtain a ``snapshot'' of the project - 
+i.e. retrieve the latest (or any previous) source code revision and obtain a complete overview of the software project 
+state - lists of open and closed issues, past and future plans, etc.
+
+Note however, that being exceptionally convenient in aiding of project management, this snapshot-oriented nature of 
+public software artifacts creates difficulties for software process research as ``snapshots'' rarely reflect any of the 
+performed actions. 
+Thus, as pointed in previous work \cite{citeulike:1296888}, for some projects it may be simply impossible to infer 
+many of software development events and consequently software processes which happen in between these snapshots,
+which affects software process traceability and with the credibility of results as shown 
+in \cite{citeulike:2280690} \cite{citeulike:9037939}. I acknowledge this process observability issue while working with 
+public software process artifacts and intentionally avoid discussing and concluding on software processes. 
+What I shall focus on, will be the validation of the ability of proposed techniques to capture process-characteristic 
+recurrent behaviors (i.e. characteristic patterns).
+
+Further in this section I review kinds of public software repositories, their artifacts, and data types, to whose 
+measurements STA was or potentially can be applied. 
+
+\subsubsection{Source code}
+As the main output of a software project is the source code, it is also the main subject of the scientific research. 
+Metrics that derived from the source code are predominant in studies concerned with software complexity, maintainability,
+and code quality studies, as well as those that concerned with productivity, project planning, 
+and cost estimation \cite{citeulike:4534888}. 
+
+Typically, evolution of source code is recorded as a sequence of consecutive change records, which are simple artifacts 
+tracking changes of each source code line. Despite to the their simplicity, tracing the code evolution through the analysis 
+of change records can become increasingly difficult as developers branch the source code tree, merge it back later, 
+or abandon the branches \cite{citeulike:13156191}.
+
+A large number of metrics can be derived through source code and change records analyses, it offers probably the most functional one - the count of physical 
+lines of code (LOC). 
+
+While another metrics exists -- the count of logical lines of code (LLOC), it is language-dependent and its derivation involves 
+significant overhead.
+
+
+\subsubsection{Defect tracking system}
+Typically, the defect repository serves as a centralized system for managing a software project QA (Quality Assurance) activities
+providing users and project contributors with means to report and to discuss an improper system behavior.
+In addition, in some projects, the defect repository is also used to keep a track of requests for future system features and related
+discussions.
+
+Artifacts from repositories provide users and contributors with up to date information about system defects and their severity, and, 
+if implemented in the tracking system, with additional comments about their technical nature, resolution plans, and other information. 
+
+\subsubsection{Developers communications}
+As OSS projects usually developed by highly distributed teams, email, mailing lists, and newsgroups typically are 
+used as primary communication channels between project participants. Therefore, these data are particularly useful for
+identifying process agents, actions,  and activities related to process coordination between participants. 
+
+Developer communication artifacts, such as email messages, mailing list posts, and newsgroup messages include agent identification, 
+timestamps, topics, and other useful information. 
+
+\subsubsection{Q\&A websites}
+Frequently, professional software developers and hobbyists programmers seek answers to various questions using various websites. 
+Among others, Stack Overﬂow (SO) explicitly targets programmers and is dedicated to software-, hardware-, and computer system 
+administration-related issues.
+
+A number of recent MSR studies which explored this data has shown its potential in providing insights into a number of problems.
+While most of the studies are concerned with programming related questions, such as identifying topics relevant to particular 
+development communities \cite{kartik:msr14}, mining additional technical expertise \cite{VenkataramaniGAMB13} \cite{SaxeMG13}, 
+or identifying problematic APIs \cite{KavalerPGCDF13} \cite{Linares2013Exploratory} or software package documentation 
+\cite{Campbell2013Deficient}, 
+a number of studies address broad phenomena such as those concerned with collaborative problem solving 
+\cite{Tausczik2014Collaborative}, and knowledge sharing \cite{VasilescuCSCW14} \cite{Schenk2013Geo}. 
+Finally, some researcher investigate contributors temporal behaviors \cite{Bosu2013Building} or attempt their profiling 
+\cite{GinscaP13}.
+
+\subsubsection{Metadata}
+Often, as reported by Begelet al. \cite{citeulike:7260421} who conducted a survey at Microsoft, in order to understand performed 
+by software developers processes, the quantitative source code changes information is simply not sufficient. Through the survey,
+the authors accounted for 31 different information needs for understanding and coordinating team software processes, among 
+which needs for accompanying software change metadata were well pronounced. Among other needs, it was found that engineers want new 
+solutions forlearning the rationale behindchanges, finding responsible people, discovering and tracking dependencies, 
+learningabout the status of items in progress. The authors emphasize, that the majority of needs were concerned with people, not 
+the code, and that metadata is essential in meeting the requests.
+
+Similarly, Kim et al. \cite{citeulike:4000311} who proposed a system for software repositories data extraction, data storage, 
+and a universal data-exchange language, emphasized the metadata importance for information collection and partitioning, moreover, 
+the authors has shown that it is possible to create a metadata-based system for mining of software repositories system for 
+close-source projects.
+
+STA DB has expendable, metadata-centric design. New types of metadata can be defined and related to existing and newly collected
+artifact entities. Later, in the process of software trajectories definitions, the metadata class tags and values can be used 
+for data partitioning and aggregation.
+
+\section{Data assimilation}
+Currently, there is a voluminous amount of the research literature concerned with mining of public software repositories 
+\cite{citeulike:2710928} which, in fact, extends probably even larger body of earlier work that have focused on studying 
+of historic private databases on software development \cite{citeulike:393158} \cite{citeulike:13125375} \cite{citeulike:13125481}.
+
+Among others, the research questions discussed in this literature usually concerned with extracting of 
+historical information for better understanding of software systems evolution \cite{citeulike:277045} \cite{citeulike:4000311}, 
+better understand and improving of software processes \cite{citeulike:5803126}, 
+and studying the impact of software tools on the processes and products \cite{citeulike:13125389}. 
+Yet, some effort was made towards automation of the process of data retrieval and measurements. 
+While some of the proposed solutions allow real-time interactive repositories exploration by extending 
+repository management tools such as CVS, SVN, etc. with a front-end engine, such as Bonsai \cite{bonsai},
+or JReflex \cite{citeulike:3017440}, others, such as CVSAnalY \cite{citeulike:6544724}, softChange \cite{citeulike:13125395},
+and {TA}-{RE} \cite{citeulike:4000311} propose a workflow based on off-line artifacts retrieval, 
+pre-processing, and on-demand analysis.
+Similarly to the latter, STA relies on the off-line retrieval and pre-processing of public software artifacts as
+shown at the Figure \ref{fig:sta-assimilation}. Note that since STA has been initially designed as a Hackystat 
+extension \cite{csdl2-10-09}, it does not need any specific parser and is capable of real-time 
+collection of Hackystat data.
+
+However, when the snapshots are viewed in dynamics, it significantly clarifies the picture. 
+With time, the uncommitted changes of individual developers are merged with the main source tree, 
+current defects getting fixed, while new ones discovered. 
+The understanding of the dynamics allows researchers to create better models of software processes, 
+forecast future events and to predict the evolution of the variety of metrics.
+The software project evolution seen through the multiple snapshots allows the better 
+assessment of the project dynamics and facilitates predictions. Moreover, as pointed by the Hackystat authors, 
+\cite{citeulike:557296} \textit{the ability to compare}
+
+\begin{figure}[t]
+   \centering
+   \vspace{1cm}
+   \includegraphics[width=115mm]{figures/Flow.eps}
+   \caption{Detailed overview of Software Trajectory Analysis data assimilation layer. 
+    At first, software artifacts are collected from software repositories, measured, converted into 
+    universal to STA format, and stored in a dedicated database.
+    If Hackystat used as a data source, typically, no additional processing required and data can be used in the real-time.
+    Stored in STA DB software artifact entities can be further enhanced by additional measurements and metadata.
+    Finally, the database allows efficient data partitioning and its aggregation into software trajectories.}
+   \label{fig:sta-assimilation}
+\end{figure}
+
+\section{Relevant MSR research on recurrent behaviors discovery}
+Some research within MSR, specifically concerns with application of analytical techniques to sequences of software 
+artifact measurements -- the approach which is similar to STA.
+
+\subsection{Itemsets mining}
+In data mining, frequently occurring items (actions, events) often used in order to discover implicit knowledge from
+large datasets. As I have mentioned earlier in Section \ref{section_software_process_design}, these techniques were 
+applied for software process mining before by Cook and Wolf \cite{citeulike:328044} \cite{citeulike:5120757} 
+\cite{citeulike:5128143} and Rubin et al. \cite{citeulike:1885717}. Unfortunately, these techniques are not applicable
+to public software repositories since they do not offer development event logs.
+
+Nevertheless, sequential item mining was explored by Zimmermann et al. in \cite{citeulike:277045}. 
+The authors developed a system called ROSE for identification of co-occurring changes in a software system aiming at 
+prediction of future code changes based on the observed change. 
+Similarly, Kagdi et al. \cite{citeulike:3929070} applied sequential-pattern mining to discover ordered sequences of 
+frequently changed files in order to predict future changes. 
+Livshits and Zimmermann \cite{citeulike:393158} developed DynaMine -- the system based on mining of call patterns 
+capable to detect potential bugs.
+
+Potentially, these techniques can be applied for STA results. For example it may be possible to discover ordered, or
+unordered sequences of frequent behaviors which can be classified as more coarser development actions.
+
+\subsection{Time series analysis}
+Because most of repositories have entities with temporal aspects, MSR research seeks to quantitatively analyze ordered 
+in time sequences of software artifacts or measurements. In particular time-series analysis and the extraction of 
+temporal patterns thought to be quite useful for re-enacting and describing behaviors within a software repository. 
+
+\begin{figure}[t!]
+   \centering
+   \includegraphics[width=145mm]{figures/FourrierMySQL.eps}
+   \caption{}
+   \label{fig:mysql-fourrier}
+\end{figure}
+
+For example Herraiz et al. \cite{citeulike:6544685} applied ARIMA models to software evolution measurements aiming 
+prediction of future changes. 
+Similarly, Antoniol et al. \cite{citeulike:3378725} worked on mining of repeated behaviors using linear prediction 
+coding (LPC) and Cepstrum coefficients. 
+Hindle et al. in \cite{citeulike:10377345} described how to discover recurrent behaviors from software measurements 
+by Fourier analysis. The left panel of the Figure \ref{fig:mysql-fourrier} from their work indicates that the studied 
+signal carries potentially distinguishable periodic behavior, moreover, they were able to detect a promising a smear 
+of frequencies between 18 and 19 (right panel), unfortunately this direction was not further investigated.
+
+
+\epigraph{Without the right information, you're just another person with an opinion.}{Tracy O'Rourke, CEO of Allen-Bradley}
