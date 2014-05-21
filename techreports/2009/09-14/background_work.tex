@@ -9,31 +9,43 @@ collected, measured, and enriched with metadata.
 Currently, STA is capable of retrieving data from typical to OSS development Software Configuration 
 Management system (SCM) components such as version control, defect management, and communications 
 management systems. In addition it is capable to work with data from other sources, such as Q\&A 
-websites, or directly from the Hackystat system \cite{citeulike:557296}.
+websites, or directly from Hackystat system \cite{csdl2-10-09}.
 
-Note however that STA is not limited to these data sources.
-As public data sources are highly heterogeneous, STA adopts the usual to software repository mining 
+Note, that STA is not limited only to these data sources.
+As public data sources are highly heterogeneous, STA adopts a common to software repository mining 
 field strategies for data assimilation, unification, and off-line enrichment \cite{german04_softchange}, 
 where public artifacts are retrieved and stored ``\textit{as is}'' (i.e. mirrored) at first, 
-enriched with with metadata at second, and measured at the final step.
-Similarly to other systems, the relational database is used by STA for data storage and indexing, 
-this not only enables an interactive workflow and a federated access to data, but allows an efficient 
-measurements partitioning and aggregation, which is essential for software trajectories construction.
+measured at second, and enriched with with metadata at the final step.
+Similarly to other systems for mining of software repositories, the relational database is used in STA 
+for data storage and indexing --- this not only enables an interactive workflow and a federated access to 
+data, but allows for effective measurements partitioning and aggregation, which is the \textit{essential} 
+capability for efficient software trajectories construction.
 Overall, STA data assimilation layer is designed in a way which conforms with the field's best practices
 allowing its extension for any data source capable of providing data worth the upstream analyses.
+\fxnote{maybe cite the data enrichment with geolocation metadata for stakcoverflow analyses?}
 
-The software trajectory characteristic patterns discovery module relies on the implementation of 
-SAX-VSM algorithm that I shall propose and discuss in the Chapter \ref{chapter:sax-vsm} of this thesis.
-The algorithm enables discovery and ranking of recurrent patterns from software trajectories, 
-which, as I shall show in Chapter \ref{chapter:results}, likely to correspond to recurrent behaviors -- 
-the antecedent features of software processes that allow better understanding of software process dynamics, 
-and aid in problem detection. Moreover, quantitative assessment of behaviors enables not only process 
-improvement hypothesis generation, but, most importantly, its empirical validation.
-The overview of the analysis module is shown at Figure \ref{fig:sta-full-overview}.
-%\ref{fig:sta-overview} Classes construction, however, is performed by the user depending on the research 
-% question and requires some advanced knowledge and experience.
+The software trajectory characteristic patterns discovery module refers to an analytical machinery that 
+is responsible for discovery of characteristic behaviors in the set of software trajectories provided as 
+an input.
+Conceptually, this module can embed any data mining algorithm that is capable to discover patterns from 
+sequential data such as numerous algorithms for time-series mining \cite{citeulike:10358271}.
+Note however, that the specificity of software trajectories and the pattern of interest, 
+i.e. recurrent behaviors, places many constraints on such algorithm.
+First of all, an algorithm must be capable 
+\textit{to discover recurrent patterns without any prior knowledge about their length, shape, 
+amplitude, and most importantly frequency threshold}, as these are expected to 
+naturally differ between projects, problems, or even subsets of trajectories from the same project.
+Secondly, it must be capable to \textit{learn from a very small training data set} --- 
+the property that has been shown crucial in predictive modeling and knowledge mining from software 
+repositories where data is sparse \cite{citeulike:6055293}.
+And finally, such an algorithm should be able to \textit{rank patterns according to their relevance}.
 
-\begin{figure}[h]
+The discussed in this thesis STA characteristic patterns discovery module implementation relies on SAX-VSM,
+a novel algorithm for characteristic patterns discovery from time series, that I shall propose in the 
+following Chapter. This algorithm was specifically designed in order to address aforementioned issues.
+\fxnote{do I need to iterate over SAX-VSM and baseline establishment through comparative analyses?}
+
+\begin{figure}[t]
    \centering
    \includegraphics[width=150mm]{figures/Flow-analysis.eps}
    \caption{High-level STA overview. Software artifacts are retrieved, enhanced, and measured within the
@@ -57,60 +69,65 @@ The work relevant to SAX-VSM will be reviewed in the next Chapter.
 As in all other Engineering fields, measurements are used in Software Engineering in order to establish a 
 systematic approach to software development which provides the control over software processes, facilitates
 their improvement, and, most importantly, makes their result predictable. 
+In addition, software measurements enable a scientific research.
 
 \subsection{Software measurements history}
 According to Fenton \cite{citeulike:1525462}, the history of measurements in Software Engineering dates 
 back to mid-1960's  ``\textit{...when the Lines of Code metric was used as the basis for measuring the 
 productivity and effort...}'', which, in fact, predates the establishment of Software Engineering as an 
 independent discipline \cite{naur_crisis_68}. 
-While much of early research work concerning measurements in Software engineering dates to late 1970's 
-\cite{citeulike:13158802}, probably the earliest published work outlining relevance of software measurements 
-to software process management is ``Software project forecasting'' by DeMillo and Lipton 
-\cite{demillo1980software}, where they point out that software measurements create a basis which allows 
-practitioners and researchers to be ``rational and objective'' about software processes. 
-In their same work, the authors cite notes by Perils, Sayward and Shaw, who emphasized the role of software 
-measurements in the software process management, saying that 
-`\textit{the purpose of software metrics is to provide aids for making optimal choice at several points 
-in the life cycle}''.
+Much of early research work concerned with measurements was driven by the need for resource model prediction 
+and forecasting \cite{citeulike:1525462} whereas later research extended towards the problem of software 
+process management \cite{citeulike:13158802}.
 
-While the early work on software measurements was heavily driven by the need for resource prediction model
-and forecasting \cite{citeulike:1525462}, later work focused on the importance of measurements in the 
-software process management and improvement. For example, one of the pioneering strategies for global software 
-process improvement, Total Software Quality Management (TSQM), relies on the set of ten explicitly defined software 
-process and product metrics ranging from low level metrics of LOC and design complexity to high-level process 
-management metrics such as schedule and system testing progress \cite{citeulike:13071448}.
+Probably the earliest published work outlining close relations of software measurements and software 
+processes is ``Software project forecasting'' by DeMillo and Lipton \cite{demillo1980software} where they 
+point out that software measurements create a basis which allows practitioners and researchers to be 
+``rational and objective'' about software processes. 
+Notably, in the same work, the authors refer to earlier notes by Perils, Sayward and Shaw, who emphasized 
+the role of software measurements in the software process management, saying that `\textit{the purpose of 
+software metrics is to provide aids for making optimal choice at several points in the life cycle}''.
+
+With time, the increasing understanding of measurements objectiveness and their ability to reflect the state 
+of software processes led to the development of measurement-based strategies for software process management
+and improvement. 
+For example, one of the pioneering strategies for global software process improvement, 
+Total Software Quality Management (TSQM), relies on the set of ten explicitly defined software 
+process and product metrics ranging from low level metrics of Lines of Code and design complexity to 
+high-level process management metrics such as schedule and system testing progress \cite{citeulike:13071448}.
 Similarly, the local strategy for software process improvement, Personal Software Process (PSP), relies on 
 the broad range of software metrics \cite{citeulike:13072239}.
 
-Over years, the increasing understanding of software measurements importance in software process management, 
-as well as the success of the measurements-based predictive modeling prompted the creation of the research 
-field of Empirical Software Engineering (ESE), where scientists use measurements as the basis for research 
-hypotheses generation and for their investigation \cite{citeulike:766768}. 
+In addition to playing an important role in software process management and forecasting, software 
+measurements become ubiquitous in scientific research. 
+In the field of Empirical (or as it also called Experimental) Software Engineering (ESE), 
+researchers use measurements and experimentation as the basis for research hypotheses 
+generation and for their investigation \cite{citeulike:766768}. 
 
-Recently, due to the proliferation of open source software development model and advancements in public software
+Recently, due to the proliferation of open source software development and advancements in public software
 project hosting solutions, a new research area called Mining Software Repositories (MSR) was established 
 within ESE field. MSR is specifically concerned with application of analytical techniques to public software 
 repositories \cite{citeulike:12550438} \cite{citeulike:4534888} \cite{citeulike:2710928}, thus, the work from 
-this field is the most relevant to my research.
+this field is one of the most relevant to my research.
 
 \subsection{Software measurement theory}
-In science, and in engineering, measurements allow to formally characterize attributes of an entity 
+In science, and in Engineering, measurements allow to formally characterize attributes of an entity 
 by assigning them a numerical, boolean, or a symbolic value. 
-The choice of the value type depends on the used measurements criteria, such as a dimension, a level, or a degree. 
-Ultimately, the chosen criteria and the scale of used values shall enable the intuitive and precise quantitative 
-comparison between attributes regardless of their qualitative similarity or difference,
-as pointed by Chapin \cite{citeulike:13158806}. 
-Typically, the measurement units and scales are standardized.
+The choice of the value type depends on the used measurements criteria, such as a dimension, a level, 
+or a degree. Ultimately, the chosen criteria and the scale of used values shall enable the intuitive 
+and precise quantitative comparison between attributes regardless of their qualitative similarity or 
+difference,as pointed by Chapin \cite{citeulike:13158806}. 
+The measurement units and scales are typically standardized in order to enable a global comparability.
 
 An entity in Software Engineering can be a physical object, such as a program or a use case diagram, 
 an event, such as a software release, or a software artifact, such as a bug report.
-A measurable entity's attribute can be its property or a feature, such as the program's size, the amount of 
-defects discovered during testing, and the usability of a software system.
+A measurable entity's attribute can be its property or a feature, such as the program's size, the 
+amount of defects discovered during testing, and the usability of a software system.
 
 Further, attributes are generally divided into two categories: internal and external. 
-While measures for internal attributes are computed based on the entity itself, external attributes measures 
-depend on the both an entity and an environment in which the entity resides - for example a system testing 
-time varies depending on the performance of a test server.
+While measures for internal attributes are computed based on the entity itself, external attributes 
+measures depend on the both an entity and an environment in which the entity resides - for example a 
+system testing time varies depending on the performance of a test server.
 
 Finally, as pointed by Fenton \cite{citeulike:1803429} there are two broad types of measurements: direct
 and indirect. While direct measurement of an attribute do not depend on any other attributes, 
@@ -120,33 +137,31 @@ project. In contrast, a module defect density (ratio of defects and module size)
 or a requirement stability (ratio of initial requirements and total requirements) are indirect measurements.
 
 \subsection{Software measurements in STA}
-Software Trajectory Analysis is built for the analysis of software measurements with purpose to enable recurrent 
-behaviors discovery. It relies on the previous work that has indicated a possibility of software processes inference 
-through observation of their effect on software product evolution. 
-In particular, STA exploits the sequential dependency of consecutive measurements discovering recurrent patterns 
-in their dynamics, which, I hypothesize reflect the recurrent behaviors.
+Software Trajectory Analysis is built for the analysis of software measurements with purpose to enable 
+recurrent behaviors discovery. In particular, STA exploits the sequential dependency of consecutive 
+measurements discovering recurrent patterns in their dynamics, which, I hypothesize reflect the recurrent behaviors.
 
 \begin{figure}[t]
    \centering
    \includegraphics[width=115mm]{figures/SEI-measurements.eps}
-   \caption{An illustration of relation between software measurements and key responsibilities in project management 
-     from SEI Guidebook \cite{citeulike:10567306}.}
+   \caption{An illustration of relation between software measurements and key responsibilities 
+   in project management from SEI Guidebook \cite{citeulike:10567306}.}
    \label{fig:sei-measures}
 \end{figure}
 
-The idea of studying software processes through the measurements of software product evolution is not new.
-Throughout the history of the research in Software Engineering, the tight correlation between software process and 
-product dynamics was discussed in numerous studies where measurable evolution of software system attributes 
-often used for software process research.
+This approach builds upon previous work that confirmed the feasibility of software processes inference through 
+observation (i.e. measurements) of their effect on software product evolution and indicated a possibility of 
+recurrent behaviors discovery. 
 
 As a particular example discussing the observability of software processes through software product measurements 
 consider a de-facto industrial standard in software measurements provided by Software Engineering Institute (SEI) in 
-their guidebook \cite{citeulike:10567306}. In particular, the authors discuss the variability in software processes 
-execution which significantly affects the resulting software system and project faith. To address this issue, the 
-discussed throughout the guidebook methodology recommends to implement a continuous software product and 
-process measurement program that would allow to continuously control the software process variability 
-enabling a ``real-time'' software process adjustments. 
-Figure \ref{fig:sei-measures} shows a schematic illustration of such a program.
+their guidebook \cite{citeulike:10567306}. 
+In particular, the authors discuss the variability issue in software processes execution which significantly 
+affects the resulting software system quality and the project faith. 
+To address this issue, the discussed throughout the guidebook methodology recommends to implement a continuous 
+software product and process measurement program that would allow for continuous assessment of software processes 
+variability enabling a ``real-time'' software process control. Figure \ref{fig:sei-measures} shows a schematic 
+illustration of such program.
 
 Hackystat, the ``parent'' system of STA, is another related study that extends the applicability of continuous 
 measurements and confirms the possibility of software process understanding through the analysis of recurrent 
@@ -155,22 +170,28 @@ As pointed by the authors, the visual comprehension of measurements variability 
 ``emergent knowledge that one state variable appears to co-vary with another in the current project context'',
 which naturally enables self-improvement process for software developers \cite{citeulike:557296}. 
 
-STA extends both mentioned approaches by providing an automation for characteristic patterns discovery, which, 
-as I expect, provide improved understanding of software processes dynamics and their effect on the software product.
+As an example indicating the possibility of recurrent behaviors discovery through measurements, consider the 
+study by Hindle et al. \cite{citeulike:10377345} discussed in the Section \ref{chapter2_section-tsanalysis} of 
+this chapter that shows an example of recurrent behaviors detection by the Fourier Transform based analysis.
+
+STA extends previous approaches built for software measurements analysis by providing an automation for 
+characteristic patterns discovery from software process and product measurements, which, as I expect, shall 
+provide an improved understanding of software processes dynamics and their effect on the software product.
 
 \section{Previous work on STA}
-Current implementation of Software Trajectory Analysis is generic by the design. In fact, it can be applied to almost 
-any kind of sequential software measurements that carry useful to the research question information. This generality is granted 
-by the STA's core algorithm for characteristic patterns discovery called SAX-VSM that I shall propose and discuss in the 
-following Chapter \ref{chapter_sax_vsm}. Previous STA implementations were not generic -- they were ``hard-coded'' 
-for specific studies which I discuss in this section. These exploratory studies provided valuable insights into the problem 
-of recurrent behaviors discovery and into aspects of the system design and implementation.
+Current implementation of Software Trajectory Analysis is generic by the design. In fact, it can be applied 
+to almost any kind of sequential software measurements that carry useful to the research question information. 
+This generality is granted by the STA's core algorithm for characteristic patterns discovery called SAX-VSM 
+that I shall propose and discuss in the following Chapter. 
+Previous STA implementations were not generic -- they were ``hard-coded'' for specific exploratory studies 
+which I discuss in this section. These studies provided valuable insights into the problem of recurrent 
+behaviors discovery and into aspects of the system design and implementation.
 
 \begin{figure}[t]
    \centering
    \includegraphics[width=150mm]{figures/STA12-schema-draft.eps}
    \caption{The Schematic overview of two first STA implementations. 
-   Left panel shows a schematic representation of information flow in Hackystat -- raw measurements, metadata, and its 
+   Left panel shows a schematic representation of information flow in Hackystat: raw measurements, metadata, and its 
    abstractions seamlessly absorbed by STA, processed, and presented to the user.
    The right panel shows an information flow in the more generic STA implementation designed for the analysis of 
    Android OS public repository. developed for Android OS repository mining.}
@@ -180,25 +201,26 @@ of recurrent behaviors discovery and into aspects of the system design and imple
 \subsection{STA v. 1.0: mining Hackystat software telemetry streams}
 The very first Software Trajectory Analysis implementation was designed specifically for the analysis of Hackystat 
 data called ``software telemetry streams''. As this data is collected automatically by so-called ``sensors'' installed 
-at the developer's system and deployment environment, it is characterized by consistency and regularity, which enables 
+at the developer's system and deployment environment, it is characterized by high consistency, which enables 
 unprecedented insight into performed processes as it was discussed in \ref{section_software_telemetry}. 
-Effectively, by offering efficient data collection and storage mechanisms and consistent, fine-grained data, 
+Effectively, by offering efficient data collection, storage mechanisms, and consistent, fine-grained data, 
 Hackystat provided ideal testbed for STA feasibility study.
 
-The overview of the very first, Hackystat-based STA implementation targeting the possibility of recurrent behaviors 
+The overview of the very first, Hackystat-based STA implementation targeting the recurrent behaviors 
 discovery is shown at the left panel of Figure  \ref{fig:STA12-schema}.
-The pilot STA implementation for mining of recurrent behaviors was based on two techniques: the first is the discretization 
-of time-series with SAX \cite{sax}, that effectively translated real-valued telemetry streams into strings, and the 
-occurrence frequency-based discovery of recurrent patterns.
+The pilot STA implementation for mining of recurrent behaviors was based on two techniques: the first is the 
+discretization of time-series with SAX \cite{sax}, that effectively translated real-valued telemetry streams 
+into strings, and the second is occurrence frequency (i.e. support) -based discovery of recurrent patterns.
 
 As I have shown in \cite{csdl2-10-09}, this approach demonstrated the feasibility of recurrent behaviors discovery 
 through the mining of frequently occurring symbolic patterns, i.e. motifs. 
-Consider an example of recurrent behaviors discovery shown at the Figure \ref{fig:STA1-results}, where trajectories of 
-measurements corresponding to development effort shown at the left panel while their clustering based on Euclidean 
-distance among vectors of symbolic patterns occurrences shown at the right. Clearly, clustering separated two 
-developers (\#2 and \#7) from the rest. Further investigation of the data revealed that these two developers 
-demonstrated the most consistent development behavior as they devoted time for development activities almost every day, 
-whether the rest of study participants did not.
+Consider an example of recurrent behaviors discovery shown at the Figure \ref{fig:STA1-results}, where software 
+trajectories (i.e. measurements) corresponding to development effort shown at the left panel while their clustering based on Euclidean 
+distance among vectors of symbolic patterns occurrences shown at the right. Clearly, the hierarchical clustering 
+process divided the set of trajectories separating two developers (\#2 and \#7) from the rest. 
+Further investigation of the data revealed that these two developers demonstrated the most consistent development 
+behavior as they devoted time for development activities almost every day, whether the rest of study participants 
+did not. Thus, the results of the analysis were found aligned with the ground truth.
 
 \begin{figure}[t]
    \centering
@@ -211,13 +233,13 @@ whether the rest of study participants did not.
 \end{figure}
 
 In addition to indication of feasibility of automated recurrent behaviors discovery through the analysis of measurements, 
-the experience with the pilot system highlighted a number of issues to be addressed in the future work. 
-Among them, the chief issue was the external validity of the study, as the small scale of class-room 
+the experience with the pilot system highlighted a number of issues to be addressed in the future work, 
+where the chief issue was the external validity of the study, as the small scale of class-room 
 experimentation does not provide an adequate coverage of the studied phenomena and as it has significant external 
 treats. For example, in the discussed above development activity behaviors study, it is possible that some developers 
 that demonstrated inconsistent behaviors may simply had their systems mis-configured.
 The second significant issue identified by the pilot version was the problem of the mining algorithm parameter selection:
-the sliding window size and two discretization parameters must be defined before mining, but their values are difficult 
+the sliding window size and discretization parameters must be defined before mining, but their values are difficult 
 to guess.
 
 Note, that the pilot STA also implemented a recurrent behaviors mining workflow based on application of Apriori algorithm 
@@ -236,10 +258,10 @@ artifacts, this approach was not implemented in following STA implementations.
 \end{figure}
 
 \subsection{STA v. 2.0: experience with Android OS repository}
-The second STA implementation was developed targeting analyses of measurement streams obtained by measuring of public
+The second STA implementation was developed targeting analyses of measurements obtained by measuring artifacts from public 
 software repositories.
 
-The decision to use public software repositories in the next to pilot exploratory study was made in order to increase its 
+The decision to use public software repositories in the second exploratory study was made in order to increase its 
 significance by addressing all of the proposed by Gasser et al. \cite{citeulike:13058334} essential characteristics for 
 empirical studies based on mining of software artifacts:  
 (1) they must reflect a real-life phenomena, 
@@ -265,10 +287,10 @@ obtain clustering of characteristic behaviors sets corresponding to different ti
 behaviors are clearly separated. By using cluster's centroids, it was also possible to correctly classify other time-intervals,
 which validates the approach applicability and correctness.
 
-Similarly to the pilot implementation, the experience with this STA highlighted the same problem of an expected pattern 
-length and the discretization parameters selection. This problem I have addressed by further development of the proposed 
-in \cite{csdl2-11-10} approach into a generic algorithm for time series characteristic pattern discovery and classification 
-called SAX-VSM \cite{sax-vsm} which I present in the next Chapter.
+Similarly to the pilot implementation, the experience with this STA highlighted the same problem of parameters selection. 
+To address this, I have added a DIRECT-based parameters optimization scheme \cite{citeulike:12563460} to the proposed 
+generic algorithm for time series characteristic pattern discovery and classification called SAX-VSM \cite{sax-vsm} which 
+I present in the next Chapter. \fxnote{expand here on the algorithm}
 
 Note, that while I shall discuss difficulties associated with mining of public software repositories further in this Chapter, 
 in order to combat the lack of their explicit external and internal connectivity along with the heterogeneity of data formats,
@@ -278,19 +300,23 @@ architecture is shown at Figure \ref{fig:softchange} STA builds its own data sto
 relies on its own data storage format, as shown at the Figure \ref{fig:sta-assimilation}.
 
 \section{Mining Software Repositories}
-The discussed in this thesis STA implementation deals with data (i.e. artifacts and metadata) collected from public software 
-repositories, and is concerned with the discovery of recurrent behaviors which are abstracted as recurrent, structurally 
-similar, subsequences of longer sequences composed of temporally ordered artifacts measurements. 
-This research direction is not new and much work has been done previously in mining of software repositories and in mining 
-of public software repositories in particular. 
-For the last decade, researchers working on these problems discuss their approaches and findings in two specialized venues: 
-The Predictive Model in Software Engineering (PROMISE) Workshop and the Working Conference on Mining Software Repositories 
-(MSR) which held within annual International Conference on Software Engineering (ICSE).
-In order to enable comparative analyses of studied techniques, both venues encourage researchers to investigate 
-reference datasets. While PROMISE maintains the same datasets over years \cite{promise12}, MSR offers a so-called 
+%The discussed in this thesis STA implementation deals with data (i.e. artifacts and metadata) collected from public software 
+%repositories, and is concerned with the discovery of recurrent behaviors which are abstracted as recurrent, structurally 
+%similar, subsequences of longer sequences composed of temporally ordered artifacts measurements. 
+%Mining software repositories is not a new research direction and much work has been done previously, but only few attempts 
+%were made targeting discovery of recurrent behaviors from software artifacts.
+%This research direction is not new and much work has been done previously in mining of software repositories and in mining 
+%of public software repositories in particular. 
+Mining of software repositories is a well established research direction. For the last decade, researchers working in this 
+field discuss their approaches and findings in a number of venues. Among these, are Predictive Model in Software Engineering 
+(PROMISE) Workshop and the Working Conference on Mining Software Repositories (MSR) which held within annual International 
+Conference on Software Engineering (ICSE).
+In order to enable comparison of proposed techniques performance, both venues encourage researchers to investigate 
+reference datasets. While PROMISE maintains the same reference datasets over years \cite{promise12}, MSR offers a so-called 
 MSR challenge dataset annually \cite{MSRChallenge2013}.
-Note however, that PROMISE research is typically concerned with development of predictive models \cite{Menzies13},
-MSR traditionally \cite{citeulike:12550438} \cite{citeulike:2710928} \cite{citeulike:7853299}, thus, when discussing the 
+Note however, that PROMISE research is mainly concerned with development of predictive models \cite{Menzies13},
+whether MSR traditionally uses public software repositories 
+\cite{citeulike:12550438} \cite{citeulike:2710928} \cite{citeulike:7853299}, thus, when discussing the 
 specificity of public data from software repositories I mostly refer to MSR research.
 
 First of all, note, that while previous work in MSR \cite{citeulike:4534888} suggests source-control systems, 
@@ -489,7 +515,7 @@ capable to detect potential bugs.
 Potentially, these techniques can be applied for STA results. For example it may be possible to discover ordered, or
 unordered sequences of frequent behaviors which can be classified as more coarser development actions.
 
-\subsection{Time series analysis}
+\subsection{Time series analysis}\label{chapter2_section-tsanalysis}
 Because most of repositories have entities with temporal aspects, MSR research seeks to quantitatively analyze ordered 
 in time sequences of software artifacts or measurements. In particular time-series analysis and the extraction of 
 temporal patterns thought to be quite useful for re-enacting and describing behaviors within a software repository. 
