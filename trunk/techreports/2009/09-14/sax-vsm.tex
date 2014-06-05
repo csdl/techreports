@@ -195,7 +195,6 @@ series $T$ is normalized to unit of standard deviation. This normalization proce
 series structural specificities \cite{citeulike:3815880}. In order to obtain the normalized time series $\widetilde{T}$, the 
 input time series mean is subtracted from each point and the resulted value is divided by their standard deviation:
 \begin{equation}
-\Large
 \widetilde{t}_{i} = \frac{x_{i}-\mu}{\sigma}, i \in {1,..,n}
 \label{eq:znorm}
 \end{equation}
@@ -206,7 +205,6 @@ At the second step, the dimensionality of the normalized time series is reduced 
 Piecewise Aggregate Approximation (PAA). For this, the normalized time series $\widetilde{T}$ is transformed into a vector 
 of PAA coefficients $C$ ($|C|=\omega$) by dividing it into equal-sized segments and computing their mean values:
 \begin{equation}
-\Large
 c_{i} = \frac{w}{n} \sum_{j=\frac{n}{w}(i-1)+1}^{\frac{n}{w}i} \widetilde{x}_{j}
 \label{eq:paa}
 \end{equation}
@@ -221,7 +219,6 @@ Gaussian distribution \cite{citeulike:10141990} \cite{sax}.
 By assigning a corresponding alphabet symbol $alpha_{j}$ to each interval $[\beta_{j-1},\beta_{j})$, the conversion of the vector of PAA coefficients 
 $C$ into the string $\widehat{C}$ implemented as follows: 
 \begin{equation}
-\Large
 \widehat{c}_{i} = alpha_{j}, \; \text{iif} \; \bar{c}_{i} \in [\beta_{j-1},\beta_{j})
 \label{eq:sax_alphabet}
 \end{equation}
@@ -596,14 +593,14 @@ Unfortunately, up to date, there is no efficient solution known for their select
 of my knowledge. In order to optimize the parameters selection while using only a training data, 
 I propose a solution based on a common cross-validation and DIRECT (DIviding RECTangles) 
 optimization scheme \cite{citeulike:4210208}. For brevity, I omit the detailed explanation 
-of the algorithm, and refer the to \cite{citeulike:12563460} for additional details.
+of the algorithm, and refer the interested reader to \cite{citeulike:12563460} for additional details.
 
 DIRECT is designed to deal with problems of form:
 \begin{equation}
  \min_{x} \: f(x), \: f \in \mathbf{R}, \: x, X_{L}, X_{U} \in \mathbf{R}, \: \text{where} \: X_{L} \leq x \leq X_{U}
  \label{formula:direct}
 \end{equation} 
-At the first step DIRECT scales the search domain to be the unit hypercube. The function is then evaluated 
+At the first step DIRECT scales the search domain to the unit hypercube. The function is then evaluated 
 at the center point of the hypercube. As pointed in \cite{citeulike:12563460}, computing the function value
 at the center is an advantage of the method when dealing with problems
 in higher dimensions.
@@ -639,36 +636,37 @@ possible parameters combinations that is \textgreater100x speedup.
 \section{Intuition behind SAX-VSM}
 First, by combining \textit{\textbf{all}} SAX words extracted from 
 \textit{\textbf{all}} time series of single class into a \textit{\textbf{single bag}} of 
-words, SAX-VSM manages to capture and to ``generalize'' with PAA and SAX 
-observed intraclass variability from a small training set.  
+words, SAX-VSM manages to effectively capture and generalize the observed intraclass variability 
+from a small training set.  
 
-Secondly, by normalizing time series subsequences and by discarding their original 
-ordering, SAX-VSM is capable to capture and to recognize characteristic 
-subsequences in distorted and corrupted by noise or signal loss time series. 
+Second, by normalizing, smoothing, and approximating time series subsequences and discarding their 
+original ordering, SAX-VSM is able to recognize class-characteristic subsequences in distorted and/or corrupted 
+by noise or signal loss time series. 
 
-Thirdly,  $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ statistics naturally highlights terms unique to a
-class by assigning them higher weights whereas terms observed in multiple classes are 
-assigned weights inversely proportional to their interclass presence. This
-improves the selectivity of classification by lowering a contribution of ``confusive'' 
-multi-class terms, while increasing a contribution of class' ``defining'' terms to the
-final similarity measure.
+Third,  \tfidf statistics naturally highlights terms that are unique to a class by assigning them highest weights, 
+whereas terms observed in multiple classes are assigned lower weights which are inversely proportional to 
+their interclass presence. 
+This improves the selectivity of classification by decreasing the contribution of ``confusive'' multi-class terms, 
+while increasing the contribution of unique ``class-defining'' terms to the final similarity measurement value.
 
-Ultimately, the algorithm compares a set of subsequences extracted from an unlabeled 
-time series with a weighted set of all characteristic subsequences representing the whole 
-of a training class. 
+Ultimately, the algorithm compares the set of subsequences extracted from an unlabeled time series 
+with the weighted set of all characteristic subsequences representing the whole of the training class. 
 Thus, an unknown time series is classified by its similarity not to a given number of 
-``neighbors'' (as in kNN or BOP classifiers), or to a fixed number of characteristic features 
-(as in shapelet-based classifiers), but by the combined similarity of its subsequences to 
-all known discriminative patterns found in a whole class.
+``neighbors'' as in kNN or BOP classifiers, or to a single or pre-defined number of characteristic subsequences 
+as in shapelet-based classifier, but by the \textit{combined similarity} of all its subsequences to all known 
+discriminative patterns found in the whole of a class.
 
 \section{SAX-VSM performance evaluation} \label{results}
-I have proposed a novel algorithm for time series classification based on SAX
-approximation of time series and Vector Space Model called SAX-VSM. 
-In this section I present a range of experiments assessing its performance and showing
-its ability to provide an insight into classification results.
+I have proposed a novel algorithm for time series classification based on SAX approximation of time series and 
+Vector Space Model called SAX-VSM. In this section I present a range of experiments assessing its performance 
+and exploring its ability to provide an insight into classification results.
 
+\subsection{Analysis of the classification accuracy}
+I have evaluated SAX-VSM on 45 datasets, whose majority was taken from the benchmark data disseminated 
+through UCR repository \cite{ucr}. These datasets represent a variety of data types which is typically represented 
+as the time series for data-mining purposes. The Table \ref{data_typetable1} describes their origin.
 
-\begin{table}[t!]
+\begin{table}[t]
 \caption{\bf State of the art 1NN and interpretable classifiers error rates comparison.}
 \vspace{0.4cm}
  \label{data_typetable1}
@@ -694,23 +692,18 @@ Other measurements obtained by instruments & Trace, Lightning 2, Lightning 7, Wa
 }}
 \end{table}
 
-\subsection{Analysis of the classification accuracy}
-I have evaluated SAX-VSM on 45 datasets, whose majority was taken from the benchmark 
-data disseminated through UCR repository \cite{ucr}. These datasets represent a variety 
-of data which is usually represented as the time series: the measurements obtained with instruments
-
-The table \ref{perf_table1} compares the classification accuracy of SAX-VSM with 
-19 previously published performance results of four competing classifiers: two state-of-the-art 
-1NN classifiers based on Euclidean distance and DTW, 
-the classifier based on recently proposed Fast-Shapelets technique \cite{fast-shapelets}, 
-and the classifier based on BOP \cite{bag_patterns}.
-I have selected these particular techniques in order to position SAX-VSM in terms of 
-classification accuracy and interpretability. 
+The table \ref{perf_table1} compares the classification accuracy of \mbox{SAX-VSM} with previously published 
+performance results of four competing classifiers: 
+two state-of-the-art 1NN classifiers based on Euclidean distance and DTW, 
+and two interpretable classifiers based on recently proposed Fast-Shapelets technique \cite{fast-shapelets} 
+and BOP \cite{bag_patterns}.
+I have selected these particular techniques in order to position SAX-VSM in terms of classification accuracy and 
+interpretability. 
 
 \begin{table}[t!]
-\caption{\bf State of the art 1NN and interpretable classifiers error rates comparison.}
+\captionsetup{justification=centering}
+\caption{\bf State of the art nearest-neighbor, interpretable, and \mbox{SAX-VSM} classifiers classification error rates comparison.}
  \label{perf_table1}
-\centering
 {\setlength{\extrarowheight}{1.5pt}%
 {\footnotesize
 \begin{tabularx}{\linewidth}{@{} l *6X @{}}
@@ -743,7 +736,9 @@ Yoga        &2    & 0.170   & \textbf{0.164}  & 0.249 & 0.170 & \textbf{0.164} \
 \end{table}
 
 The table \ref{perf_table2} compares the classification accuracy of SAX-VSM with 
-1NN classifiers based on Euclidean distance and DTW on the rest 26 datasets. 
+1NN state of the art classifiers based on Euclidean and DTW distances on the rest of the 45 datasets. 
+Fast-Shapelet and BOP classifiers were excluded from that comparison table since their 
+results for these datasets are unknown.
 
 In the evaluation, I followed the train/test data split as provided by UCR. Train data were used 
 in cross-validation experiments for optimization of SAX parameters using \mbox{DIRECT}. 
@@ -817,26 +812,29 @@ ECG Thorax2 & 42 & 1800 & 1965 & 750 & 0.120 & 0.135 & 0.1450 & 44,15,14,exact \
 \newpage
 
 \subsection{Scalability analysis} \label{scalability}
-For synthetic data sets, it is possible to create as many instances as one needs for experimentation.
-I have used Cylinder-Bell-Funnel \cite{citeulike:12563781} and Two Patterns \cite{} synthetic datasets in 
-order to investigate and compare the performance of SAX-VSM and 1NN Euclidean classifier on increasingly 
-large data sets similarly to \cite{citeulike:10358271}.
+For synthetic data sets, it is possible to create as many instances as one needs for the experimentation.
+I have used Cylinder-Bell-Funnel \cite{citeulike:12563781} and Two Patterns \cite{two_patterns} synthetic datasets 
+in order to investigate and to compare the performance of SAX-VSM and 1NN Euclidean classifier on increasingly 
+large data sets.
 
-\begin{figure}[t!]
+\begin{figure}[t]
    \centering
-   \includegraphics[width=140mm]{figures/cbf.ps}
+   \includegraphics[width=120mm]{figures/cbf.ps}
    \caption{An example of three classes from CBF dataset.}
    \label{fig:cbf}
 \end{figure}
 
 \subsubsection{Cylinder-Bell-Funnel (CBF) dataset}
-This problem was introduced in \cite{} and used in a number of studies for illustration of classifier performance.
-The goal is to separate three classes of objects: cylinder (c), bell (b), and funnel (f).  Figure \ref{fig:cbf} 
-shows examples of each class which are characterized by a specific pattern. 
-The Cylinder class is characterized by a plateau, the Bell by an increasing liner ramp followed by a sharp drop, 
-while the Funnel is characterized by sharp increase followed by gradual decrease. The characteristic feature start,
-its duration (length of the plateau and ramps) and the amplitude are randomized. The Gaussian noise is also added 
-to each time-series point:
+This problem was introduced in \cite{cbf} and has been used in a number of studies for illustration of 
+the classifier performance.
+The CBF dataset represents a classical problem of time-series classification where class assignment is 
+made by detection of \textit{single simple global} pattern. 
+The goal is to separate three classes of objects: cylinder ($c$), bell ($b$), and funnel ($f$).  Figure \ref{fig:cbf} 
+shows examples of time series from each of the classes. 
+The Cylinder is characterized by a plateau, the Bell by an increasing linear ramp followed by a sharp drop, 
+while the Funnel is characterized by a sharp rise followed by a gradual decrease. 
+The class-characteristic feature start, its duration (length of the plateau and ramps) and the amplitude are randomized. 
+The Gaussian noise is also added to each time-series point:
 \begin{equation}
 \label{eq:cbf}
 \begin{split}
@@ -851,12 +849,23 @@ f(t)=(6+\eta)\cdot\chi_{[a,b]}(t)\cdot(b-t)/(b-a)+\epsilon(t) \\
 \end{split}                                                      
 \end{equation}
 where $\eta$ and $\epsilon(t)$ are drawn from a standard normal distribution $N(0,1)$, $a$ is an integer 
-drawn uniformly from $[16,32]$ and $b-a$ is drawn uniformly from $[32,96]$.
+drawn uniformly from the interval $[16,32]$ and $b-a$ is drawn uniformly from $[32,96]$.
 
 \subsubsection{Two patterns dataset}
-The CBF dataset represents a classical problem of time-series classification where class assignment is 
-made by detection of single simple (global) pattern. 
+As mentioned, the CBF problem demands a classifier to make a decision based on a single global pattern. 
+Contrary, the Two Patterns problem requires a classifier to recognize ordered occurrences of two local patterns.
 
+In particular, two different patterns are used to define classes: an upward step and a downward step as 
+shown at the Figure \ref{fig:2patterns}. Class $DD$ corresponds to two downward steps, $DU$ to the succession
+of a downward and an upward step, etc. The position and duration of these patterns are randomized, 
+which creates an additional challenge for a classifier to distinguish classes with similar patterns, i.e. $UD$ and $DU$.
+The signal surrounding patterns is randomized with Gaussian noise. As pointed by the dataset author \cite{two_patterns},
+this problem is particularly challenging for classical learning algorithms that do not account for the sequential 
+measurements dependency.
+
+
+
+\subsection{Classification scalability}
 In one series of experiments, I varied a training size from ten to one thousand, while test data set size 
 remained fixed to ten thousands instances. 
 For small training data sets, SAX-VSM was found to be significantly more accurate than 1NN Euclidean
@@ -869,9 +878,9 @@ However, SAX-VSM allows to perform training offline and load $\text{\textbf{tf}}
 weight vectors when needed. If this option can be utilized, our method performs classification significantly
 faster than 1NN Euclidean classifier (Fig. \ref{fig:precision-runtime}, right).
 
-\begin{figure}[t!]
+\begin{figure}[ht]
    \centering
-   \includegraphics[width=140mm]{figures/funnels.ps}
+   \includegraphics[width=120mm]{figures/funnels.ps}
    \caption{An example of a variation in Funnel class.}
    \label{fig:funnel}
 \end{figure}
@@ -892,9 +901,9 @@ The second specificity is that IDF (Inverse Document Frequency, Equation \ref{fo
 efficiently limits the growth of dictionaries by eliminating those words, which are observed in all
 of them.
 
-\begin{figure}[t!]
+\begin{figure}[ht]
    \centering
-   \includegraphics[width=135mm]{figures/precision-runtime.eps}
+   \includegraphics[width=120mm]{figures/precision-runtime.eps}
    \caption{Comparison of classification precision and run time of SAX-VSM and 1NN 
    Euclidean classifier on CBF data. SAX-VSM performs significantly better with limited 
    amount of training samples (left panel). While SAX-VSM is faster in time series 
@@ -909,9 +918,9 @@ of them.
 %the dictionary is saturated, growth tend to slow down (left panel of Figure \ref{fig:corrupted}). 
 %Nevertheless, by adjusting alphabet and PAA sizes it is possible to keep the number of terms
 %significantly large. 
-\begin{figure}[h!]
+\begin{figure}[ht]
    \centering
-   \includegraphics[width=135mm]{figures/Bubbles.eps}
+   \includegraphics[width=120mm]{figures/Bubbles.eps}
    \caption{Left panel: illustration of dictionaries size evolution for CBF with
    increasingly large training set size. 
    Right panel: distribution of SAX terms in CBF corpus for training set of 
@@ -929,9 +938,9 @@ SAX-VSM classifier might be robust to the noise and to the partial loss of a sig
 test time series. Intuitively, in such a case, the cosine similarity between high dimensional 
 weight vectors might not degrade significantly enough to cause a misclassification.
 
-\begin{figure}[t]
+\begin{figure}[ht]
   \centering
-  \includegraphics[width=140mm]{figures/corrupted.eps}
+  \includegraphics[width=120mm]{figures/corrupted.eps}
   \caption{Classification performance with added noise
   (left panel; the random noise level varies up to 100\% of the signal value,
   and with a signal loss (right panel). \textit{SAX-VSM Opt} curves correspond to 
@@ -959,9 +968,9 @@ with fifty training series when the sliding window size was decreased inversely 
 to the growth of a signal loss.
 
 
-\begin{figure}[t]
-   \centering
-   \includegraphics[width=140mm]{figures/precision-synt.ps}
+\begin{figure}[ht]
+   \centering1
+   \includegraphics[width=120mm]{figures/precision-synt.ps}
    \caption{Comparison of classification precision and run time of SAX-VSM and 1NN 
    Euclidean classifier on CBF data. SAX-VSM performs significantly better with limited 
    amount of training samples (left panel). While SAX-VSM is faster in time series 
@@ -996,9 +1005,9 @@ This feature enables a novel visualization technique that can be used to gain an
 insight into the layout of ``important'' class-characterizing subsequences as shown at Figure
 \ref{fig:heat}.
 
-\begin{figure}[t]
+\begin{figure}[ht]
    \centering
-   \includegraphics[width=140mm]{figures/CBF-HEAT.eps}
+   \includegraphics[width=120mm]{figures/CBF-HEAT.eps}
    \caption{An example of the heatmap-like visualization of subsequence ``importance''
    to a class identification. 
    Here, for three CBF time series from a training set, a color value 
@@ -1014,9 +1023,9 @@ insight into the layout of ``important'' class-characterizing subsequences as sh
    \label{fig:heat}
 \end{figure}
 
-\begin{figure}[b]
+\begin{figure}[ht]
    \centering
-   \includegraphics[width=140mm]{figures/gun-point.eps}
+   \includegraphics[width=120mm]{figures/gun-point.eps}
    \caption{Best characteristic subsequences (right panels, bold lines) discovered by SAX-VSM in
    \textit{Gun/Point} data set. 
    Left panel shows actor's stills and time series annotations made by an expert, 
@@ -1031,7 +1040,7 @@ insight into the layout of ``important'' class-characterizing subsequences as sh
 
 \subsubsection{Gun Point data set}
 Following previously mentioned shapelet-based work \cite{citeulike:7344347, citeulike:11345338}, 
-we used a well-studied \textit{GunPoint} data set \cite{DBLP:conf/sdm/RatanamahatanaK04} to explore the 
+we used a well-studied \textit{GunPoint} data set \cite{Ratanamahatana04makingtime-series} to explore the 
 interpretability of classification results. This data set contains two classes: 
 time-series in \textit{Gun} class correspond to the actors' hands motion when drawing
 a replicate gun from a hip-mounted holster, pointing it at a target for a second,
@@ -1046,7 +1055,7 @@ Figure \ref{fig:shapelet-like-patterns}. The most weighted by SAX-VSM patterns i
 \textit{Gun} class corresponds to fine extra movements required to lift and aim the prop. 
 The most weighted SAX pattern in \textit{Point} class corresponds to the ``overshoot''
 phenomena which is causing the dip in the time series. 
-Also, similarly to the original work \cite{DBLP:conf/sdm/RatanamahatanaK04}, SAX-VSM highlighted as second to the best
+Also, similarly to the original work \cite{Ratanamahatana04makingtime-series}, SAX-VSM highlighted as second to the best
 patterns in \textit{Point} class the lack of distinguishing subtle extra movements required
 for lifting a hand above a holster and reaching down for the gun.
 
@@ -1070,9 +1079,9 @@ incised leaf margin of Quercus Kelloggii, and a lobed leaf structure of Quercus 
 Figure \ref{fig:shapelet-acer-patterns} shows a subset of these characteristic patterns and original
 leaf images with highlighted corresponding features.
 
-\begin{figure}[t]
+\begin{figure}[ht]
    \centering
-   \includegraphics[width=140mm]{figures/AcerCircunatum.eps}
+   \includegraphics[width=120mm]{figures/AcerCircunatum.eps}
    \caption{Best characteristic subsequences (top panels, bold lines) discovered by SAX-VSM in
       \textit{OSULeaf data set}.
 These patterns align with well known in botany discrimination techniques
@@ -1080,9 +1089,9 @@ by lobe shapes, serrations, and leaf tip types \cite{citeulike:12134192}.}
    \label{fig:shapelet-acer-patterns}
 \end{figure}
 
-\begin{figure}[t]
+\begin{figure}[ht]
    \centering
-   \includegraphics[width=140mm]{figures/coffee_patterns.ps}
+   \includegraphics[width=120mm]{figures/coffee_patterns.ps}
    \caption{
    Best characteristic subsequences (left panels, bold lines) discovered by SAX-VSM in
    {Coffee data set}. Right panels show zoom-in view on these subsequences in Arabica
@@ -1171,9 +1180,9 @@ $W$=33, $P$=8, $A$=6).
 %This technique allowed us to successfully classify pre- and post-release
 %behaviors with accuracy above 80\%.
 
-\begin{figure}[t]
+\begin{figure}[ht]
    \centering
-   \includegraphics[width=140mm]{figures/clustering.eps}
+   \includegraphics[width=120mm]{figures/clustering.eps}
    \caption{An comparison of hierarchical clustering application to a subset of three
    \textit{SyntheticControl} classes: \textit{Normal, Decreasing trend}, and \textit{Upward shift}. 
    Euclidean distance, Dynamic time warping, SAX-VSM and Complete linkage were used to 
