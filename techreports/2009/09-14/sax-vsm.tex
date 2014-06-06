@@ -819,9 +819,13 @@ large data sets.
 
 \begin{figure}[t]
    \centering
-   \includegraphics[width=120mm]{figures/cbf.ps}
+   \includegraphics[width=140mm]{figures/cbf.ps}
    \caption{An example of three classes from CBF dataset.}
    \label{fig:cbf}
+   %\vspace{1cm}
+   %\includegraphics[width=140mm]{figures/funnels.ps}
+   %\caption{An example of a variation in Funnel class.}
+   %\label{fig:funnel}
 \end{figure}
 
 \subsubsection{Cylinder-Bell-Funnel (CBF) dataset}
@@ -835,21 +839,29 @@ The Cylinder is characterized by a plateau, the Bell by an increasing linear ram
 while the Funnel is characterized by a sharp rise followed by a gradual decrease. 
 The class-characteristic feature start, its duration (length of the plateau and ramps) and the amplitude are randomized. 
 The Gaussian noise is also added to each time-series point:
+\noindent\begin{minipage}{.5\linewidth}
+\begin{equation*}
+\begin{split}
+ &c(t)=(6+\eta)\cdot\chi_{[a,b]}(t)+\epsilon(t) \\
+ & b(t)=(6+\eta)\cdot\chi_{[a,b]}(t)\cdot(t-a)/(b-a)+\epsilon(t) \\
+ & f(t)=(6+\eta)\cdot\chi_{[a,b]}(t)\cdot(b-t)/(b-a)+\epsilon(t)
+\end{split}
+\end{equation*}
+\end{minipage}%
+\begin{minipage}{.5\linewidth}
 \begin{equation}
 \label{eq:cbf}
-\begin{split}
-c(t)=(6+\eta)\cdot\chi_{[a,b]}(t)+\epsilon(t) \\
-b(t)=(6+\eta)\cdot\chi_{[a,b]}(t)\cdot(t-a)/(b-a)+\epsilon(t) \\
-f(t)=(6+\eta)\cdot\chi_{[a,b]}(t)\cdot(b-t)/(b-a)+\epsilon(t) \\
-\text{where} \\
+\text{, where }
 \chi_{[a,b]}=\begin{cases}
 0,t < a \\
 1,a\leq t\leq b\\
 0,t > b \end{cases}
-\end{split}                                                      
 \end{equation}
+\end{minipage}
+\vspace{0.5cm}
+
 where $\eta$ and $\epsilon(t)$ are drawn from a standard normal distribution $N(0,1)$, $a$ is an integer 
-drawn uniformly from the interval $[16,32]$ and $b-a$ is drawn uniformly from $[32,96]$.
+drawn uniformly from the interval $[16,32]$ and $(b-a)$ is drawn uniformly from $[32,96]$.
 
 \subsubsection{Two patterns dataset}
 As mentioned, the CBF problem demands a classifier to make a decision based on a single global pattern. 
@@ -863,27 +875,25 @@ The signal surrounding patterns is randomized with Gaussian noise. As pointed by
 this problem is particularly challenging for classical learning algorithms that do not account for the sequential 
 measurements dependency.
 
-
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=140mm]{figures/2patterns.ps}
+   \caption{An example of four classes from Two Patterns dataset.}
+   \label{fig:2patterns}
+\end{figure}
 
 \subsection{Classification scalability}
 In one series of experiments, I varied a training size from ten to one thousand, while test data set size 
 remained fixed to ten thousands instances. 
-For small training data sets, SAX-VSM was found to be significantly more accurate than 1NN Euclidean
-classifier. However, by the time there were more than 500 time series in a training set, there was no
-statistically significant difference in accuracy (Fig. \ref{fig:precision-runtime}, left). 
+For small training data sets, SAX-VSM was found to be significantly more accurate than 1NN classifiers. 
+However, by the time there were more than 500 time series in a training set, there was no statistically 
+significant difference in accuracy (Fig. \ref{fig:precision-runtime}, left). 
 As per the running time cost, due to the comprehensive training, SAX-VSM was found to be more
 expensive than 1NN Euclidean classifier on small training sets, but outperformed 1NN on large
 training sets.
 However, SAX-VSM allows to perform training offline and load $\text{\textbf{tf}}\ast\text{\textbf{idf}}$ 
 weight vectors when needed. If this option can be utilized, our method performs classification significantly
 faster than 1NN Euclidean classifier (Fig. \ref{fig:precision-runtime}, right).
-
-\begin{figure}[ht]
-   \centering
-   \includegraphics[width=120mm]{figures/funnels.ps}
-   \caption{An example of a variation in Funnel class.}
-   \label{fig:funnel}
-\end{figure}
 
 In another series of experiments I have investigated the scalability of the algorithm with
 unrealistic training set sizes - up to one million of instances of each of CBF classes.
@@ -1191,28 +1201,16 @@ $W$=33, $P$=8, $A$=6).
    \label{fig:hc}
 \end{figure}
 
-\section{Conclusion and Future Work} \label{conclusion}
-In this paper, we have proposed a novel interpretable technique for time series classification
-based on characteristic patterns discovery. We have shown, that our approach is competitive with, 
-or superior to, other techniques on a variety of classic data mining problems. In addition, 
-we described several advantages of SAX-VSM over existing structure-based similarity measures,
-emphasizing its capacity to discover and rank short subsequences by their class characterization
-power.
+\section{Conclusions} \label{conclusion}
+In this Chapter, I have proposed a novel interpretable technique for time series classification that 
+is based on class-characteristic patterns discovery. As I have shown, SAX-VSM is competitive with, or 
+superior to, other techniques on a variety of classic data mining problems. 
+In addition, I have described several advantages of the algorithm over existing structure-based time-series 
+classification techniques, emphasizing its capacity to discover and to rank short subsequences by their 
+class characterization power.
 
-The current limitations of our SAX-VSM implementation suggest a number of future work directions. 
-First of all, while Vector space model naturally supports processing of bags of words composed 
-of terms of variable length, our current ``stable'' implementation lacks this capacity.
-Inspired by the recently reported superior performance of multi-shapelets based classifiers
-\cite{citeulike:11345338}, we prioritize this development.
-Secondly, as mentioned before, DIRECT optimization it is designed for a function of a real variable.
-By using rounding in our implementation, we have observed DIRECT iteratively sampling redundant
-locations in suboptimal neighborhood, thus, a more appropriate optimization scheme is needed.
-Finally, we are designing and experimenting with an extension of SAX-VSM to multidimensional time
-series. Currently we are evaluating two candidate implementations: the first is based on a
-single bag of words accommodating all dimensions for a class (by prefixing SAX words extracted from
-different dimensions); while the second is based on the use of a single bag of words per each of
-dimensions. The preliminary results on synthetic data sets look promising and we expect to report 
-our finding soon.
+This particular feature -- the ability to discover class-characteristic subsequences -- is exploited
+by Software Trajectory Analysis which reports them to the user for further evaluation.
 
 \epigraph{The ability to focus attention on important things is a defining characteristic of 
 intelligence.}{Robert J. Shiller}
