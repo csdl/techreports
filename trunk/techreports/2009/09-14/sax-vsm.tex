@@ -584,15 +584,18 @@ training classes. The input time series is assigned to the class whose vector yi
 similarity value.
 
 \section{Parameters optimization} \label{section-direct}
-As shown above, SAX-VSM requires four discretization parameters to be specified upfront. 
+As shown above, SAX-VSM requires four discretization parameters to be specified upfront from which three 
+(the sliding window length, the PAA size, and the SAX alphabet size) may vary in a wide range. 
 Unfortunately, up to date, there is no efficient solution known for their selection to the best 
-of my knowledge. In order to optimize the parameters selection while using only a training data, 
-I propose a solution based on a common cross-validation and DIRECT (DIviding RECTangles) 
-optimization scheme \cite{citeulike:4210208}. For brevity, I omit the detailed explanation 
-of the algorithm, and refer the interested reader to \cite{citeulike:12563460} for additional details.
-Note, that discussed further parameters optimization scheme does not involve the numerosity reduction strategy --
-this is due to the fact that it can be simply pre-defined since it mostly affects the speed of the discussed 
-parameters optimization scheme convergence rather than the accuracy of the classification. 
+of my knowledge. 
+
+Addressing this issue I propose a solution based on a common cross-validation and DIRECT (DIviding RECTangles) 
+optimization scheme \cite{citeulike:4210208}. As I shall sow, the combination of these techniques allows for 
+an optimal parameter selection while using only the training data. For brevity, I omit the detailed explanation 
+of the algorithm, and refer the interested reader to the original work \cite{citeulike:12563460} for additional details.
+Note, that the discussed further parameters optimization scheme does not involve the numerosity reduction strategy --
+this is due to the fact that it can be simply pre-defined to \textit{EXACT} since it mostly affects the speed of the 
+discussed parameters optimization scheme convergence rather than the accuracy of the classification. 
 
 \begin{figure}[t]
    \centering
@@ -610,11 +613,12 @@ parameters optimization scheme convergence rather than the accuracy of the class
    \label{fig:direct-sampling}
 \end{figure}
 
-DIRECT is designed to deal with problems of form:
+DIRECT is designed to deal with a parameters optimization problems of form:
 \begin{equation}
  \min_{x} \: f(x), \: f \in \mathbf{R}, \: x, X_{L}, X_{U} \in \mathbf{R}, \: \text{where} \: X_{L} \leq x \leq X_{U}
  \label{formula:direct}
 \end{equation} 
+where $f(x)$ is the error function, and $x$ is the parameters vector.
 At the first step DIRECT scales the search domain to the unit hypercube. The function is then evaluated 
 at the center point of the hypercube. As pointed in \cite{citeulike:12563460}, computing the function value
 at the center is an advantage of the method when dealing with problems
@@ -622,15 +626,15 @@ in higher dimensions.
 Then, DIRECT iteratively performs two procedures - partitioning the hypercube into smaller hyper-rectangles 
 and identifying a set of potentially-optimal by sampling their centers. At each step, the function is evaluated 
 at the center points of all potentially-optimal hyper-rectangles. Procedure continues interactively until the 
-error function converges. DIRECT is guaranteed to converge to the global optimal function value,
+error function converges. Note, that DIRECT is guaranteed to converge to the global optimal function value,
 as the number of iterations approaches to infinity \cite{citeulike:12563460}.
 
 Since DIRECT is designed to search for global minima of a real valued function over a bound constrained domain, 
-but SAX parameters are natural numbers from $\mathbf{N}$, I employ the rounding of a reported solution values to 
-the nearest integer.
-Figure \ref{fig:direct-sampling} illustrates the application of leave-one-out cross-validation and DIRECT to 
-\textit{SyntheticControl} data set. In this case, the algorithm converged after sampling just 130 out of 13'860 
-possible parameters combinations -- that is \textgreater100x speedup.
+whereas SAX parameters are natural numbers, I employ the rounding of a reported solution values to the nearest integer.
+Figure \ref{fig:direct-sampling} illustrates the application of leave-one-out cross-validation and DIRECT to the
+\textit{SyntheticControl} data set \cite{ucr} which consists of 6 classes. 
+In this case, the algorithm converged after sampling just 130 out of 13'860 possible parameters combinations -- 
+that is over 100x speedup.
 
 \section{Intuition behind SAX-VSM}
 First, by combining \textit{\textbf{all}} SAX words extracted from 
@@ -639,21 +643,21 @@ words, SAX-VSM manages to effectively capture and generalize the observed intrac
 from a small training set.  
 
 Second, by normalizing, smoothing, and approximating time series subsequences and discarding their 
-original ordering, SAX-VSM is able to recognize class-characteristic subsequences in distorted and/or corrupted 
-by noise or signal loss time series. 
+original ordering, SAX-VSM focuses exclusively on the local structural phenomena regardless of the 
+data distortion by rotation and is able to efficiently tolerate the noise and the loss of values.
 
-Third,  \tfidf statistics naturally highlights terms that are unique to a class by assigning them highest weights, 
-whereas terms observed in multiple classes are assigned lower weights which are inversely proportional to 
-their interclass presence. 
-This improves the selectivity of classification by decreasing the contribution of ``confusive'' multi-class terms, 
+Third,  \tfidf statistics naturally highlights terms that are unique to a class by assigning them high weights, 
+whereas terms that observed in multiple classes are assigned low, 
+inversely proportional to their interclass presence, weights. 
+This improves the selectivity of the classification by decreasing the contribution of ``confusive'' multi-class terms, 
 while increasing the contribution of unique ``class-defining'' terms to the final similarity measurement value.
 
 Ultimately, the algorithm compares the set of subsequences extracted from an unlabeled time series 
 with the weighted set of all characteristic subsequences representing the whole of the training class. 
 Thus, an unknown time series is classified by its similarity not to a given number of 
-``neighbors'' as in kNN or BOP classifiers, or to a single or pre-defined number of characteristic subsequences 
-as in shapelet-based classifier, but by the \textit{combined similarity} of all its subsequences to all known 
-discriminative patterns found in the whole of a class.
+``neighbors'' as in kNN or BOP classifiers, or to a single characteristic subsequence, as in shapelet-based classifier, 
+but by the \textit{combined similarity} of all its subsequences to all known discriminative patterns found in the 
+whole of a class.
 
 \section{SAX-VSM performance evaluation} \label{results}
 I have proposed a novel algorithm for time series classification based on SAX approximation of time series and 
