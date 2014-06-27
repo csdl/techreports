@@ -4,23 +4,23 @@
 As I have shown in previous chapters, despite the fact that public software repositories offer a variety of software 
 artifacts and accompanying information for scientific research, their intrinsic complexity and the immaturity of 
 currently available analysis techniques, which often lack generality, automation, and efficiency, limit the breadth 
-and the scope of the current MSR research \cite{citeulike:7853299} \cite{citeulike:12550438}.
+and scope of the current MSR research \cite{citeulike:7853299} \cite{citeulike:12550438}.
 
 Addressing this problem, I propose the Software Trajectory Analysis approach -- an automated and efficient technique
 for mining of software repositories, that is specifically concerned with the discovery of recurrent behaviors.
 This approach is motivated by the evidence that recurrent behaviors are the basic building blocks of software 
 processes \cite{neal2012habits} \cite{1903} \cite{citeulike:13208461} and builds upon the hypothesis that it is 
 possible to discover recurrent behaviors by the analysis of a specific data type -- ``software trajectories'' -- 
-that are sequences of temporally ordered software artifact measurements (i.e. time series).
+that are sequences of temporally ordered software artifact measurements (i.e. time series constructed of measurements).
 While the motivation, background, and evidence leading to this hypothesis were thoroughly discussed in 
-previous chapters, here, I introduce the technique which provides the means for its investigation. 
+previous chapters, here, I introduce a technique which provides the means for its investigation. 
 For this, I turn to another research field, which is concerned with the analysis of probably the oldest known 
 data type -- the time series \cite{citeulike:1454223} -- and in particular to the research area of 
 Time Series Classification (TSC). Since some of the techniques that has been developed and discussed 
 within TSC research field are concerned with the unsupervised discovery of class-characteristic features, 
 and specifically with the ability to discover \textit{class-characteristic patterns}, which enable the classification, 
-using such a technique in STA effectively translates into the ability to discover recurrent and \textit{meaningful} 
-patterns from software trajectories. 
+the use of such a technique in STA can be effectively translated into the ability to discover class-characteristic 
+\textit{meaningful} patterns from software trajectories. 
 
 Further in this Chapter I shall review the current state of the art in TSC, 
 propose a novel algorithm for \textit{interpretable} time series classification built upon the discovery of 
@@ -28,7 +28,7 @@ class-characteristic patterns, evaluate its performance and the ability to provi
 and discuss the algorithm's use in STA.
 
 \section{Time Series classification}
-Time series classification is a well-established and increasingly popular area of research providing solutions to a wide 
+Time series classification is a well-established and increasingly popular area of the research providing solutions to a wide 
 range of fields, including, but not limited to data mining, image and motion recognition, environmental sciences, health care, 
 and chemometrics. 
 Within the last decade, many time series representations, similarity measures, and classification algorithms 
@@ -39,12 +39,13 @@ or smoothing \cite{citeulike:10358271}.
 The NN classifier is simple, accurate, robust, depends on a very few parameters, and requires no training 
 \cite{citeulike:10358271} \cite{citeulike:532340} \cite{citeulike:12563424}.
 
+
 However, the NN technique has a number of significant disadvantages, where the major shortcoming is the 
 inability to offer any insight into the classification results. 
 Another serious limitation is the need for a significantly large training set representing a within-class 
 variance in order to achieve an acceptable accuracy. 
 Finally, while having trivial initialization, the nearest neighbor classification is computationally expensive. 
-Thus, the demand for an \textit{efficient and interpretable} classification technique capable of processing of 
+Thus, the demand for an \textit{efficient and interpretable} classification technique capable of processing 
 large data volumes remains.
 
 Here, I propose an alternative to NN algorithm that addresses aforementioned limitations. 
@@ -69,23 +70,23 @@ Two promising alternatives combining strengths of techniques from both categorie
 The first is the Time Series Shapelet approach that allows for a superior interpretability and delivers a compact 
 solution \cite{citeulike:7344347}. 
 A shapelet is a short time series ``snippet'' (i.e. subsequence) that is a representative of class membership and is used for 
-a decision tree construction facilitating class identification and interpretability.
+the decision tree construction facilitating class identification and interpretability.
 In order to find the branching shapelet, the algorithm exhaustively searches for the best discriminatory subsequence on data split 
 via an information gain measure. The algorithm's classification is built upon the similarity measure between the branching 
-shapelet and a full time series, defined as a distance between the shapelet and a closest subsequence in the time series 
+shapelet and a full time series, defined as a distance between the shapelet and the closest subsequence in the time series 
 when measured by the normalized Euclidean distance. This exact technique, potentially, combines the superior precision of 
-exact shape-based similarity methods, and the high-throughput classification capacity of feature-based approximate techniques. 
+exact shape-based similarity methods, and the high-throughput classification capacity of feature-based techniques. 
 However, while demonstrating a superior interpretability, robustness, and similar to NN algorithm performance, shapelets-based 
 technique is computationally expensive, $O(n^{2}m^{3})$, where $n$ is a number of objects and $m$ is the length of a longest 
 time series, making its adoption for many-class classification problems difficult \cite{citeulike:11345338}. 
 While the better solution was recently proposed ($O(nm^{2})$), it is an approximate approach based on indexing \cite{citeulike:12563493}.
 
-The second technique with interpretable results is NN classifier built upon the Bag-Of-Patterns (BOP) representation of time series 
-\cite{citeulike:10525778} which is equated to an Information Retrieval (IR) ``bag of words" concept and is obtained by extraction, 
+The second technique with interpretable results is the nearest neighbor classifier built upon the Bag-Of-Patterns (BOP) representation of 
+time series \cite{citeulike:10525778} which is equated to an Information Retrieval (IR) ``bag of words" concept and is obtained by extraction, 
 transformation with Symbolic Aggregate approXimation (SAX) \cite{sax}, and counting the occurrence frequency of short overlapping 
 subsequences (i.e. patterns) along the time series.
 By applying this procedure to a data set, the algorithm converts it into a vector space, where original time series are 
-represented by a pattern occurrence frequency vectors. As the authors has shown, these can be classified with NN classifier built with 
+represented by the pattern occurrence frequency vectors. As the authors has shown, these can be classified with NN classifier built with 
 Euclidean distance, or with Cosine similarity that is applied to raw frequencies or their \tfidf coefficients. 
 BOP classification has several advantages: its complexity is linear ($O(nm)$), it is rotation-invariant since it accounts for local and 
 global structures simultaneously, and it provides an insight into the patterns distribution through frequency histograms.
@@ -105,20 +106,19 @@ Nonetheless, instead of building $n$ bags for each of the training time series, 
 
 As I shall show, these distinct features - the comprehensive summarization of the class' patterns variability with a single bag 
 of words and the ranking of each word class-characterization potential - allow SAX-VSM to achieve a high classification accuracy
-while providing an exceptional interpretability of classification results.
+while providing an exceptional interpretability of the classification results.
 
 \subsection{Preliminaries}
-Before describing the algorithm, I shall introduce key terms and concepts used throughout this section, beginning with the data type,
-the time series.
+Before describing the algorithm, I shall introduce key terms and concepts used throughout this section, beginning with the data type.
 Formally speaking, a time series is an ordered sequence of pairs 
 \mbox{$T=((p_{1},t_{1}),(p_{2},t_{2}),...,(p_{i},t_{i}),...,(p_{m},t_{m}))$}
-where $p_{i} \in \mathbf{R^{n}}$ and timestamps are ordered $t_{1} < t_{2} < ... < t_{i} <...<t_{m}$ 
+where values $p_{i} \in \mathbf{R^{n}}$ and timestamps are ordered $t_{1} < t_{2} < ... < t_{i} <...<t_{m}$ 
 and possibly not equidistant, i.e. $|t_{i}-t_{i-1}| \neq |t_{i}-t_{i+1}|$.
 
 However, in the research literature, without the loss of generality, the equispaced data is typically considered implying that the 
 raw time series can be treated (i.e. interpolated, aggregated, or approximated) in order to become equispaced. 
 Therefore, it is assumed here, that the \textbf{\textit{time series}} is a set of ordered scalar observations: 
-$T = t_{1},\dots,t_{m}$, where $t_{i} \in \mathbf{R^{n}}$.
+$T = ( t_{1},\dots,t_{m}$, where $t_{i}) \in \mathbf{R^{n}}$.
 
 Note, that not-equispaced, irregular data is one of the issues when mining software repositories, as I have discussed previously in 
 the Section \ref{section_understanding}, and for this reason STA and SAX-VSM has been designed to effectively mitigate for this: 
@@ -376,7 +376,7 @@ by the inverse document frequency $\text{\textbf{idf}}$ that efficiently reduces
 proportionally to their inter-class occurrence.
 
 In order to clarify this issue, I have conducted an exploratory study of the SAX numerosity reduction 
-effect on SAX-VSM performance. In a series of experiments, I have found, that for the most of data sets used, the use of 
+effect on SAX-VSM performance. In a series of experiments, I have found, that for the most of used data sets, the application of 
 numerosity reduction significantly reduced the DIRECT scheme convergence time and, sometimes, improved the classification accuracy. 
 Furthermore, once I have relaxed the trivial match constraints by the substitution of 
 \textit{MINDIST} with a distance function based on the Hamming distance \cite{hamming}, 
@@ -405,7 +405,7 @@ yet another parameter which needs to be properly selected in order to achieve th
 Therefore, in total, there are four parameters which need to be optimized for the SAX-VSM application to a particular dataset.
 
 \subsection{Vector Space Model (VSM) adaptation}\label{vsm}
-I use Vector space model exactly as it is known in information retrieval (IR) \cite{citeulike:300428} for 
+I use the Vector Space Model exactly as it is known in the Information Retrieval (IR) \cite{citeulike:300428} for 
 manipulations with abstracted by SAX words time series subsequences. 
 
 Similarly to IR, I define and use the following expressions:
@@ -413,11 +413,11 @@ Similarly to IR, I define and use the following expressions:
   \item \textit{term} - a single SAX word;
   \item \textit{bag of words} - an unordered collection of SAX words, i.e. terms;
   \item \textit{corpus} - a set of bags;
-  \item \textit{term frequency matrix} - a matrix defining the term occurrence frequency for each bag  
+  \item \textit{term frequency matrix} - a matrix defining the term occurrence frequency for each bag, 
   whose rows correspond to all observed in a corpus terms and whose columns correspond to bags;
   \item \textit{term weight matrix} - a similar to term frequency matrix structure defining the weight coefficient 
   of a term for each of the corpus' bags;
-  \item document (bag) \textit{term weight vector} - a column of the weight matrix defining weights of all terms of a single bag.
+  \item document (bag) \textit{term weight vector} - a column of the weight matrix defining weights of all terms for a single bag.
 \end{itemize}
 Note however, that I use terms \textit{bag of words} and \textit{document} for abbreviation of an unordered 
 collection of SAX words interchangeably, while in IR these usually bear different meaning as a \textit{document} 
@@ -499,6 +499,7 @@ For two vectors $\mathbf{a}$ and $\mathbf{b}$ that is:
 \mbox{similarity}(\mathbf{a},\mathbf{b}) = cos(\theta) = 
 \frac{ \mathbf{a} \cdot \mathbf{b} } {\left| \left| a \right| \right| \cdot \left| \left| b \right|\right|} =
 \frac{ \sum\limits_{i=1}^{n}{a_{i} \times b_{i}} }{ \sqrt{\sum\limits_{i=1}^{n}{(a_{i})^2}} \times \sqrt{\sum\limits_{i=1}^{n}{(b_{i})^2}}}
+\label{eq:cosine_similarity}
 \end{equation} 
 
 \subsection{SAX-VSM implementation} \label{sax-vsm}
@@ -639,14 +640,14 @@ to \textit{EXACT}.
 \section{Intuition behind SAX-VSM}
 First, by combining \textit{\textbf{all}} SAX words extracted from 
 \textit{\textbf{all}} time series of single class into a \textit{\textbf{single bag}} of 
-words, SAX-VSM manages to effectively capture and generalize the observed intraclass variability 
-from a small training set.  
+words, SAX-VSM manages to effectively capture and summarize the observed intraclass variability 
+even from a small training set.  
 
-Second, by normalizing, smoothing, and approximating time series subsequences and discarding their 
+Second, by normalizing, smoothing, approximating time series subsequences, and discarding their 
 original ordering, SAX-VSM focuses exclusively on the local structural phenomena regardless of the 
-data distortion by rotation and is able to efficiently tolerate the noise and the loss of values.
+data distortion by the rotation and its corruption by the noise or values loss.
 
-Third,  \tfidf statistics naturally highlights terms that are unique to a class by assigning them high weights, 
+Third,  \tfidf statistics naturally highlights terms that are unique to the class by assigning them high weights, 
 whereas terms that observed in multiple classes are assigned low, 
 inversely proportional to their interclass presence, weights. 
 This improves the selectivity of the classification by decreasing the contribution of ``confusive'' multi-class terms, 
@@ -657,7 +658,7 @@ with the weighted set of all characteristic subsequences representing the whole 
 Thus, an unknown time series is classified by its similarity not to a given number of 
 ``neighbors'' as in kNN or BOP classifiers, or to a single characteristic subsequence, as in shapelet-based classifier, 
 but by the \textit{combined similarity} of all its subsequences to all known discriminative patterns found in the 
-whole of a class.
+whole of the class.
 
 \begin{table}[t]
 \caption{\bf The description of datasets used in the performance evaluation.}
@@ -687,19 +688,19 @@ Other measurements obtained with instruments & Trace, Lightning 2, Lightning 7, 
 
 \section{SAX-VSM performance evaluation} \label{results}
 I have proposed a novel algorithm for time series classification based on SAX approximation of time series and 
-Vector Space Model called SAX-VSM. In this section I present a set of experiments assessing its performance 
-and exploring its ability to provide an insight into the classification results.
+Vector Space Model called SAX-VSM. In this section I describe a set of experiments assessing its performance and 
+exploring its ability to provide an insight into the classification results.
 
 \subsection{Analysis of the classification accuracy}
 I have evaluated SAX-VSM accuracy on 45 datasets, whose majority was taken from the benchmark data disseminated 
-through UCR repository \cite{ucr}. These datasets represent a variety of data types that reflect problems that 
-are typical to TSC domain. The Table \ref{data_typetable1} describes their origin.
+through UCR repository \cite{ucr}. These datasets represent a variety of data types that reflect typical TSC domain problems. 
+The Table \ref{data_typetable1} describes their origin.
 
-The table \ref{perf_table1} compares on 19 datasets the classification accuracy of \mbox{SAX-VSM} with 
-previously published performance results of four competing classifiers: 
+The table \ref{perf_table1} compares the classification accuracy of \mbox{SAX-VSM} with 
+previously published results for four competing classifiers: 
 two state-of-the-art 1NN classifiers based on Euclidean distance and DTW, 
 and two interpretable classifiers based on recently proposed Fast-Shapelets technique \cite{citeulike:12563493} 
-and BOP \cite{citeulike:10525778}.
+and BOP \cite{citeulike:10525778} on 19 datasets.
 I have selected these particular techniques in order to position \mbox{SAX-VSM} in terms of 
 the classification accuracy and the results interpretability. 
 
@@ -748,7 +749,7 @@ At first, the train data was used in the cross-validation for optimization of SA
 using \mbox{DIRECT}. Second, once found, the optimal parameter settings were used to assess SAX-VSM 
 classification accuracy on the test data. 
 The last column of table Tables \ref{perf_table1} and \ref{perf_table2} reports the SAX-VSM 
-classification accuracy and the used parameters set.
+classification accuracy and the parameter settings.
 
 \newpage
 
@@ -836,8 +837,8 @@ large data sets.
 \subsubsection{Cylinder-Bell-Funnel (CBF) dataset}
 The CBF problem was introduced in \cite{cbf} and since then has been routinely used in TSC for the investigation 
 of a classifier performance behavior.
-The dataset represents a classical problem of time-series classification where a class assignment is made upon the 
-detection of a \textit{simple single global} pattern. 
+The dataset represents a classical problem of time-series classification where the class assignment is made upon the 
+detection of a \textit{single global} pattern. 
 The goal is to separate three classes of objects: cylinder ($c$), bell ($b$), and funnel ($f$).  Figure \ref{fig:cbf} 
 shows examples of time series from each of the classes. 
 The Cylinder is characterized by a plateau, the Bell by an increasing linear ramp followed by a sharp drop, 
@@ -919,7 +920,7 @@ As per the running time cost, to no surprise, the DTW-based classifier was found
 Due to the comprehensive training, SAX-VSM was found to be more expensive than 1NN Euclidean 
 classifier on small training sets, but outperformed it on larger training sets.
 
-However, SAX-VSM allows to perform training offline and load class-characteristic \tfidf weight vectors when needed. 
+However, SAX-VSM allows to perform the training offline and to load class-characteristic \tfidf weight vectors when needed. 
 If this option can be utilized, the proposed classifier performs significantly faster than both 1NN classifiers as 
 shown at the right panels of Figures \ref{fig:precision-runtime} and \ref{fig:2p-precision-runtime}.
 
@@ -954,18 +955,18 @@ The second specificity is that IDF (Inverse Document Frequency, \ref{formula:idf
 efficiently limits the growth of dictionaries by eliminating those words, which are observed in all
 classes. 
 
-The similar behavior was observed in experiments with Two Patterns dataset. The Figure \ref{fig:venn-2p} shows
-a rapid saturation of SAX word dictionaries as the training dataset grows.
+The similar behavior was observed in the experimentation with Two Patterns dataset. 
+The Figure \ref{fig:venn-2p} shows the rapid saturation of SAX word dictionaries as a training dataset grows in size.
 
 
 \subsection{Robustness to noise}
-In previous experiment, I have observed, that the growth of a dimensionality of \tfidf weight follows the growth 
-of a training set size, which indicates that SAX-VSM is continuously learning from class variability.
-This observation, and facts that a weight of each of the overlapping subsequences is contributing only 
-a small fraction to a final similarity value and that each subsequence represents a localized structural phenomenon,
-prompted a hypothesis that SAX-VSM classifier might be robust to the noise and to the partial loss of a signal in
-test time series. Intuitively, in that case, the cosine similarity between high dimensional weight vectors might 
-not degrade significantly enough to cause a misclassification.
+As shown, the growth of the dimensionality of \tfidf weight vectors follows the growth of the training set size, 
+which indicates that SAX-VSM is continuously learning from the observed class variability.
+Since the weight of each of overlapping subsequences extracted from time series via sliding window contributes only a 
+small fraction to the final similarity value, and since each subsequence represents a localized structural phenomenon,
+I hypothesized that SAX-VSM classifier might be robust to the noise and to the partial loss of a signal. 
+Intuitively, in that case, the cosine similarity between two high dimensional weight vectors might not degrade significantly 
+enough to cause the misclassification (Equation \ref{eq:cosine_similarity}).
 
 \begin{figure}[t]
   \centering
@@ -982,51 +983,50 @@ In one series of experiments, by fixing a training set size to 250 time series, 
 of Gaussian noise in CBF model (whose default value is about 17\% of a signal level). 
 I have found, that SAX-VSM increasingly outperformed 1NN Euclidean classifier with the growth of a noise level 
 (Fig.\ref{fig:corrupted} Left). 
-Further improvement of SAX-VSM performance was achieved by fine tuning of the smoothing  
-through a gradual increase of the size of SAX sliding window proportionally to the growth of 
-a noise level (Fig.\ref{fig:corrupted} Left, \textit{SAX-VSM Opt} curve). 
+Further improvement of SAX-VSM performance was achieved by the tuning of the PAA smoothing through a gradual 
+increase of the sliding window size proportionally to the growth of the noise level 
+(Fig.\ref{fig:corrupted} Left, \textit{SAX-VSM Opt} curve). 
 
-In another series of experiments, we randomly replaced up to fifty percent of a span of an 
-unlabeled time series with a random noise. 
-Again, SAX-VSM performed consistently better than 1NN Euclidean classifier regardless of a 
-training set size, which we varied from five to one thousand. 
-The \textit{SAX-VSM Opt} curve at Fig.\ref{fig:corrupted} (Right) depicts the case
-with fifty training series when the sliding window size was decreased inversely proportionally 
-to the growth of a signal loss.
+In another series of experiments, I have replaced up to 50\% of an unlabeled time series span with a randomly placed 
+stretches of the Gaussian noise, mimicking the signal corruption. 
+Again, SAX-VSM performed consistently better than 1NN Euclidean classifier regardless of the training set size, 
+which I have varied from 5 to 1'000. 
+The \textit{SAX-VSM Opt} curve at Fig.\ref{fig:corrupted} (Right) depicts an experiment where the training set size
+was fixed to 50 time series of each class and when when the sliding window size was decreased inversely proportionally 
+to the signal loss growth.
 
 \subsection{Interpretable classification}
 While the classification performance results in previous sections confirms that SAX-VSM 
-classifier has a good classification performance, its major strength is in the level of allowed 
-interpretability of classification results. 
+classifier has a comparable to state of the art classification performance, 
+its major strength is in the level of allowed interpretability of classification results. 
 
 Previously, in the original shapelets work \cite{citeulike:7344347, citeulike:11957982}, it has been shown 
-that the resulting decision tree offers an insight into the class-specific patterns.
+that the resulting decision tree offers an insight into the data specificity through class-characteristic patterns.
 In the successive work based on shapelets \cite{citeulike:11345338}, it was also shown that the 
 discovery of multiple shapelets provides increasingly better resolution and intuition into the interpretability 
 of classification. 
 
 However, as the authors noted, the runtime cost of multiple shapelets discovery in a many class problems 
-can be prohibitive to the approach applicability. In contrast, as shown above, SAX-VSM extracts and weights 
-all patterns at once, without any added cost. 
-Therefore, it could be the only choice for interpretable classification in many class problems.
+can be prohibitive to the approach applicability. In contrast, SAX-VSM extracts and weights all patterns at once, 
+without any added cost. Therefore, it could be the only choice for interpretable classification in many class problems.
 
-Further in this section I propose a SAX-VSM based heatmap-like time series class specificity visualization, 
-that provides an insight into classification results, and show the utility of the subsequence ranking by interpreting 
-SAX-VSM learning on a real-life datasets.
+Further in this section, I propose a SAX-VSM based heatmap-like time series class specificity visualization 
+that provides an insight into the classification result and show the utility of the subsequence ranking for 
+interpreting of the class-characteristic data specificity.
 
 \begin{figure}[!h]
    \centering
    \includegraphics[width=130mm]{figures/cbf-heatmap.ps}
    \caption{An example of the heatmap-like visualization that exploits SAX-VSM subsequence ranking in order to 
    highlight time series fragments that are highly characteristic to the class.
-   Highlighted by the visualization features corresponding to a sudden rise, plateau, and a sudden drop in Cylinder; 
-   increasing trend in Bell;
+   Highlighted by the visualization features corresponding to a sudden rise, plateau, and a sudden drop in Cylinder, 
+   increasing trend in Bell,
    and to a sudden rise followed by a gradual drop in Funnel, 
    align exactly with the design of these classes \cite{citeulike:12563781}.}
    \label{fig:heat1}
    \includegraphics[width=130mm]{figures/2patterns-heatmap.ps}
-   \caption{An example of the heatmap-like visualization for Two patterns dataset, which also confirms the proposed 
-   algorithm's ability to capture the class specificity in more challenging than the CBF problem settings where class-characteristic 
+   \caption{An example of the heatmap-like visualization for Two Patterns dataset, which also confirms the proposed 
+   algorithm's ability to capture the class specificity in more challenging than CBF settings where class-characteristic 
    patterns are local and ordered \cite{two_patterns}.}
    \label{fig:heat2}
 \end{figure}
@@ -1038,20 +1038,21 @@ This feature enables a novel visualization technique that can be used to gain an
 insight into the layout of ``important'' class-characterizing subsequences as it is shown at Figures
 \ref{fig:heat1} and \ref{fig:heat2}.
 
-In order to highlight class-characteristic subsequences, a color value of each point is computed as the combination of 
+In order to highlight class-characteristic subsequences, the color hue value for each point is computed as the combination of 
 \tfidf weights of all subsequences that span the point. If the subsequence is found to be characteristic to other than the 
 analyzed time series class, its weight is subtracted, if it belongs to the same class, the weight is added. 
 
-This visual analysis allows for an immediate insight into the classification results as for any of classified time series
-it is possible to visualize which subsequences were found as class-characteristic.
+This type of visual analysis allows for an immediate insight into the classification results as for any of the classified 
+time series it is possible to visualize which subsequences were found class-characteristic for each of the classes and to 
+which degree.
 
 \subsubsection{Gun Point data set}
 By following the previously mentioned shapelet-based work \cite{citeulike:7344347} \cite{citeulike:11345338}, 
 I have used a well-studied \textit{\mbox{Gun/Point}} data set \cite{Ratanamahatana04makingtime-series} to explore the 
 interpretability of classification results. This data set contains two classes: 
-time-series in the \textit{Gun} class correspond to the actor hand's motion when drawing
-a replicate gun from a hip-mounted holster, pointing it at a target for a second, and returning the gun to the holster; 
-time-series in the \textit{Point} class correspond to the actor hand's motion when pretending
+time-series in the \textit{Gun} class correspond to the actor's hand motion when drawing
+a replicate gun from a hip-mounted holster, pointing it at the target for a second, and returning the gun to the holster; 
+time-series in the \textit{Point} class correspond to the actor's hand motion when pretending
 of drawing a gun --- the actor points her index finger to a target for about a second, and then returns the 
 hand to her side. 
 
@@ -1066,19 +1067,19 @@ hand to her side.
    (gun retrieval and aiming), the downward arm motion better characterizes the \textit{Point} class 
    (note the ``overshoot'' phenomena in propless arm return). 
    This result aligns with previous work \cite{citeulike:7344347} and \cite{citeulike:11345338}.
-   (Stills and annotation used with a permission from E. Keogh) }
+   (Stills and annotation are used with a permission from E. Keogh) }
    \label{fig:shapelet-like-patterns}
 \end{figure}
 
 Similarly to previously reported results \cite{citeulike:7344347} \cite{citeulike:11345338}, 
 SAX-VSM captured all distinguishing features as shown at the Figure \ref{fig:shapelet-like-patterns}. 
-The most weighted by SAX-VSM patterns in \textit{Gun} class correspond to fine extra movements required to 
+The most weighted by SAX-VSM pattern in \textit{Gun} class correspond to fine extra movements required to 
 lift and aim the prop. 
-The most weighted patterns in \textit{Point} class correspond to the ``overshoot'' phenomena that is causing the 
+The most weighted pattern in \textit{Point} class correspond to the ``overshoot'' phenomena that is causing the 
 characteristic dip in the time series. 
 Also, similarly to the original \textit{GunPoint} work \cite{Ratanamahatana04makingtime-series}, as second to the best 
-patterns in the \textit{Point} class, SAX-VSM highlighted the lack of distinguishing subtle extra movements required
-for lifting a hand above a holster and reaching down for the gun.
+pattern in \textit{Point} class, SAX-VSM highlighted the lack of distinguishing subtle extra movements required
+for lifting a hand above the holster and reaching down for the gun.
 
 \begin{figure}[!h]
    \centering
@@ -1090,18 +1091,19 @@ for lifting a hand above a holster and reaching down for the gun.
 \end{figure}
 
 \subsubsection{OSU Leaf data set}
-According to the original data source, Ashid Grandhi \cite{citeulike:12563798}, with the growth of digitized data, 
-there is a huge demand for automatic management and retrieval of various images. 
+According to the original data source, A.Grandhi \cite{citeulike:12563798}, with the growth of digitized data 
+volumes, there is a huge demand for automatic management and retrieval of various images. 
 The \textit{OSULeaf} data set consist of curves obtained by image segmentation and boundary
-extraction (in the anti-clockwise direction) from digitized leaf images of six classes: \textit{Acer
-Circinatum, Acer Glabrum, Acer Macrophyllum, Acer Negundo, Quercus Garryana and Quercus Kelloggii}.
-The authors of the original work were able to solve the problem of leaf boundary curves classification by using 
-the DTW-based classifier achieving 61\% of the classification accuracy. 
+extraction (in the anti-clockwise direction) from digitized leaf images of six classes: \textit{Acer Circinatum, 
+Acer Glabrum, Acer Macrophyllum, Acer Negundo, Quercus Garryana} and \textit{Quercus Kelloggii}.
+The authors of the original work were able to solve the problem of leaf curve classification by using 
+the nearest neighbor classifier built upon DTW distance achieving 61\% of the classification accuracy. 
 
-However, as I have pointed above, DTW provides a very little information about why it succeeds of fails. 
-In contrast, SAX-VSM application yielded a set of class-specific characteristic patterns for each 
-of six classes of leaves from \textit{OSULeaf} data set. Further patterns investigation revealed, that they closely 
-match known techniques for leaves classification based on their shape and margin \cite{citeulike:12134192}. 
+Since SAX-VSM performed significantly better on this problem, I have investigated the classification results.
+In contrast to NN classification results that does not offer any insights, SAX-VSM application yielded a set of 
+class-specific characteristic patterns for each of six classes of leaves from \textit{OSULeaf} data set. 
+Further patterns investigation revealed, that they closely match known techniques for leaves classification based 
+on their shape and margin \cite{citeulike:12134192}. 
 Highlighted by SAX-VSM features include 
 the slightly lobed shape and acute tips of Acer Circinatum leaves, 
 the serrated blade of Acer Glabrum leaves, 
@@ -1127,12 +1129,12 @@ leaf images with highlighted features that correspond to SAX-VSM discovered patt
 
 \subsubsection{Coffee data set}
 Another illustration of interpretable classification with SAX-VSM is based on the Coffee dataset \cite{citeulike:12550833}.
-The time series of this problem are obtained by Fourier transform infrared spectroscopy instrument instrument equipped 
-with a diffuse reflection sampling station (DRIFT). These were truncated to 286 data points which represent the spectra 
-observed within the 800-1900 cm$^{-1}$ range. 
+The time series for this problem were obtained with the Fourier transform infrared spectroscopy instrument equipped 
+with a diffuse reflection sampling station (DRIFT). The raw time series were truncated to 286 data points which represent 
+the observed spectra within the 800-1900 cm$^{-1}$ range. 
 
-The two top-ranked by SAX-VSM subsequences in both datasets correspond to spectrogram intervals of 
-Chlorogenic acid (the best characteristic pattern) and Caffeine (the second to best characteristic pattern).
+The two top-ranked by SAX-VSM subsequences in both datasets correspond to spectrogram intervals accounting for
+abundances of Chlorogenic acid (the best characteristic pattern) and Caffeine (the second to best characteristic pattern).
 These two chemical compounds are known to be responsible for the flavor differences in Arabica and Robusta coffees; 
 moreover, these spectrogram intervals were also reported as discriminative when used in the PCA-based classification 
 technique developed by the authors of the original work \cite{citeulike:12550833}.
@@ -1141,80 +1143,81 @@ technique developed by the authors of the original work \cite{citeulike:12550833
 Clustering is a generic technique used for data partitioning, visualization, and exploration.
 In addition, clustering is an important subroutine in many data mining algorithms \cite{citeulike:167581}.
 Since clustering algorithms are built upon a distance function, that computes similarity between clustered entities,
-the algorithm's performance is highly dependent on the performance of a chosen distance function. 
+the algorithm's performance is highly dependent on the performance of the chosen distance function. 
 Thus, an experimental evaluation of the proposed in this chapter technique in clustering shall provide an additional 
 perspective on its performance and the applicability beyond the classification.
 
 \subsection{Hierarchical clustering}
 Probably, one of the most used clustering algorithms is the hierarchical clustering which requires no
-parameters to be specified \cite{citeulike:1576606}. It computes pairwise distances between all objects and 
-produces a nested hierarchy of clusters offering an efficient data partitioning and visualization. 
+parameters to be specified as input \cite{citeulike:1576606}. It computes pairwise distances between all objects 
+and produces a nested hierarchy of clusters offering the efficient data partitioning and visualization. 
 
 Previously, it has been shown that the bag-of-patterns time series representation along with the Euclidean distance
 provide a superior clustering performance\cite{citeulike:10525778}. 
 For comparison, I have performed a similar experiment that only differ in the time series representation and
-the distance metric - I used \tfidf weight vectors obtained from SAX-VSM and the Cosine similarity. 
+the distance metric -- I have used \tfidf weight vectors obtained from SAX-VSM and the Cosine similarity. 
 Affirming the previous work, I have found, that the combination of SAX and Vector space model outperforms 
 classical shape-based distance metrics. 
 For example, figure \ref{fig:hc} depicts the result of a hierarchical clustering of the data subset from 
 \textit{SyntheticControl} dataset. 
-Obviously, SAX-VSM is superior in clustering performance to Euclidean and DTW distance metrics in this particular setup -- 
-it produced a hierarchy which properly partitions the data set into three branches.
+Obviously, the data partitioning obtained with SAX-VSM clustering is superior those based on Euclidean and DTW 
+distance metrics as it properly splits data into three valid branches.
 
 \begin{figure}[!h!t]
    \centering
    \includegraphics[width=120mm]{figures/clustering.eps}
-   \caption{An comparison of hierarchical clustering application to a subset of three
+   \caption{A comparison of the distance metrics performance in hierarchical clustering of a subset of three
    \textit{SyntheticControl} classes: \textit{Normal, Decreasing trend}, and \textit{Upward shift}. 
-   Euclidean distance, Dynamic time warping, SAX-VSM and Complete linkage were used to 
-   generate these plots. Only SAX-VSM was able to partition series properly.                       
-   }
+   The Euclidean distance and Dynamic Time Warping were applied to raw time-series while the Cosine similarity 
+   was applied to their representation as term weights vectors. Complete linkage was used to generate clusters. 
+   Only SAX-VSM was able to partition the data properly.   }
    \label{fig:hc}
 \end{figure}
 
 \subsection{k-Means clustering}
 Another popular choice for data partitioning is k-Means clustering algorithm \cite{kmeans}.
 The basic intuition behind this algorithm is that through the iterative reassignment of objects 
-into different clusters the intra-cluster distance is minimized. As it has been shown before, k-Means 
-algorithm scales much better than hierarchical partitioning techniques \cite{citeulike:4195343}.
+into different clusters the intra-cluster distance is minimized. 
 
-Fortunately, this clustering technique was well studied in IR field. For example in \cite{citeulike:505248}, the
-authors extensively examined seven different criterion functions for partitional document clustering and found, 
-that \textit{k}-prototypes partitioning with cosine dissimilarity (the approach similar to SAX-VSM) delivers an 
-excellent performance. 
+As it has been shown before, k-Means algorithm scales much better than hierarchical partitioning techniques 
+\cite{citeulike:4195343}. In addition, k-Means clustering is also well studied in IR field. 
+For example in \cite{citeulike:505248}, the authors extensively examined seven different criterion functions for 
+partitional document clustering and found, that \textit{k}-prototypes partitioning with cosine dissimilarity 
+(the approach similar to \mbox{SAX-VSM}) delivers an excellent performance. 
 
 Following this work, I have implemented a similar to \cite{citeulike:1172599} \textit{spherical k-means algorithm}
 and found, that it converges quickly and delivers a satisfactory partitioning on short synthetic data sets. 
 Further, I have evaluated the technique on the long time series from PhysioNet archive \cite{citeulike:699487}, 
-from which I have extracted two 250 time series corresponding to five vital signals: 
+from which I have extracted 250 time series corresponding to five vital signals: 
 two ECG leads (aVR and II), RESP, PLETH, and CO2 waves, trimming them to 2'048 points. 
-Similarly to \cite{citeulike:10525778}, I have run a reference k-Means algorithm implementation 
-\cite{R_software} \cite{hartigan1979} based on the Euclidean distance, which achieved the maximum clustering 
-quality of 0.39, when measured as proposed in \cite{citeulike:1325189} on the best clustering 
+Similarly to BOP experimentation \cite{citeulike:10525778}, I have applied a reference k-Means algorithm 
+implementation based on the Euclidean distance \cite{R_software} \cite{hartigan1979} to this dataset achieving 
+the maximum clustering quality of 0.39, when measured as proposed in \cite{citeulike:1325189} on the best clustering 
 (the one with the smallest objective function in 10 runs). 
-SAX-VSM spherical k-Means implementation outperformed the reference technique yielding 
-clusters  with the quality of 0.67 (on 10 runs with SAX parameters set to $W$=33, $P$=8, $A$=6).
+SAX-VSM based spherical k-Means implementation outperformed the reference technique yielding 
+clusters  with the quality of 0.67, confirming the superior performance of the combination of weighted subsequence 
+based time series representation and Cosine similarity.
 
 \section{Conclusions an discussion} \label{conclusion}
 In this Chapter, I have proposed a novel interpretable technique for time series classification that 
 is based on class-characteristic patterns discovery. As I have shown, SAX-VSM is competitive with, or 
 superior to, other classification techniques on a variety of classical data mining problems. 
-In addition, I have described a number of advantages of the proposed algorithm over existing 
-structure-based time series classification techniques emphasizing its capacity to discover and rank 
+In addition, I have described a number of advantages of the proposed algorithm over existing structure-based 
+time series classification techniques emphasizing its capacity to discover and rank 
 short subsequences by their class characterization power. 
 
 By an experimental evaluation, I have shown that this particular feature 
 -- the ability to discover and rank class-characteristic subsequences -- 
 can be exploited for data mining and machine learning purposes. In such context, SAX-VSM can be used as an 
-exploratory tool that aids in the discovery of data set -characteristic patterns. 
+exploratory tool that aids in the discovery of data set characteristic patterns. 
 Therefore, its application for the software trajectory characteristic patterns discovery problem is natural. 
 Similarly to that in the discussed previously classification problems of CBF, Two Patterns, Coffee, OSU Leaf, and Gun/Point, 
 I expect SAX-VSM to be capable to highlight software trajectory subsequences that can be easily interpreted 
 and attributed to characteristic behaviors associated with particularities of software processes.
-
-However note, since software trajectory classes must be assigned by the user, and due to the inherent complexity 
-of software processes and consequently the proper class assignment, probably the biggest treat to the validity of 
-a SAX-VSM based study is the improper construction of the software trajectory classes.
+%
+%However note, since software trajectory classes have to be constructed by the user, and due to the inherent complexity 
+%of software processes and consequently the proper class assignment, probably the biggest treat to 
+%SAX-VSM based study validity is the improper construction of the software trajectory classes.
 
 \epigraph{The ability to focus attention on important things is a defining characteristic of 
 intelligence.}{Robert J. Shiller.}
