@@ -1,103 +1,93 @@
 \chapter{Results}\label{chapter_sta}
-Throughout previous chapters I have provided the motivation for my exploratory study that investigates the possibility of recurrent behaviors discovery from software process artifacts; discussed the previous work in the research field of software repository mining, identifying unexplored and underexplored directions; and proposed a novel data-mining technique, which, potentially, can automate the discovery of recurrent behaviors from software process artifacts measurements.
+In preceding chapters, I have discussed a number of phenomena which provide the motivation for my exploratory study investigating the possibility of recurrent behaviors discovery from software process artifacts, reviewed the relevant previous work from the research field of software repository mining, identifying unexplored and under-explored directions, and proposed a novel generic temporal data-mining technique called \mbox{SAX-VSM}, which, potentially, can automate the discovery of recurrent behaviors from software process artifacts measurements.
 
-In this chapter, I shall present, evaluate, and discuss \mbox{SAX-VSM}-based implementation of the Software Trajectory Analysis  framework (STA) that provides end-to-end generic and customizable workflow for recurrent behaviors discovery from Software Trajectories, that are ordered sequences of software artifact measurements. 
-As I shall show in this Chapter, throughout my exploratory study, STA has evolved from a narrow focused tool to a generic framework that facilitates software artifacts collection, their measurements, software trajectories construction, and, most importantly, enables the recurrent behaviors discovery.
+In this chapter, I shall present, evaluate, and discuss \mbox{SAX-VSM}-based implementation of the Software Trajectory Analysis framework (STA) that provides an end-to-end generic and customizable solution for the problem of recurrent behaviors discovery from software trajectories.  As I shall show, throughout my exploratory study, STA has evolved from a narrow focused tool to a universal framework that facilitates software artifacts collection, their measurements, software trajectories construction, and, the most importantly, enables the recurrent behaviors discovery.
 
-\section{Software Trajectory Analysis system overview}
-Before discussing the current STA implementation and evaluating its performance, I shall review its background, focusing on the evolving throughout this study goals and experiences, that have shaped design of the current system. In addition, in this section, I shall discuss the overall system applicability and its limitations.
+\section{Software Trajectory Analysis system overview}\label{section_sta_overview}
+Before presenting and discussing the current STA implementation performance, I shall briefly review its background starting with the software trajectory definition. 
 
-\subsection{Software Trajectory revisited}
-Recall, that the \textit{software trajectory} is defined as an abstract representation of the software product and/or process evolution by a series of temporally ordered measurements. Intuitively, this definition is similar to the trajectory term that is used in Physics for the approximate path that a moving object draws in a physical space, or in Mathematics, where the trajectory is defined as a reduced in complexity sequence of states of a dynamic system (a Poincar\'{e}' map).
+Recall, that the \textit{software trajectory} is defined as an abstract representation of the software product and/or process evolution by a series of temporally ordered measurements. In other words, it is a field-specific abstraction of the time series data type with attached contextual meaning. Intuitively, this abstraction in the field of Software Engineering is similar to the trajectory term that is used in Physics for the approximate path that a moving object draws in a physical space, or in Mathematics, where the trajectory is defined as a reduced in complexity sequence of states of a dynamic system (a Poincar\'{e}' map).
 
-Note, since software metrics are numerous, many kinds of software trajectories describing a software product and process evolution can be constructed including multidimensional trajectories. For example a trajectory whose points consist of the changed code lines and the cyclomatic complexity measurements can be constructed in an attempt to describe the evolving throughout the development system's complexity. Current STA implementation is unable to work with multidimensional data type, nevertheless, potentially, it can be easily adopted to this task, as I shall discuss in the Chapter \ref{future_work}.
+Note, since software metrics are numerous, many kinds of software trajectories describing a software product and process evolution can be constructed, including multidimensional trajectories. For example a trajectory whose points consist of two measurements -- churn (i.e. the velocity of a software process) and cyclomatic complexity -- can be constructed in an attempt to describe the evolving throughout the development system's complexity. Current STA implementation is unable to work with multidimensional data type, nevertheless, it can be potentially adopted and used for this task, as I shall discuss in the Section \ref{section_future_work} that is concerned with the future work.
+
+Software Trajectory Analysis was proposed as a paradigm (i.e. a model) which, potentially, would allow to extract \textit{meaningful patterns} from software trajectories \cite{citeulike:13159603}. As a particular criterion for meaningfulness of the patterns, their possible association with recurrent behaviors was considered. 
+
+Note, that the system was envisioned as a part of a larger existed system called Hackystat \cite{citeulike:12550871}, which provides an automation for extended software process and product measurements. However due to a number of reasons discussed throughout this Chapter and in particular in the Section \ref{feasibility2}, STA evolved into a stand alone tool which, nevertheless, can be plugged into the Hackystat system without any significant effort, thanks to the generality of developed approach.
+
+
+\subsection{Software Trajectory Analysis implementation}
+The discussed in this thesis STA is implemented in Java and relies on the number of auxiliary libraries which aid in data collection \cite{jgit}, storage \cite{mybatis}, and analysis \cite{sax-vsm}. STA also relies on the relational database engine which aids in data indexing and software trajectories construction. 
+
+STA does not have a single universal implementation. Currently, there exist three implementations, each one is customized for a particular case study (discussed in Sections \ref{case1}, \ref{case2}, and \ref{case3}). This has happened because while the system design is highly structured at the abstract level, at the implementation level, due to the interactive nature of data mining where a number of interchangeable data aggregation and abstraction steps need to be performed sequentially in order to extract the knowledge, a project-specific STA implementation consists of a number of executable modules that need to be run sequentially in order to produce the result. Therefore, in the following sections I shall discuss STA at the abstract level pointing out its specificity and limitations.
+
+\subsubsection{STA is generic}
+The \mbox{SAX-VSM} algorithm on which STA relies for patterns discovery, does not require the user to specify any baseline thresholds when performing analyses as it is capable to discover class-characteristic software trajectory patterns directly from the provided data. All discussed in this Chapter case-studies, namely the Android OS and PostgreSQL release patterns discovery,  PostgreSQL maintenance pattern discovery, and StackOverflow contributor pattern discovery, are built upon this feature.
+
+In addition to class-characteristic patterns discovery, SAX-VSM ranks the discovered patterns by their class-characteristic power -- the property which I relate to interestingness and meaningfulness. The adequacy of this relation is examined in all three case studies.
+
+As it is, STA can be applied to \textit{two or more} sets of software trajectories that represent logical software trajectory classes, such as different projects, teams, developers, etc. Alternatively, software trajectory classes can be defined as those generated by the same entity but within distinct, non-overlapping time intervals associated with specific processes or other external and internal constraints. The latter is used in the Android OS and PostgreSQL case studies, where software trajectory classes are defined by using different time intervals while the software trajectory generating entities under the analysis are the same.
+
+Yet another STA specificity is that id does not place any constraints on the provided dataset. Specifically, by its design, it is robust to any kind of asymmetry between volumes of given classes and unequal lengths of software trajectories within and between the classes. For example, in Postgre SQL case study, software trajectories length varied from few dozens to few hundreds of points.
+
+Finally note, that built upon the core Information Retrieval algorithm that is Vector Space Model, STA can be finely tuned in many ways in order to achieve the goal. Among other refinements are various weighting scheme (shown in the Table \ref{tbl:smart}), patterns refinement through the relevance feedback \cite{salton-71}, and other tuning techniques \cite{intro_ir_Manning}.
 
 \begin{figure}[t]
    \centering
-   \includegraphics[width=150mm]{figures/STA12-schema-draft.eps}
-   \caption{The schematic overview of the very first and the final STA implementations. 
-   Note the STA evolution from a thin layer embedded into the larger system and relying on its data assimilation and processing 
+   \includegraphics[width=145mm]{figures/STA12-schema-draft.eps}
+   \caption{The schematic overview of the very first and the latest STA implementations. 
+   Note STA evolution from a thin layer embedded into the larger system and relying on its data assimilation and processing 
    mechanisms to the end-to-end generic solution for software artifacts analysis.}
    \label{fig:STA12-schema}
 \end{figure}
 
-\subsection{Software Trajectory Analysis}
-Software Trajectory Analysis was proposed as a paradigm (i.e. model) which would allow to extract characteristic patterns associated with the basic blocks of software development process that are recurrent behaviors. When proposed, the system was envisioned as a part of the larger existed system called Hackystat, which provides an automation for software process and product measurements and the data processing capabilities. However due to a number of reasons discussed throughout this chapter, STA evolved into a stand alone tool which, nevertheless, is pluggable into the Hackystat without any significant effort, thanks to the generality of the developed approach.
+\subsubsection{STA is a two-components system}\label{two_components}
+In order to enhance STA generality, and to reduce the overall system complexity, the decision has been made to decouple the data assimilation and data analysis components using a relational database. This solution, shown at the right panel of Figure \ref{fig:STA12-schema}, allowed to successfully cope with a variety of data formats from numerous software process management and configuration systems since the internal STA data format stays unchanged for all analyses allowing for interactive and efficient trajectory classes definition and their characteristic pattern discovery with \mbox{SAX-VSM}. 
 
-\subsection{STA is generic}
-The \mbox{SAX-VSM} algorithm, on which STA relies for patterns discovery, does not require the user to specify any baseline thresholds when performing analyses. It is capable to discover class-characteristic software trajectory patterns directly from the provided data  relying on the procedure of cross-validation.  In addition, SAX-VSM is capable to rank the discovered patterns by their class-characteristic power -- a property that I relate to interestingness and meaningfulness.
-
-As it is, the system can be applied to \textit{two or more} sets of software trajectories that represent logical software trajectory classes, i.e. represent different projects, teams, developers, or are associated with any other class-defining attribute. Alternatively, software trajectory classes can be defined as those generated by the same entity in distinct time intervals that are associated with certain processes or other external or internal constraints.
-
-Yet another STA specificity is that id does not place any constraints on the provided dataset. Specifically, by its design, it is robust to asymmetry between sizes of given classes and to the unequal lengths of trajectories within and between the classes.
-
-Finally, built upon the core algorithm from Information Retrieval field that is Vector Space Model, STA can be finely tuned in many ways in order to achieve the goal. Among other refinements are various weighting schemes, patterns refinement through the relevance feedback, and others.
-
-\subsection{STA is a two-components system}\label{two_components}
-In order to enhance the STA generality, and to reduce the overall system complexity, the decision has been made to decouple the data assimilation and the data analysis components with the use of a relational database. This solution, that shall be discussed in this chapter, allowed to successfully cope with a variety of data formats from numerous software process management and configuration systems as the internal STA data format stays unchanged for all downstream analyses allowing for interactive and efficient trajectory classes definition and their characteristic pattern discovery with \mbox{SAX-VSM}. 
-
-While the database schema supporting this design may slightly vary from project to project accommodating specific data types, it is usually simple, as it only need to contain few tables that store artifact measurements and number of entities that facilitate measurements partitioning, such as users and projects. As an example, consider the database schema used in the Android OS case study shown at the Figure \ref{fig:db-schema}. There, tables \texttt{change\_target} and \texttt{android\_change} contain information about source-code change events and their measurements, while other tables, namely \texttt{change\_people} and \texttt{change\_project}, allow for the efficient software trajectories construction when using a simple SQL \texttt{SELECT} query. For example the next query retrieves a software trajectory for a single contributor to Android OS software repository: 
+While the database schema supporting this design varies from project to project accommodating specific data types, it is usually simple, as it only contains few tables that store mainly artifact measurements and few other entities that facilitate their partitioning, such as user and project records. As an example, consider the database schema used in the Android OS case study shown at the Figure \ref{fig:db-schema}. There, tables \texttt{change\_target} and \texttt{android\_change} contain information about source-code change events and their measurements, while other tables, namely \texttt{change\_people} and \texttt{change\_project}, allow for the efficient software trajectories construction when using a simple SQL \texttt{SELECT} query. For example the next query retrieves a software trajectory for a single contributor to Android OS software repository: 
 \begin{verbatim}
     SELECT sum(c.added_lines) `value`, 
     DATE_FORMAT(c.author_date, "%Y-%m-%d") `date` from OMAP.change c
     where c.author_id=174 and c.project_id=1
-    AND c.author_date BETWEEN XXX AND YYY
+    AND c.author_date BETWEEN "2012-03-26" AND "2012-04-01"
     GROUP by `date` order by `date`;
 \end{verbatim}
 
-Currently, STA relies on MySQL database server \cite{mysql}, but any other engine can be used since all the database communications are performed through an object-relational mapper called MyBATIS \cite{mybatis} which is possible to re-configure independently from STA source code on a production system using XML-formatted configuration files.
+Currently, STA relies on MySQL database server \cite{mysql}, but any other engine can be used since all the database communications are performed through an object-relational mapper called MyBATIS \cite{mybatis} which can be re-configured independently from STA source code through XML configuration files.
 
-\subsection{STA limitations}\label{sta_limitations}
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=150mm]{figures/sta-schema.eps}
+   \caption{An example of STA database schema used in the Android OS case study which targets the discovery of
+   recurrent behaviors from the history of software change records. As shown, the schema can be divided into three 
+   structural components where the change records and their summary measurements constitute the main table (middle).
+   These are complemented by the information about the atomic changes (right). 
+   The tables enumerating sub-projects and committers (left) are used for the data partitioning, i.e. software trajectories construction.}
+   \label{fig:db-schema}
+\end{figure}
+
+\subsubsection{STA limitations}\label{sta_limitations}
 There are two major limitations of Software Trajectory analysis that are associated with its current implementation.
 
-The first limitation is that the \textit{two or more classes analysis paradigm} paradigm is not suitable for the study of a single trajectory or a single class of trajectories. While currently I have proposed a solution which allows the discovery of recurrent patterns from this data that is also built upon the symbolic approximation but succeeded by grammatical inference and the grammar complexity analysis \cite{grammarviz2}, it is not discussed in this thesis as it has been not evaluated yet.
+The first limitation is that the two or more classes analysis paradigm paradigm is not suitable for the study of a single trajectory or a single class of trajectories. While currently I have proposed a solution which allows the discovery of recurrent patterns from a single time series, that is built upon the symbolic approximation, grammatical inference, and the grammar complexity analysis \cite{grammarviz2}, it is not discussed in this thesis as it has been not evaluated yet.
 
-The second limitation is that while it is asserted that application of STA to two or more classes of software trajectories guarantees (by its design) to yield a ranked lists of class-characteristic patterns as the result, where recurrent patterns shall be ranked as the most important, \textit{it may fail to do so}. Such STA behavior is well understood and is directly linked to the specificity of the input data: if it contains patterns that are similar across all classes, they all will be canceled by the $\textbf{idf}$ component of VSM weighting schema as shown in Equation \eqref{formula:tfidf}. In addition, when working with \textit{only two} classes of trajectories, based on Equation \eqref{formula:tfidf}, only SAX words that appear in single class will be reported, which is \textit{very restrictive approach}. For example consider
-that a SAX word accounts for 50\% of all words in Class 1 and has been observed only once in the Class 2, 
-then, despite to the apparently high characteristic potential of this word, it will be discarded since its \tfidf$=0$.
+The second limitation is that while it is asserted that application of STA to two or more classes of software trajectories guarantees (by its design) to yield a ranked lists of class-characteristic patterns, where recurrent patterns shall be ranked as the most important, \textit{it may fail to do so}. Such STA behavior is well understood and is directly linked to the specificity of the input data: if it contains patterns that are similar across classes under analysis, they all will be canceled by the $\textbf{idf}$ component of VSM weighting schema as shown in Equation \eqref{formula:tfidf}. In addition, when working with \textit{only two} classes of trajectories, based on Equation \eqref{formula:tfidf}, only SAX words that appear in single class will be reported, which is very conservative approach. For example consider that a SAX word accounts for 50\% of all words in Class 1 and has been observed only once in the Class 2: currently, despite to the apparently high class-characteristic potential of the word, it will be discarded since its \tfidf$=0$.
 
-In order to handle this issue, I employ a technique that is based on the re-labeling of samples. For example, if there are 2 trajectory classes with 3 samples 
-per each class -- that is similar to the Android OS case study -- instead of searching for characteristic patterns in \textit{class-1} and \textit{class-2} trajectory sets,
-I utilize SAX-VSM to find class-characteristic pattern vectors for \textit{all} samples at first and employ clustering in order to partition and to derive class-characteristic
-patterns second. While the first step of this technique, i.e. re-labeling, allows to retain more class-characteristic words through diversification, and is an ad-hoc solution 
-allowing to tame $\textbf{idf}$, the second step is similar to the known in IR and ML techniques such as nearest centroid classifier \cite{classification_centroids} 
-or Rocchio classification \cite{salton-71} \cite{intro_ir_Manning}.
+In order to handle this two-class issue, I employ a technique that is based on the re-labeling of samples and clustering as shown in AndroidOS and PostgreSQL case studies. For this, all the trajectories are re-labeled with unique names and treated with SAX-VSM at first; next, the k-means clustering procedure (where k is set to 2) is applied; finally, the cluster are labeled by the members voting and their centroids are considered as class-characteristic pattern vectors. As I shall show, this approach demonstrated a very promising performance. Note that this solution is not new and was pointed out before in a number of studies \cite{classification_centroids} \cite{salton-71} \cite{intro_ir_Manning}.
 
 \section{STA Pilot studies}
-Probably the most valuable in terms of gained insight were the two pilot studies conducted within the exploratory phase of my research 
-work. Both studies provided a valuable experience with problem of mining software repositories and recurrent behaviors discovery from 
-software trajectories. 
-Not only STA 2.0, that is the latest implementation, was built upon that experience, but SAX-VSM was drafted throughout the second 
+Probably the most valuable in terms of gained insight were two exploratory experiments conducted within the feasibility study phase of my research work. Both studies provided a valuable experience with problem of mining software repositories and recurrent behaviors discovery from software trajectories. Not only STA 2.0, that is the latest implementation, was built upon that experience, but SAX-VSM was drafted throughout the second 
 exploratory study.
 
 \subsection{Feasibility study 1: mining Hackystat software telemetry streams}
-In order to investigate the feasibility of recurrent behaviors discovery from discretized with 
-SAX \cite{citeulike:2821475} software trajectories, I have conducted a pilot study consisting of two experiments that provided a number 
-of insights into the technique applicability.  
+In order to investigate the feasibility of recurrent behaviors discovery from discretized with SAX \cite{citeulike:2821475} software trajectories, I have conducted a pilot study consisting of two experiments that provided a number of insights into the technique applicability.  
 
-The Pilot study was based on the Hackystat data that is called ``software telemetry'' \cite{citeulike:12929227} which was collected 
-with automation and is characterized with high consistency that enables unprecedented insight into performed processes, 
-as I have already discussed in Section \ref{section_software_telemetry}. 
-Effectively, by offering efficient data collection, storage, and retrieval mechanisms, and most importantly consistent, fine-grained data, 
-Hackystat provided an ideal testbed for the STA feasibility study.
+The study was based on the Hackystat data that is called ``software telemetry'' \cite{citeulike:12929227} which was collected with automation and is characterized with high consistency enabling unprecedented insight into performed processes, as I have already discussed in Section \ref{section_software_telemetry}. Effectively, by offering the efficient data collection, storage, retrieval mechanisms, and most importantly the consistent, fine-grained data, Hackystat provided an ideal testbed for the STA feasibility study.
 
-The data used in the Pilot study was collected from the development and deployment environments used by students of Software Engineering 
-class during Spring, 2009. The dataset represents Hackystat metrics collected during sixty days of a classroom project by eight students. 
+The data used in study was collected from the development and deployment environments utilized by students participating in the Software Engineering class. The dataset represents Hackystat metrics collected during sixty days of a classroom project by eight students. 
 
-An overview of the pilot Hackystat-based STA targeting recurrent behaviors discovery is shown at the left panel of Figure  
-\ref{fig:STA12-schema}. The implementation has been based on two analytical techniques: the discretization of time-series with 
-SAX \cite{sax}, that effectively translates real-valued telemetry streams into strings, and the occurrence frequency (i.e. support) -based 
-discovery of recurrent patterns that is similar to that formalized and discussed later by Lin at al in \cite{citeulike:10525778}. 
+An overview of the pilot Hackystat-based STA targeting recurrent behaviors discovery is shown at the left panel of Figure  \ref{fig:STA12-schema}. The implementation has been based on two analytical techniques: the discretization of time-series with SAX, that effectively translates real-valued telemetry streams into strings, and the occurrence frequency (i.e. support) -based discovery of recurrent patterns that is similar to that formalized and discussed later by Lin et al. in \cite{citeulike:10525778}. 
 
-As I have shown in \cite{csdl2-10-09} this STA implementation demonstrated the feasibility of recurrent behaviors discovery 
-by the mining of frequently occurring symbolic patterns, i.e. time series motifs \cite{sax}. 
-Consider an example of recurrent behaviors discovery shown at the Figure \ref{fig:STA1-results}, where software 
-trajectories built of development effort measurements shown at the left and their clustering based on the Euclidean distance 
-between vectors of symbolic patterns occurrence frequencies shown at the right. Clearly, the hierarchical clustering 
-process divided the set of trajectories separating two developers (\#2 and \#7) from the rest. 
-Further investigation of the data revealed that these two developers demonstrated the most consistent development 
-behavior (when discretized by 4 days window) as they spent considerable amounts of time working on the project almost daily
-whereas the rest of the study participants did not. Thus, the results of STA analysis were found consistent with the ground truth.
+As I have shown in \cite{csdl2-10-09} this approach demonstrated the feasibility of recurrent behaviors discovery by mining of frequently occurring symbolic patterns, i.e. time series motifs \cite{sax}. Consider an example of recurrent behaviors discovery shown at the Figure \ref{fig:STA1-results}, where software trajectories built of development effort measurements shown at the left and their clustering based on the Euclidean distance between vectors of symbolic patterns occurrence frequencies shown at the right. Clearly, the hierarchical clustering process partitioned the set of trajectories separating two developers (\#2 and \#7) from the rest. Further investigation of the data revealed that these two developers demonstrated the most consistent development behavior (when discretized by 4 days window) as they spent considerable amounts of time working on the project almost daily whereas the rest of the study participants did not. Thus, the results of STA analysis were found consistent with the ground truth.
 
 \begin{figure}[t]
    \centering
@@ -112,38 +102,15 @@ whereas the rest of the study participants did not. Thus, the results of STA ana
    \label{fig:STA1-results}
 \end{figure}
 
-In addition to indicating the feasibility of automated recurrent behaviors discovery through the analysis of discretized 
-measurements, the experience with the pilot system highlighted a number of issues.
-It was found that the chief issue threating the external validity of the study was the small scale of the class-room 
-experimentation that simply did not provide an adequate coverage of the studied phenomena. 
-For example, it is possible that in the above experiment some of the developers characterized by ``inconsistent 
-behavior'' may simply had their Hackystat sensors mis-configured or malfunctioning, which is difficult to recognize automatically.
-The second significant issue identified by the pilot STA is the problem of data mining algorithm parameters 
-selection since these have to be defined as input but their proper values are difficult to guess.
+In addition to indicating the feasibility of automated recurrent behaviors discovery through the analysis of discretized measurements, the experience with pilot system highlighted a number of issues. It was found, that the chief issue threating the external validity of the study, was the small scale of the class-room experimentation that simply did not provide an adequate and generalizable coverage of the studied phenomena. For example, it is possible that in the above experiment some of the developers characterized by ``inconsistent behavior'' may simply had their Hackystat sensors mis-configured or malfunctioning, which is difficult to recognize automatically. The second significant issue identified through experimentation was the problem of discretization algorithm parameters selection -- these have to be defined as the input, but their proper values are non-intuitive and often difficult to guess.
 
-Note that the pilot STA also implemented a recurrent behaviors mining workflow based on the application of 
-a frequent patterns mining algorithm called Apriori \cite{citeulike:775528} to development event records collected 
-by Hackystat. As I have shown in \cite{citeulike:13159603}, this approach has shown satisfactory performance. 
-However, since development events are impossible to recover from public software artifacts, 
-as I have shown in the Section \ref{section_understanding}, this workflow has not been used in the following STA 
-implementations.
-
-\begin{figure}[t]
-   \centering
-   \includegraphics[width=150mm]{figures/sta-schema.eps}
-   \caption{An example of STA database schema used in the Android OS case study which targets the discovery of
-   recurrent behaviors from the history of software change records. As shown, the schema can be divided into three 
-   structural components where the change records and their summary measurements constitute the main table (middle).
-   These are complemented by the information about the atomic changes (right). 
-   The tables enumerating sub-projects and committers (left) are used for the data partitioning, i.e. software trajectories construction.}
-   \label{fig:db-schema}
-\end{figure}
+Note that the pilot STA also implemented a recurrent behaviors mining workflow based on the application of a frequent patterns mining algorithm called Apriori \cite{citeulike:775528} to the development event records collected by Hackystat. As I have shown in \cite{citeulike:13159603}, this approach demonstrated a satisfactory performance. However, since it is impossible to recover the development events from public software artifacts, as I have shown in the Section \ref{section_understanding}, this workflow has not been used in the following STA implementations.
 
 \subsection{Feasibility study 2: mining public software repositories} \label{feasibility2}
-Following the lessons learned during the pilot study and the feedback collected through its discussion \cite{csdl2-10-09}, 
+Following lessons learned during the pilot study and the feedback collected through its discussion \cite{csdl2-10-09}, 
 the decision has been made to explore the feasibility of recurrent behaviors discovery from software trajectories constructed 
-through measurements of public software artifacts. This chief reason behind that decision is the attempt to increase 
-the significance of the exploratory study by addressing all of the essential characteristics for empirical studies based on mining 
+by measuring public software artifacts. The chief reason behind that decision is an attempt to increase 
+the generality and significance of findings  by addressing all of the essential characteristics for empirical studies based on mining 
 software artifacts proposed by Gasser et al. \cite{citeulike:13058334}:  
 (1) they must reflect a real-life phenomena, 
 (2) provide adequate phenomena's coverage, 
@@ -152,10 +119,7 @@ software artifacts proposed by Gasser et al. \cite{citeulike:13058334}:
 (5) provide results that are comparable across projects,
 (6) be reproducible. 
 
-Unfortunately, due to the much coarser granularity and inconsistency of software trajectories constructed by measuring
-public software artifacts the original approach to data analysis based on the observed patterns frequency failed, 
-and an additional exploratory study of time series mining techniques has been conducted using 2012 MSR challenge data
-\cite{MSRChallenge2012} from the Android OS repository.
+Unfortunately, due to the much coarser granularity and inconsistency of software trajectories constructed by measuring public software artifacts, the original approach to data analysis based on the observed patterns frequency failed, and an additional study of time series mining techniques has been conducted using 2012 MSR challenge data \cite{MSRChallenge2012} from the Android OS repository. Discovery of recurrent behaviors associated with the \textit{software release pattern } was set as the study's goal.
 
 \subsubsection{Software release pattern}
 Previously, in the software engineering literature, it has been proposed, discussed, and shown that different software 
@@ -212,124 +176,120 @@ implemented a DIRECT-based approach \cite{citeulike:12563460} that aids in a par
 essentially led to SAX-VSM development.
 
 \section{STA 2.0 Case studies}
-STA 2.0 is the most current implementation of proposed in this dissertation framework targeting the discovery of 
-recurrent behaviors from software trajectories that reflect software process and product evolution. 
-It addresses all of the previously identified weaknesses 
-and embeds all the effective solutions found throughout my exploratory study that is the basis for this dissertation. 
+STA 2.0 is the most current implementation of proposed in this dissertation framework targeting the discovery of recurrent behaviors from software trajectories reflecting software process and product evolution. It addresses all of the previously identified weaknesses and embeds all the effective solutions found throughout my exploratory studies. 
 
-In particular, it is built upon SAX-VSM including the DIRECT-based parameters optimization schema, it has a layered design,
-where the trajectory analysis part is decoupled from the data assimilation part through the relational database, and finally 
-it is capable to refine sets of discovered class-characteristic patterns through clustering or Rocchio relevance feedback algorithms.
+In particular, STA 2.0 is built upon SAX-VSM including the DIRECT-based parameters optimization schema, and has a layered design, where the trajectory analysis part is decoupled from the data assimilation part with a relational database.
 
-In further sections I shall discuss three concrete case studies:
+In the next sections I shall discuss three concrete case studies examining the applicability and performance of STA 2.0:
 \begin{itemize}
- \item The AndroidOS software release pattern discovery.
- \item The PostgreSQL software maintenance pattern discovery.
+ \item The AndroidOS software release-associated behaviors discovery.
+ \item The PostgreSQL software maintenance and software release-associated behaviors discovery.
  \item The StackOverflow top contributor characteristic behavior discovery.
 \end{itemize}
 
-\subsection{STA 2.0 Case study: AndroidOS release pattern discovery}
-As discussed above in the Section \ref{feasibility2}, during the pilot exploratory studies I have been using a fixed to a single week time interval and a specific subset of user that supposed to be following some distinguishable pattern. 
+\subsection{STA 2.0 Case study: AndroidOS release pattern discovery}\label{case1}
+As discussed above in the Section \ref{feasibility2}, during the second pilot study I have been using a time interval fixed to one week and a specific subset of users having the corporate e-mail address, which, in my opinion, supposed to have followed some distinguishable software development pattern. 
 
-While this approach is logical, and is suitable for a feasibility study, it puts strict constraint on the results: STA will only consider and report week-long behaviors by a fixed group of people, which may or may not characterize the software process at its best. This limitation and validity threat were also pointed by all the reviewers of the published work explaining the study \cite{csdl2-11-10}.
+While this approach is logical, and is suitable for a feasibility study, it puts unreasonably strict constraints on the input data and creates a significant internal validity threat since STA only considers and reports week-long behaviors characterizing a limited group of people, which may or may not characterize the performed software processes at their best. This limitation was also pointed out by the reviewers of the pilot study-following publication \cite{csdl2-11-10}.
 
-Addressing these limitations, I designed and performed a new experiment targeting the discovery of the same software release pattern when accounting for \textbf{all} the available information in a semi-supervised fashion.
+Addressing these limitations, I have designed and performed a new experiment targeting the discovery of the Android OS software release pattern when accounting for \textbf{all} available information.
 
 \subsubsection{Android OS study dataset}
-The data for this study was collected by STA itself. For this, Android OS kernel OMAP repository was also mirrored. Then, software change records were measured by STA using the local mirror and populated into the MySQL database storage whose schema is shown at the Figure \label{fig:STA12-schema}. This enabled an instant software trajectory retrieval as explained in the section \ref{two_components}.
+The data for this study was collected by using STA toolkit. First, Android OS kernel OMAP repository was mirrored in order to avoid the network latency. Next, software change records were measured by STA using the mirror and populated into a dedicated database whose schema is shown at the Figure \ref{fig:STA12-schema}. This enabled an efficient measurements indexing and instant software trajectory construction, as I have explained in the section \ref{two_components}.
 
-Note, that while the OMAP dataset contains 102'602 change records authored by 7'103 authors, only 501 different committers were recognized by STA. This observation indirectly supports the hypothesis that the project development may follow a somewhat established software process process where only ``trusted developers'' allowed to write changes into the repository.
+Note, that while the OMAP dataset contains 102'602 change records authored by 7'103 authors, only 501 users were recognized by STA as active committers. This observation indirectly supports the exploratory study hypothesis that the studied project development is likely to follow some form of software process where only ``trusted developers'' (\textit{most of them having the corporate email address}) allowed to write changes into the repository.
 
 \begin{figure}[t]
    \centering
    \includegraphics[width=145mm]{figures/omap_removed_lines_plot.eps}
-   \caption{The dynamics of \texttt{Deleted LOC} measurements throughout Android OS kernel OMAP evolution. 
+   \caption{The dynamics of the \textit{Deleted LOC} measurements throughout Android OS kernel OMAP evolution. 
    The 12 software release dates shown by vertical lines.}
    \label{fig:OMAP_dynamics}
 \end{figure}
 
-\subsection{Study design}
-I have explored three types of measurements in this study, that is (i) \texttt{New LOC}, (ii) \texttt{Edited LOC}, and (iii) \texttt{Deleted LOC}. The dynamics for the latter, throughout the project history is shown at the Figure \ref{fig:OMAP_dynamics} with variable granularity. Note, that the daily total values within this data stream varied from 0 to few thousands. Only 12 major releases were considered (Android API levels 1--14, excluding API level 6,7 which were the minor improvements \cite{api-levels}) as indicated in the Table \ref{android_table1}. 
-
-For each of the release dates, the release week was determined and excluded from the analysis. Intervals equal to four weeks preceding, and four weeks succeeding the release week were used in the study and named as \textit{pre-release} and \textit{post-release} respectively. For each contributor, that authored the deletion of source code lines within pre- and post- release intervals the software trajectories were constructed. The total amount of trajectories corresponding to pre- and post-release intervals in \texttt{Deleted LOC} measurements shown in the Table \ref{android_table1}. 
+\subsubsection{Study design}
+I have explored three types of measurements in this study, that is (i) \textit{New LOC}, (ii) \textit{Edited LOC}, and (iii) \textit{Deleted LOC} considering 12 major releases (Android API levels 1--14, excluding API level 6 and 7 which were the minor improvements \cite{api-levels}) indicated in the Table \ref{android_table1}. The Lines Of Code (LOC) measurements were used since they represent a programmer's raw output and has been shown to reflect the size and complexity of software system along with the productivity of programmers  \cite{citeulike:341464} \cite{citeulike:13410945} \cite{citeulike:13410947}. Because through the experimentation \textit{Deleted LOC} was found as the best class-characteristic software trajectory, its dynamics throughout the project history is shown at the Figure \ref{fig:OMAP_dynamics} with variable granularity. Note, that the daily total values within this data stream vary from zero to few thousands.
 
 \begin{table}[t]
-\caption{Counts of pre- and post- release trajectories corresponding to \texttt{Deleted LOC} dynamics per author and time interval within Android OS kernel OMAP project.}
+\caption{Counts of pre- and post- release trajectories corresponding to \textit{Deleted LOC} dynamics per author and time interval within Android OS kernel OMAP project.}
 \label{android_table1}
 \centering
-\begin{tabularx}{\linewidth}{l c c X X}
-\hline
-Release & API level & Date & Pre-release trajectories & Post-release trajectories\\
-& & & count & count\\
-\hline
-Android 1.0    & 1 & 2008-09-23    &  266 &    381\\
-Android 1.1    & 2 & 2009-02-09     & 302 &    342\\
-Android 1.5     & 3 & 2009-04-27    & 330  &   177\\
-Android 1.6     & 4 & 2009-09-15    & 214  &   390\\
-Android 2.0     & 5 & 2009-10-26    & 252  &   255\\
-Android 2.2     & 8 & 2010-05-20    &  292  &   368\\
-Android 2.3     & 9  & 2010-12-06    &  209   &  203\\
-Android 2.3.3   & 10 & 2011-02-09  &   364  &   274\\
-Android 3.0     & 11 & 2011-02-22    &  308   &  341\\
-Android 3.1     & 12 & 2011-05-10    &  324 &    416\\
-Android 3.2     & 13 & 2011-07-15   &   314 &    238\\
-Android 4.0     & 14 & 2011-10-18    &  186  &   194\\
-\hline
+\begin{small}
+\begin{tabularx}{\linewidth}{l l c c X X}
+\toprule
+Id &Release name & API level & Date & Pre-release \textit{Deleted LOC} & Post-release \textit{Deleted LOC}\\
+& & & & trajectories count & trajectories count\\
+\midrule
+1 & Android 1.0    & 1 & 2008-09-23    &  266 &    381\\
+2 & Android 1.1    & 2 & 2009-02-09     & 302 &    342\\
+3 & Android 1.5     & 3 & 2009-04-27    & 330  &   177\\
+4 & Android 1.6     & 4 & 2009-09-15    & 214  &   390\\
+5 & Android 2.0     & 5 & 2009-10-26    & 252  &   255\\
+6 & Android 2.2     & 8 & 2010-05-20    &  292  &   368\\
+7 & Android 2.3     & 9  & 2010-12-06    &  209   &  203\\
+8 & Android 2.3.3   & 10 & 2011-02-09  &   364  &   274\\
+9 & Android 3.0     & 11 & 2011-02-22    &  308   &  341\\
+10 & Android 3.1     & 12 & 2011-05-10    &  324 &    416\\
+11 & Android 3.2     & 13 & 2011-07-15   &   314 &    238\\
+12 & Android 4.0     & 14 & 2011-10-18    &  186  &   194\\
+\bottomrule
 \end{tabularx}
+\end{small}
 \end{table}
 
-Similar to that in the feasibility study discussed above, I have used three random software releases in order to discover pre- and post-release class-characteristic patterns from software trajectories obtained at the previous step. For this, in order to retain more class-characteristic patterns (addressing the limitation discussed in section \ref{sta_limitations}), classes were relabeled at first by assigning to the three pairs of  pre- and post- release software trajectories under analysis labels pre-1, pre-2, pre-3, and post-1, post-2, and post-3 respectfully. At the second step, SAX-VSM was applied to these and the optimal parameters were determined with DIRECT execution. Using this parameters, at the third step, the software trajectory classes were converted into bags of words with SAX and \tfidf statistics was computed. Finally, the resulting weight vectors were clustered using spherical k-Means clustering with k=2 and the resulting corresponding to pre- and post-release clusters centroids were extracted. These centroids were used in the next step as class-characteristic vectors. An example of these is shown at the Figure \ref{android_weights}.
+For each of the release dates, the release week was determined and excluded from analyses. Intervals equal to four weeks preceding, and four weeks succeeding the release week were extracted and used in the study named as \textit{pre-release} and \textit{post-release} intervals respectively. For each contributor that authored a change record resulted in source code lines measurements change within pre- and post- release intervals, software trajectories were constructed. The total amount of trajectories within pre- and post-release intervals in \textit{Deleted LOC} measurements is shown in the Table \ref{android_table1}. 
+
+Similar to that in the feasibility study, I have used three random software releases in order to discover pre- and post-release class-characteristic patterns. For this, in order to retain more class-characteristic patterns (addressing the limitation discussed in section \ref{sta_limitations}), trajectories labeled by two labels (pre- and post- release) were relabeled at first by assigning to the three pairs of  pre- and post- release software trajectories under analysis labels \textit{pre-1}, \textit{pre-2}, \textit{pre-3}, and \textit{post-1}, \textit{post-2}, and \textit{post-3} respectfully. At the second step, SAX-VSM was applied to these and the optimal parameters set was determined with DIRECT optimization scheme (Section \ref{{section-direct}}). At the third step, the software trajectories of each class were discretized into a bag of words with SAX using optimal parameters and \tfidf statistics was computed. Finally, the resulting weight vectors were clustered using SAX-VSM implementation of spherical k-Means clustering (Section \ref{saxvsm_clustering}) with $k$=2 and the resulting clusters centroids, corresponding to pre- and post-release clusters, were extracted. These centroids were used in the validation step as the class-characteristic vectors. An example of these vectors is shown at the Figure \ref{android_weights}.
 
 \begin{table}[t]
 \centering
 \makebox[0pt][c]{\parbox{\textwidth}{%
 \begin{minipage}[b]{0.47\hsize}\centering
 \begin{tabular}{c c}
-\hline
+\toprule
 \multicolumn{2}{c}{Pre-release centroid} \\
 pattern & weight \\
-\hline
+\midrule
 ebbbebbbbbbb    & 0.1748588272 \\
 bbbbbcbbbebb    & 0.1083403654 \\
 bbbbbbbdebbb    & 0.0901908199 \\
 bbbbbbbbdebb    & 0.0901908199 \\
 bbbbbbdebbbb    & 0.0901908199 \\
 $\dots$ &$\dots$\\
-\hline
+\bottomrule
 \end{tabular}
 \end{minipage}
     \hfill
 \begin{minipage}[b]{0.47\hsize}\centering
 \begin{tabular}{c c}
-\hline
+\toprule
 \multicolumn{2}{c}{Post-release centroid} \\
 pattern & weight \\
-\hline
+\midrule
 edbbbbbbbbbb   & 0.1995655982\\
 bbbbbebbcbbb   & 0.1533399084\\
 bbbbbbebbcbb   & 0.1533399084\\
 bbbbbbbebbcb   & 0.1533399084\\
 bbbbbbbbebbc    & 0.1533399084\\
 $\dots$&$\dots$\\
-\hline
+\bottomrule
 \end{tabular}
 \end{minipage}%
-\caption{An excerpt from pre- and post-release class-characteristic pattern vectors obtained by mining the \texttt{deleted LOC} trajectories in Android OS case study. The total size of each vector is 622 patterns.}
+\caption{An excerpt from pre- and post-release class-characteristic pattern vectors obtained by mining the \textit{Deleted LOC} trajectories in Android OS case study. The total size of each vector is 622 weighted patterns.}
 \label{android_weights}
 }}
 \end{table}
 
-In turn, the class-characteristic vectors computed at the previous step were validated for class-characteristic specificity by constructing a SAX-VSM classifier for pre- and post release trajectories and assessing its accuracy using all trajectories within the sample.
+In turn, the class-characteristic vectors computed at the previous step were evaluated for class-characteristic specificity by cross validation. For this, a SAX-VSM classifier was constructed and its accuracy was determined by classifying pre- and post release trajectories corresponding to all software releases under analysis.
 
-
-\subsection{Results}
-The outlined above procedure was applied to 4 random samples using three types of software trajectories. The accuracies of the resulting classifiers are shown in the Table  \ref{android_accuracy}. As shown, the best performing classifier was built using the intervals corresponding to the set of API releases \{4,6,9\} and the \texttt{deleted LOC} measurements.
+\subsubsection{Results}
+The outlined above procedure was applied to 4 random samples (\textit{Train releases} in Table  \ref{android_accuracy}) using three types of software trajectories (\textit{Software metric} in Table  \ref{android_accuracy}). The accuracy of resulting classifiers is shown in the Table  \ref{android_accuracy}. As shown, the best performing classifier was built using the intervals corresponding to the set of releases \{4,6,9\} (i.e. Android OS API Levels 4,8,11) and the \textit{deleted LOC} measurements.
 
 \begin{table}
 \begin{tabularx}{\linewidth}{l X X X l}
-\hline
+\toprule
 Software metric & Train releases  & Parameters      & Accuracy        & Note\\
-\hline
+\midrule
 added code lines &       1,3,5 &  18,7,12& 54.00\% & biased towards post-\\
 added code lines &        4,6,9 &  15,15,5 &58.33\% & biased towards post-\\
 added code lines &      5,8,11 & 12,10,10 &       66.66\% & biased towards pre-\\
@@ -342,9 +302,9 @@ deleted lines &  1,3,5  & 24,10,4& 58.44\% & biased towards pre-\\
 deleted lines &  4,6,9  & 12,12,5 &75.00\%  & \\
 deleted lines &  5,8,11&  24,5,7 & 61.50\% & biased towards post-\\
 deleted lines &  1,6,12 & 24,5,11 &62.50\% & biased towards pre-\\
-\hline
+\bottomrule
 \end{tabularx}
-\caption{Statistics for a number of software release classifiers built using the Android OS kernel OMAP data. As shown, a typical classifier for post- and pre- release behaviors based on LOC change measurements achieves an accuracy slightly above 50\%. The best performing classifier demonstrated 75\% accuracy and was trained on using the deleted lines of code measurements corresponding to API level releases \{4,6,9\}.}
+\caption{Statistics for a number of software release classifiers built using the Android OS kernel OMAP data. As shown, a typical classifier for post- and pre- release behaviors based on LOC change measurements achieves an accuracy above 60\%. The best performing classifier demonstrated 75\% accuracy and was trained on using the deleted lines of code measurements corresponding to API level releases \{4,6,9\}.}
 \label{android_accuracy}
 \end{table}
 
@@ -356,10 +316,10 @@ The Table \ref{android_table3} shows details of the classification with the best
 \makebox[0pt][c]{\parbox{\textwidth}{%
 \begin{minipage}[b]{0.47\hsize}\centering
 \begin{tabular}{l c c c}
-\hline
-Class & pre- & pos-t & classification \\
+\toprule
+Class & pre- & post- & classification \\
 & cosine & cosine & result  \\
-\hline
+\midrule
 pre-1&   0.0112 & 0.0076 & ok\\
 pre-2&   0.0073&  0.0095 & miscl.\\
 pre-3&   0.0108 & 0.0083&  ok\\
@@ -372,16 +332,16 @@ pre-9 &  0.0186&  0.0076 & ok\\
 pre-10 & 0.0095&  0.0085 & ok\\
 pre-11 & 0.0128 & 0.0088 & ok\\
 pre-12 & 0.0115 & 0.0091&  ok\\
-\hline
+\bottomrule
 \end{tabular}
 \end{minipage}
     \hfill
 \begin{minipage}[b]{0.47\hsize}\centering
 \begin{tabular}{l c c c}
-\hline
+\toprule
 Class & pre- & post- & classification \\
 & cosine & cosine & result  \\
-\hline
+\midrule
 post-1  &0.0088 & 0.0128 & ok\\
 post-2 & 0.0098 & 0.0074 & miscl.\\
 post-3 & 0.0056 & 0.0081 & ok\\
@@ -394,7 +354,7 @@ post-9 & 0.0189 & 0.0068 & miscl.\\
 post-10& 0.0116& 0.0128& ok\\
 post-11& 0.0087 & 0.0103&  ok\\
 post-12& 0.0071 & 0.0072&  ok\\
-\hline
+\bottomrule
 \end{tabular}
 \end{minipage}%
 \caption{The classification results for Andriod OS release classifier. Higher cosine value corresponds to smaller angle 
@@ -404,41 +364,45 @@ and is better. Overall, this classifier demonstrated an accuracy of 75\%.}
 \end{table}
 \begin{figure}[h!]
    \centering
-   \includegraphics[width=145mm]{figures/omap_deleted_lines_patterns_plot.eps}
-   \caption{Examples of software trajectories representing the dynamics of \texttt{Deleted LOC} measurements throughout Android OS kernel OMAP evolution which contain the best and second best class-characteristic patterns.}
+   \includegraphics[width=150mm]{figures/omap_deleted_lines_patterns_plot.eps}
+   \caption{Examples of software trajectories representing the dynamics of \textit{Deleted LOC} measurements throughout Android OS kernel OMAP evolution which contain the best and second best class-characteristic patterns.}
    \label{fig:OMAP_patterns}
 \end{figure}
 } % end of argument of `\afterpage` command
 
 \subsubsection{Discussion}
-Quite intriguing and unexpected, the best pre- and post-release class-characteristic patterns were discovered in the \texttt{Deleted LOC} measurements stream. These were found using the discretization parameters of sliding window 12, PAA 12, and the alphabet of size 5, i.e. by converting each day normalized measurement into a letter taken from the alphabet of size 5. 
+Quite intriguing and unexpected, the best pre- and post-release class-characteristic patterns were discovered in the \textit{Deleted LOC} measurements stream. These were found using the discretization parameters of sliding window 12, PAA 12, and the alphabet of size 5, i.e. by converting normalized daily measurement into a letter taken from the alphabet of size 5. 
 
-The patterns shown at the Figure \ref{fig:OMAP_patterns} reveal, that the best class-characteristic behavior for pre-release class when accounting to the \texttt{Deleted LOC} measurements is to perform two deletions of approximately equal volume separated by three days and followed by a week of inactivity, whereas the best class-characteristic behavior for the post-release class is to perform deletion during two consecutive days, first day should be larger in volume, followed by 10 days of inactivity. Similar behaviors 
+The patterns shown at the Figure \ref{fig:OMAP_patterns} reveal, that the best class-characteristic behavior for pre-release class when accounting to the \textit{Deleted LOC} measurements is to perform two deletions of approximately equal volume separated by three days and followed by a week of inactivity, whereas the best class-characteristic behavior for the post-release class is to perform decreasing in volume deletions during two consecutive days followed by 10 days of inactivity. Second best class-characteristic patterns were also found to follow a similar pattern -- different in volume source code lines deletion events separated by a time interval.
 
-While the similar description can be obtained for the second best and so on patterns discovered by STA, overall, these are impossible to translate into the sensible description without the discussion with developers. Unfortunately, despite to my effort, I was not able to communicate with key contributors from Android OS kernel OMAP team.
+Overall, the discovered patterns are impossible to translate into the sensible description without the discussion with developers. Unfortunately, despite to my effort, I was not able to communicate with key contributors from Android OS kernel OMAP team. 
+
+Through my own investigation of commit messages and source code files for deletion events corresponding to the best pre-release patterns, I have found that majority of them correspond to a normal software development cycle where the changes were staged, reviewed, and signed off by the project managers. What was interesting however, is that many of the deletion events were reflecting the code clean-up from Linux artifacts (Android OS is based on the Linux kernel), such as SCSI modules, or other platform hardware-related code, therefore, since observed among many trajectories, they may reflect a systematic Android OS release-related activities.
+
 \clearpage
 
-\subsection{Case Study 2: PostgreSQL maintenance recurrent behavior discovery}
-Similar to the previous one, in this case study I have explored the possibility of recurrent behaviors discovery from software trajectories that were constructed by measuring software change artifacts from PostgreSQL public software repository. 
+\subsection{Case Study 2: PostgreSQL maintenance recurrent behavior discovery}\label{case2}
+Similar to the previous case study, in this one I have explored the possibility of recurrent behaviors discovery from software trajectories that were constructed by measuring software change artifacts from PostgreSQL public software repository. 
 
 PostgreSQL is an open-source database that is developed by the PostgreSQL Global Development Group consisting of a number of volunteers employed and supervised by companies such as Red Hat and EnterpriseDB \cite{postgre-contrib}. It has a large number of extensions written by contributors and is available for many platforms including Linux, FreeBSD, Solaris, Microsoft Windows and Mac OS X.
 
-One of the particular characteristics of PostgreSQL software development process is its regular CommitFest events \cite{postgre-commitfest}. As PostgreSQL team explains it, a CommitFest (CF) event is a ``periodic break to PostgreSQL development that focuses on patch review and commit rather than new development'' -- a description that allows to classify it as a \textit{maintenance activity} whose purpose is to promptly review and to respond with a feedback to development community without waiting for a major release. Contributors are encouraged by the core development team to submit patches into the development mailing list. Within a CF event, these patches reviewed, tested, and the decision for a final review and commit is made.  Typically, CFs tend to run for one month with a one month gap between them, however, when the core team is busy with a PostgreSQL major release, there may be several months without CF events followed by a ReviewFest (RF), which helps to pre-organize patches, and a CF . 
+One of the particular characteristics of PostgreSQL software development process is its regular CommitFest events \cite{commit-fest}. As PostgreSQL team explains it, a CommitFest (CF) event is a ``\textit{periodic break to PostgreSQL development that focuses on patch review and commit rather than new development}'' -- a description that allows to classify it as a \textit{maintenance activity} whose purpose is to promptly review and to respond with a feedback to development community without waiting for a major release. Contributors are encouraged by the core development team to submit patches into the development mailing list. Within a CF event, these patches are reviewed, tested, and the decision for a final review and commit is made.  Typically, CFs tend to run for one month with a one month gap between them, however, when the core team is busy with a PostgreSQL major release, there may be several months without CF events followed by a ReviewFest (RF), which helps to pre-organize patches, and a CF . 
 
-Up to date, 20 CF events were held. Typically, after reviewing and testing a patch submitted for CF developers assign it to one of the categories: ``Needs Review'', ``Ready for Commit'', ``Committed'', ``Returned with Feedback'', or ``Rejected''. While the very first CF event dealt with 66 patches, from which 37 were committed, the latest CF event had 108 patches in the review queue out of which 7 were marked for additional review, 14 as ready to commit, 36 were commited, and 42 were returned with feedback.
+Up to the data retrieval date, 18 CF events were held. Typically, after reviewing and testing a patch submitted for CF developers assign it to one of the categories: ``Needs Review'', ``Ready for Commit'', ``Committed'', ``Returned with Feedback'', or ``Rejected''. While the very first CF event dealt with 66 patches, from which 37 were committed, the latest CF event dealt with 108 patches in the review queue out of which 7 were marked for additional review, 14 as ready to commit, 36 were committed, and 42 were returned with a feedback.
 
 \begin{figure}[t!]
    \centering
    \includegraphics[width=150mm]{figures/postgre_commits_dynamics.eps}
-   \caption{The dynamics of weekly commits into PostgreSQL repository and their variance throughout the years. Overall, it was observed that the measured activity decreases over years, and there is a significant variance in commits activity throughout a year except the Christmas week. }
+   \caption{PostgreSQL evolution. The top panel shows dynamics of the weekly commits into PostgreSQL repository, the middle panel shows \textit{Churn}, and the bottom panel shows \textit{Added LOC} measurements dynamics throughout the analyzed Commit Fest events. Dotted vertical lines show the release dates.}
    \label{fig:postgre_dynamics}
 \end{figure}
 
 \subsubsection{PostgreSQL dataset}
-Similar to AndroidOS study, the PostgreSQL data was collected by STA itself and stored in the same database. The dataset consists of 35'890 change records authored by 38 authors. The overall commit activity shown at the Figure \ref{fig:postgre_dynamics} indicates that the project has been active throughout the years.
+Similar to AndroidOS study, the PostgreSQL data was collected by using STA data assimilation toolkit and stored in the same database. The dataset consists of 35'890 change records authored by 38 authors. The overall commit activity shown at the top panel of Figure \ref{fig:postgre_dynamics} indicates that the project has been active throughout the years. The middle and bottom panels of the Figure \ref{fig:postgre_dynamics} show \textit{Churn} and \textit{Added LOC} aggregated software trajectories throughout the Commit Fest events.
 
-\subsection{Study design}
-Since PostgreSQL development team has documented their software maintenance process, i.e. Commit Fest, in this study the main goal was to discover its characteristic behaviors. The secondary goal was to also explore the release pattern. Note, that in this study, since the average activity of contributors is quite low, I have aggregated their software trajectories together into a single software trajectory.
+\subsubsection{Study design}
+Based on the PostgreSQL development team documentation of their software maintenance process called Commit Fest \cite{commit-fest}, the main goal of this study  was to discover Commit Fest -characteristic recurrent behaviors. The secondary goal was to explore the software release pattern for 19 PostgreSQL releases from 6.0 dated by 1997-01-29 to 9.2 dated by 2012-09-10. The releases are shown at the Figure \ref{fig:postgre_dynamics}.
+
 
 \begin{table}[t!]
 \centering
@@ -446,73 +410,144 @@ Since PostgreSQL development team has documented their software maintenance proc
 \begin{minipage}[b]{0.47\hsize}\centering
 \begin{tabular}{lcc}
 \multicolumn{3}{l}\large{Commit Fest behaviors experiment\qquad}\\
-\hline
+\toprule
 Trajectory & Discretization & LOOCV \\
 class & parameters & accuracy \\
-\hline
+\midrule
 added LOC     &  6,5,8  & 72.22\% \\
-edited LOC    &  14,5,5 & 75.00\% \\
-deleted LOC   &  8,6,10 & 75.00\% \\
+edited LOC    &  14,5,5 & \textbf{75.00}\% \\
+deleted LOC   &  8,6,10 & \textbf{75.00}\% \\
 added files    & 12,8,5 & 65.71\% \\
 edited files   & 12,4,11& 66.67\% \\
 deleted files &  27,7,3 & 55.17\% \\
-\hline
+\bottomrule
 \end{tabular}
 \end{minipage}
     \hfill
 \begin{minipage}[b]{0.47\hsize}\centering
 \begin{tabular}{lcc }
 \multicolumn{3}{l}\large{Software Release behaviors experiment\qquad}\\
-\hline
+\toprule
 Trajectory & Discretization & LOOCV \\
 class & parameters & accuracy \\
-\hline
-added LOC  &     14,5,7&  80.56\% \\
+\midrule
+added LOC  &     14,5,7&  \textbf{80.56}\% \\
 edited LOC  &    5,5,14 & 75.00\% \\
 deleted LOC  &   10,5,11& 72.22\% \\
 added files   &  16,4,10& 64.71\% \\
-edited files  &  6,4,7 &  80.56\% \\
+edited files  &  6,4,7 &  \textbf{80.56}\% \\
 deleted files  & 18,5,12& 56.25\% \\
-\hline
+\bottomrule
 \end{tabular}
 \end{minipage}%
 \caption{The Leave One Out Cross Validation experimental results for PostgreSQL aggregated trajectories. The discretization parameters are ordered as the sliding window size, PAA size, Alphabet size.}
-\label{android_table3}
+\label{postgre_table1}
 }}
 \end{table}
+
+In this study, since the average activity of individual contributors is quite sparse, I have used aggregated software trajectories which were constructed by measuring \textit{all} change records without differentiating them by committers or authors. These aggregated trajectories, in turn, were cut into the pieces representing CF and non-CF software trajectories using stipulated in \cite{commit-fest} dates. For example, for \textit{added LOC} measurements, a single software trajectory was constructed at first, then, its continuous intervals within Commit Fest intervals were extracted and labeled as CF-corresponding software trajectories, whereas the rest of continuous intervals was labeled as non-CF software trajectories. The pre- and post-release software trajectory classes were constructed in the similar fashion but by using four weeks preceding and four weeks succeeding the release week.
+
+Overall there were 18 software trajectories constructed for Commit Fest class and 18 for non-Commit Fest, whose length varied in a range from 27 to 183. In addition, 19 software trajectories for pre-release and 19 software trajectories for post-release were constructed, each of them spanning 28 days (i.e. four weeks). Note, that the difference in trajectories length does not affect STA performance since SAX-VSM successfully handles this situation as it was shown in the Section \ref{saxvsm_robustness}.
 
 \begin{figure}[h!]
    \centering
    \includegraphics[width=145mm]{postgre_cf_patterns.ps}
-   \caption{Examples of class-characteristic behaviors discovered with SAX-VSM in PostgreSQL Commit Fest experiments. Note, that large commits surrounded by no-activity intervals are characteristic to regular development, whereas smaller in the volume frequent commits are characteristic to Commit Fest development intervals. }
+   \caption{Examples of class-characteristic behaviors discovered with SAX-VSM in PostgreSQL Commit Fest experiments. Note, that the large commits surrounded by no-activity intervals are characteristic to the regular development, whereas smaller in the volume, frequent commits are characteristic to the Commit Fest -corresponding development intervals. }
    \label{fig:postgre_cf_patterns}   
    \includegraphics[width=145mm]{figures/postgre_release_patterns.ps}
    \caption{Examples of class-characteristic behaviors discovered with SAX-VSM in PostgreSQL Software Release experiments. Note, that relatively large commits followed by low activity are characteristic for pre-release intervals, whereas post-release development is characterized with frequent commits.}
    \label{fig:postgre_release_patterns}
 \end{figure}
 
-\subsection{Case Study 3: mining contributor behaviors in Stack Overflow data}
-Stack Overflow (SO) is a question and answer website created in 2008 that is primarily used by computer programmers Stack Overflow is a question and answer website created 
-in 2008 that is primarily used by computer programmers. There, users are actively encouraged to participate in the community by creating public user profiles and engaging in discussion by asking good questions, and providing relevant answers. As a form of gamification, this desirable user behavior is rewarded with the combination of a numerical score called reputation, and ``badges'' that implement a goals framework. 
+For both, PostgreSQL commit fest and PostgreSQL software release experiments, a common Leave One Out Cross Validation (LOOCV) \cite{citeulike:11275990} runs were performed in order to estimate how accurately an STA-discovered predictive model (that is a VSM classifier based on the class-characteristic vectors) would perform in practice.
 
-The reputation points are awarded when individual activities are performed, such as asking a good question, providing a good answer etc. There is a hierarchy of badges, from the lowest ``bronze badges'' that are relatively common and easy to achieve, to ``golden badges'' that are awarded for long term dedication and recognition from the community. Overall, the reputation and badges are an estimate of how much the community trusts to the user and how much she contributed to the community. Naturally, this incentive lead users to attempt to achieve as much reputation and as many badges as possible to demonstrate their expertise and gain respect in the community. Some of these badges can
-be awarded recurrently, which explains how user \#22656, Jon Skeet, possesses over 11000 of these as per time of writing.
+\subsubsection{Results}
+The results of LOOCV experiments shown in the Table \ref{postgre_table1}. Overall, similarly to Android OS study, it was found that the resulting characteristic-pattern based classifiers performs with an accuracy above 60\%. The best accuracy was achieved by using \textit{Edited LOC} and \textit{Deleted LOC} trajectories for Commit Fest study, whereas patterns from \textit{Added LOC} and \textit{Edited Files} software trajectories characterized the Software Release patterns best. The Figure \ref{fig:postgre_release_patterns} shows examples of patterns from the both studies.
 
-The goal of this case study, is to look on the daily activity patterns of top SO contributors and estimating the time and effort spent and to see if they behaviors are different.
+\subsubsection{Discussion}
+First of all, note that in the PostgreSQL study, a typical classifier built upon class-characteristic behaviors discovered with STA achieved a comparable to Android OS study accuracy while the best classifiers outperformed that of Android OS. While this can be explained by the differences in experimental design (random training sample in Android OS and LOOCV in PostgreSQL), alternatively, the result can be explained by the nature of used Software Trajectories -- individual versus aggregated.
+
+Second, note that in contrast to the Android OS study, class-characteristic behaviors discovered in PostgreSQL study are easier to comprehend visually and to interpret. Both, the non-Commit Fest and pre-Software Release patterns are characterized by stretches of low activity interrupted by large in volume commits, whereas Commit Fest and post-Software Release trajectories are characterized by stretches of frequent, but moderate activity -- both findings in accord with the distributed by PostgreSQL team documentation \cite{commit-fest}.
+\clearpage
+
+\subsection{Case Study 3: mining contributor behaviors in Stack Overflow data}\label{case3}
+Stack Overflow (SO) is a question and answer website created in 2008 that is primarily used by computer programmers. There, users are actively encouraged to participate in the community by creating public user profiles and engaging in discussion by asking good questions and providing relevant answers. As a form of gamification, this desirable user behavior is rewarded with a combination of a numerical score called reputation, and ``badges'' that implement a goals framework. 
+
+The reputation points are awarded when individual activities are performed, such as asking a good question, providing a good answer, or commenting. There is a hierarchy of badges, from the lowest ``bronze badges'' that are relatively common and easy to achieve, to ``golden badges'' that are awarded for long term dedication and recognition from the community. Overall, the reputation and badges are an estimate of how much the community trusts to the user and how much valuable contribution she has provided. Naturally, these incentives lead users to attempt to achieve as much reputation and as many badges as possible to demonstrate their expertise and to gain respect in the community. Some of these badges can be awarded recurrently, which likely to explain how user \#22656, Jon Skeet, collected over 11'000 of these as per time of writing.
+
+The goal of this case study, is to compare the daily activity patterns of top SO contributors in order to estimate their activity patterns (behaviors) and to explore any discovered similarities and differences among them. 
+
+\subsubsection{StackOverflow data}
+The data used in study was obtained from the Stack Overflow public release dump that is dated by August 2012 and contains over four years of the website content evolution. The dataset contains information about the users, their comments, posts, and related activities, a subset of voting history, and which badges were awarded.  Overall, the dataset accounts for $\sim$1.3M of users which created $\sim$10.4M of posts (from which $\sim$3.5M are questions and $\sim$6.9 answers), and $\sim$14M comments, in addition there is an information about $\sim$28M of votes. The weekly dynamics of new Questions, Answers, and newly registered users is shown at the Figure \ref{fig:stack_dynamics}.
+
+For the experimentation I have selected 5 top contributors whose summary is shown in the Table \ref{so_table}. Note, that the top three users were active for the almost whole time span considered in this study.
+
+\begin{figure}
+\centering
+\includegraphics[width=140mm]{stack_overview.eps}
+\caption{Stack Overflow weekly dynamics overview. Left panel shows the evolution of Questions and Answers, whereas the right panel shows the curve of new users registration.}
+\label{fig:stack_dynamics}   
+\end{figure}
+
+\begin{table}[]
+\begin{small}
+\begin{tabularx}{\linewidth}{l X c c c c c c}
+\toprule
+User   & Reputation   &   Answer & \multicolumn{2}{c}{Daily  trajectories} & & \multicolumn{2}{c}{Weekly trajectories}\\
+& & acceptance rate & \multicolumn{2}{c}{before \& after weighting} & & \multicolumn{2}{c}{before \& after weighting}\\
+\midrule
+Jon Skeet   & 465166 & 60\% &1401 & 318 & \qquad & 199 & 113 \\
+Darin Dimitrov   &  343191 & 59\% & 1270  & 347 & &192 & 168\\
+Marc Gravell & 325797 & 52\%  &1384 &525 & &197 & 153 \\
+BalusC  & 298811 & 66\% &1002 &329 & &142 & 83 \\
+Hans Passant & 271982 & 59\% &1165    &355 & &177 & 148\\
+\bottomrule
+\end{tabularx}
+\caption{Statistics of top StackOverflow contributors.}
+\label{so_table}
+\end{small}
+\end{table}
 
 \subsubsection{Study design}
-The data used in study was obtained from the Stack Overflow public release dump. The dataset contains information about the users, their comments, posts, and related activities, a subset of voting history, and which badges were awarded. 
+In order to explore recurrent behaviors of five top StackOverflow users from their activity measurements, I have constructed software trajectories for each of users by accounting their daily and weekly activities as the sum of questions, answers, and comments per hour or per day respectively. Further, each daily software trajectory was discretized into a 8-letters string by using SAX (i.e. by aggregating values for consecutive 3 hours) while each weekly behavior was discretized into 7 letters string. For both discretization procedures I have used an alphabet of size 3 whose letters $(A,B,C)$ can be interpreted as (``low'', ``medium'', and ``high'') activity levels.
 
+Within my dissertation proposal, and in the following work \cite{csdl2-10-09}, I have discussed the possible use of a common bioinformatics toolkit for the discovery and visualization of patterns extracted from discretized software trajectories. In this study I utilize a widely known bioinformatics tool for graphical representations of the patterns found within a multiple sequence alignment called WebLogo \cite{weblogo}. As pointed out by the authors of this tool ``sequence logos provide a precise description of sequences similarity and can rapidly reveal significant features of the alignment otherwise difficult to perceive''. Each logo generated by it consists of stacked letters, one stack for each position in the sequence. The overall height of each column indicates the sequence conservation at that position, while the height of symbols within the column reflects the relative frequency of the corresponding letter at that position.
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=145mm]{Stack-Summary.eps}
+   \caption{WebLogo figures (logos) for top SO contributors representing their daily behaviors, here \textit{A} corresponds to low level of registered activity, \textit{B} to the average level, and \textit{C} to the high activity level Note, that SAX-VSM pattern weighting process changed the effort distribution. The recurrent behaviors shown at logos were partially confirmed by respective SO contributors. The excluded behaviors are likely to represent a common behavioral pattern: the increasing activity levels from 9AM to 12PM and the decreasing activity levels from 12PM to 12AM.}
+   \label{fig:stack_daily}   
+\end{figure}
 
-We use this data to compile
-user activity with the goal of identifying patterns that suggest
-significant shifts in behaviour specifically designed to obtain
-a badge. The goal is to use the data mined from the logs
-to demonstrate the shift in behaviour motivated by the badge
-reward system. In this study, we focus specifically on a subset
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=145mm]{Stack-Summary-Weekly.eps}
+   \caption{WebLogo figures (logos) for top SO contributors representing their weekly behaviors, here \textit{A} corresponds to low level of registered activity, \textit{B} to the average level, and \textit{C} to the high activity level. Note, that SAX-VSM pattern weighting process changed the effort distribution for some users. The excluded behaviors are likely to represent a common behavioral pattern: the steady level of high activity level from Monday to Thursday, and the decreasing activity level from Friday to Sunday.}
+   \label{fig:stack_weekly}   
+\end{figure}
 
+\subsubsection{Results}
+The results of STA and WebLogo application to StackOverflow data are shown at the Figure \ref{fig:stack_daily} for daily patterns and at the Figure \ref{fig:stack_weekly} for weekly patterns. At each figure I also compare the WebLogo-created logos for user-characteristic behaviors before and after applying SAX-VSM ranking. Note, that the ranking changes the amount of observed patterns (Table \ref{so_table}) and their significance.
 
+The analysis of logo images for daily behaviors reveals that there are significant differences in the characteristic activity patterns among the top SO contributors. For example, Jon Skeet's logo shows that his activity peaks in intervals (6AM - 9AM) and (3PM-9PM), which, in fact is confirmed by his public comment \cite{skeet}: ``\textit{\dots I have a longish commute both ways each day: a 3G data dongle lets me answer questions during that time. I spend a fair amount of time in the evening on my computer for whatever reason (coding, writing talks or articles, etc) - I pop onto SO every so often. While at work, I tend to check SO while I have tests running, a deploy, or a build. I hope my colleagues wouldn't regard me as a slacker though \dots}". Through personal communication I was also able to confirm the daily activity patterns of Marc Gravell, whose daily routines are also structured by commute and other constraints, whereas Darin Dimitrov pointed out that his activity at SO are not structured in any way, which may explain that his logo images are more difficult to interpret (especially early morning (1AM-3AM) ``C''s and considerably high weekend activity) and that the vector of his ranked behaviors was clustered separately of that with Skeet and Gravell as shown at the Figure \ref{fig:stack_clusters}.
 
-\section{Discussion}
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=145mm]{so_clusters.eps}
+   \caption{Clustering of SO contributors by STA. Note that D.Dimitrov's characteristic behaviors were found different from those of J. Skeet, while their overall reputation values are, in fact, close.}
+   \label{fig:stack_clusters}   
+\end{figure}
+
+\subsubsection{Discussion}
+While STA analysis was able to discover user-characteristic patterns, and common bioinformatics visualization toolkit WebLogo produced the easily interpretable figures, clearly, these do not provide a sufficient knowledge why Jon Skeet's reputation is so high -- in the daily behaviors study (3 green ``C'') and in the weekly behaviors study (4 green ``C'') his activity patterns were comparable with the those of lower reputation-scoring users. It is hard to conclude it better than Jon's own comment \cite{skeet}: ``\textit{\dots Often two answers may look quite similar, but one just about has an edge on the other - either it's explained just that bit better, or has one more piece of information, or a code sample. I'd like to hope that I have that sort of edge, and that that's why my answer would get more votes in that situation. But hey, I could easily be wrong! \dots}".
+
+Note, that excluded by STA weighting behaviors correspond to a typical activity pattern expected from an office worker (shown at the Figure \ref{fig:chicago_activity}), whose activity throughout the work week increases from 9AM, peaks at noon, and gradually degrades within the rest of the day.
+
+\begin{figure}[t]
+   \centering
+   \includegraphics[width=145mm]{ChicagoActivity.eps}
+   \caption{An illustration from \cite{activity_patterns} showing typical temporal rhythms discovered on a weekday in Chicago.}
+   \label{fig:chicago_activity}   
+\end{figure}
 
 \epigraph{The purpose of computing is insight, not numbers.}{Richard Hamming}
