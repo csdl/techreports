@@ -87,7 +87,8 @@ transformation with Symbolic Aggregate approXimation (SAX) \cite{sax}, and count
 subsequences (i.e. patterns) along the time series.
 By applying this procedure to a data set, the algorithm converts it into a vector space, where original time series are 
 represented by the pattern occurrence frequency vectors. As the authors has shown, these can be classified with an NN classifier 
-built with Euclidean distance, or with Cosine similarity that is applied to raw frequencies or their \tfidf coefficients. 
+built with Euclidean distance, or with Cosine similarity that is applied to raw frequencies or their weighted with 
+term frequency-inverse document frequency (i.e. \tfidf \cite{salton-71}) values. 
 BOP classification has several advantages: its complexity is linear ($O(nm)$), it is rotation-invariant since it accounts for local and 
 global structures simultaneously, and it provides an insight into the patterns distribution through frequency histograms.
 The authors have concluded that the best classification accuracy of BOP-represented time series is achieved by using 1NN classifier 
@@ -115,9 +116,9 @@ Formally speaking, a time series is an ordered sequence of pairs
 where values $p_{i} \in \mathbf{R^{n}}$ and timestamps are ordered $t_{1} < t_{2} < ... < t_{i} <...<t_{m}$ 
 and possibly not equidistant, i.e. $|t_{i}-t_{i-1}| \neq |t_{i}-t_{i+1}|$.
 
-However, in the research literature, without the loss of generality, the equispaced data is typically considered implying that the 
-raw time series can be treated (i.e. interpolated, aggregated, or approximated) in order to become equispaced. 
-Therefore, it is assumed here, that the \textbf{\textit{time series}} is a set of ordered scalar observations: 
+However, in the research literature, without the loss of generality, the equispaced data is typically considered implying 
+that the raw time series can be treated (i.e. interpolated, aggregated, or approximated) in order to become equispaced. 
+Therefore, it is assumed here, that the \textbf{\textit{time series}} is a vector of scalar observations: 
 $T = ( t_{1},\dots,t_{m} )$, where $t_{i} \in \mathbf{R^{n}}$.
 
 Note, that not-equispaced, irregular data is one of the issues when mining software repositories, as I have discussed previously in 
@@ -133,13 +134,13 @@ a localized phenomena as it has been shown in the previous research work targeti
 and discords (anomalous subsequences) \cite{citeulike:3175749} discovery. 
 
 A time series \textbf{\textit{subsequence}} of length $k$ of a time series $T = (t_{1}, t_{2},...,t_{m})$ of length $m$ is a time 
-series $T_{i,k} = (t_{i},t_{1+1},...,t_{i+k-1})$  where $1 \leq i \leq m - k + 1$, i.e. a contiguous fragment of the time series.
+series $T_{i,k} = (t_{i},t_{i+1},...,t_{i+k-1})$  where $1 \leq i \leq m - k + 1$, i.e. a contiguous fragment of the time series.
 
 \begin{figure}[t]
    \centering
    \includegraphics[width=130mm]{sliding-window.eps}
    \caption{An illustration of the sliding window technique from \cite{citeulike:2821475}: a time series T of length 128, 
-   the subsequence $C67$ (of length $m$=16), and the first 8 overlapping subsequences extracted by a sliding window.}
+   the subsequence $C_{67}$ (of length $p$=16), and the first 8 overlapping subsequences extracted by a sliding window.}
    \label{fig:sliding_window}
 \end{figure}
 
@@ -168,8 +169,8 @@ For example, the adoption of SAX indexing allowed for a significantly faster sha
 although rendering the algorithm approximate. 
 
 Given a time-series $T$ of a length $n$, SAX produces its symbolic approximation $\hat{S}$ of a length $w$ where letters are taken 
-from an alphabet $\alpha$. Along with $T$, two parameters must be specified as the input: the alphabet size $\alpha$ and the size of 
-the word to produce $w$. Algorithm works as follows. 
+from an alphabet $A$. Along with $T$, two parameters must be specified as the input: the alphabet size $\alpha$ and the size of 
+the word to produce $w$. The algorithm, whose overview is shown at the Figure \ref{fig:sax_intro}, works as follows. 
 
 \begin{figure}[tbp]
    \centering
@@ -186,7 +187,7 @@ series $T$ is normalized to unit of standard deviation. This normalization proce
 series structural specificities \cite{citeulike:3815880}. In order to obtain the normalized time series $\widetilde{T}$, the 
 input time series mean is subtracted from each point and the resulting value is divided by their standard deviation:
 \begin{equation}
-\widetilde{t}_{i} = \frac{x_{i}-\mu}{\sigma}, i \in {1,..,n}
+\widetilde{t}_{i} = \frac{t_{i}-\mu}{\sigma}, i \in {1,..,n}
 \label{eq:znorm}
 \end{equation}
 If, however, the standard deviation value falls below a fixed threshold, the normalization procedure is not applied in order to avoid 
@@ -196,7 +197,7 @@ At the second step, the dimensionality of the normalized time series is reduced 
 Piecewise Aggregate Approximation (PAA). For this, $\widetilde{T}$ is transformed into a vector of PAA coefficients $C$ ($|C|=\omega$) 
 by dividing it into equal-sized segments and computing their mean values:
 \begin{equation}
-c_{i} = \frac{w}{n} \sum_{j=\frac{n}{w}(i-1)+1}^{\frac{n}{w}i} \widetilde{x}_{j}
+c_{i} = \frac{w}{n} \sum_{j=\frac{n}{w}(i-1)+1}^{\frac{n}{w}i} \widetilde{t}_{j}
 \label{eq:paa}
 \end{equation}
 Note, that for any $L_{p}$ norm this transformation satisfies to a lower-bounding condition and guarantees no false dismissals
@@ -211,7 +212,8 @@ The design of these tables rests on the assumption that normalized time series t
 By assigning a corresponding alphabet symbol $alpha_{j}$ to each interval $[\beta_{j-1},\beta_{j})$, the conversion of the vector of PAA coefficients 
 $C$ into the string $\widehat{C}$ implemented as follows: 
 \begin{equation}
-\widehat{c}_{i} = alpha_{j}, \; \text{iif} \; \bar{c}_{i} \in [\beta_{j-1},\beta_{j})
+\widehat{c}_{i} = alpha_{j}, \; \text{if} \;
+{c}_{i} \in [\beta_{j-1},\beta_{j})
 \label{eq:sax_alphabet}
 \end{equation}
 
@@ -354,10 +356,10 @@ the over-counting -- an issue which may significantly bias the result and even m
 Hence, they have concluded, when extracting subsequences from the time series via a sliding window, 
 the trivial matches should be excluded. 
 
-The authors proposed a sampling strategy based on a \textit{MINDIST} \eqref{eq:sax_mindist} distance 
+The authors proposed a sampling strategy based on a \textit{MINDIST} (Eq. \ref{eq:sax_mindist}) distance 
 function designed in order to avoid the trivial and degenerate solutions.
-If $l$ consecutive SAX words \newline $\widehat{S}_{i,k}, \widehat{S}_{i+1,k},...,\widehat{S}_{i+l-1,k},...$
-corresponding to subsequences $T_{i,k}, T_{i+1,k},...,T_{i+l-1,k},...$ extracted with sliding window have been
+If $l$ consecutive SAX words \newline $\widehat{S}_{i,k}, \widehat{S}_{i+1,k},...,\widehat{S}_{i+l-1,k}$
+corresponding to subsequences $T_{i,k}, T_{i+1,k},...,T_{i+l-1,k}$ extracted with sliding window have been
 found equal when using \textit{MINDIST}, they kept only the first entry $\widehat{S}_{i,k}$. 
 The authors also noted, that similarly to the run length encoding data compression technique, if one would ever need to 
 retrieve all the occurrences of $\widehat{S}_{i,k}$, they can be found by sliding the window from 
@@ -366,7 +368,7 @@ the first occurrence to the right until the word which is different from $\wideh
 While the authors found the inclusion of the numerosity reduction vital for motif and discord discovery applications, 
 intuitively, since SAX-VSM that deals with the classification, an aggressive numerosity reduction may 
 in fact reduce the classification performance as it has been shown in the original BOP work \cite{citeulike:10525778}. 
-Moreover, by the design of \tfidf statistics \eqref{formula:tfidf}, the over-counting effect is significantly mediated 
+Moreover, by the design of \tfidf statistics (Eq. \ref{formula:tfidf}), the over-counting effect is significantly mediated 
 by the inverse document frequency $\text{\textbf{idf}}$ that efficiently reduces the effect of high word counts 
 proportionally to their inter-class occurrence.
 
@@ -422,8 +424,9 @@ or \textit{bag of patterns} \cite{citeulike:10525778}, were recently proposed fo
 upon SAX \cite{citeulike:10525778}, I use the traditional \textit{bag of words} definition since it reflects 
 my workflow best. 
 
-Given a training set of time series, SAX-VSM builds a single bag of SAX words for each of its classes by 
-processing all class' time series with a sliding window and SAX. Then, these bags are combined into a corpus 
+Given a training set of time series, that is typically built from labeled sets of time series (i.e. ``classes''), 
+SAX-VSM builds a single bag of SAX words for each of the classes by processing all class' time series with a sliding 
+window and SAX. Then, these bags are combined into a corpus 
 which in turn is transformed into the term frequency matrix, whose rows correspond to the set of all SAX words (terms) 
 found in \textit{all classes}, whereas each column denotes a class of the training set. 
 Each element of this matrix is an observed frequency of a term in a class. 
@@ -461,7 +464,7 @@ The \tfidf weight for a term is defined as a product of two factors: term freque
 and inverse document frequency ($\text{\textbf{idf}}$). 
 For the first factor, I use logarithmically scaled term frequency (Table \ref{tbl:smart}) \cite{citeulike:4469058}:
 \begin{equation}
- \mbox{\textbf{tf}}_{t, d} =  \begin{cases} \log(1 + \mbox{\textbf{f}}_{t,d}), &\mbox{if \textbf{f}}_{t,d}>0  \\
+ \mbox{\textbf{tf}}_{t, d} =  \begin{cases} 1 + \log(\mbox{\textbf{f}}_{t,d}), &\mbox{if \textbf{f}}_{t,d}>0  \\
 0, & \mbox{otherwise} \end{cases}
 \end{equation} 
 where $t$ is a term and $d$ is a bag of words (the document in IR terms), and $\mbox{\textbf{f}}_{t,d}$ 
@@ -471,11 +474,11 @@ For the second factor I use inverse document frequency:
  \mbox{\textbf{idf}}_{t, D} =  \log_{10}\frac{|D|}{|d \in D : t \in d|} = \log_{10}\frac{N}{\mbox{\textbf{df}}_{t}}
  \label{formula:idf}
 \end{equation} 
-where $N$ is the cardinality of corpus $D$ (the total number of classes) and the 
-denominator $\mbox{\textbf{df}}_{t}$ is a number of documents where the term $t$ appears.
+where $N$ is the cardinality of corpus $D$ (the total number of bags) and the 
+denominator $\mbox{\textbf{df}}_{t}$ is a number of bags where the term $t$ appears.
 
-Thus, the $\text{\textbf{tf}} \ast \text{\textbf{idf}}$ value for a term $\text{\textbf{t}}$ in the document 
-$\text{\textbf{d}}$ of a corpus $\text{\textbf{D}}$ is defined as:
+Thus, the \tfidf value for a term $\textit{t}$ in the document 
+$\textit{d}$ of a corpus $\textit{D}$ is defined as:
 \begin{equation}
  \text{\textbf{tf}} \ast \text{\textbf{idf}}(t, d, D) =  \text{\textbf{tf}}_{t, d} \times \text{\textbf{idf}}_{t, D} = \log(1 + \text{\textbf{f}}_{t,d})
 \times \log_{10}\frac{N}{\mbox{\textbf{df}}_{t}}
@@ -503,7 +506,8 @@ phases - the training (i.e. learning of class-characteristic patterns) and the c
 Within the training phase, SAX-VSM discretizes all labeled time-series with SAX and builds $N$ bags 
 of SAX words, where $N$ is the number of classes. 
 Then, by applying the \tfidf weighting scheme to the corpus of $N$ bags it obtains $N$ weight vectors 
-which it uses for the time series classification procedure built upon the Cosine similarity.
+which it uses for the time series classification procedure built upon the Cosine similarity. 
+The schematic overview of the algorithm training and classification phases is given in the Figure \ref{fig:sax-vsm_overview}.
 
 \begin{figure}[t]
    \centering
@@ -532,11 +536,12 @@ the normalization is not applied in order to avoid over-amplification of the bac
 
 By applying this procedure to all time series from $N$ training classes, the algorithm builds a corpus of 
 $N$ word bags. 
-Then, it computes weights all of the corpus' terms using \tfidf and outputs $N$ real-valued weight vectors of 
+Then, it computes weights of all of the corpus' terms using \tfidf and outputs $N$ real-valued weight vectors of 
 equal length representing training classes. 
 
 Because the whole training set must be processed, training of SAX-VSM classifier is computationally 
-expensive ($O(nm)$). However, there is no need to maintain an index of training time series, or to keep any 
+expensive ($O(nm)$, where $n$ is the number of time series and $m$ is the maximal length of the time series). 
+However, there is no need to maintain an index of training time series, or to keep any 
 of them in the memory at runtime -- the algorithm simply iterates over all training time series building 
 bags of SAX words incrementally. Once built and weighted with \tfidf, the corpus is discarded -- only the
 resulting set of $N$ real-valued weight vectors is retained for the classification.
@@ -609,7 +614,7 @@ Since DIRECT is designed to search for global minima of a real valued function o
 whereas SAX parameters are natural numbers, I employ the rounding of a reported solution values to the nearest integer.
 Figure \ref{fig:direct-sampling} illustrates the application of leave-one-out cross-validation and DIRECT to the
 \textit{SyntheticControl} data set \cite{ucr} which consists of 6 classes. 
-In this case, the algorithm converged after sampling just 130 out of 13'860 possible parameters combinations -- 
+In this case, the algorithm converged after sampling just 130 out of 13,860 possible parameters combinations -- 
 that is over 100x speedup.
 
 The Figure \ref{fig:sax_nr} shows the effect of each of the numerosity reduction strategies on parameters optimization
@@ -618,11 +623,11 @@ by adulterants with mid-infrared spectroscopy \cite{citeulike:12859637}.
 Sixteen iterations of DIRECT were performed for each experiment. 
 The optimal solution (Window=19, PAA=17, Alphabet=3) was found with \textit{EXACT} numerosity reduction strategy 
 in 8 iterations; without numerosity reduction, optimization process converged in 10 iterations, while 
-with \textit{MINDIST} - based numerosity reduction in 9 iterations. 
+with \mbox{\textit{MINDIST}-based} numerosity reduction in 9 iterations. 
 Note the differences in sampled locations between strategies: without numerosity reduction, DIRECT efficiently found 
 the minima location after sampling of 317 locations, whether with reduction, a number of close to optimal locations was 
 found earlier and thus sampled more rigorously. 
-365 locations were sampled with \textit{MINDIST} - based numerosity reduction, and 369 locations with Hamming-based 
+365 locations were sampled with \mbox{\textit{MINDIST}-based} numerosity reduction, and 369 locations with Hamming-based 
 numerosity reduction, which indicates an increase in the optimization process sensitivity when a numerosity reduction is used.
 
 Note, that the parameters optimization scheme discussed above does not include the numerosity reduction strategy.
@@ -669,8 +674,8 @@ Class type Dataset & Datasets \\[0.5ex]
 Image data & 50 words, Adiac, Yoga , Face Four, Face all, Faces UCR, Fish, \\
  & Swedish Leaf, OSU Leaf, Arrow Head, Shield, Diatom, Medical Images \\[0.5ex]
 Motion data & Gun-Point, Cricket, Cricket-NEW, Sony AIBO walk, Pass Graph, \\ 
- & uWaveGesture, \\[0.5ex]
-Spectroscopy data & Beef, Coffee, Olive Oil, Wheat, \\[0.5ex]
+ & uWaveGesture \\[0.5ex]
+Spectroscopy data & Beef, Coffee, Olive Oil, Wheat \\[0.5ex]
 Synthetic datasets & Cylinder-Bell-Funnel, Synthetic Control, Two Patterns, Mallat \\[0.5ex]
 Energy consumption & Italy Power Demand, Electrical Devices \\[0.5ex]
 Medical measurements & ECG200, ECG 5 days, Medical images, ECG Thorax \\[0.5ex]
@@ -711,7 +716,7 @@ Dataset & \mbox{Num. of} classes & 1NN-Euclidean & 1NN-DTW & Fast Shapelets &  \
 & SAX-VSM\\
 \hline
 Adiac        &37  & 0.389   & 0.391  & 0.514  & 0.432  & \textbf{0.381}\\
-Beef         &5   & 0.467   & 0.467  & 0.447  & 0.433  & \textbf{0.330}\\
+Beef         &5   & 0.467   & 0.467  & 0.447  & 0.433 & \textbf{0.3}\\
 CBF         & 3  & 0.148    & 0.003  & 0.053    & 0.013 & \textbf{0.002} \\
 Coffee       &2    & 0.250   & 0.180  & 0.067     & 0.036     & \textbf{0.0} \\
 ECG200     &2   & \textbf{0.120}  & 0.230  & 0.227     & 0.140   & 0.140 \\
@@ -739,14 +744,7 @@ The Table \ref{perf_table2} compares the classification accuracy of SAX-VSM with
 Fast-Shapelet and BOP classifiers were excluded from this comparison table because their 
 performance for these datasets is unknown.
 
-Note, that in the evaluation, I followed the train/test data split as provided by UCR. 
-At first, the train data was used in the cross-validation for optimization of SAX parameters 
-using \mbox{DIRECT}. Second, once found, the optimal parameter settings were used to assess SAX-VSM 
-classification accuracy on the test data. 
-The last column of table Tables \ref{perf_table1} and \ref{perf_table2} reports the SAX-VSM 
-classification accuracy and the parameter settings.
-
-\newpage
+\clearpage
 
 \begin{table}[t!]
 \caption{\bf State of the art 1NN classifiers and SAX-VSM classification accuracy comparison.}
@@ -766,50 +764,56 @@ Gun Point & 2 & 50 & 150 & 150 & 0.087 & 0.093 & \textbf{0.066} & 32,12,9,exact 
 Trace & 4 & 100 & 100 & 275 & 0.24 & \textbf{0.0} & \textbf{0.0000} & 220,16,11,exact \\
 Adiac & 37 & 390 & 391 & 176 & 0.389 & 0.396 & \textbf{0.3810} & 100,24,16,nored \\
 Yoga & 2 & 300 & 3000 & 426 & 0.170 & \textbf{0.164} & \textbf{0.1639} & 70,14,15,nored \\ 
-Beef & 5 & 30 & 30 & 470 & 0.467 & 0.5 & \textbf{0.2999} & 19,17,3,exact \\ 
+Beef & 5 & 30 & 30 & 470 & 0.467 & 0.5 & \textbf{0.3} & 19,17,3,exact \\ 
 Coffee & 2 & 28 & 28 & 286 & 0.25 & 0.179 & \textbf{0.0} & 107,22,3,nored \\
 Olive Oil & 4 & 30 & 30 & 570 & \textbf{0.133} & \textbf{0.133} & \textbf{0.1330} & 460,52,13,classic \\
 ECG200 & 2 & 100 & 100 & 96 & \textbf{0.12} & 0.23 & 0.1400 & 44,9,5,exact \\
 ECG 5 days & 2 & 23 & 861 & 136 & 0.065 & 0.232 & \textbf{0.0100} & 41,11,4,exact \\
-Face all & 14 & 560 & 1,69 & 131 & 0.286 & 0.192 & 0.2065 & 42,8,4,nored \\
-Face four & 4 & 24 & 88 & 350 & 0.216 & 0.170 & 0.1112 & 67,7,5,exact \\
-Fish & 7 & 175 & 175 & 463 & 0.217 & 0.167 & 0.0171 & 99,19,8,nored \\
-Swedish Leaf & 15 & 500 & 625 & 128 & 0.213 & 0.210 & 0.2512 & 49,9,7,exact \\
-OSU Leaf & 6 & 200 & 242 & 427 & 0.483 & 0.409 & 0.0867 & 33,8,12,nored \\
-Lightning 2 & 2 & 60 & 61 & 637 & 0.246 & 0.131 & 0.1967 & 169,15,3,nored \\
-Lightning 7 & 7 & 70 & 73 & 319 & 0.425 & 0.274 & 0.3287 & 97,17,3,nored \\
-Wafer & 2 & 1 & 6,174 & 152 & 0.005 & 0.020 & 0.0010 & 34,32,7,classic \\
-Two Patterns & 4 & 1 & 4 & 128 & 0.09 & 0.0 & 0.0040 & 107,12,3,nored \\
-Ford A & 2 & 3,601 & 1,32 & 500 & 0.3182 & 0.484 & 0.1272 & 80,10,5,exact \\
-Ford B & 2 & 3,636 & 810 & 500 & 0.4086 & 0.495062 & 0.2567 & 80,10,5,exact \\
-Chlorine Concentration & 3 & 467 & 3840 & 166 & 0.35 & 0.352 & 0.3341 & 30,27,5,classic \\
-Cricket & 2 & 9 & 98 & 166 & 0.0511 & 0.0102 & 0.0102 & 165,10,4,exact \\
-Cricket - NEW & 2 & 9 & 98 & 166 & 0.4375 & 0.125 & 0.2343 & 165,10,4,exact \\
-Sony AIBO walk & 2 & 20 & 601 & 70 & 0.3045 & 0.2745 & 0.2628 & 54,4,16,exact \\
-PassGraph & 2 & 69 & 131 & 364 & 0.3664 & 0.2824 & 0.28124 & 119,10,15,nored \\
-Wheat Spectrography & 7 & 49 & 726 & 1050 & 0.44 & 0.457 & 0.2790 & 130,50,10,nored \\
-Arrowhead & 3 & 36 & 175 & 625 & 0.32 & 0.32 & 0.3028 & 113,11,3,classic \\
-Shield & 3 & 30 & 129 & 1179 & 0.1395 & 0.1395 & 0.0772 & 150,12,4,nored \\
-Mallat & 8 & 320 & 2080 & 256 & 0.0235 & 0.0312 & 0.0274 & 214,10,15,nored \\ 
-uWaveGesture\_X & 8 & 896 & 3582 & 315 & 0.2607 & 0.2725 & 0.2635 & 260,7,5,exact \\
-uWaveGesture\_Y & 8 & 896 & 3582 & 315 & 0.3384 & 0.3659 & 0.3534 & 240,10,4,exact \\
-uWaveGesture\_Z & 8 & 896 & 3582 & 315 & 0.3504 & 0.3417 & 0.3400 & 258,8,4,exact \\
-Diatom Size Reduction & 4 & 16 & 306 & 345 & 0.0654 & 0.0327 & 0.0653 & 174,15,18,exact \\
-Medical Images & 10 & 381 & 760 & 99 & 0.3158 & 0.2631 & 0.4802 & 29,9,5,exact \\
-Words Synonyms & 25 & 267 & 638 & 270 & 0.3824 & 0.3511 & 0.4404 & 198,10,3,exact \\
-FacesUCR & 14 & 200 & 2050 & 131 & 0.2307 & 0.0951 & 0.0751 & 38,8,3,exact \\
-Symbols & 6 & 25 & 995 & 398 & 0.1005 & 0.0503 & 0.1015 & 112,12,5,exact \\
-Starlight Curves & 3 & 1000 & 8236 & 1024 & 0.0632 & 0.093 & 0.0807 & 172,15,11,exact \\
-Italy Power Demand & 2 & 67 & 1029 & 24 & 0.0949 & 0.0495 & 0.1166 & 13,16,5,exact \\
-ElectricalDevices & 7 & 8953 & 7745 & 96 & 0.9132 & 0.9132 & 0.3227 & 17,13,6,nored \\
-ECG Thorax1 & 42 & 1800 & 1965 & 750 & 0.171 & 0.209 & 0.2340 & 44,15,14,exact \\
-ECG Thorax2 & 42 & 1800 & 1965 & 750 & 0.120 & 0.135 & 0.1450 & 44,15,14,exact \\
+Face all & 14 & 560 & 1,69 & 131 & 0.286 & \textbf{0.192} & 0.2065 & 42,8,4,nored \\
+Face four & 4 & 24 & 88 & 350 & 0.216 & 0.170 & \textbf{0.1112} & 67,7,5,exact \\
+Fish & 7 & 175 & 175 & 463 & 0.217 & 0.167 & \textbf{0.0171} & 99,19,8,nored \\
+Swedish Leaf & 15 & 500 & 625 & 128 & 0.213 & \textbf{0.210} & 0.2512 & 49,9,7,exact \\
+OSU Leaf & 6 & 200 & 242 & 427 & 0.483 & 0.409 & \textbf{0.0867} & 33,8,12,nored \\
+Lightning 2 & 2 & 60 & 61 & 637 & 0.246 & 0.131 & \textbf{0.1967} & 169,15,3,nored \\
+Lightning 7 & 7 & 70 & 73 & 319 & 0.425 & 0.274 & \textbf{0.3287} & 97,17,3,nored \\
+Wafer & 2 & 1 & 6,174 & 152 & 0.005 & 0.020 & \textbf{0.0010} & 34,32,7,classic \\
+Two Patterns & 4 & 1 & 4 & 128 & 0.09 & \textbf{0.0} & 0.0040 & 107,12,3,nored \\
+Ford A & 2 & 3,601 & 1,32 & 500 & 0.3182 & 0.484 & \textbf{0.1272} & 80,10,5,exact \\
+Ford B & 2 & 3,636 & 810 & 500 & 0.4086 & 0.495062 & \textbf{0.2567} & 80,10,5,exact \\
+Chlorine Concentration & 3 & 467 & 3840 & 166 & 0.35 & 0.352 & \textbf{0.3341} & 30,27,5,classic \\
+Cricket & 2 & 9 & 98 & 166 & 0.0511 & \textbf{0.0102} & \textbf{0.0102} & 165,10,4,exact \\
+Cricket - NEW & 2 & 9 & 98 & 166 & 0.4375 & \textbf{0.125} & 0.2343 & 165,10,4,exact \\
+Sony AIBO walk & 2 & 20 & 601 & 70 & 0.3045 & 0.2745 & \textbf{0.2628} & 54,4,16,exact \\
+PassGraph & 2 & 69 & 131 & 364 & 0.3664 & 0.2824 & \textbf{0.2812} & 119,10,15,nored \\
+Wheat Spectrography & 7 & 49 & 726 & 1050 & 0.44 & 0.457 & \textbf{0.2790} & 130,50,10,nored \\
+Arrowhead & 3 & 36 & 175 & 625 & 0.32 & 0.32 & \textbf{0.3028} & 113,11,3,classic \\
+Shield & 3 & 30 & 129 & 1179 & 0.1395 & 0.1395 & \textbf{0.0772} & 150,12,4,nored \\
+Mallat & 8 & 320 & 2080 & 256 & \textbf{0.0235} & 0.0312 & 0.0274 & 214,10,15,nored \\ 
+uWaveGesture\_X & 8 & 896 & 3582 & 315 & \textbf{0.2607} & 0.2725 & 0.2635 & 260,7,5,exact \\
+uWaveGesture\_Y & 8 & 896 & 3582 & 315 & \textbf{0.3384} & 0.3659 & 0.3534 & 240,10,4,exact \\
+uWaveGesture\_Z & 8 & 896 & 3582 & 315 & 0.3504 & 0.3417 & \textbf{0.3400} & 258,8,4,exact \\
+Diatom Size Reduction & 4 & 16 & 306 & 345 & 0.0654 & \textbf{0.0327} & 0.0653 & 174,15,18,exact \\
+Medical Images & 10 & 381 & 760 & 99 & 0.3158 & \textbf{0.2631} & 0.4802 & 29,9,5,exact \\
+Words Synonyms & 25 & 267 & 638 & 270 & 0.3824 & \textbf{0.3511} & 0.4404 & 198,10,3,exact \\
+FacesUCR & 14 & 200 & 2050 & 131 & 0.2307 & 0.0951 & \textbf{0.0751} & 38,8,3,exact \\
+Symbols & 6 & 25 & 995 & 398 & 0.1005 & \textbf{0.0503} & 0.1015 & 112,12,5,exact \\
+Starlight Curves & 3 & 1000 & 8236 & 1024 & \textbf{0.0632} & 0.093 & 0.0807 & 172,15,11,exact \\
+Italy Power Demand & 2 & 67 & 1029 & 24 & 0.0949 & \textbf{0.0495} & 0.1166 & 13,16,5,exact \\
+ElectricalDevices & 7 & 8953 & 7745 & 96 & 0.9132 & 0.9132 & \textbf{0.3227} & 17,13,6,nored \\
+ECG Thorax1 & 42 & 1800 & 1965 & 750 & 0.171 & \textbf{0.209} & 0.2340 & 44,15,14,exact \\
+ECG Thorax2 & 42 & 1800 & 1965 & 750 & 0.120 & \textbf{0.135} & 0.1450 & 44,15,14,exact \\
 \hline
 \end{tabularx}
 }}
 \end{table}
 
 \clearpage
+Note, that in the evaluation, I followed the train/test data split as provided by UCR. 
+At first, the train data was used in the cross-validation for optimization of SAX parameters 
+using \mbox{DIRECT}. Second, once found, the optimal parameter settings were used to assess SAX-VSM 
+classification accuracy on the test data. 
+The last column of table Tables \ref{perf_table1} and \ref{perf_table2} reports the SAX-VSM 
+classification accuracy and the parameter settings.
 
 \subsection{Scalability analysis} \label{scalability}
 For synthetic data sets, it is possible to create as many instances as one needs for the experimentation. 
@@ -860,9 +864,8 @@ The Gaussian noise is also added to each time-series point:
 0,t > b \end{cases}
 \end{equation}
 \end{minipage}
-\vspace{0.5cm}
 
-where $\eta$ and $\epsilon(t)$ are drawn from a standard normal distribution $N(0,1)$, $a$ is an integer 
+\noindent where $\eta$ and $\epsilon(t)$ are drawn from a standard normal distribution $N(0,1)$, $a$ is an integer 
 drawn uniformly from the interval $[16,32]$ and $(b-a)$ is drawn uniformly from $[32,96]$.
 
 \subsubsection{Two patterns dataset}
@@ -885,8 +888,8 @@ algorithms that do not account for the sequential measurements dependency \cite{
 \end{figure}
 
 \subsection{Classification scalability}
-In a series of experiments, I varied the training data set size from $5$ to $1600$ instances of each time series class, 
-while the test data set size remained fixed to $10'000$ instances. 
+In a series of experiments, I varied the training data set size from $5$ to $1,600$ instances of each time series class, 
+while the test data set size remained fixed to $10,000$ instances. 
 For small training sets, SAX-VSM was found to be significantly more accurate than 1NN classifier based on Euclidean 
 distance but less accurate than 1NN classifier based on DTW. 
 However, by the time there were more than $400$ time series in a training set, there was no statistically 
@@ -981,7 +984,7 @@ stretches of the Gaussian noise, mimicking the signal corruption.
 Again, SAX-VSM performed consistently better than 1NN Euclidean classifier regardless of the training set size, 
 which I have varied from 5 to 1'000. 
 The \textit{SAX-VSM Opt} curve at Fig.\ref{fig:corrupted} (Right) depicts an experiment where the training set size
-was fixed to 50 time series of each class and when when the sliding window size was decreased inversely proportionally 
+was fixed to 50 time series of each class and when the sliding window size was decreased inversely proportionally 
 to the signal loss growth.
 
 \subsection{Interpretable classification}
@@ -1039,9 +1042,9 @@ which degree.
 By following the previously mentioned shapelet-based work \cite{citeulike:7344347} \cite{citeulike:11345338}, 
 I have used a well-studied \textit{\mbox{Gun/Point}} data set \cite{Ratanamahatana04makingtime-series} to explore the 
 interpretability of classification results. This data set contains two classes: 
-time-series in the \textit{Gun} class correspond to the actor's hand motion when drawing
+time-series in the \textit{Gun} class corresponds to the actor's hand motion when drawing
 a replicate gun from a hip-mounted holster, pointing it at the target for a second, and returning the gun to the holster; 
-time-series in the \textit{Point} class correspond to the actor's hand motion when pretending
+time-series in the \textit{Point} class corresponds to the actor's hand motion when pretending
 of drawing a gun --- the actor points her index finger to a target for about a second, and then returns the 
 hand to her side. 
 
@@ -1096,7 +1099,7 @@ on their shape and margin \cite{citeulike:12134192}.
 Highlighted by SAX-VSM features include 
 the slightly lobed shape and acute tips of Acer Circinatum leaves, 
 the serrated blade of Acer Glabrum leaves, 
-the acuminate tip and a characteristic serration of in Acer Macrophyllum leaves, 
+the acuminate tip and a characteristic serration of Acer Macrophyllum leaves, 
 the pinnately compound leaves arrangement of Acer Negundo, 
 the incised leaf margin of Quercus Kelloggii, 
 and the lobed leaf structure of Quercus Garryana. 
