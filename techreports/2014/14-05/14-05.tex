@@ -98,20 +98,10 @@
 }
 \makeatother
 
-%\newfont{\mycrnotice}{ptmr8t at 7pt}
-%\newfont{\myconfname}{ptmri8t at 7pt}
-%\let\crnotice\mycrnotice%
-%\let\confname\myconfname%
-
-%\makeatletter
-%\def\@copyrightspace{\relax}
-%\makeatother
 
 \begin{document}
 
-%\title{Grammar compression-driven anomaly discovery\\ in time series}
 \title{Time series anomaly discovery with grammar-based compression}
-%\subtitle{[Extended Abstract]}
 
 \numberofauthors{6} 
 
@@ -191,7 +181,6 @@ In summary, our work has the following significant contributions:
 \item Our approaches offer the unique ability to discover multiple variable-length anomalies at once (Figure \ref{fig:video1}).
 \end{itemize}
 The remainder of the paper is organized as follows. In Section \ref{problem}, we provide notation and define our research problem. In Section \ref{discretization}, we give a motivational example and describe algorithms used. We discuss our approach in detail in Section \ref{algorithms}, showing two algorithms enabling grammatical compression-driven anomaly detection in time series. In Section \ref{evaluation}, we empirically evaluate our algorithms on datasets as diverse as spatial trajectories, space shuttle telemetry, medicine, surveillance, and industry. We also show the utilities of incorporating the algorithms into our visualization tool, GrammarViz 2. Finally, we review related work and conclude.
-%\textbf{(Arnold) The above paragraph needs to be updated with the new section organization.(Pavel) updated.}
 
 \section{Notation and the Problem\\ definition}\label{problem}
 To precisely state the problem at hand, and to relate our work to previous research, we will define the key terms used throughout this paper. We begin by defining our data type, time series:
@@ -229,7 +218,6 @@ When searching for potential anomalies using a distance function, it is importan
 As mentioned, one of the most effective methods for time series anomaly detection is via discord discovery. Formally, it is defined as:
 
 \textbf{Time Series Discord}: Given a time series $T$, the time series subsequence $C \in T$ is called the discord if it has the largest Euclidean distance to its nearest non-self match \cite{hot_sax}. Thus, time series discord is a subsequence within a time series that is maximally different to all the rest of subsequences in the time series, and therefore naturaly captures the most unusual subsequence within the time series \cite{hot_sax}.
-% \textbf{Crystal: may want to elaborate on this definition as per Reviewer's comment}
 
 \subsection{Problem definition}
 The task of finding a structural time series anomaly is defined as 
@@ -331,7 +319,6 @@ $\text{R1}~ \rightarrow~ \text{aac}~ \text{abc} $ & $\textcolor{red}{aac}~ \text
 \end{table} 
 
 In this grammar, $R1$ concurrently maps to substrings of different lengths: $S1_{[1:3]}$ of length 3 (i.e., $aac_{1}\, aac_{2}\, abc_{3}$) and $S1_{[6:9]}$ of length 4 (i.e., $aac_{6}\, aac_{7}\, aac_{8}\, abc_{9}$), respectively. The potential anomalous substring ``$abb_{4}\,acd_{5}$'' has length 2. Since each SAX word corresponds to a \textit{single point} of the input time series (a subsequence starting point), $R1$ maps to its subsequences of variable lengths. 
-%\textbf{Crystal: may want to clarify S1,1:3 notation; maybe write out explicitly like S1,1:3 = aac1 aac2 abc3, which has a SAX word length of 3}
 
 \subsection{Mapping rules to subsequences}
 As shown in the above example, by keeping SAX words' offsets throughout the procedures of discretization and grammar induction, our algorithm is able to map rules and SAX words back to their original time series subsequences. 
@@ -344,7 +331,7 @@ In this work, we formally introduce the notion of the \textit{rule density curve
 \section{Grammar-driven Anomaly\\ Discovery}\label{algorithms}
 Within Kolmogorov complexity research, it has been proven that \textit{algorithmic incompressibility is a necessary and sufficient condition for randomness} \cite{grigorieff, li_vitanyi}, thanks to the elegant statistically-sound theory developed by Martin-L\"{o}f \cite{per_lof}. This theoretically grounds our intuition and effectively supports the claim that if a grammar induction algorithm is incapable of encoding a subsequence by finding exploitable correlations within the input string, such a subsequence is random within the context of the input string and applied algorithm. We call such subsequences \textit{algorithmically anomalous} and equate them to time series anomalies.  
 
-Let us explain the utility of ``algorithmic anomalousness''. When searching for an anomaly in a time series, we expect that while the true generative process is unknown, it is likely to be regular and that the time series reflects these regularities. At the same time, we also assume that the time series may contain some abnormal segments, whose identification is our goal. Further, assuming that the discretization process preserves these regularities and irregularities, the Sequitur algorithm should be able to learn the regularities and effectively compress the input string. However, due to its invariants of utility and uniqueness, Sequitur will not be able to form rules that contain symbolic subsequences occurring just once in the input string, because it will not be able to find any short- or long-term correlations between them and the rest of the string -- the property that reflects irregularity and defines a variable-length anomaly in the most natural way. %\textbf{Crystal: clarify/define "signal" or just use "time series" instead}
+Let us explain the utility of ``algorithmic anomalousness''. When searching for an anomaly in a time series, we expect that while the true generative process is unknown, it is likely to be regular and that the time series reflects these regularities. At the same time, we also assume that the time series may contain some abnormal segments, whose identification is our goal. Further, assuming that the discretization process preserves these regularities and irregularities, the Sequitur algorithm should be able to learn the regularities and effectively compress the input string. However, due to its invariants of utility and uniqueness, Sequitur will not be able to form rules that contain symbolic subsequences occurring just once in the input string, because it will not be able to find any short- or long-term correlations between them and the rest of the string -- the property that reflects irregularity and defines a variable-length anomaly in the most natural way. 
 
 Based on the intuition behind algorithmic anomalousness we propose two algorithms for grammatical compression-driven variable-length anomaly discovery from time series. Configured only by the discretization parameters, both algorithms are capable of efficient discovery of putative anomalous subsequences without any prior knowledge of their length, shape, or minimal occurrence frequency. While the result produced by the first algorithm is an approximate solution, our second algorithm is based on explicit distance computations and outputs time series discords of variable length.
 
@@ -361,8 +348,6 @@ To efficiently discover approximate anomalies, we propose to compute the rule de
 Since each SAX string corresponds to a subsequence starting at some position of the time series, the points whose rule density counters are global minima correspond to the grammar symbols (terminals or non-terminals) whose inclusion in the grammar rules are minimal. These subsequences are algorithmically anomalous by our definition and we argue that the \textit{rule density curve intervals that contain minimal values correspond to time series anomalies}, and our algorithm simply outputs these intervals.
 
 Consider the example shown in Figure \ref{fig:ecg}. The top panel shows an excerpt of an ECG time series with a highlighted instance of an anomalous heartbeat featuring a very subtle premature ventricular contraction. The middle panel shows a significant drop in the grammar rule density over the interval 462-484, which is in perfect alignment with the ground truth -- an expert's annotation of an anomaly occuring in the ST interval of the ECG curve (as discussed in \cite{hot_sax}). Similar to that, the global minima of the rule density curve shown in the middle panel of Figure \ref{fig:dutch_PD} pinpoints the weekly interval that has the most unusual power consumption pattern (the dataset in the top panel of Figure \ref{fig:dutch_PD} shows the power consumption history of a Dutch research facility for the entire year of 1997 \cite{dutchpd}).
-
-%\textbf{(Jessica) Since we referred to Figure 3 as well 2 paragraphs back, we should add a paragraph explaining Figure 3: the dataset and the interpretation of results.}
 
 The rule density-based approach is capable of discovering multiple anomalies of variable length.  When given a fixed threshold, it simply reports contiguous points of the input time series whose density is less than the threshold value. If needed, an additional ranking criterion can be defined, such as a minimal anomaly length or a statistically sound criterion based on probabilities.
 
@@ -429,7 +414,6 @@ The RRA algorithm is based on the HOTSAX framework initially proposed in \cite{h
 Similar to HOTSAX, our algorithm iterates over all candidate subsequences in the outer loop (line 4 of Algorithm \ref{algorithm2}) while computing distances to all other non-self matches in the inner loop (lines 6--8; $p_{0}$ and $q_{0}$ in line 7 are the indexes) and selecting the closest non-self match (lines 9--15). The candidate subsequence from the outer loop which yields the largest distance to a non-self match is output as the result. In HOTSAX, the candidates in the outer ($Outer$) and inner ($Inner$) loops are ordered based on the SAX representations of the candidate subsequences such that the order of consideration is as close to the \textit{optimal} ordering (i.e., the ordering that would result in the most elimination of computations) as possible. However, as mentioned earlier, HOTSAX candidates are restricted by their subsequence length. Our proposed technique differs from HOTSAX in that subsequences (i.e., $Intervals$ in Algorithm \ref{algorithm2}) and their ordering for the inner ($Inner$) and outer ($Outer$) loops are provided as the input based on the information derived from grammar.
 
 Specifically, $Intervals$ subsequences are those that correspond to the grammar rules plus all continuous subsequences of the discretized time series that do not form any rule. The $Outer$ subsequence ordering utilizes the information derived from a hierarchical grammar structure -- we order subsequences in  ascending order of their corresponding rule usage frequency (note that continuous subsequences of the discretized time series that do not form any rule have frequency 0 and are thus considered first). The intuition  behind this ordering is simple and is a reflection of the previously discussed properties of algorithmically anomalous subsequences. That is, the sooner we encounter the \textit{true} anomaly, the larger the $best\_so\_far\_dist$ is, and the more computations we can potentially eliminate later on (line 9). 
-%The  subsequences  corresponding to not included into rules intervals added to the top  of the $Outer$ list. \textbf{(Jessica) This last sentence sounds weird. Would you rephrase?} These are our best candidates for anomalies. 
 
 \begin{table*}[ht]
 \caption{Performance comparison for brute-force, state-of-the-art, and the proposed exact discord discovery algorithms.}
@@ -472,12 +456,10 @@ The $Inner$ candidate match ordering is also based on grammar information. First
   Dist(p,q) = \frac{\sqrt{\sum_{i=1}^n (p_i-q_i)^2}}{Length(p)} \label{dist}
 \end{equation}
 %\vspace{0.2em}
-%\textbf{Pavel: Maybe there is a similar distance that has been defined in some previous work?}
 When run iteratively, excluding the current best discord from $Intervals$ list, RRA outputs a ranked list of multiple co-existing discords of variable length, as shown in Figures \ref{fig:dutch_PD} and \ref{fig:dutch_PD2}. The bottom panels of Figures \ref{fig:ecg} and \ref{fig:dutch_PD} indicate locations and true distances from each time series subsequence corresponding to a grammar rule to its nearest non-self match by a vertical line placed at the rule beginning and whose height equals the distance.
 \vspace{1em}
 \section{Experimental Evaluation}\label{evaluation}
 We evaluated both proposed techniques on a number of datasets previously studied in \cite{hot_sax} that include Space Shuttle Marotta Valve telemetry (TEK), surveillance (Video data\-set), health care (electrocardiogram and respiration change), and industry (Dutch Power Demand).  We also evaluated on a new dataset of spatial trajectories.  We compared the performance of the proposed algorithms against brute force and HOTSAX \cite{hot_sax} discord discovery algorithms. Since RRA returns discords of variable length that may differ significantly from the specified sliding window length, we show the RRA discord recall rate as the overlap between discords discovered by HOTSAX and RRA algorithms in the last column of Table \ref{perf_table}. 
-%\textbf{Crystal: can the wording in the caption for Fig 5 be clarified? '...due to the larger value of normalized by the subsequence length Euclidean distance...'. Also, not sure if we want to rework Table 1, Reviewer 3's comment 7 showed confusion with the 'HOTSAX and RRA discords length and overlap' column}
 
 \begin{figure}[t]   
    \centering
@@ -499,8 +481,6 @@ Our rule density-based algorithm was also able to discover anomalies in \textbf{
 
 To summarize, the rule density-based approach, when used alone, is extremely fast, but it has difficulty discriminating and ranking subtle discords. Incorporating the grammatical context into the distance-based RRA algorithm, however, enables the efficient discovery of discords in all data sets. RRA is much faster than HOTSAX and brute force, and it allows for the discovery of variable-length discords. 
 
-%\textbf{(Arnold) Pavel, it would be good if you can add some figures (different from the already existing ones) and explanations that show cases where our techniques did well e.g., short anomalies, and where it failed. You mention that that "careful parameter selection" was needed, it would nice if you can elaborate on some of the heuristics that was used to select the parameters. Ideally, comprehensive figures relating to sensitivivity analysis would be good, but as we've discussed there are some issues with that. Perhaps you can include some choice results that are not too contestable, that would show that we did our due diligence in our experimentation eval.}
-
 %\begin{figure}[t]
    %\centering
    %\includegraphics[width=76mm]{hilbert.eps}
@@ -516,16 +496,11 @@ To summarize, the rule density-based approach, when used alone, is extremely fas
 \end{figure}
 
 \subsection{Spatial trajectory case study}
-%\textbf{(Pavel) I think we may need to link this work with the previous effort \cite{msequitur}, so it is not perceived out of the context. (Arnold) Since we've already mentioned the spatial data eval in the beginning, this subsection appears to be within context.}
 To demonstrate the utility of our technique for discovering anomalies of an \textit{unknown nature}, we performed a case study on spatial trajectory data. The trajectory data is intrinsically complex to explore for regularity since patterns of movement are often driven by unperceived goals and constrained by unknown environmental settings. 
-%\textbf{Crystal: please clarify this last sentence; how are long-term correlations related to discovering accurate anomalies? (Pavel) I've just rewritten that.}
-%, which makes it difficult to capture long-term correlations
 
 The data used in this study was gathered from a GPS device which recorded location coordinates and times while commuting during a typical week by car and bicycle. 
 
 To apply RRA to the trajectory, the multi-dimensional trajectory data (time, latitude, longitude) was transformed into a sequence of scalars. To achieve this, the trajectory points were mapped to the visit order of a Hilbert space filling curve (SFC) \cite{hilbert} embedded in the trajectory manifold space and indexed by the recorded times in the visit order (Figure \ref{fig:hilbert}, right panel). The Hilbert SFC was chosen to reduce the distortion on the data's spatial locality. The Hilbert SFC-transformed trajectory produces a time series, which is then passed to the RRA algorithm for anomaly discovery.
-% The sequence of SFC visit order along with their times was passed to the RRA algorithm for processing.
-%\textbf{Crystal: the Figure number is not showing up correctly here, I think it's missing the proper Latex "ref" tag. Also, maybe the last sentence can be altered to be like, "The Hilbert SFC transformed trajectory produces a time series, which is then passed to the RRA algorithm for processing."}
 
 \begin{figure}[!ht]   
    \centering
@@ -546,8 +521,6 @@ Figure \ref{fig:gps} shows the results of the discovered anomalies in the GPS tr
 
 While the second RRA-discovered discord shown in Figure \ref{fig:gps2} highlights a unique path, the third discord shown in Figure \ref{fig:gps_zoom} spotlights the algorithm's sensitivity and ability to capture subtle anomalies. The shown discord corresponds to an abnormal behavior within frequently traveled spatial regions -- not visiting the block's parking lot when traveling through the area. 
 
-%\textbf{(Jessica) One potential problem is that we have not reported any of the SAX parameters used --- this makes the experiments non-reproducible. I don't know if the database community is as picky as the data mining community on this, but we might get dinged by the reviewers for lack of parameter details. Do you happen to have all the parameter information recorded? Or can we make any general statement like what I did in earlier papers, e.g. alphabet size 3~6 is good, winsize is data dependent (perhaps emphasize the advantage of having the interactive visualization tool here)? Or is the algorithm so sensitive to the parameters that we cannot make such a statement? To the least, perhaps we should have a subsection on Parameter Setting, and move the "lessons learned" from conclusion to this subsection?}
-
 \subsection{Discretization parameters selection}
 Similar to other discretization-based learning techniques, it is difficult to pinpoint a solution that offers the best trade-off between gain in tractability and loss in accuracy. Nevertheless, we found that within the grammar-based paradigm, the sliding window length parameter is not as critical as it is for most of the existing anomaly and motif detection algorithms, since it is just the "seed" size. Specifically, we found that the rule density curve facilitates the discovery of patterns that are much shorter than the window size, whereas the RRA algorithm naturally enables the discovery of longer patterns. Second, we observed that when the selection of discretization parameters is driven by the context, such as using the length of a heartbeat in ECG data, a weekly duration in power consumption data, or an observed phenomenon cycle length in telemetry, sensible results are usually produced. 
 
@@ -567,17 +540,12 @@ In addition, we found that the rule density approach alone is more sensitive to 
    \label{fig:app2}
 \end{figure*}
 
-
-%\section{Algorithmically anomalous\\ subsequence utility}\label{utility}
-%\textbf{(Arnold) Also consider having this section be converted to a subsection of the experimental eval. section as a way to summarize key points and results.}
-
 \subsection{Visualization}
 As we pointed out before, to explore the properties of algorithmically anomalous subsequences, we have incorporated both algorithms proposed in this paper into our visualization tool called GrammarViz\,2.0 \cite{grammarviz2}. Figure \ref{fig:app2} shows the screenshot of GrammarViz\,2.0 using the RRA algorithm to find anomalies in a recorded video dataset. The discovered candidate anomalies are ranked by the distances to their nearest non-self matches. As shown in the ``Length" column, all candidate anomalies have different lengths. The highlighted subsequences in the upper panel correspond to the anomalies selected in the bottom panel.
 
 Figure \ref{fig:app} shows the anomalies discovered in the same dataset using the rule density curve-based approach. As shown, we use the blue color intensity to express the grammar rules density: the darker is the shade, the higher is the corresponding value in rule density curve (i.e., the higher is rule count). Thus, the white-shaded regions denote the best potential anomalies since they correspond to global minima intervals in the rule density curve. 
 
 Incorporating the proposed algorithms in our visualization tool allows interactive and efficient user-driven parameter tuning, as well as navigation and visualization of the results.
-%\textbf{Crystal: in the caption for Fig 10, can the word "video" be removed?}
 
 \begin{figure*}[t]
    \centering
@@ -606,9 +574,10 @@ Using the framework, we constructed two time series anomaly discovery algorithms
 
 Through an experimental evaluation, we have validated our hypothesis and have shown, that the proposed techniques are orders of magnitude more efficient than current state of the art without a loss in accuracy (Table \ref{perf_table}).
 
-%We proposed a novel, variable-length time series anomaly discovery technique that is based on grammatical compression. As a grammar induction algorithm learns regularities and builds a compact grammar from the input string obtained via sliding window-based time series symbolic discretization, it fails to compress subsequences that are irregular to the rest of the string. We consider these irregular subsequences to be anomalous. We explained our approach efficiency and effectiveness using the general notions of Kolmogorov complexity and algorithmic randomness. In addition, through an experimental evaluation, we have shown that the proposed technique is exceeding the current state of the art in efficiency and resolution.
-
 Since the grammar-based time series decomposition allows us to quantitatively assess the time series context through analysis of the grammar's hierarchical structure, the primary direction of our future effort is to analyze the effect of the discretization parameters on the algorithm's ability to discover contextually meaningful patterns. Since both techniques underlying our approach, namely, SAX discretization and grammatical inference with Sequitur, process the input time series from left to right, yet another research direction that suggests itself is the possibility of early anomaly detection in real-time data streams.
+
+\section{Acknowledgments}
+This research is partially supported by the National Science Foundation under Grant No. 1218325 and 1218318.
 
 \begin{thebibliography}{99}
 \vspace{1em}
