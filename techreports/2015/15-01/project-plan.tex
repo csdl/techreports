@@ -14,37 +14,37 @@
 
 % {\em The proposed research must approach fundamental research from an interdisciplinary perspective that integrates computing and communications with domain sciences and engineering to address the sustainability issues of interest. The proposal must describe a synergistic approach by which the team addresses scientific challenges in sustainability.}
 
-Our research plan has three basic three phases: {\em Design and implementation}, {\em Deployment}, and {\em Assessment}.  The design and implementation phase will last approximately six months and will complete the hardware and software systems now under development. The deployment phase will follow the design and implementation phase and last approximately one year. Deployment involves the distribution of our hardware to three neighborhoods and collection of power quality data.  The assessment phase will begin in parallel with deployment and last one and a half years. During assessment we will collect evidence to answer the primary research questions presented in Section \ref{sec:vision}.
+Our research plan builds upon our 2014 pilot study with three phases: {\em Design and implementation}, {\em Deployment}, and {\em Assessment}.  The design and implementation phase will last approximately six months and will complete the second generation hardware and software systems now under development. The deployment phase will follow the design and implementation phase and last approximately one year. Deployment involves the distribution of our hardware to three neighborhoods and collection of power quality data.  The assessment phase will begin in parallel with deployment and last one and a half years. 
+
+\subsection{2014 Pilot Study}
+
+We performed a two month pilot study in August 2014 using our first generation OPQBox hardware and OPQHub software \cite{g1-pilot-study}. The pilot study involved the installation of three OPQBoxes in a scientific laboratory building on the UH Manoa campus, an apartment complex in Honolulu, and a residence on the Windward side of Oahu. These devices generated over 8000 voltage events (i.e. voltages outside the range of 114 - 126 V, exceeding the 5\% variability for normal operation established by our utility).  The devices also generated 16 frequency events (i.e. frequency fluctuation outside the range of 59.5 - 60.5 Hz). Our first generation OPQHub serverimplements a simple analytic to classify events according to the ITIC/CBEMA power tolerance curve \cite{ITIC}. During the pilot study period, our devices detected two abnormal power quality events according to this metric. We were also able to distinguish between local and grid-level power quality events, and even correlate power quality fluctuations to PV output.
+
+This pilot study validated our hypothesis that our approach could provide useful information about the grid. It also produced valuable findings about the shortcomings of our first generation hardware and software.  For this project, we will build upon these preliminary findings with improved hardware, software and analytics. 
 
 \subsection{Phase 1: Design and implementation}
 
-The OPQ Project has been working on the design and implementation of open source hardware and software for the past year. In essence, our OPQ hardware device plugs into a normal 120V outlet, monitors frequency, voltage, and THD, and sends {\em events} via WiFi to our cloud-based software service when thresholds are exceeded.  Our OPQ cloud service gathers event data from devices and issues {\em alerts} to users via email or text message to inform them about power quality issues. Finally, our cloud service can send commands back to hardware devices, such as to change threshold values or retrieve recent waveform data for cloud-based analysis.
-
 \subsubsection{OPQ Hardware Device}
 
-Our OPQ hardware device has the following major design goals: (1) Unit price below \$60 to support large-scale deployment; (2) easy to install and safe to operate; (3) 16/24 bit resolution and 50+ samples per grid cycle; (4) Support for frequency voltage, and THD measurement; (5) onboard processing and local storage; (6) inter-device synchronization via NTP; (7) easy extensibility; and (8) open source license. 
-
-\begin{wrapfigure}{r}{3.25in}
-  \includegraphics[width=0.5\textwidth]{figures/hardware-block-diagram.eps}
+\begin{wrapfigure}{r}{4in}
+  \includegraphics[width=0.6\textwidth]{figures/opq2.eps}
   \caption{\em \small Hardware block diagram}
   \label{fig:hardware-block-diagram}
 \end{wrapfigure} 
 
-Figure \ref{fig:hardware-block-diagram} shows a block diagram and photo of the prototype hardware. In order to make our device safe to operate, it is galvanically isolated from the power grid via a UL-listed wall plug transformer. This transformer is used both for powering the meter and monitoring the power grid. The output of the transformer's secondary windings is passed through a low-pass filter which is responsible for scaling down the voltage to the analog-to-digital converter(ADC) range, as well as filtering out frequencies above 1Mhz. Furthermore this filter protects the sensitive inputs of the ADC.
+Figure \ref{fig:hardware-block-diagram} shows a block diagram of our second generation OPQBox hardware device \cite{opqbox2}. It can be plugged into a standard U.S. two prong outlet with expected power at a frequency of 60 Hz and with a voltage of 120 V. It can operate under a frequency range of 50 Hz to 70 Hz and under a voltage range of 80 Vac to 200 Vac. Sampling is phase locked to the utility frequency. The 16 bit 100KSPS ADC allows for 5mV resolution with over 1024 points per grid cycle. On board ARM floating point DSP is able to perform the IEEE 1159 outlined analysis, as well as user defined code. 
 
-The output of the filter is digitized using an ADC on an MSP430AFE microcontroller. This microcontroller is specifically designed for power metering. As illustrated in Figure \ref{fig:board}, we combine an analog front-end, a 24bit SAR ADC capable of sampling at 4kHz, and a 16bit MCU into a single integrated circuit to reduce the bill of materials. 
+OPQBox also includes 512k of ferromagnetic RAM (FRAM). FRAM will be used as a circular buffer, containing up to 1 min of high resolution voltage measurements. FRAM will maintain its state through a power cycle, which will be sent to the OPQHub once the OPQBox comes back online.
 
-\begin{wrapfigure}{r}{0.35\textwidth}
-  \includegraphics[width=0.35\textwidth]{figures/board3.eps}
-  \caption{\em \small OPQ Board}
-  \label{fig:board}
-\end{wrapfigure} 
+OPQBox is meant to bypass power filters and surge protectors. Thus, it incorporates extra protection elements to keep the device operating safely during power disruptions. Fuses will disable OPQBox2 in case of a fault. All of the user accessible components are isolated from the mains.
 
-For our sensor network to scale, a significant amount of processing must be performed on the device itself. This includes power quality event detection, as well as buffering of historic data leading up to the event. Furthermore, event data needs to be uploaded to the cloud for further analysis. Currently, we use a Raspberry Pi single board computer for the main processing unit. The MSP430AFE sends digitized samples to the Raspberry Pi via the SPI protocol. Data is compared to the expected waveform, and if the deviation is significant, an event containing the raw data is send to the cloud via a USB 802.11 adapter. We have designed a custom protocol for data transmission to reduce the bandwidth required \cite{opq-protocol}. The device and cloud service communicate using server-side events (SSE) over HTTP, which enables the device to be sent commands from the cloud even though it will be located behind a home wireless router.
-
-During this phase, we will hire a professional engineer experienced in this kind of product design to review our hardware for safety issues. 
+Finally, this generation OPQBox uses a Raspberry PI for WiFi-based communication with the OPQHub. (Future generations will use custom components to reduce size and cost.)
 
 \subsubsection{OPQ Cloud-based software service}
+
+In parallel with hardware, we have developed a cloud-based service for collection and analysis of the data. All source code is licensed under the GPL V3 and is available on GitHub \cite{opq-github}.  When a consumer receives a device, they use a browser to access our service and register their device. This includes specifying the kinds of alerts desired and how o receive them (email or text message).  Users can specify both thresholds for event triggering, frequency of alert delivery (immediately, or as part of a daily or weekly summary), and whether they want to be alerted to only their own quality events or to quality events (and annotations of these events) in their neighborhood.  
+
+Device registration also includes a privacy-preserving means to specify the location of the hardware device. This is accomplished by presenting users with a map overlaid with zoomable tiles allowing them to select the device location with resolutions from 500 square feet (typically revealing the actual building containing the device) to 1 square mile (revealing only the neighborhood containing the device). This is illustrated in Figure \ref{fig:cloud-grid}.
 
 \begin{wrapfigure}{r}{3.25in}
   \includegraphics[width=0.5\textwidth]{figures/cloud-grid.eps}
@@ -52,13 +52,10 @@ During this phase, we will hire a professional engineer experienced in this kind
   \label{fig:cloud-grid}
 \end{wrapfigure}  
 
-In parallel with hardware, we have developed a cloud-based service for collection and analysis of the data. All source code is licensed under the GPL V3 and is available on GitHub \cite{opq-github}.  When a consumer receives a device, they use a browser to access our service and begin by completing a registration wizard. First, the wizard helps users to specify the kinds of alerts they want to receive and how they want to receive them (email or text message).  Users can specify both thresholds for event triggering, frequency of alert delivery (immediately, or as part of a daily or weekly summary), and whether they want to be alerted to only their own quality events or to quality events (and annotations of these events) in their neighborhood.  
 
-Second, the wizard provides a privacy-preserving means to specify the location of the hardware device. It does this by presenting users with a map overlaid with zoomable tiles allowing them to select a location with resolutions from 500 square feet (typically revealing the actual building containing the device) to 1 square mile (revealing only the neighborhood containing the device). This is illustrated in Figure \ref{fig:cloud-grid}.
+There are two additional forms of energy data that the user can allow OPQ to collect.  Some users may have PV and/or smart meters installed that provide internet access to consumption and/or generation data.  When available (and if the user is willing to share this data), OPQ can potentially have access to consumption, generation, and quality data about a single household.
 
-There are two addition forms of energy data that the user can choose to provide to the OPQ service through the wizard.  Some users may have PV and/or smart meters installed that provide internet access to consumption and/or generation data.  When available (and if the user is willing to share this data), the wizard will collect the information required to automatically retrieve this data as well.  Thus, in the best case, our service will have access to consumption, generation, and quality data about a single household.
-
-After configuration, the service will push events to the user as specified in the user's preferences.  Beyond simple numerical data, the service can provide interpretation of the data, such as whether the frequency and/or severity of events is relatively low or high, and if high, actions that the user might want to consider.  These actions could include: (1) contacting the utility to request service (contact information supplied in the email); (2) Communicating with neighbors to see if they have power quality problems (via the creation of public annotations of their events); or (3) advice regarding actions (such as installation of UPS line conditioning for sensitive electronics, or unplugging them during events such as thunderstorms) depending upon the frequency/severity of power quality problems.
+After registration, OPQHub sends events to the user as specified during registration.  Beyond simple numerical data, the service can provide interpretation of the data, such as whether the frequency and/or severity of events is relatively low or high, and if high, actions that the user might want to consider.  These actions could include: (1) contacting the utility to request service (contact information supplied in the email); (2) Communicating with neighbors to see if they have power quality problems (via the creation of public annotations of their events); or (3) advice regarding actions (such as installation of UPS line conditioning for sensitive electronics, or unplugging them during events such as thunderstorms) depending upon the frequency/severity of power quality problems.
 
 \subsection{Phase 2: Deployment}
 
