@@ -1,0 +1,3 @@
+The csdl-techreports project at Google Project Hosting is designed to facilitate development of LaTeX techreports by members of the [Collaborative Software Development Laboratory](http://csdl.ics.hawaii.edu/) at the [Department of Information and Computer Sciences](http://www.ics.hawaii.edu) at the [University of Hawaii](http://www.hawaii.edu) and their affiliates.
+
+See the GettingStarted page for further instructions on how to use this repository.
